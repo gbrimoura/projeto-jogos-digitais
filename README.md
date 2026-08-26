@@ -1,4 +1,4 @@
-Jogo Roguelite Ação-Aventura de plataforma
+# Jogo Roguelite Ação-Aventura de plataforma (Nome a definir)
 
 ## Conceito
 
@@ -6,7 +6,7 @@ O jogo se conceitua como um jogo ciclico no estilo roguelite(melhorias permanent
 
 ## Definição 
 
-O jogo é uma escalada de torre,onde um andar contém um determinado número de salas aletórias procedurais,com uma série de inimigos que precisam ser derrotados para avançar e um chefe para cada andar,que após ser derrotado permite o desbloqueio do próximo andar. Isso tudo acompanhado de buffs e debuffs,itens e sistema de progressão permanente crossdeath. Lembrando que a morte resulta em reinicio de uma run,voltando a base da torre.
+O jogo é uma escalada de torre,onde cada andar é uma arena gerada proceduralmente,com uma série de inimigos que precisam ser derrotados para avançar e um chefe após um determinado numero de andares,que após ser derrotado permite o desbloqueio de um elevador até aquele andar. Isso tudo acompanhado de buffs e debuffs,itens e sistema de progressão permanente crossdeath. Lembrando que a morte resulta em reinicio de uma run,voltando a base da torre.
 
 ## Grafos conceitual do jogo 
 
