@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://cpawvwwxxcvaa"]
+
+[ext_resource type="Script" uid="uid://blin8aclhde4m" path="res://hello_world_gabriel_moura.gd" id="1_lgtut"]
+
+[node name="Hello World (Gabriel Moura)" type="Node2D" unique_id=1904051209]
+script = ExtResource("1_lgtut")
