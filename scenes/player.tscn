@@ -1,0 +1,51 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
+[ext_resource type="Resource" path="res://resources/player_movement_config.tres" id="2_movement_config"]
+[ext_resource type="Script" path="res://scripts/player/movement_controller.gd" id="3_movement_controller"]
+[ext_resource type="Script" path="res://scripts/player/player_visual.gd" id="4_player_visual"]
+[ext_resource type="Script" path="res://scripts/player/aim_controller.gd" id="5_aim_controller"]
+[ext_resource type="Script" path="res://scripts/player/reticle_visual.gd" id="6_reticle_visual"]
+[ext_resource type="Script" path="res://scripts/player/ball_launcher.gd" id="7_ball_launcher"]
+[ext_resource type="PackedScene" path="res://scenes/ricochet_ball.tscn" id="8_ricochet_ball"]
+[ext_resource type="Resource" path="res://resources/projectile_config.tres" id="9_projectile_config"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
+radius = 14.0
+height = 76.0
+
+[node name="Player" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+floor_snap_length = 6.0
+floor_stop_on_slope = true
+floor_constant_speed = true
+script = ExtResource("1_player")
+movement_config = ExtResource("2_movement_config")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0.0, -38.0)
+shape = SubResource("CapsuleShape2D_player")
+
+[node name="MovementController" type="Node" parent="."]
+script = ExtResource("3_movement_controller")
+
+[node name="AimController" type="Node2D" parent="."]
+position = Vector2(0.0, -38.0)
+script = ExtResource("5_aim_controller")
+
+[node name="PlayerVisual" type="Node2D" parent="."]
+script = ExtResource("4_player_visual")
+
+[node name="ReticleVisual" type="Node2D" parent="."]
+top_level = true
+z_index = 5
+script = ExtResource("6_reticle_visual")
+
+[node name="ShotOrigin" type="Marker2D" parent="."]
+position = Vector2(0.0, -38.0)
+
+[node name="BallLauncher" type="Node" parent="."]
+script = ExtResource("7_ball_launcher")
+projectile_scene = ExtResource("8_ricochet_ball")
+projectile_config = ExtResource("9_projectile_config")
