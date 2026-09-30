@@ -27,7 +27,7 @@ var jump_buffer_time: float = 0.12
 var jump_cut_multiplier: float = 0.5
 
 @export_category("Dash")
-@export var dash_enabled: bool = false
+@export var dash_enabled: bool = true
 @export_range(0.0, 3000.0, 1.0)
 var dash_speed: float = 720.0
 @export_range(0.01, 1.0, 0.01)

@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+size = Vector2(72.0, 96.0)
+
+[node name="TrainingTarget" type="StaticBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 0
+z_index = 1
+script = ExtResource("1_training_target")
+max_health = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_training_target")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+
+[node name="Visor" type="Polygon2D" parent="Visuals"]
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+
+[node name="UpperStripe" type="Line2D" parent="Visuals"]
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+
+[node name="LowerStripe" type="Line2D" parent="Visuals"]
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+
+[node name="FootLine" type="Line2D" parent="Visuals"]
+width = 4.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-38.0, -60.0)
+color = Color(0.894118, 0.435294, 0.345098, 1)
+polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)

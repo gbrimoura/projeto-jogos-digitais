@@ -9,6 +9,7 @@ extends CharacterBody2D
 @onready var reticle_visual: ReticleVisual = $ReticleVisual
 @onready var shot_origin: Node2D = $ShotOrigin
 @onready var ball_launcher: BallLauncher = $BallLauncher
+@onready var trajectory_preview: Node2D = $TrajectoryPreview
 
 var aim_direction: Vector2:
 	get:
@@ -25,6 +26,7 @@ func _ready() -> void:
 	aim_controller.aim_changed.connect(reticle_visual.set_aim)
 	reticle_visual.set_aim(aim_controller.aim_direction, aim_controller.aim_target_position)
 	ball_launcher.configure(self, aim_controller, shot_origin, _find_projectile_parent())
+	trajectory_preview.call("configure", aim_controller, shot_origin, ball_launcher)
 
 func _physics_process(delta: float) -> void:
 	var move_axis := Input.get_axis("move_left", "move_right")
