@@ -11,6 +11,7 @@ collision_mask = 9
 motion_mode = 1
 z_index = 2
 script = ExtResource("1_ricochet_ball")
+is_parryable = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_ricochet_ball")

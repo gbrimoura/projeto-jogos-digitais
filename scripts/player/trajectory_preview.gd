@@ -37,6 +37,7 @@ var _dirty: bool = true
 var _has_cached_state: bool = false
 var _last_origin: Vector2 = Vector2.ZERO
 var _last_direction: Vector2 = Vector2.ZERO
+var _last_mobile_enemy_positions: Dictionary = {}
 
 func configure(
 	aim_controller: AimController,
@@ -54,6 +55,8 @@ func _physics_process(_delta: float) -> void:
 	if _aim_controller == null or _shot_origin == null or _ball_launcher == null:
 		visible = false
 		return
+	if _mobile_enemy_positions_changed():
+		_dirty = true
 
 	if not _ball_launcher.is_launch_available():
 		visible = false
@@ -82,6 +85,27 @@ func _physics_process(_delta: float) -> void:
 	_last_direction = direction
 	_dirty = false
 	_build_prediction(prediction_origin, direction, blocked)
+
+func _mobile_enemy_positions_changed() -> bool:
+	var current_positions: Dictionary = {}
+	var changed := false
+	for enemy in get_tree().get_nodes_in_group("combat_enemy"):
+		if not enemy is CharacterBody2D:
+			continue
+		var enemy_id := enemy.get_instance_id()
+		var enemy_position: Vector2 = enemy.global_position
+		current_positions[enemy_id] = enemy_position
+		if (
+			not _last_mobile_enemy_positions.has(enemy_id)
+			or _last_mobile_enemy_positions[enemy_id].distance_squared_to(enemy_position)
+			> POSITION_EPSILON_SQUARED
+		):
+			changed = true
+	for enemy_id in _last_mobile_enemy_positions:
+		if not current_positions.has(enemy_id):
+			changed = true
+	_last_mobile_enemy_positions = current_positions
+	return changed
 
 func _on_aim_changed(_direction: Vector2, _target_position: Vector2) -> void:
 	_dirty = true

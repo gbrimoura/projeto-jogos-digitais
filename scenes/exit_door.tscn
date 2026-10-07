@@ -1,0 +1,45 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/exit_door.gd" id="1_exit_door"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit_sensor"]
+size = Vector2(96.0, 108.0)
+
+[node name="ExitDoor" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_exit_door")
+
+[node name="SensorShape" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_exit_sensor")
+
+
+[node name="DoorPanel" type="Polygon2D" parent="."]
+color = Color(0.094118, 0.137255, 0.168627, 1)
+polygon = PackedVector2Array(-24, 38, -24, -20, -21, -31, -13, -39, 13, -39, 21, -31, 24, -20, 24, 38)
+[node name="PortalGlow" type="Polygon2D" parent="."]
+color = Color(0.388235, 0.788235, 0.694118, 0.32)
+polygon = PackedVector2Array(-18, -34, -14, -42, 14, -42, 18, -34, 18, 38, -18, 38)
+
+[node name="DoorRim" type="Line2D" parent="."]
+closed = true
+width = 4.0
+default_color = Color(0.47451, 0.85098, 0.752941, 1)
+points = PackedVector2Array(-24, 38, -24, -20, -21, -31, -13, -39, 13, -39, 21, -31, 24, -20, 24, 38)
+
+[node name="DoorSeal" type="Line2D" parent="."]
+position = Vector2(0, -4)
+width = 5.0
+default_color = Color(0.839216, 0.517647, 0.282353, 1)
+points = PackedVector2Array(-16, 0, 16, 0)
+
+[node name="DoorLabel" type="Label" parent="."]
+offset_left = -116.0
+offset_top = -138.0
+offset_right = 84.0
+offset_bottom = -90.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 14
+text = "SAÍDA BLOQUEADA\nELIMINE OS INIMIGOS"
+horizontal_alignment = 1
+vertical_alignment = 1

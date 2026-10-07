@@ -1,10 +1,13 @@
-[gd_scene format=3 uid="uid://dlgvrryxeujdh"]
+[gd_scene load_steps=12 format=3 uid="uid://dlgvrryxeujdh"]
 
 [ext_resource type="Script" uid="uid://07rr2hs2ow5b" path="res://scripts/world/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://scenes/training_target.tscn" id="3_training_target"]
 [ext_resource type="Script" uid="uid://dfipmxwk2041v" path="res://scripts/world/combat_room.gd" id="4_combat_room"]
 [ext_resource type="PackedScene" path="res://scenes/solid_platform.tscn" id="5_solid_platform"]
+[ext_resource type="PackedScene" path="res://scenes/rivet_worker.tscn" id="6_rivet_worker"]
+[ext_resource type="Script" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+[ext_resource type="PackedScene" path="res://scenes/exit_door.tscn" id="8_exit_door"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
 size = Vector2(32, 648)
@@ -17,6 +20,10 @@ size = Vector2(1152, 32)
 
 [node name="Main" type="Node2D" unique_id=206969936]
 script = ExtResource("1_main")
+next_room_scene_path = "res://scenes/second_room.tscn"
+room_title = "SALA 01"
+room_title_label_path = NodePath("CombatRoom/HUD/RoomLabel")
+player_spawn_marker_path = NodePath("PlayerSpawnMarker")
 
 [node name="SandboxVisual" type="Node2D" parent="." unique_id=562336220]
 z_index = -10
@@ -160,7 +167,7 @@ points = PackedVector2Array(0, 528, 1152, 528)
 width = 1.0
 default_color = Color(0.17, 0.22, 0.29, 0.35)
 
-[node name="BallContainer" type="Node2D" parent="." unique_id=854280507]
+[node name="BallContainer" type="Node2D" parent="." unique_id=854280507 groups=["hostile_projectile_container"]]
 z_index = 1
 
 [node name="WorldCollision" type="StaticBody2D" parent="." unique_id=426925908]
@@ -199,16 +206,46 @@ size = Vector2(190, 24)
 position = Vector2(915, 452)
 size = Vector2(190, 24)
 
+[node name="ExitDoor" parent="." instance=ExtResource("8_exit_door")]
+position = Vector2(1080, 522)
+
+[node name="PlayerSpawnMarker" type="Marker2D" parent="."]
+position = Vector2(160, 560)
+
 [node name="Player" parent="." unique_id=349601874 instance=ExtResource("2_player")]
 position = Vector2(160, 560)
 
 [node name="TrainingTarget" parent="." unique_id=2030093939 instance=ExtResource("3_training_target")]
 position = Vector2(940, 392)
 
+[node name="WorkerPatrolArea" type="Node2D" parent="."]
+position = Vector2(670, 560)
+script = ExtResource("7_enemy_patrol_area")
+
+[node name="LeftLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(-250, 0)
+
+[node name="RightLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(250, 0)
+
+[node name="PreviewLine" type="Line2D" parent="WorkerPatrolArea"]
+z_index = 0
+width = 2.0
+default_color = Color(0.83, 0.62, 0.3, 0.42)
+points = PackedVector2Array(-250, 0, 250, 0)
+
+[node name="RivetWorker" parent="." instance=ExtResource("6_rivet_worker")]
+position = Vector2(650, 560)
+patrol_speed = 90.0
+patrol_end_pause = 0.35
+patrol_area_path = NodePath("../WorkerPatrolArea")
+
 [node name="CombatRoom" type="Node" parent="." unique_id=594426197]
 script = ExtResource("4_combat_room")
 counter_label_path = NodePath("HUD/CounterLabel")
 status_label_path = NodePath("HUD/StatusLabel")
+health_label_path = NodePath("HUD/HealthLabel")
+player_path = NodePath("../Player")
 
 [node name="HUD" type="CanvasLayer" parent="CombatRoom" unique_id=1348876616]
 layer = 10
@@ -230,3 +267,21 @@ offset_bottom = 88.0
 theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
 theme_override_font_sizes/font_size = 22
 text = "ENCONTRO ATIVO"
+
+[node name="RoomLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 120.0
+offset_right = 260.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 18
+text = "SALA 01"
+
+[node name="HealthLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 88.0
+offset_right = 250.0
+offset_bottom = 116.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "VIDA: 5 / 5"

@@ -6,42 +6,23 @@ horizontal, aceleração/desaceleração, pulo com corte, coyote time, jump buff
 e dash horizontal com recarga. A base de mira independente está disponível com
 uma retícula visual procedural e um tiro com ricochete determinístico.
 
-## Snapshot técnico do protótipo — 29/09/2026
+## Snapshot técnico do protótipo — 03/10/2026
 
-O encontro começa automaticamente quando `scenes/main.tscn` termina de carregar.
-O nó `CombatRoom` procura todos os nós do grupo `combat_enemy`, conta-os e
-conecta o sinal `defeated` de cada um. O HUD mostra `INIMIGOS RESTANTES: N` e,
-quando o último inimigo emite `defeated`, mostra `ÁREA LIMPA — SALA CONCLUÍDA` e
-emite `room_cleared` uma única vez. Uma cena sem nós nesse grupo já inicia como
-área limpa. O controlador usa o grupo e os caminhos dos labels como parâmetros,
-por isso não depende de um nome único de alvo.
+A cena principal mantém o `TrainingTarget` estático para comparação e acrescenta um `RivetWorker` terrestre. `CombatRoom` inicia automaticamente, conta os dois nós do grupo `combat_enemy`, acompanha `defeated` e emite `room_cleared` uma vez quando ambos são removidos. O HUD mostra inimigos restantes, vida e estado do encontro. Rebites hostis ativos são cancelados ao limpar a sala.
 
-O `TrainingTarget` é a representação passiva provisória do Operário de
-contenção: ele tem 3 pontos de vida e recebe 1 de dano quando a bola entra no
-ramo de ricochete válido. O primeiro contato direto pode causar dano se a
-colisão resultar em ricochete e ainda houver bounce disponível; contatos de
-slide/raspão e colisões após o limite não são hits danosos. A bola pode estar
-ativa uma por vez e tem no máximo três ricochetes globais. Um mesmo alvo é
-deduplicado dentro do mesmo tick da física da bola. Ao chegar a zero, o alvo
-emite `defeated` uma única vez e é removido da cena. Esses valores e regras
-servem ao teste atual e ainda não são balanceamento final.
+O Operário tem 3 HP. Patrulha o piso dentro de uma área editável em Main, entre os Marker2D LeftLimit e RightLimit do WorkerPatrolArea, a 90 px/s e com pausa de 0,35 s nas pontas. A prévia Line2D é discreta e aparece somente no editor. Os limites usam as posições globais dos marcadores, são normalizados quando invertidos e devem cobrir piso contínuo; o Operário não salta buracos. Se a área não deixar espaço útil para o corpo, ele fica imóvel e emite um aviso. Sem área associada, a cena reutilizável usa uma largura total de 500 px centrada na posição global do spawn. Em aproximação e reposicionamento, move-se a até 150 px/s sem sair desses limites. Após a guarda de distância mínima e qualquer recuo prioritário, o cooldown faz a IA patrulhar antes das consultas de alcance e linha de tiro, inclusive fora da faixa de ataque; depois do cooldown, aproxima-se se ainda estiver fora de alcance. Com cooldown zerado, aproxima-se se estiver fora de alcance; sem linha de tiro, procura reposicionar e patrulha se não encontrar uma posição clara; sem jogador presente também patrulha, mas para quando o jogador está morto. Se o spawn estiver fora dos limites, retorna andando ao limite seguro antes de decidir ataque ou recuo; não teleporta. Se o jogador continuar perto após o único recuo de até 64 px por ciclo, espera imóvel até a distância ficar segura. O aviso de tiro permanece travado por 0,65 s, seguido por rebite reto a 400 px/s, 1 de dano e recuperação de 0,8 s; cooldown configurado de 2,6 s mantém intervalo efetivo mínimo de cerca de 3,25 s. Paredes e plataformas absorvem o rebite. O corpo do inimigo não causa dano.
 
-Implementado neste snapshot: fluxo automático de uma sala, contador e estado de
-limpeza no HUD, contrato `defeated`/`room_cleared`, dano condicionado ao
-ricochete válido e suporte a vários nós no grupo de inimigos. Provisório:
-3 HP, 1 dano, limite de três ricochetes, um alvo passivo e a composição da
-sandbox. Pendente: IA e ataques de inimigos, vida/dano do jogador, gatilhos ou
-portas de sala, recompensas, transições, raquete e builds. A base do jogo ainda está em desenvolvimento, mas este snapshot já passou pelas verificações automatizadas descritas abaixo.
+O jogador agora tem 5 HP provisórios. Cada rebite causa 1 de dano; o acerto concede 0,8 s de invulnerabilidade visual. O dash não concede invulnerabilidade e não há knockback novo. Ao morrer, o jogador para, a bola ativa e os rebites são cancelados, o HUD mostra `DERROTA` e a tecla R recarrega a cena, restaurando sala, inimigos e vida. Nas camadas de física, `World` usa o índice 1 (bitmask 1), `Player` o índice 2 (bitmask 2), `Damageable` o índice 4 (bitmask 8) e `HostileProjectile` o índice 5 (bitmask 16). A máscara 3 do rebite seleciona `World` e `Player`; ele não ricocheteia.
 
-## Verificação automatizada — 29/09/2026
+| Estado | Conteúdo deste snapshot |
+|---|---|
+| **Implementado** | Sala 01: `CombatRoom` conta os dois inimigos e libera a porta E após `room_cleared`; E só solicita entrada para jogador vivo no sensor e `Main` revalida sala/jogador. A porta não gera salas: `Main` usa o destino configurado, preserva HP atual/máximo sem cura, limpa estados temporários e posiciona pelo `PlayerSpawnMarker`. Sala 02 manual reutiliza HUD, controles e inimigos existentes, sem saída seguinte; R após derrota reinicia a sala atual. Patrulha, ataque, parry e projéteis existentes preservados. |
+| **Provisório** | Operário e alvo com 3 HP; patrulha a 90 px/s com pausa de 0,35 s e fallback de 500 px; movimento de combate a 150 px/s; rebite com 400 px/s e 1 dano; jogador com 5 HP e 0,8 s de invulnerabilidade; faixa de ataque 220–360 px; aviso sonoro/visual de 0,65 s; recuperação 0,8 s; cooldown 2,6 s (intervalo efetivo mínimo ~3,25 s); recuo máximo de 64 px; composição e posições da sandbox. |
+| **Pendente** | Ajuste de sensação, balanceamento e legibilidade em runtime; validação no Godot; inimigos e padrões adicionais; controles e remapeamento definitivos; builds, recompensas, economia e regras finais de morte/progressão da run; integração procedural futura das salas. |
 
-Passaram 35 verificações integradas executadas por um script temporário fora da árvore do projeto. Elas cobriram a disponibilidade dos nós visuais antes da execução da cena, dimensões e geometria (incluindo o piso nativo), isolamento de tamanho/cor entre plataformas, orientação do jogador nos dois sentidos, caminhada sob a plataforma C em ambos os sentidos, início do dash, ricochete na base, HP/barra/flash do alvo, emissão única de **room_cleared** e remoção do alvo.
+A patrulha foi validada pelo usuário e passou por três revisões estáticas do Claude Opus 5.5 High; dois P2 foram corrigidos e a revisão final não encontrou P1/P2 remanescentes. O parry e a porta também passaram por revisões estáticas finais sem P1/P2 remanescentes. Nenhuma execução no Godot foi feita pelo agente nesta alteração.
 
-Outras 12 verificações usaram uma instância em modo de edição. Elas confirmaram a prévia no editor, a sincronização de visual e colisor de Floor e das plataformas com size, o redimensionamento ao vivo de C e que o Player não se move durante essas mudanças. O script temporário de inspeção emitiu avisos ao encerrar; eles não ocorreram nos testes de runtime ou renderização.
-
-O import e parse limpos também passaram no Godot 4.7.2 numa cópia temporária das mesmas cenas, scripts e recursos, sem addons nem caches antigos. A cena principal abriu no projeto original após preservar a DLL temporária preexistente do plugin Git; houve avisos ao gravar cache devido às permissões do ambiente de execução. Nenhuma ACL foi alterada. A DLL original e o manifesto do addon foram preservados.
-
-Essas verificações automatizadas não avaliam sensação dos controles. O checklist manual abaixo continua pendente; não foi executado nesta rodada.
+Este snapshot foi atualizado em 03/10/2026. O agente não executou import, parse, runtime ou testes no Godot nesta alteração; a integração visual e o comportamento jogável não foram validados pelo agente.
 
 ## Organização
 
@@ -59,78 +40,49 @@ Essas verificações automatizadas não avaliam sensação dos controles. O chec
 - `scripts/player/trajectory_preview.gd`: prevê o caminho circular da bola com
   ricochetes antes do disparo.
 - `scripts/player/player_visual.gd`: orientação e efeito de dash aplicados aos nós visuais nativos do jogador.
+- `scripts/player/player_health.gd`: vida do jogador, invulnerabilidade temporária e sinal de derrota.
 - `scripts/projectile/projectile_config.gd`: contrato de dados do projétil.
 - `scripts/projectile/bounce_resolver.gd`: regra pura de reflexão pela normal
   da superfície.
 - `scripts/projectile/ricochet_ball.gd`: bola cinética com contador de impactos,
   limite de ricochetes e ciclo de vida.
+- `scripts/projectile/hostile_rivet.gd`: rebite hostil reto, com colisão contínua,
+  tempo de vida, deduplicação de alvo e cancelamento seguro.
 - `resources/projectile_config.tres`: parâmetros provisórios do tiro.
 - `scenes/ricochet_ball.tscn`: cena física reutilizável da bola.
 - `resources/player_movement_config.tres`: valores provisórios do protótipo.
 - `scripts/world/training_target.gd`: alvo estático provisório com vida, dano, sinal `defeated` e sincronização de cor/barra com seus nós visuais nativos.
 - `scenes/training_target.tscn`: alvo físico de treino da sandbox.
+- `scripts/enemy/rivet_worker.gd` e `scenes/rivet_worker.tscn`: Operário terrestre com patrulha e limites configuráveis, aviso de mira travada, consultas locais de piso/linha de visão e ciclo de disparo editável no Inspector.
+- `scenes/hostile_rivet.tscn`: rebite hostil visualizado com formas nativas editáveis.
 - `scripts/world/combat_room.gd`: controlador reutilizável do contador e da conclusão da sala.
-- `scenes/main.tscn`: sandbox com fundo e piso nativos, paredes, jogador, plataformas e alvo de treino.
+- `scripts/world/exit_door.gd` e `scenes/exit_door.tscn`: porta reutilizável editável que controla bloqueio/alcance e emite o pedido de entrada.
+- `scripts/world/room_transition.gd`: payload de uso único para transferir HP atual/máximo entre cenas fixas.
+- `scenes/second_room.tscn`: fixture fixa editável da Sala 02, com seu marcador de spawn, HUD e combate compatíveis.
+- `scenes/main.tscn`: sandbox com fundo e piso nativos, paredes, jogador, plataformas, alvo de treino, área de patrulha editável e Operário lançador.
 - `scenes/solid_platform.tscn`: plataforma reutilizável com visual e colisor no mesmo `StaticBody2D` e tamanho editável.
-- `scripts/world/`: comportamento e sincronização da composição da sandbox, sem arte de mundo desenhada em `_draw`.
+- `scripts/world/enemy_patrol_area.gd`: área reutilizável de patrulha com prévia visual exclusiva do editor.
 
 ## Editar o layout no Godot
 
-Abra **scenes/main.tscn** no Godot e use a aba **2D** para ver a composição completa sem iniciar o jogo. Selecione **Floor**, **PlatformA**, **PlatformB** ou **PlatformC** na árvore e mova o nó raiz para deslocar juntos o **CollisionShape2D** e o visual. Para redimensionar, altere **size** no Inspector; essa propriedade controla o retângulo de colisão, o preenchimento e a borda superior. A propriedade **fill_color** troca a cor do preenchimento. O piso usa o centro (576, 604), tamanho (1152, 88) e permanece em um único nó com arte e colisão.
+Abra **scenes/main.tscn** no Godot e use a aba **2D** para ver a composição completa sem iniciar o jogo. Selecione **Floor**, **PlatformA**, **PlatformB** ou **PlatformC** na árvore e mova o nó raiz para deslocar juntos o **CollisionShape2D** e o visual. Para redimensionar, altere **size** no Inspector; essa propriedade controla o retângulo de colisão, o preenchimento e a borda superior. A propriedade **fill_color** troca a cor do preenchimento. O piso usa o centro (576, 604), tamanho (1152, 88) e permanece em um único nó com arte e colisão. Selecione **WorkerPatrolArea** e mova **LeftLimit** ou **RightLimit** na aba 2D para ajustar o percurso do Operário. A linha discreta é uma prévia exclusiva do editor; a área usa as posições globais dos marcadores, enquanto o inimigo mantém seus próprios limites durante o movimento.
 
-O vão livre entre a parte inferior de **PlatformC** (y=464) e o piso (y=560) é de 96 px. A cápsula do jogador tem 76 px de altura; mantenha o vão acima de 76 px para preservar a passagem sob a plataforma. A posição inicial no layout é (160, 560), mas o retorno do jogador após cair ainda usa essa mesma coordenada fixa em **scripts/world/main.gd**.
+Checklist de regressão da patrulha (já validada pelo usuário; não executada pelo agente nesta alteração):
 
-## Controles
+- Mover `LeftLimit` e `RightLimit` na aba 2D e confirmar que o percurso muda e que a prévia acompanha os marcadores.
+- Observar a pausa de 0,35 s nas duas extremidades, inclusive com os marcadores invertidos.
+- Conferir que o corpo permanece entre os limites e que um spawn externo retorna caminhando sem teleporte.
+- Confirmar que `PreviewLine` só aparece no editor e que uma área sem faixa útil deixa o Operário imóvel com aviso.
+- Com cooldown ativo e jogador em PlatformB, verificar que alternâncias de linha de tiro não mudam a patrulha para reposicionamento a cada quadro.
 
-- A/D ou setas: mover.
-- W, seta para cima ou Espaço: pular.
-- Clique esquerdo: lançar uma bola cinética.
-- Shift: dash horizontal.
+## Atualização 03/10/2026 — porta e segunda sala
 
-O movimento recebe apenas um eixo horizontal. O `AimController` e o `ShotOrigin`
-usam o centro do personagem como referência. O `AimController` atualiza
-`aim_direction` e `aim_target_position` em um canal separado, sem escrever em
-`velocity`, no estado do dash ou na orientação usada pela locomoção. A retícula
-visual e o lançamento da bola são canais separados. O lançamento usa a
-direção atual do `AimController`, cria a bola em `BallContainer` e permite
-apenas uma bola ativa por vez. A bola preserva sua velocidade, reflete pela
-normal da superfície até três vezes e desaparece ao atingir o limite ou o
-tempo de vida. O dano do alvo só é aplicado no ramo de ricochete válido; o
-primeiro contato direto pode ser danoso, enquanto contatos de slide/raspão e
-colisões após o limite de bounce não são. O mesmo alvo não recebe dois eventos
-da mesma bola no mesmo tick. Enquanto o
-lançador está livre, o preview usa consultas de forma com o mesmo raio e
-máscara de colisão da bola para desenhar o caminho provável; ele desaparece
-durante o voo.
+A porta nativa exibe bloqueio até `room_cleared`; E solicita a transição apenas para um jogador vivo dentro do sensor. `Main` valida novamente sala/jogador e carrega o destino configurado por `next_room_scene_path`. Se o recurso falhar, a porta retorna aberta para nova tentativa.
 
-## Decisões provisórias
+A transição mantém HP atual e máximo, sem cura. A sala nova cria jogador/estado de combate novos e posiciona pela `PlayerSpawnMarker`; o payload é de uso único e vinculado ao path de destino. R após derrota reinicia a sala atual, restaurando jogador e inimigos.
 
-Os valores de velocidade, aceleração, gravidade, pulo, tolerâncias e dash são
-pontos de partida para teste no Resource. O dash horizontal está ativo, com
-uma carga aérea que se recupera ao tocar o chão, bloqueia ao encontrar uma
-parede e tem recarga após o uso. A sensação e o tempo de recarga ainda devem
-ser validados. Invulnerabilidade e interações contextuais do dash ainda devem ser validadas. O alvo de treino já cobre o primeiro contato de combate; o combate amplo e os sistemas de builds continuam pendentes. Ele usa 3 pontos de vida e recebe 1 dano por impacto como valores provisórios configuráveis; como a bola tem limite de três ricochetes, os três acertos podem exigir disparos separados.
+`scenes/second_room.tscn` é uma fixture manual sem porta seguinte: pode iniciar com F6 e usa os inimigos, HUD e controles existentes. A integração procedural futura configura o destino no controlador; a porta somente emite o pedido e não gera salas. Recompensas e fim da run continuam fora do escopo. Na Main, a saída fica à direita e os HUDs identificam Sala 01/02. R após derrota reinicia a sala atual; F6 inicia a Sala 02 com 5/5 HP; queda abaixo de y=760 reposiciona no marcador sem alterar o HP.
 
-## Checklist de validação manual
+A revisão estática final do código e das cenas não encontrou achados P1/P2. A revisão inicial identificou uma divergência entre um destino salvo como UID `uid://` e o `res://` reportado pela cena carregada; `Main` agora usa `PackedScene.resource_path` canônico para o payload e a troca, e descarta payload de caminho divergente. Os ajustes de posição e legibilidade da porta, brilho e consistência do HUD também foram aplicados.
 
-1. Abrir a pasta no Godot 4.7 e executar a cena principal.
-2. Confirmar movimento nos dois sentidos e desaceleração ao soltar a tecla.
-3. Confirmar pulo no chão, pulo ao tocar uma plataforma e tolerância curta ao
-   sair da borda.
-4. Pressionar W, seta para cima ou Espaço pouco antes de tocar o chão e
-   confirmar o jump buffer.
-5. Pressionar Shift no chão e no ar; confirmar o dash horizontal, a interrupção
-   ao atingir uma parede, a recarga e a recuperação da carga aérea ao tocar o chão.
-6. Sair da área inferior e confirmar o retorno ao ponto inicial.
-7. Mover o mouse ao redor do jogador e confirmar que a retícula acompanha o
-   cursor em 360 graus.
-8. Clicar com o botão esquerdo contra o chão, teto, paredes e plataformas e
-   confirmar que a bola reflete até três vezes sem ser afetada pelo movimento
-   do robô.
-9. Antes de disparar, comparar a linha prevista com o trajeto real nas paredes,
-   no piso e nos cantos; mover o jogador e a mira para confirmar que o preview
-   acompanha ambos.
-10. Confirmar que o preview some durante o voo e reaparece quando a bola termina.
-11. Atingir o alvo de treino; conferir o flash, a redução da barra de vida e
-    o contador do HUD até a remoção após três impactos válidos. Separar os
-    disparos se a bola atingir o limite de ricochetes antes dos três acertos.
+Sem execução ou validação no Godot; nenhum teste foi executado. A revisão documental estática final do Claude Opus 5.5 High confirmou as divergências corrigidas e não encontrou P1/P2 remanescentes.
