@@ -1,0 +1,20 @@
+STATUS: done
+SUMMARY: Análise estática e documental realizada em modo estritamente read-only (sem ferramentas, sem edição de arquivos e sem execução de Godot/testes). A lógica do script Lua `protagonista-walk.lua` e do `protagonista-walk-metadata.json` implementa com precisão a ancoragem superior das 4 linhas do quadril (`y=47..50`, `dx=0`), articulação lateral de joelho e tornozelo dentro do teto estipulado (`≤ 1px`), elevação alternada de 1px da bota nos índices zero-based 2 e 5 mantendo apoio fixo no pé oposto, paleta de 27 cores, dimensões 64x64, integridade bit-a-bit dos 6 quadros de idle e tempos nominais (idle: `[420, 140, 180, 140, 540, 80]` ms; walk: 6 quadros a 100 ms). Não há clipping de borda de tela nem vazamento de máscaras. A aparência visual e contato de pisada dependem de renderização binária externa que não foi inspecionada visualmente.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+1. **Ausência de exportação do spritesheet PNG no script Lua**:
+   - *Evidência*: O script grava apenas o arquivo `.aseprite` via `sprite:saveAs(asepritePath)` e grava os metadados JSON via `io.open`. Ao final, executa `print("SHEET: " .. out(BASE .. "-spritesheet.png"))`, porém não contém nenhuma chamada para `app.command.ExportSpriteSheet` nem `sprite:saveCopyAs`.
+   - *Impacto*: Se executado exatamente como no exemplo do comentário do cabeçalho (`Aseprite.exe -b ... --script protagonista-walk.lua`), o arquivo PNG referenciado nos metadados (`"generated_layout": "12 frames, 64x64 each, horizontal sheet"`) e aguardado pela Godot não é gerado pelo Aseprite, exigindo um comando CLI externo com parâmetros `--sheet` para existir.
+2. **Assimetria de fase do `bob` e articulação no ciclo de caminhada (`walkFrames`)**:
+   - *Evidência*: No passo esquerdo, o ápice do bob vertical ocorre no mesmo quadro em que a bota levanta:
+     - Quadro 2 (índice 1): `left_knee=1, left_ankle=0, left_foot=0, left_lift=0, bob=0`
+     - Quadro 3 (índice 2): `left_knee=1, left_ankle=1, left_foot=1, left_lift=1, bob=1`
+     No passo direito, a fase está invertida/deslocada:
+     - Quadro 5 (índice 4): `right_knee=-1, right_ankle=-1, right_foot=0, right_lift=0, bob=1`
+     - Quadro 6 (índice 5): `right_knee=-1, right_ankle=-1, right_foot=-1, right_lift=1, bob=0`
+   - *Impacto*: No passo direito, o corpo sobe 1px (`bob=1`) prematuramente enquanto ambos os pés ainda estão apoiados no chão (`right_lift=0`), e desce (`bob=0`) no momento exato em que a bota direita levanta (`right_lift=1`). Além disso, o tornozelo direito articula já na fase de apoio/transição (`right_ankle=-1` no índice 4), enquanto o tornozelo esquerdo só articula junto com a elevação no índice 2.
+3. **Sobrescrita destrutiva de pixels na junção do tornozelo (`ny=53`) em `articulateLeg`**:
+   - *Evidência*: No loop `for y=mask.y1,mask.y2 do`, na linha `y=53` (tornozelo), os pixels são desenhados em `ny=53`. Na iteração seguinte `y=54` (topo da bota), quando `footLift=1`, `ny = 54 - 1 = 53`. O comando `img:drawPixel(nx, 53, raw)` substitui diretamente os pixels da linha 53 gravados na iteração anterior.
+   - *Impacto*: Embora o autor do script documente que a intenção é manter a perna ligada sem pontes extras, essa técnica descarta por completo os pixels originais da linha 53 da arte-base quando a perna sobe, exibindo no lugar os pixels da linha 54 da bota. Se houver sombreamento ou detalhes específicos desenhados no tornozelo na arte de referência, eles são apagados durante a elevação.
+NEXT_STEP: Solicitar ao agente principal confirmação se a geração do PNG do atlas é delegada a pipeline externa CLI ou se deve ser incluída chamada `app.command.ExportSpriteSheet` no script, bem como validar se a assimetria de fase de `bob` no quadro 5/6 em relação ao quadro 2/3 foi intencional ou se deve ser sincronizada (`bob=0` no índice 4 e `bob=1` no índice 5).

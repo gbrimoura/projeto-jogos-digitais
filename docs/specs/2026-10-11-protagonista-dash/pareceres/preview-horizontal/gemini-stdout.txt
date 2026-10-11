@@ -1,0 +1,35 @@
+STATUS: done
+SUMMARY: Revisão estática documental da prévia horizontal do dash no Aseprite concluída com sucesso. O script está estruturalmente consistente e correto quanto à lógica de deslocamento, loop, tempos e limites de tela. Não há bugs concretos de cálculo, clipping ou quebra de ciclo. O percurso é perfeitamente espelhado (±50 px em 7 passos de 20 ms com curva 7/7/7/8/7/7/7 px), a emenda de 16 quadros é contínua e sem solavancos visuais (o personagem permanece virado para o lado correto durante os holds de 300 ms e só inverte orientação ao iniciar o dash seguinte), e os limites do canvas de 136x64 comportam o frame de 64x64 com folga positiva em ambos os extremos. Como única ressalva de API, o script salva exclusivamente o arquivo `.aseprite` (`preview:saveAs(outputPath)`), dependendo de exportação secundária da CLI para gerar o `.gif` físico se `preview:saveCopyAs(out(BASE .. ".gif"))` não estiver incluído.
+CHANGED_FILES: none
+TESTS: none
+
+### Parecer Técnico Detalhado
+
+1. **Deslocamento e Curva de Velocidade (Consistente)**:
+   - **Ida (+X)**: Posição inicial `x = 8` (hold idle espelhado). Sequência de passos de dash a cada 20 ms: `15 (+7)`, `22 (+7)`, `29 (+7)`, `37 (+8)`, `44 (+7)`, `51 (+7)`, `58 (+7)`. Deslocamento total = `+50 px` em 140 ms (~357 px/s nativos, equivalente aos ~714–720 px/s em escala 2x).
+   - **Hold direito**: Posição `x = 58` (idle normal, 300 ms). Delta relativo ao último frame de dash = `0 px` (sem salto posicional).
+   - **Volta (-X)**: Sequência de passos de dash a cada 20 ms: `51 (-7)`, `44 (-7)`, `37 (-7)`, `29 (-8)`, `22 (-7)`, `15 (-7)`, `8 (-7)`. Deslocamento total = `-50 px` em 140 ms.
+   - **Hold esquerdo (Wrap-around)**: Posição `x = 8` (idle espelhado, 300 ms). Delta relativo ao último frame de dash = `0 px` (sem salto posicional).
+   - **Simetria**: O ajuste de passo discreto (`8 px`) ocorre exatamente no ponto central da transição (`29 ↔ 37`) em ambos os sentidos.
+
+2. **Loop, Temporização e Orientação Visual (Consistente)**:
+   - **Continuidade de orientação**: Ao finalizar o dash para a esquerda na posição `x = 8`, o frame seguinte (Frame 1) é `leftFacingIdleImage` a `x = 8`. O personagem aterrissa virado para a esquerda e repousa virado para a esquerda pelos 300 ms, virando para a direita apenas no Frame 2 ao iniciar o dash positivo. Da mesma forma, no extremo direito (`x = 58`), o personagem aterrissa virado para a direita e repousa virado para a direita pelos 300 ms. Não ocorre inversão de direção na emenda do ciclo nem na entrada do repouso.
+   - **Cadência de poses**: Poses `1, 1` (40 ms), `2, 2` (40 ms) e `3, 3, 3` (60 ms) totalizam 140 ms por dash, casando com a especificação.
+   - **Resolução temporal GIF**: Delays de `20 ms` (2 centissegundos) e `300 ms` (30 centissegundos) são divisores exatos da base centissegundal do formato GIF (1/100 s), prevenindo distorções de arredondamento de tempo pelo player/navegador.
+
+3. **Limites de Canvas e Clipping (Sem clipping)**:
+   - Canvas: `136 x 64 px`; Frame: `64 x 64 px`.
+   - Extremos horizontais: Mínimo `x = 8` (margem esquerda de 8 px; `x + 64 = 72 <= 136`); Máximo `x = 58` (margem direita de `136 - 122 = 14 px`; `x + 64 = 122 <= 136`).
+   - Bounds: Ambas as margens são estritamente positivas e a asserção `x >= 0 and x + FRAME_W <= CANVAS_W` é satisfeita em todos os 16 quadros. Verticalmente, `y = 0` cobre integralmente a altura sem corte.
+
+4. **Uso da API Aseprite e Observações Concretas**:
+   - **Extensão de saída**: O script grava `out(BASE .. ".aseprite")` via `preview:saveAs()`. Se o objetivo for obter o arquivo `.gif` diretamente desta execução de script, seria necessário adicionar `preview:saveCopyAs(out(BASE .. ".gif"))`. Caso a geração do GIF ocorra via comando CLI subsequente do Aseprite a partir do `.aseprite`, o comportamento atual atua adequadamente como gerador do arquivo-fonte.
+   - **Ciclo de vida de recursos**: O sprite-fonte aberto em `app.open(SOURCE_SHEET)` não é liberado com `sourceSprite:close()`. Em modo batch CLI `-b` o sistema operacional desaloca no término do processo (exit 0), mas em modo GUI a aba permaneceria aberta.
+   - **Construção de cels**: Gerar imagens completas de `136x64` a `Point(0,0)` para cada cel evita ambiguidades de recorte (trim) ou deslocamento de cel no exportador do Aseprite. A lógica de índice (`addedFrameCount` tratando `preview.frames[1]` e subsequentes com `newEmptyFrame()`) assegura exatamente 16 quadros sem frames vazios residuais.
+
+RISKS:
+- O script por si só não gera o arquivo físico `.gif`, gravando apenas o arquivo `.aseprite`; se a automação chamadora esperar o `.gif` pronto diretamente na saída deste script sem uma etapa de exportação CLI separada, o artefato final não estará presente.
+- Conforme regra estrita de revisão, não é possível atestar a qualidade estética visual ou balanceamento de silhueta de binários PNG/GIF/strip não inspecionados visualmente; a aprovação aqui refere-se à lógica estrutural, matemática de deslocamento e API.
+
+NEXT_STEP:
+- Se o pipeline já realiza a exportação do `.gif` a partir do `.aseprite` via linha de comando separada, o script está pronto e validado; caso deseje que o próprio script já emita o GIF pronto sem etapas adicionais, acrescentar `preview:saveCopyAs(out(BASE .. ".gif"))` logo após `preview:saveAs()`.

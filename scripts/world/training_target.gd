@@ -24,9 +24,9 @@ func _ready() -> void:
 	add_to_group("combat_enemy")
 	_update_visuals()
 
-func take_damage(amount: int, _source: Node = null) -> void:
+func take_damage(amount: int, _source: Node = null) -> bool:
 	if _defeated_emitted or health <= 0 or amount <= 0:
-		return
+		return false
 
 	health = maxi(health - amount, 0)
 	_flash_remaining = maxf(flash_duration, 0.0)
@@ -35,6 +35,7 @@ func take_damage(amount: int, _source: Node = null) -> void:
 		_defeated_emitted = true
 		defeated.emit()
 		queue_free()
+	return true
 
 func _process(delta: float) -> void:
 	if _flash_remaining <= 0.0:

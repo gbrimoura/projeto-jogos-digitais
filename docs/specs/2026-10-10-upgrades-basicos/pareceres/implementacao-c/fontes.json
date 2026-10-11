@@ -1,0 +1,95 @@
+{
+  "stage": "C integrada A/B/C",
+  "state": "Freeze antes do registro de resultados",
+  "baseline_head": "e2855c2a7b076a112ad59c16b388da4259a8c909",
+  "branch": "combate-parry-transicao-salas",
+  "review_models": [
+    "Gemini 3.8 Flash (High) via AGY",
+    "opencode-go/muse-spark-1.3-contributor variant xhigh via OpenCode",
+    "grok-4.7-xhigh-fast via Cursor Agent"
+  ],
+  "opus": "dispensado explicitamente somente nesta iniciativa",
+  "validation": "análise estática; sem Godot/importação/parser/runtime/testes",
+  "hashes": [
+    {
+      "Path": "scripts/projectile/ricochet_ball.gd",
+      "Hash": "12EA256A64AD89575C8AE1C457C62958BB9FC2988A8EE80C715829159F17F907"
+    },
+    {
+      "Path": "scenes/ricochet_ball.tscn",
+      "Hash": "A9B7083B7C24DB6F11ED6308B8284E6A8B7ADEBF415E604490FA8EB4764D1002"
+    },
+    {
+      "Path": "scripts/enemy/rivet_worker.gd",
+      "Hash": "866381A75B17BC6ED3E7CA2250EC1B6655C2B9A80FA2E98E9BE7CF25DE06AE73"
+    },
+    {
+      "Path": "scripts/world/training_target.gd",
+      "Hash": "446EBA14D845B4A2DD800E2EA35ECBC9DFF44B93F10EFBD9DE8A3CBE72F79008"
+    },
+    {
+      "Path": "scripts/player/ball_launcher.gd",
+      "Hash": "CB5C6111C540D9F1A6C3D22959041CC9F2C307FDA8541516D836B763E497EE9D"
+    },
+    {
+      "Path": "scripts/world/main.gd",
+      "Hash": "7E1669BC8457DDE9A60A32FA8756363104C385FFE503577C72488829AF367C12"
+    },
+    {
+      "Path": "scripts/ui/upgrade_offer.gd",
+      "Hash": "596A4D3D9FA461D2255614F4D94C5F2C2FF22A6C1C686B78BEC26E5F55157F25"
+    },
+    {
+      "Path": "scripts/projectile/projectile_config.gd",
+      "Hash": "24D68B5825A49A03F9E755E3925FA1B3DD20D660A52CD66E95AC807EF3CFE1C9"
+    },
+    {
+      "Path": "scripts/progression/run_build.gd",
+      "Hash": "0E7426DEA962E22CAF3AED7B9F304B7E8698C463124FC0A2441D46A4B1632F2E"
+    },
+    {
+      "Path": "scripts/world/room_transition.gd",
+      "Hash": "2A0EDA364FAEEEEE7BA06B349A8F1AEAF37407F3C29907543E52B8D075A08461"
+    },
+    {
+      "Path": "scripts/player/player.gd",
+      "Hash": "39727669EAD5B94203E04371083CD85B7773E707E036A420C868F17373330E4B"
+    },
+    {
+      "Path": "scripts/world/combat_room.gd",
+      "Hash": "87F8FB4CC6F920554EC3DD6C3B101327963C54EF60F6FB5262B574A97784B003"
+    },
+    {
+      "Path": "scripts/projectile/hostile_rivet.gd",
+      "Hash": "868776B8B73267AB127DBDE7B16232213329F6D01427398483641DF9DADAC144"
+    },
+    {
+      "Path": "scripts/world/exit_door.gd",
+      "Hash": "D6C16A86E68869CC3B01C1FC228AD0FAE4311DE05AAA9F8B2455D9896FF116ED"
+    },
+    {
+      "Path": "scenes/upgrade_offer.tscn",
+      "Hash": "BDA756D9E60CC914CAB0BB541337170CE6648E9E82F3B3C2FC829ACE4A9449E8"
+    },
+    {
+      "Path": "scenes/main.tscn",
+      "Hash": "CEA44A9898E9B3F5B268C2D8BDDF95F4ADAD028B54C86B3D3FE0FB45D6E60444"
+    },
+    {
+      "Path": "scenes/second_room.tscn",
+      "Hash": "D0D3B22425A5251F94923BF4BDFBC3CE3772F4C70D425F58E15FCE1C56554C41"
+    },
+    {
+      "Path": "README.md",
+      "Hash": "AA97216C765D44B665FA5940039DECDD4E22C6A571DFED413F3C25E1AAFA500F"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\GDD_Dieselpunk_Noir\\04-combate-e-builds.md",
+      "Hash": "3BB83546EF9694782782735494010D67898C5599A69A05D7C34557D3F773806B"
+    },
+    {
+      "Path": "docs/specs/2026-10-10-upgrades-basicos/implementacao.md",
+      "Hash": "289100FB04B537EB5F41BD16F28F8DFC13B5099992C47FC9B68ABFC2783C74E1"
+    }
+  ]
+}

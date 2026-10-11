@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-11",
+  "files": [
+    {
+      "path": "scripts/player/player_visual.gd",
+      "sha256": "2accb069271cffa66ec7a18c70de67fb160c0ccd9e47872101752e853b00da1f",
+      "bytes": 3298
+    },
+    {
+      "path": "scripts/player/player.gd",
+      "sha256": "ae3d2d9dc15a96f5a6c2daef0529b6d2e76eceba8c13845f161e23bf12c47a36",
+      "bytes": 5873
+    },
+    {
+      "path": "scenes/player.tscn",
+      "sha256": "e347e9580b58b51b70881312c403bd0b867746625cb89356b542568e775dfb46",
+      "bytes": 7576
+    },
+    {
+      "path": "resources/player_sprite_frames.tres",
+      "sha256": "9b101f342d61add8dc2dfffb62927339a2ba10657e681fbcde2b9de0bda44194",
+      "bytes": 2686
+    },
+    {
+      "path": "assets/player/player-animations.png",
+      "sha256": "779b4244138d6af778aec04b9b8bc5e643f8a73ad01c5bf6c988707ba23a90df",
+      "bytes": 4633
+    },
+    {
+      "path": "assets/player/source/player-animations.aseprite",
+      "sha256": "d2271cb9dad18d881734aaeb3835ab58d6c0025824193cb8bbc130dd707ff289",
+      "bytes": 17156
+    },
+    {
+      "path": "docs/specs/2026-10-11-protagonista-idle-walk/spec.md",
+      "sha256": "82e8bcd81c2f9269ce24edae6c6d8a9e80319c60c3b2cfd8df35a82bb1d7745f",
+      "bytes": 2223
+    }
+  ]
+}

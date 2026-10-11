@@ -15,3 +15,11 @@ is_parryable = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_ricochet_ball")
+
+[node name="ChargeVisual" type="Line2D" parent="."]
+visible = false
+z_index = 1
+points = PackedVector2Array(0, -13, 9.19239, -9.19239, 13, 0, 9.19239, 9.19239, 0, 13, -9.19239, 9.19239, -13, 0, -9.19239, -9.19239, 0, -13)
+width = 2.5
+default_color = Color(0.4, 0.91, 0.81, 0.95)
+closed = true

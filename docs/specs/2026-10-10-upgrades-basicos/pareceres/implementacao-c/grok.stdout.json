@@ -1,0 +1,105 @@
+{
+  "model": "grok-4.7-xhigh-fast",
+  "tool": "Cursor Agent",
+  "mode": "plan",
+  "status": "done",
+  "hashes": [
+    {
+      "Path": "scripts/projectile/ricochet_ball.gd",
+      "Hash": "12EA256A64AD89575C8AE1C457C62958BB9FC2988A8EE80C715829159F17F907"
+    },
+    {
+      "Path": "scenes/ricochet_ball.tscn",
+      "Hash": "A9B7083B7C24DB6F11ED6308B8284E6A8B7ADEBF415E604490FA8EB4764D1002"
+    },
+    {
+      "Path": "scripts/enemy/rivet_worker.gd",
+      "Hash": "866381A75B17BC6ED3E7CA2250EC1B6655C2B9A80FA2E98E9BE7CF25DE06AE73"
+    },
+    {
+      "Path": "scripts/world/training_target.gd",
+      "Hash": "446EBA14D845B4A2DD800E2EA35ECBC9DFF44B93F10EFBD9DE8A3CBE72F79008"
+    },
+    {
+      "Path": "scripts/player/ball_launcher.gd",
+      "Hash": "CB5C6111C540D9F1A6C3D22959041CC9F2C307FDA8541516D836B763E497EE9D"
+    },
+    {
+      "Path": "scripts/world/main.gd",
+      "Hash": "7E1669BC8457DDE9A60A32FA8756363104C385FFE503577C72488829AF367C12"
+    },
+    {
+      "Path": "scripts/ui/upgrade_offer.gd",
+      "Hash": "596A4D3D9FA461D2255614F4D94C5F2C2FF22A6C1C686B78BEC26E5F55157F25"
+    },
+    {
+      "Path": "scripts/projectile/projectile_config.gd",
+      "Hash": "24D68B5825A49A03F9E755E3925FA1B3DD20D660A52CD66E95AC807EF3CFE1C9"
+    },
+    {
+      "Path": "scripts/progression/run_build.gd",
+      "Hash": "0E7426DEA962E22CAF3AED7B9F304B7E8698C463124FC0A2441D46A4B1632F2E"
+    },
+    {
+      "Path": "scripts/world/room_transition.gd",
+      "Hash": "2A0EDA364FAEEEEE7BA06B349A8F1AEAF37407F3C29907543E52B8D075A08461"
+    },
+    {
+      "Path": "scripts/player/player.gd",
+      "Hash": "39727669EAD5B94203E04371083CD85B7773E707E036A420C868F17373330E4B"
+    },
+    {
+      "Path": "scripts/world/combat_room.gd",
+      "Hash": "87F8FB4CC6F920554EC3DD6C3B101327963C54EF60F6FB5262B574A97784B003"
+    },
+    {
+      "Path": "scripts/projectile/hostile_rivet.gd",
+      "Hash": "868776B8B73267AB127DBDE7B16232213329F6D01427398483641DF9DADAC144"
+    },
+    {
+      "Path": "scripts/world/exit_door.gd",
+      "Hash": "D6C16A86E68869CC3B01C1FC228AD0FAE4311DE05AAA9F8B2455D9896FF116ED"
+    },
+    {
+      "Path": "scenes/upgrade_offer.tscn",
+      "Hash": "BDA756D9E60CC914CAB0BB541337170CE6648E9E82F3B3C2FC829ACE4A9449E8"
+    },
+    {
+      "Path": "scenes/main.tscn",
+      "Hash": "CEA44A9898E9B3F5B268C2D8BDDF95F4ADAD028B54C86B3D3FE0FB45D6E60444"
+    },
+    {
+      "Path": "scenes/second_room.tscn",
+      "Hash": "D0D3B22425A5251F94923BF4BDFBC3CE3772F4C70D425F58E15FCE1C56554C41"
+    },
+    {
+      "Path": "README.md",
+      "Hash": "AA97216C765D44B665FA5940039DECDD4E22C6A571DFED413F3C25E1AAFA500F"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\GDD_Dieselpunk_Noir\\04-combate-e-builds.md",
+      "Hash": "3BB83546EF9694782782735494010D67898C5599A69A05D7C34557D3F773806B"
+    },
+    {
+      "Path": "docs/specs/2026-10-10-upgrades-basicos/implementacao.md",
+      "Hash": "289100FB04B537EB5F41BD16F28F8DFC13B5099992C47FC9B68ABFC2783C74E1"
+    }
+  ],
+  "result": {
+    "type": "result",
+    "subtype": "success",
+    "duration_ms": 469783,
+    "duration_api_ms": 469783,
+    "is_error": false,
+    "result": "Vou revisar só a etapa C no estado congelado: primeiro a documentação obrigatória, depois a bola, o lançador e os alvos, sem alterar arquivos nem executar o jogo.A máquina de carga está nos scripts da bola; agora cruzo o contrato com o lançador, o rebite e as flags de parada.STATUS: done\n\nSUMMARY: Na etapa C congelada não há P1/P2 funcional. A bola própria passa de INACTIVE a CHARGED só no parry aceito do sweep dela, com `reactive_charge_enabled`; CHARGED não acumula e CONSUMED não rearma. O bônus do recurso (+2) entra no dano antes de `take_damage`, e só o booleano `true` consome, inclusive no golpe letal, antes do retorno por stop. Parede, rejeição e rebite não armam nem consomem. `RivetWorker` e `TrainingTarget` devolvem `true` só quando o HP cai, emitem `defeated` uma vez e não criam i-frames. A carga não altera velocidade, ricochetes, lifetime de 2,2 s desde o lançamento, física nem raio, e acaba com a bola. O `Line2D` da cena começa oculto e só fica visível em CHARGED, sem colisão. O reset deferred guarda a instância, não agenda limpeza com bola nula e não cancela um lançamento posterior. Stop/cleanup pós-flush, snapshot da build e a guarda de input, inclusive com valor zero até soltar, seguem o contrato; a oferta oculta desliga o consumo de tecla. Runtime não foi executado e não está aprovado. A/B continuam com o Grok anterior em timeout.\n\nCHANGED_FILES: none\n\nTESTS: leitura estática de `docs/README.md`, `AGENTS.md`, `implementacao.md`, `spec.md`, `ricochet_ball.gd`, `ricochet_ball.tscn`, `ball_launcher.gd`, `rivet_worker.gd`, `training_target.gd` e das dependências `main.gd`, `combat_room.gd`, `hostile_rivet.gd`, `projectile_config.gd`, `projectile_config.tres`, `carga_reativa.tres`, `upgrade_offer.gd`, `player.gd`, `player_health.gd`, `racket_controller.gd`, `run_build.gd` e do snapshot de 10/10 em `GDD_Dieselpunk_Noir/04-combate-e-builds.md`. Sem Godot, teste, parse, import ou Git de mutação.\n\nRISKS: nenhum P1/P2 de código. O efeito visual e a sensação de jogo seguem sem execução. Em `spec.md`, o fecho das seções 8 e 9 ainda descreve a rodada como só documental e o GDD de 03/10 como sem estes upgrades; o snapshot de 10/10, linhas 69–81, já registra o teaser e mantém dano 1→2, dash 0,55→0,40, bônus +2 e aquisição única como provisórios, sem fechar slots, moeda, raridade ou stacks. Isso é deriva documental, não defeito da máquina de carga. Fora desta etapa: balanceamento final e qualquer `damageable` novo, que precisa continuar retornando bool.\n\nNEXT_STEP: registrar este parecer. Esta leitura não pede correção de código da etapa C. Validação no Godot só se for pedida à parte.",
+    "session_id": "afab3c8c-b0ec-4124-8d46-3772b5689b40",
+    "request_id": "45da878e-985c-4a0a-a722-f252c64ee158",
+    "usage": {
+      "inputTokens": 110345,
+      "outputTokens": 41814,
+      "cacheReadTokens": 824064,
+      "cacheWriteTokens": 0
+    }
+  },
+  "note": "Resultado final original; deltas internos de raciocínio não são relatórios e não foram persistidos."
+}

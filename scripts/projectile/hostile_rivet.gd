@@ -1,6 +1,8 @@
 class_name HostileRivet
 extends CharacterBody2D
 
+const CombatFeedbackScript = preload("res://scripts/feedback/combat_feedback.gd")
+
 signal finished(reason: String)
 
 @export var is_parryable: bool = true
@@ -15,6 +17,7 @@ var _lifetime_remaining: float = 2.0
 var _launch_speed: float = 0.0
 var _has_launched: bool = false
 var _has_finished: bool = false
+var _stop_sweep_requested: bool = false
 var _is_friendly: bool = false
 var _damaged_targets: Dictionary = {}
 var _racket_controller: Node
@@ -38,13 +41,18 @@ func launch(direction: Vector2, source: Node, speed: float, damage: int, lifetim
 	_launch_speed = maxf(speed, 0.0)
 	velocity = normalized_direction * _launch_speed
 	_has_launched = true
+	_stop_sweep_requested = false
 	_visuals.rotation = normalized_direction.angle()
 
 func cancel() -> void:
 	_finish("cancelled")
 
+## Synchronous and callback-safe; final removal belongs to post-flush cleanup.
+func request_stop_sweep() -> void:
+	_stop_sweep_requested = true
+
 func _physics_process(delta: float) -> void:
-	if not _has_launched or _has_finished:
+	if not _has_launched or _has_finished or _stop_sweep_requested:
 		return
 	_update_parry_release_lock()
 	var motion_time := minf(delta, _lifetime_remaining)
@@ -63,21 +71,27 @@ func _physics_process(delta: float) -> void:
 		if parry_precedes_world:
 			global_position = segment_start + motion * parry_fraction
 			_apply_parry(parry_hit)
+			if _has_finished or _stop_sweep_requested:
+				return
 			var remaining_distance := motion.length() * (1.0 - parry_fraction)
-			if remaining_distance > 0.0001 and not _has_finished:
+			if remaining_distance > 0.0001 and not _has_finished and not _stop_sweep_requested:
 				var outgoing_collision := move_and_collide(velocity.normalized() * remaining_distance, false, 0.01, false)
 				if outgoing_collision != null:
-					_apply_impact(outgoing_collision.get_collider())
+					_apply_impact(outgoing_collision.get_collider(), outgoing_collision.get_position())
+					if _has_finished or _stop_sweep_requested:
+						return
 					_finish("impact")
 					return
-			if _has_finished:
+			if _has_finished or _stop_sweep_requested:
 				return
 			if _lifetime_remaining <= 0.0:
 				_finish("lifetime")
 			return
 
 	if collision != null:
-		_apply_impact(collision.get_collider())
+		_apply_impact(collision.get_collider(), collision.get_position())
+		if _has_finished or _stop_sweep_requested:
+			return
 		_finish("impact")
 		return
 	if _lifetime_remaining <= 0.0:
@@ -102,6 +116,8 @@ func _get_parry_hit(motion: Vector2, segment_duration: float) -> Dictionary:
 	return hit if hit is Dictionary else {}
 
 func _apply_parry(parry_hit: Dictionary) -> void:
+	var parry_position := global_position
+	var parry_scene_root := get_tree().current_scene
 	var direction := Vector2(parry_hit.get("direction", Vector2.ZERO)).normalized()
 	if direction.is_zero_approx():
 		direction = Vector2.LEFT
@@ -117,9 +133,14 @@ func _apply_parry(parry_hit: Dictionary) -> void:
 	_visuals.rotation = direction.angle()
 	_visuals.modulate = Color("#77e7bd")
 	collision_mask = 9 # World (1) + Damageable (8); deliberately excludes Player (2).
+	CombatFeedbackScript.enqueue(
+		parry_scene_root,
+		parry_position,
+		CombatFeedbackScript.EffectKind.PARRY
+	)
 	_notify_parry_success(_last_parry_swing_id)
 
-func _apply_impact(collider: Object) -> void:
+func _apply_impact(collider: Object, impact_position: Vector2) -> void:
 	if _damage <= 0 or not collider is Node:
 		return
 	var target := collider as Node
@@ -133,7 +154,14 @@ func _apply_impact(collider: Object) -> void:
 		return
 	_damaged_targets[target_id] = true
 	var valid_source: Node = _source if is_instance_valid(_source) else null
-	target.call("take_damage", _damage, valid_source)
+	var feedback_scene_root := get_tree().current_scene
+	var damage_result: Variant = target.call("take_damage", _damage, valid_source)
+	if _is_friendly and typeof(damage_result) == TYPE_BOOL and bool(damage_result):
+		CombatFeedbackScript.enqueue(
+			feedback_scene_root,
+			impact_position,
+			CombatFeedbackScript.EffectKind.ENEMY_HIT
+		)
 
 func _find_racket_controller() -> Node:
 	if is_instance_valid(_racket_controller):

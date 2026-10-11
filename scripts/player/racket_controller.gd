@@ -79,7 +79,9 @@ func _physics_process(delta: float) -> void:
 		cancel()
 		return
 
-	if Input.is_action_just_pressed("parry") and not _active and _cooldown_remaining <= 0.00001:
+	var parry_blocked := player.has_method("is_discrete_input_blocked") \
+		and bool(player.call("is_discrete_input_blocked", &"parry"))
+	if not parry_blocked and Input.is_action_just_pressed("parry") and not _active and _cooldown_remaining <= 0.00001:
 		_begin_swing()
 	elif not _active:
 		rotation = _aim_direction.angle()

@@ -1,6 +1,9 @@
 class_name BallLauncher
 extends Node
 
+const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
+const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
+
 ## Dispara uma única bola por vez sem assumir responsabilidade pela locomoção.
 
 @export var projectile_scene: PackedScene
@@ -11,6 +14,8 @@ var _aim_controller: AimController
 var _shot_origin: Node2D
 var _projectile_parent: Node
 var _active_ball: RicochetBall
+var _base_projectile_config: ProjectileConfig
+var _run_build: RunBuild
 var _spawn_shape: CircleShape2D
 var _spawn_query: PhysicsShapeQueryParameters2D
 
@@ -26,6 +31,10 @@ func configure(
 	_projectile_parent = projectile_parent
 	if _projectile_parent == null and _player != null:
 		_projectile_parent = _player.get_parent()
+	_base_projectile_config = projectile_config.duplicate(true) as ProjectileConfig if projectile_config != null else null
+
+func apply_run_build(build: RunBuild) -> void:
+	_run_build = build
 
 func try_launch(triggered: bool) -> bool:
 	if not triggered or not is_launch_available():
@@ -38,22 +47,25 @@ func try_launch(triggered: bool) -> bool:
 	if not spawn_position.is_finite():
 		return false
 
+	var launch_config := _build_projectile_config()
+	if launch_config == null:
+		return false
 	var ball := projectile_scene.instantiate() as RicochetBall
 	if ball == null:
 		return false
 
-	ball.collision_mask = projectile_config.collision_mask
+	ball.collision_mask = launch_config.collision_mask
 	_projectile_parent.add_child(ball)
 	_active_ball = ball
 	ball.finished.connect(_on_ball_finished.bind(ball))
 	ball.global_position = spawn_position
-	ball.launch(direction, projectile_config)
+	ball.launch(direction, launch_config)
 	return true
 
 func is_launch_available() -> bool:
 	if _aim_controller == null or _shot_origin == null:
 		return false
-	if projectile_scene == null or projectile_config == null or _projectile_parent == null:
+	if projectile_scene == null or _base_projectile_config == null or _projectile_parent == null:
 		return false
 	if _active_ball == null:
 		return true
@@ -63,9 +75,29 @@ func is_launch_available() -> bool:
 	return true
 
 func reset() -> void:
+	var ball_to_cleanup := _active_ball
+	if ball_to_cleanup == null or not is_instance_valid(ball_to_cleanup):
+		_active_ball = null
+		return
+	ball_to_cleanup.request_stop_sweep()
+	call_deferred("_cleanup_ball_after_flush", ball_to_cleanup)
+
+func request_stop_active_sweep() -> void:
 	if _active_ball != null and is_instance_valid(_active_ball):
-		_active_ball.cancel()
-	_active_ball = null
+		_active_ball.request_stop_sweep()
+
+## Call only after the current physics callback/flush has returned.
+func cleanup_active_ball_after_flush() -> void:
+	_cleanup_ball_after_flush(_active_ball)
+
+func _cleanup_ball_after_flush(ball_to_cleanup: RicochetBall) -> void:
+	if ball_to_cleanup == null or not is_instance_valid(ball_to_cleanup):
+		if _active_ball == ball_to_cleanup:
+			_active_ball = null
+		return
+	ball_to_cleanup.cancel()
+	if _active_ball == ball_to_cleanup:
+		_active_ball = null
 
 func _on_ball_finished(_reason: String, ball: RicochetBall) -> void:
 	if ball == _active_ball:
@@ -136,3 +168,16 @@ func _is_spawn_position_clear(space_state: PhysicsDirectSpaceState2D, position: 
 	_spawn_query.transform = Transform2D(0.0, position)
 	_spawn_query.motion = Vector2.ZERO
 	return space_state.intersect_shape(_spawn_query, 1).is_empty()
+
+func _build_projectile_config() -> ProjectileConfig:
+	if _base_projectile_config == null:
+		return null
+	var derived_config := _base_projectile_config.duplicate(true) as ProjectileConfig
+	if _run_build == null:
+		return derived_config
+	if _run_build.has_upgrade(IMPACTO_REFORCADO_DEFINITION.upgrade_id):
+		derived_config.damage = IMPACTO_REFORCADO_DEFINITION.projectile_damage_override
+	if _run_build.has_upgrade(CARGA_REATIVA_DEFINITION.upgrade_id):
+		derived_config.reactive_charge_enabled = CARGA_REATIVA_DEFINITION.reactive_charge_enabled
+		derived_config.charged_damage_bonus = CARGA_REATIVA_DEFINITION.charged_damage_bonus
+	return derived_config

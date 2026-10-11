@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-10",
+  "round": "v0.3",
+  "model": "opencode-go/muse-spark-1.3-contributor",
+  "tool": "OpenCode; xhigh; plan",
+  "status": "done",
+  "exit_code": 0,
+  "source_hashes": {
+    "plano": "BCE7B62B9EA52E15E984FC275B74B9A939B0CC1ABF1136856A79AAB955F61341",
+    "spec": "D4FD462E3AEA2ECD5225383614D6960D239200B0AEEA2CEED537B25105277F4E"
+  },
+  "input": "Spec integral e plano v0.3 com seções decisões/ofertas e roteiro visual inalteradas omitidas por limite de argumentos do Windows. Confirmação dirigida das correções; sem inspeção de código.",
+  "stdout": "\u001b[0m\r\n> plan · muse-spark-1.3-contributor\r\n\u001b[0m\r\nSTATUS: done\nSUMMARY: v0.3 corrige r2 integralmente: guarda em `Main.post_upgrade_input_guard_seconds` padrão 0,25s bloqueia só launch/parry/dash/jump/interact após soltas, com reinício por nova discreta; movimento/mira liberados e sem reinício. Sweep usa flag `_stop_sweep_requested` separada de `_has_finished`, sem mutar física/nó/queue_free no callback, com teste pós-callback e cleanup pós-flush. Oferta sem botão/Esc, tentativas ignoradas, fecha só em seleção/morte/teardown; morte vence, sem porta liberada, teardown sem retomar saída. Schema v1 validado: version 1, `canonical_destination` res://, HP 5/5 `hp_current<=hp_max`, IDs só 3 conhecidos únicos, counts 0/1 consistentes, soma ≤1, substitui sem incrementar, copy-and-clear único. Cleanup pós-flush de bola própria+todo `hostile_projectile` inclusive rebite redirecionado, também com `reward_enabled=false`. Porta usa overlap registrado+revalidação vivo/alcance com novo E consumido. Cronograma B+C em 12/10 com gate B→C, buffer 13/10 sem incremento, teaser 14/10. Spec integral e plano integral exceto decisões/ofertas e roteiro omitidos por limite Windows verificados. Nenhum upgrade implementado. Não libera implementação: Opus AGY/Cursor seguem bloqueados por quota sem substituição; AGENTS inalterado já coberto em r2.\nCHANGED_FILES: none\nTESTS: leitura inline de PLANO v0.3 e SPEC v0.3 integrais fornecidos; nenhuma execução, teste Godot, busca ou terminal por restrição.\nRISKS: nenhum novo achado documental bloqueante; pendências conhecidas mantidas: quota Opus e GDD 03/10 sem upgrades.\nNEXT_STEP: aguardar pareceres Opus via AGY e Cursor; manter v0.3 como não aprovada para implementação e não iniciar etapa A sem liberação explícita.\r\n"
+}

@@ -1,0 +1,25 @@
+{
+  "asset": "protagonista",
+  "source_animation": "idle v2 aprovado",
+  "source_sheet": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/protagonista-idle/protagonista-idle-v2-spritesheet.png",
+  "canvas": {"width": 64, "height": 64},
+  "native_pose_box": {"x": 20, "y": 7, "width": 24, "height": 50},
+  "palette_colors": 27,
+  "idle_frames": [420, 140, 180, 140, 540, 80],
+  "walk_frame_duration_ms": 100,
+  "walk_frames": 6,
+  "walk_loop_duration_ms": 600,
+  "max_upper_body_bob_px": 1,
+  "max_foot_lateral_offset_px": 2,
+  "alternating_foot_lift_px": 1,
+  "horizontal_facing": "mirror AnimatedSprite2D.flip_h",
+  "animation_tags": {"idle": {"first_frame": 0, "last_frame": 5}, "walk": {"first_frame": 6, "last_frame": 11}},
+  "mask_regions": {
+    "left_arm": {"x1": 20, "y1": 33, "x2": 24, "y2": 45},
+    "right_arm": {"x1": 39, "y1": 33, "x2": 43, "y2": 45},
+    "left_leg": {"x1": 20, "y1": 47, "x2": 30, "y2": 56},
+    "right_leg": {"x1": 33, "y1": 47, "x2": 43, "y2": 56}
+  },
+  "collision_or_gameplay_changes": false,
+  "generated_layout": "12 frames, 64x64 each, horizontal sheet"
+}

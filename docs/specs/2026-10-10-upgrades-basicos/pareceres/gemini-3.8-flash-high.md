@@ -1,0 +1,141 @@
+# Parecer — Gemini 3.8 Flash (High)
+
+- Data: 10/10/2026
+- Ferramenta: AGY
+- Escopo: Arquitetura, decomposição e cronograma; documentos inline
+- Revisão: v0.1
+- Status de execução: done
+- SHA-256 plano: AB4220380AEAEF630E6FA4C1DCB54C238DFC66626AE915259804701555ECCF63
+- SHA-256 spec: 4B753A6905461FBE6E6C9FF86880A7E9E7C69813F84934843C7090F57807AE07
+- Registro original: gemini-r1.stdout.json
+- Avaliação do coordenador: será registrada no consolidado; prioridades do modelo não são aprovação automática.
+
+## Saída do revisor
+
+STATUS: done
+SUMMARY: Parecer externo de revisão estática (modo plan / somente leitura) sobre a v0.1 congelada de docs/specs/2026-10-10-upgrades-basicos/plano.md e spec.md. Foram identificadas inconsistências críticas (P1) na modelagem da Carga Reativa (conflito de timer x lifetime da bola), na topologia de transição de nós sem Autoload e no gargalo de cronograma para os quatro revisores externos obrigatórios. Também foram detalhadas ambiguidades de contrato em take_damage, cancelamento de projéteis e distinção de atalhos editor/runtime (P2/P3).
+CHANGED_FILES: none
+TESTS: leituras estáticas
+RISKS: P1 na divergência de temporizador da Carga Reativa quebrando física da bola; P1 no risco de estouro do prazo de 14/10 devido à concentração das 4 revisões externas no último dia; P1 na indefinição técnica de persistência do payload entre cenas locais sem Autoload; P2 na quebra de contrato de take_damage caso a refatoração para bool não seja unificada.
+NEXT_STEP: O agente coordenador deve atualizar spec.md e plano.md com as correções mínimas indicadas, sincronizar com o GDD e registrar este parecer em docs/specs/2026-10-10-upgrades-basicos/pareceres/gemini-3.8-flash-high.md antes de autorizar qualquer frente de código para o subagente de implementação.
+
+---
+
+# RELATÓRIO DE REVISÃO TÉCNICA EXTERNA (READ-ONLY)
+
+**Avaliador:** Gemini 3.8 Flash (High), via Antigravity CLI, modo `plan`  
+**Escopo:** Arquitetura de software, decomposição de tarefas, cronograma com quatro revisores e conformidade com `AGENTS.md` / `docs/`  
+**Artefatos Analisados:** `AGENTS.md`, `agent.md`, `docs/README.md`, `plano.md` (v0.1) e `spec.md` (v0.1)  
+**Diretiva:** Leitura estática exclusiva, sem execução de ferramentas, comandos ou modificações no disco.
+
+---
+
+## 1. Achados Priorizados (P1 / P2 / P3)
+
+### [P1] Inconsistência Crítica no Ciclo de Vida da Carga Reativa: Conflito de Timer vs. Lifetime da Bola
+- **Arquivo/Seção:** `docs/specs/2026-10-10-upgrades-basicos/spec.md` (Seção 2 e Seção 4) em confronto com `plano.md` (Tabela de Upgrades) e as diretrizes do usuário.
+- **Motivo Concreto:**  
+  A `spec.md` afirma na Seção 2 que a `carga_reativa` *"concede uma carga de dano +2 por 2,2 s"* e na Seção 4 que *"A duração de 2,2 s também a expira"* e *"Carga respeita [...] expiração"*.  
+  Isso entra em contradição direta com a física do jogo e a regra canônica:
+  1. A bola base possui um tempo de vida total (`lifetime`) de 2,2 s;
+  2. A carga **NÃO tem timer próprio** e dura **estritamente** até o primeiro acerto aceito ou até o término/destruição natural da mesma bola;
+  3. O parry **preserva** o tempo restante de vida da bola lançada, sem renovar ou resetar o prazo para novos 2,2 s.
+- **Inconsistência/Reprodução:**  
+  Ao especificar um prazo de 2,2 s para o buff, o desenvolvedor (subagente `gpt-6-luna`) tenderá a instanciar um `Timer` de 2,2 s dedicado à carga ou renovar o lifetime do projétil ao acertar o parry. Se a bola foi rebatida aos 1,8 s de voo, restam 0,4 s de vida; com um timer de buff de 2,2 s, a carga sobrevive além da morte do projétil ou o projétil vive tempo excessivo (4,0 s no total), violando as regras de timing e combate.
+- **Correção Mínima:**  
+  Na `spec.md` (Seções 2, 4 e 7), remover qualquer referência a "por 2,2 s" ou "timer de expiração" da carga. Especificar que a carga é um estado intrínseco e volátil da instância da bola (`is_charged: bool = true`, `bonus_damage: int = 2`), consumido no primeiro `take_damage` aceito ou descartado quando o projétil for destruído/expirar pelo seu lifetime original.
+
+---
+
+### [P1] Indefinição Arquitetural na Transferência de Payload sem Autoload
+- **Arquivo/Seção:** `docs/specs/2026-10-10-upgrades-basicos/plano.md` (Desenho técnico, itens 1 e 3) e `spec.md` (Seções 1 e 5).
+- **Motivo Concreto:**  
+  O plano estipula que `RunBuild` reside de forma transitória na raiz, **sem Autoload e sem gravação em disco**, e que `RoomTransition` é o "consumidor único do payload de HP e snapshot da build", associado ao caminho `PackedScene.resource_path`.  
+  Contudo, em Godot 4, se a transição entre Sala 01 e Sala 02 utilizar a API padrão de troca de cena (`get_tree().change_scene_to_file` ou `change_scene_to_packed`), toda a árvore da cena atual é liberada via `queue_free()`. Nesse intervalo, se `RoomTransition` e `Main` forem nós locais da cena descarregada, o snapshot de HP e build mantido em memória de instância será desalocado antes da instanciação da Sala 02.
+- **Inconsistência/Reprodução:**  
+  O implementador ficará bloqueado na Fase A ao tentar transferir o payload entre duas cenas independentes sem poder criar Autoload nem salvar em disco, arriscando criar hacks improvisados ou violar a proibição de Autoload.
+- **Correção Mínima:**  
+  Explicitar a arquitetura da árvore de nós da aplicação:
+  - *Opção Recomendada:* `Main` é a raiz persistente de orquestração que permanece viva e gerencia a troca de salas trocando apenas o nó filho `CombatRoom` (sem descarregar a raiz da partida);
+  - *Alternativa Estática:* Se as salas forem cenas completamente independentes, definir que o payload one-shot é mantido temporariamente em uma variável de escopo de classe estática (`static var _transition_payload`) em `RoomTransition`, consumida e limpa imediatamente no `_ready()` da nova sala.
+
+---
+
+### [P1] Gargalo Crítico no Cronograma para Quatro Revisores Externos Obrigatórios
+- **Arquivo/Seção:** `docs/specs/2026-10-10-upgrades-basicos/plano.md` (Fases propostas).
+- **Motivo Concreto:**  
+  O documento `AGENTS.md` impõe como regra mandatória que toda implementação deve passar por preflight e revisão somente leitura por **quatro modelos distintos**:
+  1. Gemini 3.8 Flash (High) via Antigravity CLI;
+  2. Cursor Grok 4.7 XHigh Fast (`grok-4.7-xhigh-fast`);
+  3. Muse Spark 1.3 Contributor via OpenCode (`xhigh`);
+  4. Claude Opus 5.5 High via Cursor Agent (`claude-opus-5-5-high`).  
+  Além disso, rege que *"mudanças relevantes após uma revisão devem voltar ao revisor correspondente"*.  
+  O cronograma aloca **todas as revisões, preflights, testes no Godot, correções de bugs, re-revisões e atualização do GDD** para um único dia: Terça-feira, 13/10 (Fase D), com o teaser previsto para 14/10.
+- **Inconsistência/Reprodução:**  
+  Se um dos revisores apontar uma falha arquitetural ou de edge case na integração (Fase D) no final do dia 13/10, o tempo hábil para refatoração por `gpt-6-luna`, nova rodada completa de preflight e re-revisão com os quatro modelos é nulo, inviabilizando a captura e edição do teaser para o prazo inegociável de quarta-feira (14/10).
+- **Correção Mínima:**  
+  Ajustar a decomposição do cronograma em `plano.md`:
+  1. Antecipar o preflight obrigatório dos 4 revisores para Domingo (11/10);
+  2. Deslocar a integração técnica (Fase D) para a manhã de 13/10 com congelamento de código (Code Freeze) obrigatório até as 13:00 de 13/10;
+  3. Reservar a tarde de 13/10 para a rodada simultânea dos 4 revisores e eventuais correções estritamente focadas em P1/P2, garantindo que a noite de 13/10 esteja livre para gravação e edição de vídeo.
+
+---
+
+### [P2] Contrato da API de Dano (`take_damage`) e Risco de Consumo Indevido da Carga
+- **Arquivo/Seção:** `docs/specs/2026-10-10-upgrades-basicos/plano.md` (Desenho técnico, item 5) e `spec.md` (Seção 4).
+- **Motivo Concreto:**  
+  A `spec.md` sugere um retorno `bool` em `take_damage` para indicar se o dano foi aceito pelo alvo, de modo que a Carga Reativa não seja consumida caso o alvo seja invulnerável, esteja em iframe, já esteja em animação de morte ou recuse o impacto.  
+  No código-base atual (commit `e2855c2`), os inimigos implementam `take_damage(...) -> void`. Tratar essa refatoração como uma mera "sugestão" abre margem para implementações parciais (ex: alterar um tipo de inimigo e esquecer outro), gerando falhas em tempo de execução ou consumo de carga ao colidir com inimigos que ignoram dano.
+- **Inconsistência/Reprodução:**  
+  A bola carregada colide com um inimigo invulnerável na Sala 02; a carga é removida sem causar dano, quebrando a expectativa do jogador no teaser.
+- **Correção Mínima:**  
+  Definir expressamente no plano que a migração de `take_damage(amount: int) -> bool` em todos os nós combatíveis/inimigos é um **requisito prévio mandatório de refatoração** da Fase C (Carga Reativa), com retorno `true` apenas se o HP foi efetivamente reduzido.
+
+---
+
+### [P2] Falta de Especificação para Descarte de Bolas Ativas em Transições e Reinício
+- **Arquivo/Seção:** `docs/specs/2026-10-10-upgrades-basicos/plano.md` (Critérios de aceite) e `spec.md` (Seção 3 e Seção 5).
+- **Motivo Concreto:**  
+  O usuário destacou que o mecanismo de queda (`y = 760`) reposiciona o jogador no spawn e cancela a bola ativa via `BallLauncher.reset()`.  
+  Porém, os documentos não especificam o que ocorre com projéteis que estejam em trânsito no momento exato em que a Sala 01 é vencida e a UI de oferta é apresentada, ou quando a transição pela porta E é ativada.
+- **Inconsistência/Reprodução:**  
+  Se um projétil rebatido ainda estiver voando quando o último inimigo morrer, a abertura da oferta pausa o jogo; mas ao fechar a UI e liberar a porta, a bola velha pode atingir paredes, acionar áudios indesejados ou causar efeitos visuais poluídos no corte do teaser.
+- **Correção Mínima:**  
+  Adicionar à Seção 3 da `spec.md`: ao emitir o evento de vitória da sala e congelar o gameplay para abrir a oferta de upgrades, `Main` deve invocar `BallLauncher.reset()` imediatamente, cancelando quaisquer bolas em trânsito e limpando a arena.
+
+---
+
+### [P3] Confusão de Nomenclatura entre Atalho do Editor Godot (F6) e Input de Runtime
+- **Arquivo/Seção:** `docs/specs/2026-10-10-upgrades-basicos/plano.md` (Recorte proposto / Critérios de aceite) e `spec.md` (Seção 5).
+- **Motivo Concreto:**  
+  O texto dos documentos menciona repetidamente: *"F6 começa uma sala de teste fresca"* e *"F6 inicia a fixture com 5 HP/build vazia"*, agrupando F6 na mesma frase que `R` (tecla mapeada em runtime para reiniciar a sala).  
+  No ecossistema Godot, `F6` é o atalho padrão do editor para "Executar Cena Atual" (*Run Current Scene*), e não uma ação mapeada no `InputMap` do jogo.
+- **Inconsistência/Reprodução:**  
+  O implementador pode interpretar a menção a `F6` como uma exigência de criar código GDScript capturando `KEY_F6` no `_unhandled_input()`, introduzindo código morto/debug na build final.
+- **Correção Mínima:**  
+  Ajustar a redação em `plano.md` e `spec.md` para: *"Ao executar uma cena isoladamente pelo editor Godot (atalho F6 / Run Current Scene), a sala deve inicializar de forma autônoma com fixture padrão (5 HP e build vazia)"*, deixando claro que se trata de robustez de inicialização da cena e não de captura de tecla em runtime.
+
+---
+
+### [P3] Distinção Estrita entre Recorte do Teaser e Regras Gerais do GDD
+- **Arquivo/Seção:** `docs/specs/2026-10-10-upgrades-basicos/plano.md` e `spec.md` (Seção 6 e 8).
+- **Motivo Concreto:**  
+  Em conformidade com `AGENTS.md`, decisões pendentes do GDD (número final de slots de upgrade, raridades, economia, acúmulos e geração procedural) não podem ser confundidas com decisões definitivas do jogo. O texto atual já faz algumas ressalvas, mas ainda requer reforço em pontos isolados.
+- **Correção Mínima:**  
+  Garantir que os números de teste (Dano 1 → 2; Dash 0,55 s → 0,40 s; Carga +2) e o fato de o terminal da Sala 02 não conter oferta continuem explicitamente etiquetados como **Recorte de Implementação Temporário para o Teaser de 14/10**, preservando o status de pendência aberta no GDD `04-combate-e-builds.md`.
+
+---
+
+## 2. Recomendações e Sugestões Opcionais de Arquitetura
+
+1. **Topologia Recomendada para `Main` e Salas:**  
+   Em vez de transicionar cenas raiz com `change_scene_to_file`, recomenda-se que `Main.tscn` atue como um *Scene Manager* contendo um nó `WorldContainer: Node2D`. A troca da Sala 01 para a Sala 02 deve simplesmente descarregar o filho de `WorldContainer` e instanciar a nova sala. Isso mantém o `RunBuild` residente e seguro na memória de `Main` durante toda a run, eliminando a necessidade de Autoloads ou serializações voláteis.
+2. **Isolamento dos Recursos Tipados (`UpgradeDefinitionResource`):**  
+   Certificar-se de que os recursos exportados em `.tres` sejam declarados como recursos estáticos puros (dados imutáveis). A clonagem da configuração no arremesso da bola (`BallLauncher`) deve ser feita via dicionário ou `RefCounted` local, garantindo que nenhum script escreva acidentalmente valores nos arquivos de resource no disco.
+3. **Preflight Automatizado dos 4 Revisores:**  
+   Recomenda-se que o coordenador execute um script de checagem prévia simples (`agent --list-models` e testes de handshake de CLI) antes de liberar a implementação para `gpt-6-luna`, assegurando que Grok 4.7, Muse Spark 1.3, Gemini 3.8 Flash e Claude Opus 5.5 estejam totalmente operacionais nas respectivas ferramentas.
+
+---
+*Relatório autocontido gerado em conformidade com as diretrizes do projeto.*
+
+

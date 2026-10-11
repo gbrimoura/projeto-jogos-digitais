@@ -1,0 +1,23 @@
+A correção de fase está na fonte e o metadata congelado bate com ela. Não há defeito concreto pendente nesse recorte. A aparência dos binários não entra neste veredito.
+
+```text
+STATUS: done
+SUMMARY: Bob da caminhada é [0,0,1,0,0,1]; right_ankle no índice relativo 4 é 0. Quadris sem deslocamento lateral; joelho, tornozelo e pé ficam em no máximo 1px; o lift da bota alterna esquerda no índice 2 e direita no 5, a partir de y=54. O JSON reproduz esses valores, as máscaras e as tags. Nenhum defeito concreto pendente na fonte.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Parecer só da Lua e do JSON inline. Paleta, contato, canais de 1px dos braços e a sobreposição do tornozelo em y=53 não foram vistos em pixels. Os índices de bob e de swing no JSON são literais e, nesta versão, iguais à tabela.
+NEXT_STEP: Nenhuma mudança de fonte. Não usar esta R2 como aprovação visual do PNG ou do .aseprite.
+```
+
+Auditoria dos seis quadros, índice relativo à tag `walk`:
+
+| Índice | Bob | Joelho E/D | Tornozelo E/D | Pé E/D | Lift E/D |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 1 | 0 | 1 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 2 | 1 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 |
+| 3 | 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 4 | 0 | 0 / -1 | 0 / 0 | 0 / 0 | 0 / 0 |
+| 5 | 1 | 0 / -1 | 0 / -1 | 0 / -1 | 0 / 1 |
+
+Em `articulateLeg`, as quatro primeiras linhas da máscara da perna (`y` 47–50) ficam com deslocamento 0. Joelho é `y` 51–52, tornozelo é `y` 53 e a bota é `y` 54–56. O quadro de apoio oposto permanece em zero enquanto a outra bota sobe 1px. `swing_boot_start_y` 54, `bob_frames` `[2, 5]` e `swing_frames` esquerda 2 / direita 5 coincidem com a tabela. As máscaras do JSON coincidem com `POSE_X=20` e `POSE_Y=7`. As tags 0-based ficam idle 0–5 e walk 6–11.

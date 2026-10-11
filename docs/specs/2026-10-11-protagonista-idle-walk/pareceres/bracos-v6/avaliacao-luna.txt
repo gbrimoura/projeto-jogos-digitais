@@ -1,0 +1,11 @@
+STATUS: done
+
+SUMMARY: Revisei os pixels originais e o PNG V6. As pontes direitas em (36,45)/(38,45) e (37,44)/(39,44) deixam um notch aberto entre clusters que já eram separados na mão original. As faixas vizinhas mantêm os clusters conectados em 8-vizinhança; não há mão isolada. O contact 6× mantém leitura de contorno/fingers, sem exigir preenchimento central.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: handY=-1 sobrepõe pixels de y=44 em y=43 e substitui alguns tons escuros de detalhe, mas mantém a silhueta conectada. É uma compressão local de detalhe; não recomendo alterar nesta rodada.
+
+NEXT_STEP: Manter a V6 congelada e registrar a decisão como achado visual não bloqueante.

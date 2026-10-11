@@ -1,0 +1,14 @@
+[
+  {
+    "path": "protagonista-dash-preview.lua",
+    "sha256": "00f562066dade4c7f70aded3a97f4862fcb8eaac276940719edc9d372f18b934"
+  },
+  {
+    "path": "protagonista-dash-horizontal-v1.aseprite",
+    "sha256": "6e5a95a882c9d09ac557e7d3a769f0930f1bac42191216654998f76d84e673ff"
+  },
+  {
+    "path": "protagonista-dash-horizontal-v1.gif",
+    "sha256": "3792c8380317e344132827b759ea98d3ceaefa2915d7e405db035d44d19c86bd"
+  }
+]

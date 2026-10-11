@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Fontes inline conformes ao contrato: Lua preserva 12 frames idle/walk e faz append de 3 dash 40/40/60ms com paleta 27, canvas 64x64 e tag dash FORWARD repeats 1; player_visual.gd implementa prioridade morte>dash>ar-estatico-Idle0>chao-walk/idle, dash non-loop com hold do ultimo quadro e restart frame 0 so na entrada false->true; player_sprite_frames.tres preserva idle 0-5/walk 6-11 e anexa dash x768/832/896 64x64, duracoes 0.42/0.14/0.18/0.14/0.54/0.08, 0.1, 0.04/0.04/0.06, loop false so no dash, speed 1.0. Nenhum bug concreto na fonte. Fisica/duracao 0.14/controller sem alteracao nas fontes. Export --sheet-type horizontal deliberadamente externo ao Lua. Sobreposicao perna-ao-flexionar intencional, sem cobranca bit-for-bit. Estetica/binarios nao vistos nao aprovados.
+CHANGED_FILES: none
+TESTS: none
+RISKS: PNG 960x64 e .aseprite combinado nao inspecionados aqui; CLI externa exit 0 e inspecao manual no Godot pendentes; validacao depende de principal.
+NEXT_STEP: Principal executar export CLI horizontal, conferir atlas 960x64 e inspecionar 3 poses, depois QA Godot.

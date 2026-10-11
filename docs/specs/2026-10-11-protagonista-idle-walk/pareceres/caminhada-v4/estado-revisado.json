@@ -1,0 +1,35 @@
+{
+  "mode": "read-only static inline",
+  "timeout_ms": 600000,
+  "generated_at": "2026-10-11T17:08:04.163Z",
+  "files": [
+    {
+      "path": "scripts/player/player_visual.gd",
+      "sha256": "0b5df3be8e9109e8bc6659298171209248d1b2ce66c4d88a6029727ce8a362f3"
+    },
+    {
+      "path": "scripts/player/player.gd",
+      "sha256": "8839173bd54a85ec48731b09eac14413e2edc7402e41cbb21510eec7da8ca53b"
+    },
+    {
+      "path": "resources/player_sprite_frames.tres",
+      "sha256": "59bbe3817c587c5d60d4f8cae57e7fd9ada1e3b4a3f5aed6d8e5e1638b33ade5"
+    },
+    {
+      "path": "docs/specs/2026-10-11-protagonista-idle-walk/spec.md",
+      "sha256": "b9d7a7b0ea4521cdb519e6d68095e6774b24d17dae06bc3b262701fdb8546e41"
+    },
+    {
+      "path": "assets/player/player-animations.png",
+      "sha256": "015d77f3d8ffe7033e913e4348bcd18fe91d0c0ecdc9548335d3ce9ef614c08e"
+    },
+    {
+      "path": "assets/player/source/player-animations.aseprite",
+      "sha256": "4041e08603ca7e498ade54a72c245e704964f448d19ba0f49c8e5a50a8ba621f"
+    },
+    {
+      "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\GDD_Dieselpunk_Noir\\pitch-assets\\protagonista-walk\\protagonista-walk-v4.lua",
+      "sha256": "00f906e8c63a008129d5949b9a860e9bc64330fd780ace259da786ea9bdfbf2a"
+    }
+  ]
+}

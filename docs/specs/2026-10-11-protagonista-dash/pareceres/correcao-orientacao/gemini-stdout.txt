@@ -1,0 +1,14 @@
+STATUS: done
+SUMMARY: The `PlayerVisual` fix resolves reversed horizontal orientation across asymmetric animations (native-left idle/walk vs. native-right dash) without regressions.
+CHANGED_FILES: none
+TESTS: none
+RISKS: none
+NEXT_STEP: Apply the verified `PlayerVisual` orientation fix to the codebase.
+
+### Findings
+- **Facing Alignment**: With `_facing_direction == 1`, native-left idle/walk sprites are flipped (`flip_h = true`) and native-right dash is unflipped (`flip_h = false`), correctly facing right. With `_facing_direction == -1`, idle/walk remain unflipped (`flip_h = false`) and dash is flipped (`flip_h = true`), correctly facing left.
+- **State Transitions**: Switching between idle/walk and dash without changing movement direction triggers `AnimatedSprite2D.animation_changed` synchronously, updating `flip_h` instantly to match the new animation's native orientation.
+- **No Signal Recursion**: `_apply_facing()` modifies `flip_h` and `dash_trail.scale.x`. Neither property emits `animation_changed`, ensuring clean single-pass execution without feedback loops.
+- **Airborne, Death, and Reset**:
+  - `_set_static_idle_pose()` sets `IDLE_ANIMATION`; if transitioning from dash, `animation_changed` fires and realigns facing immediately.
+  - Death stops playback preserving facing. Reset explicitly calls `_apply_facing()` and transitions to `IDLE_ANIMATION`, correctly recovering orientation regardless of whether death occurred during a dash.

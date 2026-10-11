@@ -1,0 +1,34 @@
+{
+  "round": "v0.2",
+  "date": "2026-10-10",
+  "files": [
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\AGENTS.md",
+      "Hash": "C53B6EDF1A9CB540FECD7DE47ACADC04027CA90F0124F698A180ACB16A03CF93"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\agent.md",
+      "Hash": "E7D466B6AC22B518388DCB15308A50FACE6E2E3A1C98FB28723733D250712770"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\README.md",
+      "Hash": "CBA46CB4E01D4CEFBD6B4EB38CAAC0CD001440BD45528052A329066FE6D51373"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-10-upgrades-basicos\\plano.md",
+      "Hash": "88DD4D0255164659530F37E0043D8BF6CE69A52793151E4F56E5A39A699896EF"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-10-upgrades-basicos\\spec.md",
+      "Hash": "6F7574262363CB7F680C1CC229FEABD9F4515ACC0514B578BE45AB95F50A55C9"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-10-upgrades-basicos\\historico\\plano-v0.1.md",
+      "Hash": "AB4220380AEAEF630E6FA4C1DCB54C238DFC66626AE915259804701555ECCF63"
+    },
+    {
+      "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-10-upgrades-basicos\\historico\\spec-v0.1.md",
+      "Hash": "4B753A6905461FBE6E6C9FF86880A7E9E7C69813F84934843C7090F57807AE07"
+    }
+  ]
+}

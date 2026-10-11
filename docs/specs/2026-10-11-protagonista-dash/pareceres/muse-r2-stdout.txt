@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Tagfix confirmado — restaura original.from/to para todas tags após append antes de criar dash, asserts ranges finais; integração final confere: 12 frames preservados idle 0..5 420/140/180/140/540/80ms walk 6..11 0.1s, dash 3 frames 40/40/60ms x768/832/896 nonloop atlas 960x64; prioridade dead>dash>air-idle-estático>ground walk/idle, restart dash só ao entrar com frame 0, mantém último se ativo, interrompe em fim-dashing/ground/reset; física/controlador não tocados neste escopo; Export PNG via CLI externa --sheet-type horizontal intencional; sobreposições flexão intencionais com alpha binário/paleta 27 validados. Aparência/binários não vistos — sem aprovação visual.
+CHANGED_FILES: none
+TESTS: none
+RISKS: none — nenhum bug concreto nos 3 arquivos inline congelados; limitação: .aseprite/.png/.json binários não inspecionados
+NEXT_STEP: Congelar e seguir para integração/export CLI Aseprite 1.3.18.6 + validação Godot

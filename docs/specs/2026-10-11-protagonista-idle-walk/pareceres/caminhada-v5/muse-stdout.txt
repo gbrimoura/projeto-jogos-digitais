@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Walk v5 coerente inline: 17 quadros (6 idle+8 walk 75ms+3 dash), regioes 1088x64 sequenciais, idle/dash copiados via extract sem transform, facing nativo left walk/idle e right dash consistente entre Lua metadata e PlayerVisual.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Baixa — LUA comentario `-- Sprite editavel de estagio: seis idle intactos, duas poses de previa, tres dash intactos` diz 2 poses mas `walkImages`/`assert(#walkImages==8)` e tags walk 7-14 implementam 8 poses.
+NEXT_STEP: Corrigir comentario para 8 poses e seguir export PNG/JSON horizontal via Aseprite CLI; sem aprovacao visual alegada.

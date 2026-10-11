@@ -1,0 +1,9 @@
+STATUS: done
+SUMMARY: Revisão estática de contratos e integração concluída com base exclusivamente nos fontes inline congelados (`player_visual.gd`, excerpt de `player.gd`, `player_sprite_frames.tres`, `spec.md` e `protagonista-walk-v4.lua`). A cadência restrita de caminhada (clamp entre 0.65 e 1.35 escalado pela velocidade de referência de 260.0), a atualização contínua sem reinício do quadro atual, a restauração de `speed_scale = 1.0` nos estados de idle, dash, ar, morte e reset, a orientação nativa (`walk` e `idle` voltados nativamente para a esquerda com inversão condicional e `dash` para a direita), o mapeamento de regiões do atlas 1088×64 (idle 0–5, walk 6–13, dash 14–16) e as durações individuais de cada animação cumprem integralmente a especificação técnica.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Revisão estritamente estática documental e de código; não inclui inspeção visual de texturas nem execução de gameplay/testes em runtime no Godot.
+- O funcionamento em runtime requer que o reimport headless dos recursos atualizados pelo editor Godot permaneça sincronizado com o atlas gerado de 1088×64.
+NEXT_STEP: Encaminhar o parecer de conformidade estática ao agente principal para consolidação e registro formal do incremento v4.

@@ -1,0 +1,14 @@
+A prévia fecha o loop e o deslocamento pedido. Não há bug concreto de posição, duração, corte ou API nesse fonte.
+
+O percurso de 50 px é a amostragem inteira de `8 + round(50·n/7)` nos sete passos de 20 ms: 15, 22, 29, 37, 44, 51, 58. O único passo de 8 px é o 4º (28,571 → 29), no meio da pose 2. A volta repete o mesmo perfil ao contrário e termina em x=8, igual ao primeiro hold. As 16 durações batem com o spec: 300 ms, sete vezes 20 ms (poses 1,1,2,2,3,3,3 = 40/40/60 ms), 300 ms, sete vezes 20 ms.
+
+O quadro 64×64 cabe inteiro no canvas 136×64 em todos os x (mínimo 8, máximo 58; borda direita em 122). O flip manual usa `63-x` e permanece dentro do quadro. O contador reutiliza o frame 1, cria os demais com `newEmptyFrame` e o `assert` de 16 quadros, com cada `newCel` em 1..16; o exit 0 informado é compatível com esse fluxo. A emenda do loop fica em x=8 com idle e pose final ambos espelhados; a troca de sentido fica no primeiro quadro de cada dash.
+
+```text
+STATUS: done
+SUMMARY: Nenhum bug concreto de deslocamento, loop, clipping ou API. Os 16 quadros implementam o spec congelado (holds 300 ms em x=8 espelhado e x=58, dashes de 20 ms, poses 40/40/60 ms, flip integral, 50 px por sentido).
+CHANGED_FILES: none
+TESTS: none
+RISKS: Estética, facing nativo do atlas e deslocamento já desenhado dentro da celula não foram vistos; esta revisão não os aprova. O comentário de 720 px/s × 0,14 s na escala 2 dá 50,4 px; as tabelas quantizam para os 50 px do spec e não devem ser “corrigidas”. 20 ms é exatamente 2 cs no GIF; alguns players atrasam esse piso. O script grava só o .aseprite; o strip inspecionado fica fora deste fonte.
+NEXT_STEP: Nenhuma correção no script, no atlas nem na física. Aceite visual permanece com quem viu o strip.
+```

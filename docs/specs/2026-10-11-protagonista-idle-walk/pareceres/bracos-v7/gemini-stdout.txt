@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão técnica da alteração V7 concluída. A lógica de `transformedArm` e a composição de `makeWalkFrame` isolam corretamente o deslocamento de antebraço e luva (y43-44) em ±1px lateral e vertical (`swing` e `forearmY`), mantendo o ombro (y40-41) ancorado ao tronco via `bob`. A restauração da cor do cotovelo em `forearmY < 0` e a inserção de pontes em `jointY = 43 - bob` para `forearmY > 0` garantem continuidade estrutural sem desconexão. Todos os deltas entre frames consecutivos (1 a 8 e wrap-around 8 para 1) respeitam a variação máxima de 1px por frame (sem jitter), com coordenadas estritamente dentro dos limites da imagem (bounds). Preservação da paleta de 27 cores e alpha binário mantida por cópia direta de pixels raw.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum bug real de código identificado. A transição de coordenadas, ancoragem, integridade de memória e limites do atlas estão matematicamente consistentes. A avaliação estética da animação em execução permanece pendente de validação visual do usuário final.
+NEXT_STEP: Apresentar a alteração V7 ao usuário para validação visual e estética do balanço de braços no teaser.

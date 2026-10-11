@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-10",
+  "round": "v0.3",
+  "source_hashes": {
+    "plano": "BCE7B62B9EA52E15E984FC275B74B9A939B0CC1ABF1136856A79AAB955F61341",
+    "spec": "D4FD462E3AEA2ECD5225383614D6960D239200B0AEEA2CEED537B25105277F4E"
+  },
+  "AGENTS_sha256": "C53B6EDF1A9CB540FECD7DE47ACADC04027CA90F0124F698A180ACB16A03CF93",
+  "input_scope": "Spec integral; plano com seções inalteradas decisões/ofertas e roteiro visual omitidas para limite de argumentos Windows. Restante integral inline.",
+  "purpose": "Confirmação dirigida das correções R2 pelos mesmos três modelos; Opus AGY/Cursor bloqueados por quota, sem parecer.",
+  "runtime_validation": "none"
+}

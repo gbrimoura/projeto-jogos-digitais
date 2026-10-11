@@ -1,0 +1,34 @@
+[
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\GDD_Dieselpunk_Noir\\pitch-assets\\protagonista-walk\\protagonista-walk-v5.lua",
+    "sha256": "3f961923ebd6bfe1dffcc8a8e5ec40146e49219caa1ba23ed7a43af0dcab4ef0"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\GDD_Dieselpunk_Noir\\pitch-assets\\protagonista-walk\\protagonista-walk-v5-metadata.json",
+    "sha256": "ea5cf1ef2a25a195048fe0a9766cc69e846c9028a73b6aab99c9c65666ada0e1"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\player\\player-animations.png",
+    "sha256": "722043ec65573ebead392a88ef1f35993c9f00e0ba0f1517d9a9e69100020996"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\player_sprite_frames.tres",
+    "sha256": "59bbe3817c587c5d60d4f8cae57e7fd9ada1e3b4a3f5aed6d8e5e1638b33ade5"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player_visual.gd",
+    "sha256": "0b5df3be8e9109e8bc6659298171209248d1b2ce66c4d88a6029727ce8a362f3"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player.gd",
+    "sha256": "8839173bd54a85ec48731b09eac14413e2edc7402e41cbb21510eec7da8ca53b"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\.gdignore",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-11-protagonista-idle-walk\\spec.md",
+    "sha256": "8a31f592ea756f35f91242a62308ab2cba5ef76eb3afa81fe439b1e6b7945e80"
+  }
+]

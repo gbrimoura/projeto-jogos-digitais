@@ -1,0 +1,41 @@
+STATUS: done
+SUMMARY: Revisão estática R2 concluída com sucesso. A fonte Lua e os metadados JSON inline foram integralmente verificados em modo somente leitura (sem ferramentas, testes ou modificações de arquivos). A correção da fase do bob para `[0, 0, 1, 0, 0, 1]` sincroniza com precisão os quadros de elevação da bota (`indices 2 e 5` em base 0 / frames 3 e 6 de caminhada). A correção de `right_ankle=0` no índice 4 restabeleceu a simetria cinemática perfeita entre os passos esquerdo e direito. Todos os deslocamentos articulares respeitam a tolerância `<= 1px`, quadris e solas de apoio permanecem ancorados, e os metadados refletem exatamente os parâmetros do código gerador.
+CHANGED_FILES: none
+TESTS: none
+
+### 1. Confirmação da Correção de Fase e Simetria Cinemática
+* **Fase do Bob**: A sequência em `walkFrames` é `[0, 0, 1, 0, 0, 1]`. O bob vertical (`-step.bob = -1px`) ocorre exclusivamente nos quadros de balanço/elevação máxima:
+  * **Passo Esquerdo**: índice relativo 2 (`bob=1`, `left_lift=1`, `left_knee=1`, `left_ankle=1`, `left_foot=1`, perna direita neutra/ancorada).
+  * **Passo Direito**: índice relativo 5 (`bob=1`, `right_lift=1`, `right_knee=-1`, `right_ankle=-1`, `right_foot=-1`, perna esquerda neutra/ancorada).
+  * Os quadros 0, 1, 3 e 4 mantêm `bob=0` e solas ancoradas (`lift=0`).
+* **Simetria do Tornozelo**: No índice relativo 4 (início do passo direito), `right_ankle=0` (corrigido do desvio identificado no R1). O espelhamento com o índice relativo 1 (`left_ankle=0`) é agora matematicamente exato:
+  * Frame 1 (passo esquerdo): `arm=1/-1`, `knee=1/0`, `ankle=0/0`, `foot=0/0`, `lift=0/0`, `bob=0`.
+  * Frame 4 (passo direito): `arm=-1/1`, `knee=0/-1`, `ankle=0/0`, `foot=0/0`, `lift=0/0`, `bob=0`.
+
+### 2. Análise da Fonte Lua e Articulações
+* **Ancoragem de Quadris e Alturas**:
+  * Perna em `y ∈ [47, 56]`, com `BOOT_START_Y = 54`.
+  * Linhas `y ∈ [47, 50]` (`localY ∈ [0, 3]`): `dx = 0`, `ny = y`. Os quadris permanecem 100% imóveis em todos os quadros.
+  * Joelho `y ∈ [51, 52]` (`localY ∈ [4, 5]`): `dx ∈ {-1, 0, 1}`.
+  * Tornozelo `y = 53` (`localY = 6`): `dx ∈ {-1, 0, 1}`.
+  * Bota `y ∈ [54, 56]`: `dx ∈ {-1, 0, 1}`, `ny = y - lift`.
+* **Sobreposição Intencional em y=53**: Quando `lift = 1`, o topo da bota (`y=54`) projeta-se em `ny = 53`, sobrescrevendo o cel do tornozelo na linha de contato. Conforme especificado, isso preserva a conectividade da malha visual sem requerer pontes artificiais.
+* **Ponte da Cintura (`makeJointBridge`)**: A linha `POSE_Y + 39 = 46` situa-se exatamente entre os braços (`y2 = 45`) e pernas (`y1 = 47`). Quando `bob = 1` desloca o tronco para cima (`y = 45`), o cel estático na camada de junção preenche a linha 46, eliminando qualquer fenda horizontal de 1px entre tronco e quadris.
+* **Conservação da Pose Base**: O assert `reconstructed:getPixel(x, y) == baseImage:getPixel(x, y)` garante que a decomposição em camadas preserva 100% da pose idle original sem distorção.
+
+### 3. Coerência dos Metadados JSON
+* A estrutura gerada pela fonte Lua e a metadata fornecida inline são rigorosamente congruentes:
+  * Dimensões de canvas (`64x64`), bounding box nativo (`[20, 7, 24, 50]`) e paleta (`27 cores`).
+  * Máscaras (`left_arm: [20..24, 33..45]`, `right_arm: [39..43, 33..45]`, `left_leg: [20..30, 47..56]`, `right_leg: [33..43, 47..56]`).
+  * `bob_frames_walk_relative_zero_based`: `[2, 5]`.
+  * `swing_frames_walk_relative_zero_based`: `{"left": 2, "right": 5}`.
+  * Tags de animação: `idle [0..5]`, `walk [6..11]`.
+
+### 4. Defeitos Concretos Pendentes da Fonte
+* **Nenhum defeito lógico, sintático ou contratual pendente na fonte Lua ou no JSON de metadados.**
+
+RISKS:
+* **Validação Visual Estrita**: Conforme diretriz, esta revisão valida a correção formal do algoritmo, matrizes de deslocamento, conservação de pixels e metadados na fonte, não constituindo aprovação estética visual de binários renderizados (`.aseprite` / `.png`) sem inspeção direta de render.
+* **Sensibilidade do Aseprite CLI**: A execução do script Lua em Aseprite CLI depende estritamente da precedência de argumentos `--script-param` antes de `--script`, já documentada e mitigada no fluxo do projeto.
+
+NEXT_STEP: Prosseguir com o registro do parecer R2 na documentação e consolidar a entrega do asset conforme o fluxo do projeto.

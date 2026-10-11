@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Revisão estática delimitada da V6 (braços caminhada frontal) concluída. Parâmetros (8 fases), transformedArm e makeWalkFrame sem bug bloqueante no escopo: âncora ombro (y40-41 fixo), deslocamento ±1 horizontal, handY ±1 só em y44, oposição de braços e simetria esquerda/direita íntegras, wrap 8->6-13 sem salto de braços, paleta preservada por cópia direta de raw, bounds verificados no loop principal, ordem de composição sem sobrescrita entre braços (máscaras disjuntas mesmo com swing). Pontes handY>0 fecham gap em gapY=44-bob com cor local do wrist. Sem inspeção de PNG/RAW, sem gameplay/código antigo/pernas, sem aprovação estética.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum bloqueante no escopo. Baixa severidade / não-bloqueante: 1) drawPixel das pontes sem clamp explícito (seguro nos valores atuais: gapY 43-45, x 24-39 em 64x64); 2) ramo y==42 redundante (equivale a swing para -1/0/1); 3) assimetria de pontes {25,26} contíguo vs {37,39}/{36,38} espaçado não verificável sem RAW — conectividade assumida pela escolha de x, sem alegar ver PNG; 4) dependência externa não avaliada: transformedBody deve excluir máscaras dos braços e aplicar mesmo bob, senão fantasma/duplicação; 5) contato pontual mão-perna em y=46 quando bob=-1+handY=1 (compressões), com braço por cima por construção — sem juízo estético.
+NEXT_STEP: Aguardar avaliação do usuário sobre contact final do principal; se aprovado, autorizar export Aseprite/import Godot sem testes, mantendo scripts/facing/tempos e atlas 17f 1088x64 inalterados.

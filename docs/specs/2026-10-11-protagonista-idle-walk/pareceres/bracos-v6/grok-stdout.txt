@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática dos parâmetros, de `transformedArm` e de `makeWalkFrame` não encontrou defeito de conectividade, sobrescrita, bounds, wrap 8→1 nem paleta. O braço inferior translada ±1, o ombro só acompanha o bob, a oposição dos braços fecha o ciclo e a ponte ocupa exatamente a linha vazia quando `handY=1`, copiando cor já existente.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum
+NEXT_STEP: Avaliação visual do usuário sobre o contact final.

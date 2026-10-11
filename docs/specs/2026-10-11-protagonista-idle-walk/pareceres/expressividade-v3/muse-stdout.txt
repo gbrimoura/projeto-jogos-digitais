@@ -1,0 +1,14 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Contrato Lua/Metadata coerente; walk v3 ancora ombros/quadris, swing 2px, lift alternado 1-2px, bob/shear 1px picos 2/5; idle bit-for-bit e tags/atlas dependem de PNG/CLI externo não visto — estética/binários NÃO aprovados.
+CHANGED_FILES: none
+TESTS: none — escopo só arte, sem headless/testes/Godot por solicitação.
+RISKS:
+- Idle 6x copiado pixel-pixel OK (`xOffset=(idleIndex-1)*64`, só `rgbaA>0`, durações 420/140/180/140/540/80); canvas 64x64, paleta 27, tags idle 1-6/walk 7-12 FORWARD, walk 100ms/600ms, máscaras Lua==metadata (braços y36-45, pernas y47-56) — evidência concreta no código.
+- Ancoragem: braço `y<=38` só `bodyShear`, mão `y>=43` +`armSwing` até 2px; perna `47-48` dx=0, joelho `49-50` ±1px, tornozelo `51` ±1px, bota `y>=52` lift [0,1,2]/alternado — confere metadata. Net mão ≤2px pois `shear(1)+swing(±2)` em oposição de fase nos picos.
+- Continuidade fase: contatos idx0/idx3 idênticos zero, picos idx2/5 com bob/shear=1, queda 2px→0 em 100ms (snap intencional); loop idx5→idx0 fecha sem quebra de fase.
+- Clipping/sobreposição não-letal: bounds-checados, `x20-43+2px` longe da borda; boot levantado sobrescreve joelho/tornozelo na mesma layer (encurtamento intencional, sem exigir pixels idênticos — assert só reconstrói quadro0); `bridge y=46` fixa cobre gap do bob, mas cobertura depende de opacidade da arte-base não vista + degrau shear `y45(+1)` vs `y46(0)` e torso shear vs quadril fixo — requer inspeção visual do principal (6 poses ampliadas alegada, não verificada aqui).
+- Não-verificável neste escopo: sheet horizontal 12x64x64 sem trim/exit0, preservação binária idle e estética — dependem de CLI externo e PNG/Aseprite integrados pelo principal.
+NEXT_STEP: Manter congelado se principal confirma visual dos picos 2/5 e contato; senão ajustar só tabelas `walkFrames`/`bob/shear` sem tocar，供 máscaras/paleta.

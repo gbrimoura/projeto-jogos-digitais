@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Integração idle/walk conforme spec — sem bugs concretos em animação, frames, espelhamento, chão, dash, morte/reset nas fontes fornecidas.
+CHANGED_FILES: none
+TESTS: none
+RISKS: none — idle 6x (420,140,180,140,540,80ms) e walk 6x100ms, speed 1.0, regiões 64x64, escala 2x, filtro nearest, y=-50, flip_h só no AnimatedSprite2D, colisor 28x76 preservado, walk exige chão+vx>8+sem dash, ar/dash congela frame 0 idle, morte para reprodução, revive volta frame 0.
+NEXT_STEP: nenhuma correção necessária; manter congelado.

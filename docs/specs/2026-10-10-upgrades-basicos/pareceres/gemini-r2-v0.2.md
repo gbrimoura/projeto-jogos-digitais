@@ -1,0 +1,49 @@
+# Parecer dirigido — Gemini 3.8 Flash (High) / gemini-3.8-flash-high
+
+- Data: 10/10/2026
+- Rodada: v0.2
+- Ferramenta: Antigravity CLI; plan
+- Estado: concluído; interpretação dos achados em `consolidado.md`
+- Entrada: AGENTS.md, plano.md e spec.md integrais inline; sem execução/inspeção de código nesta rodada
+- Plano SHA-256: `88DD4D0255164659530F37E0043D8BF6CE69A52793151E4F56E5A39A699896EF`
+- Spec SHA-256: `6F7574262363CB7F680C1CC229FEABD9F4515ACC0514B578BE45AB95F50A55C9`
+- Saída original: [gemini-r2.stdout.json](gemini-r2.stdout.json)
+
+## Saída do revisor
+
+STATUS: done
+SUMMARY:
+A revisão documental da v0.2 ([`plano.md`](file:///docs/specs/2026-10-10-upgrades-basicos/plano.md) e [`spec.md`](file:///docs/specs/2026-10-10-upgrades-basicos/spec.md)) atesta que as inconsistências e ambiguidades identificadas em ciclos anteriores foram sanadas:
+- Eliminação de timers adicionais para a carga da bola, mantendo o lifetime-base de 2,2 s sem reinício por parry.
+- Isolamento dos recursos via `duplicate(true)` por instância/bola, preservando recursos `.tres` em disco e garantindo recálculo idempotente.
+- Formalização do contrato de dano `take_damage(...) -> bool` em ambos os alvos, eliminando reentrância síncrona e prevenindo loops com validação de `_has_finished`.
+- Máquina de estados com ownership estrito de pausa em `Main`, descarte de reentrâncias e guarda de entrada configurável de 0,25 s rearmável para entradas discretas.
+- Snapshot estático de consumo e limpeza one-shot em `RoomTransition`, com inicialização segura (5 HP, build vazia) e reconfiguração forçada pós-`_ready` dos nós filhos.
+- Cronograma estruturado por incrementos isolados (A, B e C), alinhando o prazo do teaser (14/10/2026) com as etapas de revisão exigidas.
+
+CHANGED_FILES: none
+
+TESTS: apenas análise documental inline:
+- **Governança e coerência de diretórios:** Estrutura em `docs/specs/2026-10-10-upgrades-basicos/` e separação rigorosa entre decisões aprovadas pelo usuário e propostas/recortes temporários cumprem as diretrizes de [`AGENTS.md`](file:///AGENTS.md).
+- **Máquina de estados da oferta:** O fluxo `INATIVA → VITÓRIA_PENDENTE → OFERTA_ABERTA → SELECIONADA → SAÍDA_LIBERADA` (com desvios `CANCELADA` e `CONCLUÍDA`) cobre salas terminais sem saída física (Sala 02), salas já limpas e vitórias concorrentes com morte.
+- **Isolamento de reentrada e inputs:** Bloqueio de enfileiramento de `E`, consumo de ações discretas durante a guarda de 0,25 s e exigência de desacionamento prévio de botões impedem arremessos, dashes ou interações acidentais ao fechar a interface.
+- **Ciclo de vida do Godot:** A restauração e reconfiguração explícita em `Main._ready` resolve adequadamente o fato de `Player._ready` executar antes da raiz, prevenindo dependência de Autoloads.
+
+RISKS:
+### Correções documentais obrigatórias
+- **Nenhuma pendência documental bloqueante:** A documentação v0.2 é coerente internamente e reflete o baseline do commit `e2855c2`.
+
+### Riscos e pontos de atenção para implementação futura (não bloqueiam o plano)
+1. **Limpeza de projéteis hostis ao abrir a oferta com recompensa ([`plano.md`](file:///docs/specs/2026-10-10-upgrades-basicos/plano.md#L74); [`spec.md`](file:///docs/specs/2026-10-10-upgrades-basicos/spec.md#L45)) — Prioridade Média:**
+   O texto especifica cancelar a bola própria ao abrir a oferta e limpar projéteis quando `reward_enabled=false`. Porém, em salas onde a oferta abre pausando o jogo, rebites hostis disparados imediatamente antes da morte do último inimigo ficam pausados e podem atingir o jogador assim que o gameplay for despausado pós-seleção.  
+   *Mitigação na implementação (Incremento B/C):* Garantir que a rotina de preparação de `OFERTA_ABERTA` cancele tanto a bola do jogador quanto quaisquer projéteis/rebites hostis em trânsito.
+2. **Revalidação de overlap de interação em `ExitDoor` ([`plano.md`](file:///docs/specs/2026-10-10-upgrades-basicos/plano.md#L82-L84); [`spec.md`](file:///docs/specs/2026-10-10-upgrades-basicos/spec.md#L52-L54)) — Prioridade Baixa:**
+   Se o jogador já estiver posicionado dentro da área da porta quando o estado mudar para `SAÍDA_LIBERADA`, a lógica de interação deve responder ao novo pressionamento de `E` mesmo sem um novo evento `body_entered`.  
+   *Mitigação na implementação (Incremento B):* Checar se `ExitDoor` faz polling de sobreposição ativa de corpos ou se depende estritamente do sinal de entrada na área.
+3. **Ordem de sobrescrita no `_ready` de `Main` ([`plano.md`](file:///docs/specs/2026-10-10-upgrades-basicos/plano.md#L63-L66); [`spec.md`](file:///docs/specs/2026-10-10-upgrades-basicos/spec.md#L64-L67)) — Prioridade Média:**
+   Garantir que a chamada de reconfiguração de `MovementController` e `BallLauncher` em `Main` execute de forma determinística após o `_ready` dos filhos, sobrescrevendo qualquer setup padrão sem vazamento de estado.  
+   *Mitigação na implementação (Incremento A):* Expor método público de reconfiguração idempotente nos controladores para chamada explícita por `Main`.
+
+NEXT_STEP:
+Registrar o parecer documental favorável para a v0.2 e aguardar a consolidação dos demais pareceres exigidos para a aprovação formal do plano antes de iniciar o Incremento A.
+

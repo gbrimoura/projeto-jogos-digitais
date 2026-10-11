@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Fase corrigida confirmada — bob [0,0,1,0,0,1] nos índices 2/5 alinhado ao lift alternado left=2/right=5; right_ankle índice4=0 simétrico ao left_ankle índice1=0; hips 0px, knee/ankle/foot ≤1px. Metadata confere bit a bit com fonte: pose 20/7/24x50, paleta 27, idle [420,140,180,140,540,80], walk 6x100ms, boot_y 54, máscaras e tags idle 0-5/walk 6-11. Nenhum defeito concreto pendente na fonte; sobreposição tornozelo y53/bota e export PNG externo aceitos como decisão documentada.
+CHANGED_FILES: none
+TESTS: none
+RISKS: aparência de binários (.aseprite/.png) não vista — não aprovada; contato/conexão visual depende de inspeção externa já feita por principal/Luna.
+NEXT_STEP: manter congelado; prosseguir etapa CLI externa de export se necessário, sem alterar Lua/metadata.

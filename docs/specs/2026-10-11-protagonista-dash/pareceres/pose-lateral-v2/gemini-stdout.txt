@@ -1,0 +1,75 @@
+### STATUS
+**ACTION REQUIRED (Preview Script Defects Found; Principal Script Approved)**
+
+---
+
+### SUMMARY
+Code review completed for inline frozen Lua scripts (`SOURCE dash` and `SOURCE preview`) against Aseprite 1.3.18.6 APIs, canvas bounds, palette constraints (27 RGB colors), source frame preservation (12 idle/walk frames), timeline tags, durations, and preview mirroring/trajectory.
+
+- **`SOURCE dash` (Principal):** Sound implementation. Successfully maintains 64×64 canvas dimensions, preserves the 12 original idle/walk frames (durations: idle 420/140/180/140/540/80 ms, walk 100 ms each), restricts tag ranges (`idle` 1–6, `walk` 7–12, `dash` 13–15 with `repeats = 1`), enforces binary alpha and 27-color palette membership, aligns foot contact (`supportY` 56–57), and preserves the single vertical cyan visor lens (8 pixels). Visual profile posture is noted per user metadata confirmation without visual claims made here.
+- **`SOURCE preview` (Secondary):** Contains **two concrete bugs** (fatal Aseprite API type errors in `drawImage` and inverted idle facing direction before dashes), plus a potential frame 1 cel recreation conflict and a 3 px horizontal centering asymmetry.
+
+---
+
+### CONCRETE FINDINGS (PRIORITIZED BY LINE)
+
+#### 1. [CRITICAL] Fatal Aseprite API Type Error in `Image:drawImage`
+- **Location:** `SOURCE preview`, line 26 and line 59
+  - Line 26: `sheetImage:drawImage(cel.image, cel.position.x, cel.position.y)`
+  - Line 59: `canvas:drawImage(image, x, 0)`
+- **Issue:** In the Aseprite Lua API, `Image:drawImage(srcImage, position [, opacity, blendMode])` expects the second argument (`position`) to be a `Point` object (`Point(x, y)`). 
+  - Passing integers `cel.position.x` (line 26) or `x` (line 59) causes a fatal Lua runtime error: `Point expected, got number`.
+  - Furthermore, on line 59, passing `0` as the third argument routes to `opacity = 0`, causing the frame to be drawn with 0% opacity (completely invisible) even if coordinates were accepted.
+- **Correction:**
+  - Line 26: `sheetImage:drawImage(cel.image, cel.position)` (or `Point(cel.position.x, cel.position.y)`)
+  - Line 59: `canvas:drawImage(image, Point(x, 0))`
+
+#### 2. [HIGH] Inverted Idle Facing Relative to Dash Vector
+- **Location:** `SOURCE preview`, lines 77–80
+  - Line 77: `addFrame(leftFacingIdleImage, 8, HOLD_MS)`
+  - Line 78: `for i = 1, #DASH_POSE do addFrame(dashImages[DASH_POSE[i]], RIGHT_X[i], DASH_STEP_MS) end`
+  - Line 79: `addFrame(idleImage, 58, HOLD_MS)`
+  - Line 80: `for i = 1, #DASH_POSE do addFrame(reverseDashImages[DASH_POSE[i]], LEFT_X[i], DASH_STEP_MS) end`
+- **Issue:** 
+  - At `x = 8`, right before the protagonist dashes **rightward** (`+X`) across `RIGHT_X` (15 → 58), the animation displays `leftFacingIdleImage` (facing away from the dash trajectory).
+  - At `x = 58`, right before the protagonist dashes **leftward** (`-X`) across `LEFT_X` (51 → 8), the animation displays `idleImage` (facing away from the return trajectory).
+- **Correction:** Swap the idle orientations so the protagonist faces the direction of travel:
+  - Line 77: `addFrame(idleImage, 8, HOLD_MS)`
+  - Line 79: `addFrame(leftFacingIdleImage, 58, HOLD_MS)`
+
+#### 3. [MEDIUM] Potential Cel Conflict on Preview Frame 1
+- **Location:** `SOURCE preview`, line 68
+  - Line 68: `local cel = preview:newCel(layer, frameNumber)`
+- **Issue:** When creating a sprite via `Sprite(CANVAS_W, CANVAS_H)`, if `preview.layers[1]` is automatically provisioned with a cel on frame 1 by the runtime environment, `preview:newCel(layer, 1)` will throw `a cel already exists in the given layer/frame`.
+- **Correction:** Guard cel retrieval on frame 1:
+  ```lua
+  local cel = (frameNumber == 1 and layer:cel(1)) or preview:newCel(layer, frameNumber)
+  ```
+
+#### 4. [LOW] Canvas Padding Asymmetry in Preview
+- **Location:** `SOURCE preview`, lines 75–76
+  - `CANVAS_W = 136`, `FRAME_W = 64`, travel distance = 50 px (`8` to `58`).
+- **Issue:** At `x = 8`, the left margin is 8 px (`8 - 0`). At `x = 58`, the right margin is 14 px (`136 - (58 + 64)`). To achieve symmetric margins of 11 px on both edges:
+  - Travel should range between `x = 11` and `x = 61` (midpoint 36 instead of 33).
+
+---
+
+### CHANGED_FILES:none
+
+### TESTS:none
+
+---
+
+### RISKS
+1. **Runtime Execution Failure of Preview:** Running `SOURCE preview` in Aseprite CLI will abort immediately at line 26 or line 59 due to invalid argument types passed to `Image:drawImage`.
+2. **Visual Continuity Discrepancy:** The approved walk v3 source frames (0–11) represent frontal postures, whereas the dash poses are true side-profile drawings (`+X`). Horizontally flipping the frontal idle frame (`flipped(idleImage)`) mirrors frontal details rather than rendering a true profile idle pose.
+3. **Overhead in Preview Cel Sizing:** `place()` generates a full 136×64 `Image` per frame with `cel.position = Point(0, 0)`, rather than maintaining 64×64 frame images with dynamic `cel.position = Point(x, 0)`.
+
+---
+
+### NEXT_STEP
+Apply the line-specific fixes to `SOURCE preview`:
+1. Update `sheetImage:drawImage` (line 26) to pass `cel.position`.
+2. Update `canvas:drawImage` (line 59) to pass `Point(x, 0)`.
+3. Swap `leftFacingIdleImage` and `idleImage` on lines 77 and 79.
+4. Guard `newCel` on line 68 with `(frameNumber == 1 and layer:cel(1)) or preview:newCel(layer, frameNumber)`.

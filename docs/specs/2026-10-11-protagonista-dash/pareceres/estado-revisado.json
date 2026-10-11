@@ -1,0 +1,32 @@
+[
+  {
+    "path": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/protagonista-dash/protagonista-dash.lua",
+    "bytes": 11719,
+    "sha256": "95a04585ce40f923e27d6d7fdbef85649675a5d61df7f8c39743db6789072912"
+  },
+  {
+    "path": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais/scripts/player/player_visual.gd",
+    "bytes": 3747,
+    "sha256": "714c7381623e1a7abb432917f77138907253d42db7881ad19914f4b4ccc12de9"
+  },
+  {
+    "path": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais/resources/player_sprite_frames.tres",
+    "bytes": 3345,
+    "sha256": "98596e02a8ae0cba1f72933d6c3d0b584c4d64c9da2a8866fb339a9facc89b30"
+  },
+  {
+    "path": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais/assets/player/player-animations.png",
+    "bytes": 5269,
+    "sha256": "41a5b5c4679aee33f76f9461e92c34d9e50c07b6187709030c207971a6a6320c"
+  },
+  {
+    "path": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais/assets/player/source/player-animations.aseprite",
+    "bytes": 20167,
+    "sha256": "34b40b36062e3bcfd12d1748b0918f03aed0c3aec17bb27efa935fd068bf99f1"
+  },
+  {
+    "path": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais/docs/specs/2026-10-11-protagonista-dash/spec.md",
+    "bytes": 2994,
+    "sha256": "d378f1728ce6c890f77ae7ed3c3bdc238bbdb6b0edd6fede0b260f51fde3b42d"
+  }
+]

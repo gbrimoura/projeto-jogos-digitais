@@ -95,9 +95,9 @@ func _ready() -> void:
 	_apply_facing_direction()
 	_set_warning_visible(false)
 
-func take_damage(amount: int, _source: Node = null) -> void:
+func take_damage(amount: int, _source: Node = null) -> bool:
 	if _defeated_emitted or health <= 0 or amount <= 0:
-		return
+		return false
 
 	health = maxi(health - amount, 0)
 	_flash_remaining = maxf(flash_duration, 0.0)
@@ -107,6 +107,7 @@ func take_damage(amount: int, _source: Node = null) -> void:
 		_set_warning_visible(false)
 		defeated.emit()
 		queue_free()
+	return true
 
 func _physics_process(delta: float) -> void:
 	_patrol_step_pending = false

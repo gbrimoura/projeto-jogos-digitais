@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-10",
+  "scope": "Descrição acima; resumo numérico com fonte 30 e cor ciano abaixo; sem mudar gameplay.",
+  "files": [
+    {
+      "Path": "scenes/upgrade_offer.tscn",
+      "Hash": "CFCE4F62C7916B2999F7A290E69746A46904AD14D5B25E192467B6B745419AE2"
+    },
+    {
+      "Path": "scripts/ui/upgrade_offer.gd",
+      "Hash": "4DD7D9006A72E72731F6B36BD48A67DC3DFF1C32227B0C450ECFE4E97B49A216"
+    },
+    {
+      "Path": "scripts/progression/upgrade_definition_resource.gd",
+      "Hash": "3B2A639D0E16A246632CC313D59C61B610CC4F3B7CAF23053EF056D2619DD8EB"
+    },
+    {
+      "Path": "resources/upgrades/impacto_reforcado.tres",
+      "Hash": "ED1DB3CD44780521148401850C3DA45CAD294D08707E4FACCC3ADE5C7A88CCD7"
+    },
+    {
+      "Path": "resources/upgrades/motor_acelerado.tres",
+      "Hash": "2C1C9C1CA1A58592F14EC684CF788D9FA0588A8FA96F9A3FB2813B9089B40640"
+    },
+    {
+      "Path": "resources/upgrades/carga_reativa.tres",
+      "Hash": "105C9E7405C122F1F58BEBCB23CBEA7AEC4073748AA249A434E0B5E416351ACC"
+    }
+  ]
+}

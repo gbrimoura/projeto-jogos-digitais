@@ -1,0 +1,10 @@
+{
+  "round": "v0.2",
+  "date": "2026-10-10",
+  "status": "blocked-at-argument-validation",
+  "model": "Gemini 3.8 Flash (High)",
+  "tool": "AGY",
+  "stdout": "error: invalid model selection (--model \"Gemini 3.8 Flash (High)\" --effort \"high\"): --effort is not supported for model \"Gemini 3.8 Flash (High)\"\n",
+  "exit_code": 1,
+  "resolution": "Retirada da opção --effort, incompatível com o preset High. Mesmo modelo/preset Gemini 3.8 Flash (High), sem substituição. Revisão concluída em gemini-r2.stdout.json."
+}

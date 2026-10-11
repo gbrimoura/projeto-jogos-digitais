@@ -1,0 +1,50 @@
+{
+  "status": "superseded",
+  "reason": "Implementador alterou helper, cena e plano/spec após primeiro anúncio de freeze. R1 não representa integralmente o freeze final; R2 solicitada.",
+  "files": [
+    {
+      "Path": "scripts/feedback/combat_feedback.gd",
+      "Hash": "F5A1B8B87AA90FA5A4198EFCB9409D597829B8A050BDDCD28510A1996AC563C7"
+    },
+    {
+      "Path": "scripts/feedback/combat_feedback_burst.gd",
+      "Hash": "1F0B908C7C37446276C2D138A9AD6D2AC2948677DF804F1F5853B34E9F3DC8B6"
+    },
+    {
+      "Path": "scenes/feedback/combat_feedback_burst.tscn",
+      "Hash": "F0E9F2F9D3E9CD62DBAA3BCC121FEC3142AD0D041E58FF5A242AE705CC9C16F1"
+    },
+    {
+      "Path": "scripts/projectile/ricochet_ball.gd",
+      "Hash": "F285760E2A818BEDCB87394C1B34BD7A865625FB44FA2A176BA129B8FED7D1E0"
+    },
+    {
+      "Path": "scripts/projectile/hostile_rivet.gd",
+      "Hash": "16692B87D8C8AEE3E277F90E4C70DD00BE6BE1061CEB4462098276E574B07357"
+    },
+    {
+      "Path": "scenes/ricochet_ball.tscn",
+      "Hash": "21AE5870DC57BBF5FD866D6935BC5502860EA4D2ED533186BAF41C12FBFA6891"
+    },
+    {
+      "Path": "resources/upgrades/impacto_reforcado.tres",
+      "Hash": "1255A27729209160EAC033EF1E0F70B4DBF727B23CF783945E4A30F68C984129"
+    },
+    {
+      "Path": "resources/upgrades/motor_acelerado.tres",
+      "Hash": "EDBFE06CEEF54D7C5D796DCC4410E9E9F7670ADA30509F224954384BAE97BBE0"
+    },
+    {
+      "Path": "resources/upgrades/carga_reativa.tres",
+      "Hash": "F32D6FDAD2B4495ED1292FB66281DFF9175F1E449C7522E8D2DF86BFB85301CD"
+    },
+    {
+      "Path": "docs/specs/2026-10-10-feedback-combate/plano.md",
+      "Hash": "A5FA18A8F762E991CB3D89403E44E04F0D8F667D7806FAC0DA2499D0D40DF410"
+    },
+    {
+      "Path": "docs/specs/2026-10-10-feedback-combate/spec.md",
+      "Hash": "3B111ED373BB74FE8E14F7A702FAB804643F0EECBB4373F8519490141A138B72"
+    }
+  ]
+}

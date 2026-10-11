@@ -1,0 +1,20 @@
+# Confirmação dirigida — Gemini 3.8 Flash (High) / gemini-3.8-flash-high
+
+- Data: 10/10/2026
+- Rodada: v0.3
+- Ferramenta: Antigravity CLI; plan
+- Estado: concluído; interpretação do principal em `consolidado.md`
+- Entrada: Spec integral e plano v0.3 com seções decisões/ofertas e roteiro visual inalteradas omitidas por limite de argumentos do Windows. Confirmação dirigida das correções; sem inspeção de código.
+- Plano SHA-256: `BCE7B62B9EA52E15E984FC275B74B9A939B0CC1ABF1136856A79AAB955F61341`
+- Spec SHA-256: `D4FD462E3AEA2ECD5225383614D6960D239200B0AEEA2CEED537B25105277F4E`
+- Saída original: [gemini-r3.stdout.json](gemini-r3.stdout.json)
+
+## Saída do revisor
+
+STATUS: done
+SUMMARY: Veredicto de conformidade total. A v0.3 de `plano.md` e `spec.md` corrigiu integralmente todos os pontos levantados em R2: (1) a guarda de input pós-oferta foi restrita exclusivamente às ações discretas (`launch`, `parry`, `dash`, `jump`, `interact`), liberando movimento e mira imediatamente e reiniciando a janela quieta apenas se novas ações discretas ocorrerem; (2) a parada do sweep da bola no callback de vitória/morte passou a ser solicitada por flag síncrona dedicada (`_stop_sweep_requested`), estritamente desacoplada do lifecycle guard `_has_finished`, garantindo que remoção, cleanup e física ocorram apenas após o flush; (3) a oferta de upgrade é mandatória e não dispensável por botão ou tecla Esc, com fechamento definido exclusivamente por seleção válida, morte (que cancela sem abrir porta e ruma para R) ou teardown de sala (que limpa apenas o estado pertencente à oferta, sem despausar sala em saída); (4) o schema do snapshot estático one-shot foi formalizado com `version: 1`, caminho canônico `res://`, validação estrita de HP positivo (`hp_current <= hp_max`), IDs restritos ao trio aprovado, contagens inteiras 0/1 com soma total ≤ 1 e protocolo copy-and-clear absoluto no destino; (5) determinou-se a purga explícita de todos os nós do grupo `hostile_projectile` (inclusive rebites redirecionados) pós-flush antes de pausar/abrir a oferta ou concluir a sala; (6) o tempo da guarda de entrada foi formalizado como propriedade exportada `post_upgrade_input_guard_seconds` (padrão 0,25 s) no nó `Main`; (7) o destravamento da porta respeita o overlap prévio, revalidando jogador vivo/ao alcance no novo pressionamento de E sem exigir novo `body_entered`; e (8) o cronograma consolidou as etapas B e C para 12/10 (com C condicionado à revisão de B), reservando 13/10 integralmente como buffer e 14/10 para entrega do teaser.
+CHANGED_FILES: none
+TESTS: leitura inline
+RISKS: nenhum
+NEXT_STEP: Aguardar desbloqueio de quota para coleta dos pareceres pendentes de Claude Opus via AGY e Cursor, sem substituição de revisores; manter a implementação congelada até autorização expressa do usuário.
+

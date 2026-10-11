@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/feedback/combat_feedback_burst.gd" id="1_burst"]
+
+[node name="CombatFeedbackBurst" type="Node2D"]
+process_mode = 0
+z_index = 5
+top_level = true
+script = ExtResource("1_burst")

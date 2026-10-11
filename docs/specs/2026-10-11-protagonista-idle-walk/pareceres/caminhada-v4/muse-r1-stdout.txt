@@ -1,0 +1,19 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Static read-only review of inline frozen sources only. No binaries inspected, no visual/gameplay approval, no Godot/runtime verification. Velocity/cadence logic, SpriteFrames regions/timing, Lua determinism and reset/death paths checked against spec v4.
+FINDINGS:
+- LOW / scripts/player/player_visual.gd + scripts/player/player.gd excerpt / walk/idle threshold without hysteresis can toggle on velocity jitter around 8.0 with play() restart each flip / player.gd:`absf(velocity.x) > 8.0` + player_visual.gd:`set_walking()`/`_apply_animation_state():play(target_animation)`; spec keeps existing criterion, no new regression.
+- LOW / scripts/player/player_visual.gd / long dash holds last frame: dash loop=false 0.14s total, `_apply_animation_state()` dash branch only `play()` if `animation != DASH`, so if `is_dashing` outlives animation it freezes instead of replaying / `_apply_animation_state():if _is_dashing` path.
+- LOW / scripts/player/player_visual.gd / revive retains stale `_is_grounded`: `set_dead(false)` forces idle frame 0 stopped then `_apply_animation_state()`, so revive in air shows static idle until next `set_grounded(true)` / `set_dead(false)` + `_set_static_idle_pose()`.
+- LOW / scripts/player/player.gd excerpt / air->ground does two `play()` same frame: `set_grounded(true)` plays idle from old `_is_walking=false`, then `set_walking(true)` plays walk / `_physics_process` order `set_grounded` then `set_walking`. Final state correct, redundant call only.
+- MEDIUM / protagonista-walk-v4.lua / `SHEET_EXPORT` path only printed, never written in Lua: `print("SHEET_EXPORT:"..out(BASE.."-spritesheet.png"))` without `saveAs`; 1088x64 export must be external step, reproducibility gap / `saveTravelPreview`/`sprite:saveAs(sourceOut)` vs missing sheet save.
+- LOW / protagonista-walk-v4.lua / direita travel preview moves wrong direction: both branches use `dx=canvasW-W-dx` (96->21 leftward); direita `flipped()` faces right but travels left / `saveTravelPreview(direction)`.
+- LOW / protagonista-walk-v4.lua / binary-alpha assert only for walk: walk loops `assert(a==0 or a==255)`, idle/dash loops only `paletteSet` when `a>0`, so partial alpha in copied idle/dash 0-5/12-14 would propagate / `extract()` + validation loops.
+- LOW / protagonista-walk-v4.lua / no `OUT` mkdir and absolute Windows defaults: `out()` + `sprite:saveAs`/`io.open(metadata)` assume `OUT` exists; defaults `C:/.../protagonista-walk` + `.../protagonista-walk-v4-input-atlas-960x64.png` hurt clean-machine reproducibility / `local OUT/ATLAS` header.
+- NONE for core cadence/restart: `set_walking(value,absf(velocity.x))` updates `_walk_speed_magnitude` then `_set_walk_speed_scale()` without restart, clamp 260/0.65/1.35 matches spec; idle/dash/air/death/reset force `speed_scale=1.0`; regions 0..5/384..832/896..1024 contiguous within 1088, durations 420/140/180/140/540/80, 8x75ms, 40/40/60ms and loops match spec; facing native left walk/right dash preserved; boot sole y56/y53 math and support-boot invariance hold per code.
+CHANGED_FILES: none
+TESTS: none
+RISKS: No gameplay/Godot runtime, no binary/contact/preview inspection, no pause/physics jitter measurement; dash duration vs 0.14s unknown; threshold flicker unmeasured; sheet export and Aseprite CLI steps unverified here.
+NEXT_STEP: Keep frozen state; if implementing, fix direita preview direction, add idle/dash alpha assert, ensure OUT creation and external 1088x64 sheet export step, consider hysteresis only if jitter observed in playtest.

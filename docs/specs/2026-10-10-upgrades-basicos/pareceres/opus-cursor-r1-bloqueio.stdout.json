@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-10",
+  "round": "v0.2",
+  "model": "claude-opus-5-5-high",
+  "tool": "Cursor Agent",
+  "status": "blocked",
+  "source_hashes": {
+    "plano": "88DD4D0255164659530F37E0043D8BF6CE69A52793151E4F56E5A39A699896EF",
+    "spec": "6F7574262363CB7F680C1CC229FEABD9F4515ACC0514B578BE45AB95F50A55C9"
+  },
+  "exit_code": 1,
+  "stdout": "ActionRequiredError: You've hit your usage limit for Opus You've saved $116 on API model usage this month with Pro. Switch to a different model or set a Spend Limit to continue with Opus. Your usage limits will reset when your monthly cycle ends on 11/3/2026.\n"
+}

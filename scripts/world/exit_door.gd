@@ -15,8 +15,10 @@ var _players_in_range: Dictionary = {}
 var _room_is_cleared: bool = false
 var _transition_busy: bool = false
 var _failure_message: String = ""
+var _room_root: Node
 
 func _ready() -> void:
+	_room_root = get_parent()
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	_update_presentation()
@@ -42,10 +44,17 @@ func report_transition_failure(message: String) -> void:
 	_update_presentation()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _transition_busy or not _room_is_cleared or not event is InputEventKey:
+	if not event is InputEventKey:
 		return
 	var key_event := event as InputEventKey
 	if key_event.echo or not key_event.is_action_pressed("interact"):
+		return
+	if _room_root != null \
+		and _room_root.has_method("is_gameplay_action_blocked") \
+		and bool(_room_root.call("is_gameplay_action_blocked", &"interact")):
+		get_viewport().set_input_as_handled()
+		return
+	if _transition_busy or not _room_is_cleared:
 		return
 	if not Input.is_action_just_pressed("interact"):
 		return
@@ -67,14 +76,16 @@ func _on_body_exited(body: Node2D) -> void:
 	_players_in_range.erase(body)
 
 func is_player_in_range(player: Player) -> bool:
-	return _players_in_range.has(player)
+	if player == null or not is_instance_valid(player) or not _players_in_range.has(player):
+		return false
+	return get_overlapping_bodies().has(player)
 
 func _get_live_player_in_range() -> Player:
 	for candidate in _players_in_range.keys():
 		if not is_instance_valid(candidate):
 			continue
 		var player := candidate as Player
-		if player != null and player.is_in_group("player") and not player.is_dead:
+		if player != null and player.is_in_group("player") and not player.is_dead and is_player_in_range(player):
 			return player
 	return null
 

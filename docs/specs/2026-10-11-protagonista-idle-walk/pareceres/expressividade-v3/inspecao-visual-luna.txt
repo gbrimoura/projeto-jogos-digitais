@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Contato v3 e frames de pico inspecionados. Sem desconexões visíveis nos ombros, quadris, tornozelos ou botas; elevação alternada e articulação legíveis.
+CHANGED_FILES: none
+TESTS: none
+RISKS: A inspeção visual não substitui validação no Godot.
+NEXT_STEP: Integração e revisão estática.

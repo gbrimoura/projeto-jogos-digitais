@@ -1,0 +1,11 @@
+STATUS: done
+
+SUMMARY: No concrete bug found. The missing `.png.import` is sufficient to explain `No loader found` for `res://assets/player/player-animations.png` (expected Texture2D) and the SpriteFrames cascade that made `idle`/`walk` fail to load. The sidecar is a valid Godot 4 texture remap: `importer="texture"`, `type="CompressedTexture2D"` (a Texture2D), source path matches the PNG, and `path` matches the stated existing `.ctex`. `compress/mode=0` (lossless) and `mipmaps/generate=false` match a nearest-filtered 2D sheet. Fifteen 64×64 regions at x=0,64,…,896 sit inside 960×64 (896+64=960) and match idle 0–5, walk 6–11, dash 12–14. Source PNG, scenes, and scripts were correctly left unchanged.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: The `.ctex` is a local cache; the durable fix is the `.png.import` beside the PNG. `uid://dudwa4p506lly` is a first-import id; no conflicting `ext_resource` uid was in scope. `process/fix_alpha_border=true` and `detect_3d/compress_to=1` are engine defaults and do not block loader resolution. No runtime or visual check was made.
+
+NEXT_STEP: none for this import metadata.

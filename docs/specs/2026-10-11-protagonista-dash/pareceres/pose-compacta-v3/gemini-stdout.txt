@@ -1,0 +1,44 @@
+### STATUS
+**APPROVED** — No concrete regressions found.
+
+---
+
+### SUMMARY
+A thorough review of the inline frozen Lua scripts (`dash generator` and `preview generator`) confirms full compliance with all technical, visual, and pipeline constraints:
+
+1. **Canvas & Color Integrity**:
+   - Both scripts maintain `64x64` frame dimensions and `ColorMode.RGB`.
+   - Alpha channel enforcement is strictly binary (`alpha == 0 or alpha == 255`), preventing partial transparency artifacts.
+   - All rendered pixels strictly validate against the locked 27-color palette (`paletteSet`), with no foreign colors introduced.
+
+2. **Frame & Tag Preservation**:
+   - The 12 original frames (idle frames `0..5` and walk frames `6..11`) retain their exact durations (`420, 140, 180, 140, 540, 80 ms` for idle; `100 ms` each for walk).
+   - Tag bounds for `idle` (`1..6` in Lua / `0..5` zero-based) and `walk` (`7..12` in Lua / `6..11` zero-based) are explicitly restored, preventing Aseprite's automatic tag expansion on newly appended frames.
+   - Three lateral dash frames (`12..14` zero-based) are cleanly appended with exact timings (`40 ms`, `40 ms`, `60 ms`), forward playback direction (`AniDir.FORWARD`), and `repeats = 1`.
+
+3. **Atlas & Preview Validation**:
+   - The 15-frame horizontal atlas layout (`960x64`) matches frame offsets (`frameIndex * 64`) exactly.
+   - The preview script constructs a 16-frame, 880 ms sequence on a `136x64` canvas: 300 ms hold + 140 ms right dash (7 steps × 20 ms) + 300 ms hold + 140 ms left dash (7 steps × 20 ms).
+   - All horizontal displacement offsets (`RIGHT_X` `15..58`, `LEFT_X` `51..8`) stay within the canvas bounds (`x + 64 <= 136`).
+   - Game physics and runtime animation definitions remain unaffected.
+
+---
+
+### CHANGED_FILES
+none
+
+---
+
+### TESTS
+none
+
+---
+
+### RISKS
+- **Low**: Code is purely deterministic and fully bounded by strict assertions (palette membership, alpha, bounding boxes, frame counts, tag boundaries).
+- **Integration Note**: Verify that runtime sprite loaders consume the horizontal sheet (`protagonista-dash-v3-spritesheet.png`) using the exported JSON tag metadata (`idle: 0..5`, `walk: 6..11`, `dash: 12..14`).
+
+---
+
+### NEXT_STEP
+Integrate the exported `protagonista-dash-v3` spritesheet and metadata into the game client runtime.

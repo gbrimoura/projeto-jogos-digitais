@@ -24,6 +24,20 @@ A patrulha foi validada pelo usuário e passou por três revisões estáticas do
 
 Este snapshot foi atualizado em 03/10/2026. O agente não executou import, parse, runtime ou testes no Godot nesta alteração; a integração visual e o comportamento jogável não foram validados pelo agente.
 
+## Snapshot técnico do protótipo — 10/10/2026
+
+Este snapshot registra o recorte temporário implementado para o teaser, sem fechar regras gerais de slots, economia, raridade, acúmulos ou geração procedural. `Main` mantém a build transitória; a transição entre salas transfere HP atual/máximo e build em payload de uso único. Ao vencer a Sala 01, o jogo limpa projéteis após o flush, pausa a gameplay e oferece três upgrades. Uma escolha válida libera a porta E. A Sala 02 demonstra a build, não oferece outra recompensa e é terminal.
+
+| Upgrade de teste | Efeito implementado neste recorte |
+|---|---|
+| Impacto Reforçado | Dano-base da bola passa de 1 para 2. |
+| Motor Acelerado | Recarga de dash passa de 0,55 s para 0,40 s. |
+| Carga Reativa | Parry aceito da própria bola arma uma carga; o próximo dano aceito recebe +2 e consome a carga. Uma vez por vida da bola, sem acúmulo nem rearme. Rebites hostis não a armam nem consomem. |
+
+Os números e a aquisição única são provisórios para a demonstração, não balanceamento nem decisões finais de progressão. R reinicia a sala com 5 HP e build vazia; cair abaixo de `y = 760` preserva HP/build e descarta a bola, junto com eventual carga. Após a escolha, movimento e mira ficam livres; launch/parry/dash/jump/interact aguardam a soltura das entradas discretas e o intervalo quieto configurável (0,25 s por padrão). Os controles atuais são A/D ou setas para mover, Espaço/W/seta para cima para pular, Shift para dash, mouse para mirar, botão esquerdo para lançar, botão direito para parry, E para sair e R após derrota.
+
+Este estado foi revisado nesta frente apenas de forma estática; não houve execução ou validação no Godot.
+
 ## Organização
 
 - `scenes/player.tscn`: cena reutilizável do protagonista.
@@ -36,7 +50,8 @@ Este snapshot foi atualizado em 03/10/2026. O agente não executou import, parse
 - `scripts/player/reticle_visual.gd`: retícula procedural que acompanha o alvo
   da mira sem participar da física.
 - `scripts/player/ball_launcher.gd`: dispara uma bola por vez usando um snapshot
-  da mira.
+  da mira e configuração derivada da build; o reset deferred captura a bola
+  para não cancelar uma instância lançada em seguida.
 - `scripts/player/trajectory_preview.gd`: prevê o caminho circular da bola com
   ricochetes antes do disparo.
 - `scripts/player/player_visual.gd`: orientação e efeito de dash aplicados aos nós visuais nativos do jogador.
@@ -45,7 +60,7 @@ Este snapshot foi atualizado em 03/10/2026. O agente não executou import, parse
 - `scripts/projectile/bounce_resolver.gd`: regra pura de reflexão pela normal
   da superfície.
 - `scripts/projectile/ricochet_ball.gd`: bola cinética com contador de impactos,
-  limite de ricochetes e ciclo de vida.
+  limite de ricochetes, ciclo de vida e carga reativa por instância.
 - `scripts/projectile/hostile_rivet.gd`: rebite hostil reto, com colisão contínua,
   tempo de vida, deduplicação de alvo e cancelamento seguro.
 - `resources/projectile_config.tres`: parâmetros provisórios do tiro.

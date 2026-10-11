@@ -1,0 +1,14 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: no concrete bug found
+
+SUMMARY: Missing-import diagnosis consistent. Sidecar correctly maps `res://assets/player/player-animations.png` to `CompressedTexture2D` via `importer="texture"`, resolving `expected Texture2D / No loader` for `extTexture2D`. `uid://dudwa4p506lly` present, `source_file/dest_files` paths coherent, single `.ctex` output. Params sane for 960x64 pixel-art atlas: `compress/mode=0`, `mipmaps/generate=false`, `size_limit=0`, `process/fix_alpha_border=true`, `normal_map=0`. 15x 64x64 regions (x=0..896) exactly fill 960 width; `idle 0-5/walk 6-11/dash 12-14` indexing valid. Node-level `nearest filter=1` preserves intent without requiring import-level filter override.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: No runtime/visual verification claimed. Fresh clone still requires `--import` if `.godot/` untracked; `.png.import` must be committed. UID collision / stale `.godot/uid_cache` not verifiable here.
+
+NEXT_STEP: Commit `assets/player/player-animations.png.import` if not yet tracked; keep `.godot/` ignored. No further import fix needed.

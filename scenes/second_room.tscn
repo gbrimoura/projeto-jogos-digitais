@@ -21,7 +21,9 @@ size = Vector2(1152, 32)
 script = ExtResource("1_main")
 next_room_scene_path = ""
 room_title = "SALA 02"
+reward_enabled = false
 room_title_label_path = NodePath("CombatRoom/HUD/RoomLabel")
+build_status_label_path = NodePath("CombatRoom/HUD/BuildLabel")
 player_spawn_marker_path = NodePath("PlayerSpawnMarker")
 
 [node name="SandboxVisual" type="Node2D" parent="."]
@@ -155,3 +157,12 @@ offset_bottom = 116.0
 theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
 theme_override_font_sizes/font_size = 18
 text = "VIDA: 5 / 5"
+
+[node name="BuildLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 154.0
+offset_right = 520.0
+offset_bottom = 184.0
+theme_override_colors/font_color = Color(0.509804, 0.843137, 0.741176, 1)
+theme_override_font_sizes/font_size = 18
+text = "BUILD: VAZIA"

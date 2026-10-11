@@ -19,6 +19,11 @@ var max_bounces: int = 3
 @export_range(1, 100, 1)
 var damage: int = 1
 
+## Preparação tipada para a fase C; a etapa A não executa a carga.
+@export var reactive_charge_enabled: bool = false
+@export_range(0, 100, 1)
+var charged_damage_bonus: int = 0
+
 ## World (layer 1) plus Damageable (layer 4).
 @export_flags_2d_physics
 var collision_mask: int = 9

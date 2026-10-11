@@ -1,0 +1,8 @@
+STATUS: done
+SUMMARY: Revisão estática documental concluída com sucesso para as fontes inline congeladas (`protagonista-dash.lua`, `player_visual.gd`, `player_sprite_frames.tres` e `spec.md`). O contrato técnico foi integralmente cumprido: preservação estrita dos 12 frames originais de idle/walk, adição de 3 quadros de dash (64×64 px, 40/40/60 ms, paleta travada de 27 cores, atlas horizontal 960×64 px com regiões em x=768, 832 e 896), animação de dash não cíclica retendo o último quadro durante a vigência do estado, prioridade estrita (`morte > dash > ar idle estático > chão walk/idle`), reinício no frame 0 exclusivamente na ativação do dash (sem reinício por transições de caminhada/chão), e retorno automático ao estado visual correto ao término. Nenhum bug concreto de lógica, tipagem ou regressão foi identificado nas fontes.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- A exportação do PNG de runtime e do `.aseprite` final consolidado depende da execução CLI externa pelo agente principal; em conformidade com o contrato, este parecer não avalia nem aprova a qualidade estética dos binários/imagens renderizados não vistos.
+- Caso o controlador externo de física/movimento desative o dash em tempo divergente de 0,14 s (140 ms), a animação permanecerá congelada no quadro final de sustentação (frame 2) até a chamada de `set_dashing(false)`, o que é o comportamento esperado pelo contrato, mas requer que o timing da física permaneça rigorosamente em 0,14 s.
+NEXT_STEP: Prosseguir com a exportação CLI dos assets pelo agente principal (`Aseprite` com `--sheet-type horizontal` gerando `protagonista-dash-v1-spritesheet.png` em `res://assets/player/player-animations.png`) e posterior inspeção visual humana/manual no Godot Engine.

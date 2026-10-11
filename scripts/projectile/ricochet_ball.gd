@@ -1,6 +1,10 @@
 class_name RicochetBall
 extends CharacterBody2D
 
+const CombatFeedbackScript = preload("res://scripts/feedback/combat_feedback.gd")
+
+enum ChargeState { INACTIVE, CHARGED, CONSUMED }
+
 ## Bola cinética com reflexão determinística. O parry redireciona o voo atual,
 ## preservando velocidade, ricochetes já usados e tempo de vida restante.
 
@@ -8,23 +12,47 @@ signal finished(reason: String)
 signal bounced(bounce_index: int, impact_position: Vector2, surface_normal: Vector2)
 
 @export var is_parryable: bool = true
+@export_range(0.25, 8.0, 0.25) var charged_pulse_frequency_hz: float = 3.0
+@export_range(0.2, 0.9, 0.05) var charged_pulse_min_alpha: float = 0.55
+@export_range(1.0, 1.8, 0.05) var charged_pulse_width_multiplier: float = 1.3
 
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var _charge_visual: Line2D = $ChargeVisual
 
 var _config: ProjectileConfig
 var _lifetime_remaining: float = 0.0
 var _has_launched: bool = false
 var _has_finished: bool = false
+var _stop_sweep_requested: bool = false
 var _bounce_count: int = 0
 var _pending_motion: Vector2 = Vector2.ZERO
 var _damaged_targets_this_tick: Dictionary = {}
 var _racket_controller: Node
 var _last_parry_swing_id: int = -1
 var _parry_release_pending: bool = false
+var _charge_state: ChargeState = ChargeState.INACTIVE
+var _charge_pulse_elapsed: float = 0.0
+var _charge_visual_base_color: Color = Color.WHITE
+var _charge_visual_base_width: float = 2.5
 
 var bounce_count: int:
 	get:
 		return _bounce_count
+
+func _ready() -> void:
+	_charge_visual_base_color = _charge_visual.default_color
+	_charge_visual_base_width = _charge_visual.width
+	_set_charge_state(_charge_state)
+
+func _process(delta: float) -> void:
+	if _charge_state != ChargeState.CHARGED or not is_instance_valid(_charge_visual):
+		return
+	_charge_pulse_elapsed += delta
+	var pulse := (sin(_charge_pulse_elapsed * TAU * charged_pulse_frequency_hz) + 1.0) * 0.5
+	var pulsed_color := _charge_visual_base_color
+	pulsed_color.a *= lerpf(charged_pulse_min_alpha, 1.0, pulse)
+	_charge_visual.default_color = pulsed_color
+	_charge_visual.width = _charge_visual_base_width * lerpf(1.0, charged_pulse_width_multiplier, pulse)
 
 func launch(direction: Vector2, config: ProjectileConfig) -> void:
 	if _has_launched or _has_finished or config == null:
@@ -37,6 +65,8 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 	velocity = launch_direction * _config.speed
 	_lifetime_remaining = _config.lifetime
 	_has_launched = true
+	_stop_sweep_requested = false
+	_set_charge_state(ChargeState.INACTIVE)
 	_bounce_count = 0
 	_pending_motion = Vector2.ZERO
 	_parry_release_pending = true
@@ -46,8 +76,13 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 func cancel() -> void:
 	_finish("cancelled")
 
+## Synchronous and callback-safe: asks the active sweep to return without
+## changing collision state or ending the node inside an external callback.
+func request_stop_sweep() -> void:
+	_stop_sweep_requested = true
+
 func _physics_process(delta: float) -> void:
-	if not _has_launched or _has_finished:
+	if not _has_launched or _has_finished or _stop_sweep_requested:
 		return
 
 	_damaged_targets_this_tick.clear()
@@ -66,7 +101,7 @@ func _physics_process(delta: float) -> void:
 		collision_limit = maxi(collision_limit, _config.max_bounces + 4)
 	var safe_margin := maxf(_config.collision_safe_margin, 0.01)
 
-	while not remaining_motion.is_zero_approx() and collisions_this_tick < collision_limit:
+	while not _stop_sweep_requested and not remaining_motion.is_zero_approx() and collisions_this_tick < collision_limit:
 		var segment_start := global_position
 		var segment_distance := remaining_motion.length()
 		var segment_speed := maxf(velocity.length(), 0.001)
@@ -81,13 +116,23 @@ func _physics_process(delta: float) -> void:
 			var parry_fraction := float(parry_hit.get("fraction", INF))
 			var parry_precedes_world := collision == null or parry_fraction < world_fraction - 0.00001
 			if parry_precedes_world:
-				global_position = segment_start + remaining_motion * parry_fraction
+				var parry_position := segment_start + remaining_motion * parry_fraction
+				var parry_scene_root := get_tree().current_scene
+				global_position = parry_position
 				velocity = Vector2(parry_hit.get("direction", Vector2.ZERO)).normalized() * _config.speed
 				if velocity.is_zero_approx():
 					velocity = Vector2.RIGHT * _config.speed
 				_last_parry_swing_id = int(parry_hit.get("swing_id", -1))
 				_parry_release_pending = true
+				CombatFeedbackScript.enqueue(
+					parry_scene_root,
+					parry_position,
+					CombatFeedbackScript.EffectKind.PARRY
+				)
+				_arm_reactive_charge()
 				_notify_parry_success(_last_parry_swing_id)
+				if _has_finished or _stop_sweep_requested:
+					return
 				_pending_motion = Vector2.ZERO
 				frame_elapsed = minf(frame_elapsed + segment_duration * parry_fraction, delta)
 				remaining_motion = velocity.normalized() * segment_distance * (1.0 - parry_fraction)
@@ -124,9 +169,21 @@ func _physics_process(delta: float) -> void:
 		_bounce_count = next_bounce_index
 		velocity = BounceResolver.reflect_velocity(velocity, surface_normal, _config.speed)
 		var impact_position := collision.get_position()
+		var impact_scene_root := get_tree().current_scene
+		var collider := collision.get_collider()
 		global_position += surface_normal * _config.collision_skin
-		_apply_impact_damage(collision.get_collider())
+		_apply_impact_damage(collider, impact_position, impact_scene_root)
+		if _has_finished or _stop_sweep_requested:
+			return
+		if not _is_damageable_collider(collider):
+			CombatFeedbackScript.enqueue(
+				impact_scene_root,
+				impact_position,
+				CombatFeedbackScript.EffectKind.WALL_RICOCHET
+			)
 		bounced.emit(_bounce_count, impact_position, surface_normal)
+		if _has_finished or _stop_sweep_requested:
+			return
 
 		var remainder := collision.get_remainder()
 		if remainder.is_zero_approx() or velocity.is_zero_approx():
@@ -194,7 +251,7 @@ func _notify_parry_success(swing_id: int) -> void:
 	if controller != null and controller.has_method("register_parry_success"):
 		controller.call("register_parry_success", swing_id)
 
-func _apply_impact_damage(collider: Object) -> void:
+func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_scene_root: Node) -> void:
 	if _config == null or _config.damage <= 0 or not collider is Node:
 		return
 
@@ -205,7 +262,40 @@ func _apply_impact_damage(collider: Object) -> void:
 		return
 
 	_damaged_targets_this_tick[target] = true
-	target.call("take_damage", _config.damage, self)
+	var was_charged := _charge_state == ChargeState.CHARGED
+	var damage_amount := _config.damage
+	if was_charged:
+		damage_amount += maxi(_config.charged_damage_bonus, 0)
+	var damage_result: Variant = target.call("take_damage", damage_amount, self)
+	var damage_was_accepted := typeof(damage_result) == TYPE_BOOL and bool(damage_result)
+	if not damage_was_accepted:
+		return
+	var effect_kind: int = (
+		CombatFeedbackScript.EffectKind.CHARGED_HIT
+		if was_charged
+		else CombatFeedbackScript.EffectKind.ENEMY_HIT
+	)
+	CombatFeedbackScript.enqueue(feedback_scene_root, impact_position, effect_kind)
+	if was_charged and _charge_state == ChargeState.CHARGED:
+		_set_charge_state(ChargeState.CONSUMED)
+
+func _is_damageable_collider(collider: Object) -> bool:
+	return collider is Node and (collider as Node).is_in_group("damageable")
+
+func _arm_reactive_charge() -> void:
+	if _config == null or not _config.reactive_charge_enabled or _charge_state != ChargeState.INACTIVE:
+		return
+	_set_charge_state(ChargeState.CHARGED)
+
+func _set_charge_state(next_state: ChargeState) -> void:
+	_charge_state = next_state
+	if is_instance_valid(_charge_visual):
+		_charge_visual.visible = _charge_state == ChargeState.CHARGED
+		if _charge_state == ChargeState.CHARGED:
+			_charge_pulse_elapsed = 0.0
+		else:
+			_charge_visual.default_color = _charge_visual_base_color
+			_charge_visual.width = _charge_visual_base_width
 
 func _apply_collision_radius() -> void:
 	if collision_shape.shape is not CircleShape2D:
@@ -218,6 +308,8 @@ func _finish(reason: String) -> void:
 	if _has_finished:
 		return
 	_has_finished = true
+	if _charge_state == ChargeState.CHARGED:
+		_set_charge_state(ChargeState.CONSUMED)
 	finished.emit(reason)
 	queue_free()
 

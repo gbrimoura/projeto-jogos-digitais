@@ -74,8 +74,7 @@ func _clear_room() -> void:
 		return
 
 	_room_was_cleared = true
-	_cancel_hostile_projectiles()
-	_update_hud()
+	_request_hostile_projectile_stops()
 	room_cleared.emit()
 
 func _on_player_health_changed(current: int, maximum: int) -> void:
@@ -86,13 +85,22 @@ func _on_player_died() -> void:
 	if _player_was_defeated:
 		return
 	_player_was_defeated = true
-	_cancel_hostile_projectiles()
-	_update_hud()
+	_request_hostile_projectile_stops()
 
-func _cancel_hostile_projectiles() -> void:
+## Callback-safe request only; projectiles are removed by Main after the flush.
+func _request_hostile_projectile_stops() -> void:
+	for projectile in get_tree().get_nodes_in_group("hostile_projectile"):
+		if is_instance_valid(projectile) and projectile.has_method("request_stop_sweep"):
+			projectile.call("request_stop_sweep")
+
+## Post-flush cleanup. This includes parried rivets, which remain in the group.
+func cleanup_hostile_projectiles_after_flush() -> void:
 	for projectile in get_tree().get_nodes_in_group("hostile_projectile"):
 		if is_instance_valid(projectile) and projectile.has_method("cancel"):
 			projectile.call("cancel")
+
+func refresh_status_after_physics() -> void:
+	_update_hud()
 
 func _update_hud() -> void:
 	var remaining := _remaining_enemies.size()

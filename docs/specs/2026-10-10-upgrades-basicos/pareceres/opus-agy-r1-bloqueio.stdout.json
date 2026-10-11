@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-10",
+  "round": "v0.2",
+  "model": "claude-opus-5-5-high / Claude Opus 5.5 (High)",
+  "tool": "Antigravity CLI",
+  "status": "blocked",
+  "source_hashes": {
+    "plano": "88DD4D0255164659530F37E0043D8BF6CE69A52793151E4F56E5A39A699896EF",
+    "spec": "6F7574262363CB7F680C1CC229FEABD9F4515ACC0514B578BE45AB95F50A55C9"
+  },
+  "exit_code": 1,
+  "stdout": "error: Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 54h34m6s.\nAGY_ERROR: {\"short_error\":\"RESOURCE_EXHAUSTED (code 429): Individual quota reached. Please upgrade your subscription to increase your limits. Resets in 54h34m6s.\",\"status\":\"RESOURCE_EXHAUSTED\",\"error_code\":429,\"code_kind\":\"http\",\"retryable\":true,\"error_id\":\"9a74e552-5754-42b9-bf9c-21c0c94e3540-1\"}\n"
+}

@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática só do fonte inline de V7. Antebraço e luva (y43–44) deslocam-se juntos pelo mesmo `swing` e `forearmY` (±1). Ombro (y40–41) só acompanha o `bob`. Nas oito fases o par permanece rígido; o ciclo espelha os braços e cada componente relativo muda no máximo 1 px por frame, com poses repetidas de propósito, sem flicker. Com `forearmY` 0 a fileira do cotovelo fica adjacente; com −1 o antebraço cai na linha y42 e a fonte regrava a cor do cotovelo; com +1 abre-se uma linha e a ponte entra só nessa descida, em `43-bob`, na coluna já deslocada, se y42 e y43 forem opacos. Cotovelo (y42) também anda ±1 na lateral, igual ao `swing` deste intervalo, e assim fica na mesma coluna do antebraço. Coordenadas resultantes ficam dentro do quadro de 64 px (extremos aproximados x 19–45, y 39–46). Composição: corpo, perna direita, perna esquerda, braço direito, braço esquerdo. Não inspecionei PNG. A assimetria das pontes {20,27} e {40} não foi tratada como defeito. Export/import informado não foi reexecutado.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum
+NEXT_STEP: Avaliação estética do usuário no ciclo de caminhada. A pose de contato já aceita fica como está.

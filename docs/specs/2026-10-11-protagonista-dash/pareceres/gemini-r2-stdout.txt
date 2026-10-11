@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão final R2 concluída com sucesso. O fix de autoexpansão de tags no Aseprite (`Tag.fromFrame`/`toFrame` restaurando `idle` 1..6 e `walk` 7..12 antes da criação de `dash` 13..15) está matematicamente e estruturalmente correto, com asserções completas pós-processamento. A integração do atlas 960x64 no [player_sprite_frames.tres](file:///resources/player_sprite_frames.tres) preserva os 12 quadros originais e mapeia o dash em 3 quadros (40/40/60 ms em x=768/832/896, `loop: false`, totalizando 0.14 s). Em [player_visual.gd](file:///scripts/player/player_visual.gd), a hierarquia de prioridades (`dead` > `dash` > `ar idle estático` > `chão walk/idle`) e o ciclo de vida do dash (restart apenas na ativação, retenção de frame durante o estado ativo e transição limpa na desativação) funcionam sem divergências ou interrupções espúrias.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum bug concreto identificado na lógica Lua, nos mapeamentos `.tres` ou no controlador GDScript. Conforme diretriz, a aparência visual subjetiva dos binários gerados não é avaliada estaticamente.
+NEXT_STEP: Prosseguir com o congelamento do incremento ou execução manual em runtime/Godot pelo orquestrador, caso desejado.

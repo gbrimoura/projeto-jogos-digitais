@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Fix correct for frozen increment. `native=+1` only for `dash`, else `-1`, with `flip_h=facing!=native` gives: right/idle-walk flipped to right, left/idle-walk unflipped left, right/dash unflipped right, left/dash flipped left. `animation_changed→_apply_facing` in `_ready` covers idle/walk/dash transitions with unchanged facing; synchronous emission means `_restart_dash_animation` and `_apply_animation_state`/`_set_static_idle_pose` fix orientation before render, and `flip_h` emits no `animation_changed` so no loop. Reset `set_dead(false)` transiently applies old animation then synchronously corrects on `animation=IDLE`+`play`; death keeps last flip, airborne idle keeps IDLE native so grounded↔airborne preserves facing. No physics/art/resources touched.
+CHANGED_FILES: none
+TESTS: none
+RISKS: New future animations default to LEFT native; `_ready` first `_apply_facing()` uses editor-default animation but corrected by following `play(IDLE)` signal if different.
+NEXT_STEP: Accept increment as-is.

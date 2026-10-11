@@ -1,0 +1,10 @@
+A fonte congelada confirma o tag fix e a integração lógica. O script restaura os intervalos originais depois de anexar os quadros e só então cria `dash`; o `SpriteFrames` e o `PlayerVisual` fecham o contrato de animação. Nenhum bug concreto aparece nessa fonte.
+
+```text
+STATUS: done
+SUMMARY: O tag fix está na ordem que corrige a autoexpansão do Aseprite 1.3.18.6. Os intervalos originais são lidos antes da mutação (idle 1–6, walk 7–12). Os três newEmptyFrame acontecem em seguida, que é quando a última tag cresce. O laço então reatribui tag.fromFrame/toFrame de todas as tags guardadas e só depois chama newTag(13, 15), aniDir FORWARD, repeats 1. Os asserts finais exigem 15 quadros, tags originais inalteradas, dash só nos quadros 13–15 (JSON 12–14), repeats 1 e as durações dos 12 primeiros quadros iguais ao snapshot. Isso coincide com o export exit 0 já reportado (idle 0..5, walk 6..11, dash 12..14, repeat 1). O tres preserva idle em x 0..320 (420/140/180/140/540/80 ms, loop) e walk em x 384..704 (100 ms, loop), e acrescenta dash em 768/832/896, 0.04/0.04/0.06 s, loop false; 15×64=960. PlayerVisual aplica morto > dash > idle aéreo parado > walk/idle no chão. O restart só ocorre na transição para dashing; com dash já ativo e a animação já em dash, play() não é chamado, então o último quadro permanece. set_dashing(false), o ramo de chão depois que o dash acabou, e o reset trocam a animação. A soma 40+40+60 ms é 0.14 s. Nenhum dos três arquivos contém o controlador. O PNG continua export externo de CLI --sheet-type horizontal; o script só imprime o caminho. Cada pose passa por alpha 0 ou 255, paleta de 27 cores e limite do canvas; sobreposição de flexão é o drawPixel posterior.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum bug concreto na fonte congelada. A aparência do PNG, do .aseprite e dos três quadros fica sem aprovação: os binários não foram lidos.
+NEXT_STEP: Nenhuma correção de código. Aceite visual, se ainda for exigido, é inspeção humana do atlas em x=768, 832 e 896.
+```

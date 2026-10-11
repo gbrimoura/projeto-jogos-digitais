@@ -1,0 +1,11 @@
+STATUS: done
+
+SUMMARY: A revisão estática do Lua, do SpriteFrames e do facing fecha o contrato de 17 quadros em 1088×64, oito poses a 75 ms, cópia RGBA de idle 0–5 e dash 14–16, e facing nativo à esquerda na caminhada (dash continua nativo à direita). A elevação e a passagem fazem a bota escrever por cima do tornozelo/joelho. O limite de silhueta do metadata não é o da spec e não é medido. Isto não é aprovação visual.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: medium — em `transformedLeg`, o tornozelo e o joelho só deslocam `bob`, e a bota (`y>=52`) desloca `lift+bob` (linhas 120–128). Na elevação (`lift=2`, `bob=1`, linhas 40–43 e 56–58) o tornozelo `y=51` e a bota `y=53` caem no mesmo pixel quando o `dx` é o mesmo; a bota `y=52` cai na linha do joelho `y=50`. O `drawPixel` posterior apaga o pixel anterior, então o cluster da perna não só se articula. Na passagem (`lift=1`, `bob=0`) a bota `y=52` cai na linha do tornozelo, com 1 px de diferença horizontal. low — `silhouette_width_px_max` 28 (metadata, linha 253) diverge do máximo de 32 px da spec; não há medição nem clamp. Com `dx` ±2 nas bordas das máscaras `x=20` e `x=45`, o vão permitido é 30 px (`x` 18–47), dentro dos 32 px e acima dos 28 px. low — o comentário da linha 164 fala em “duas poses de prévia”; o sprite e o `assert` da linha 173 usam oito poses.
+
+NEXT_STEP: Ajustar a cadeia vertical para a bota em balanço não ocupar o destino do tornozelo e do joelho, alinhar o limite de silhueta (medir ou unificar 28 e 32) e corrigir o comentário das duas poses. Repetir a revisão estática no Lua estável. A avaliação visual do usuário segue pendente.

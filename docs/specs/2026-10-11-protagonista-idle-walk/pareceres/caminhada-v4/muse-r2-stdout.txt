@@ -1,0 +1,15 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Correção do deslocamento dos previews confirmada no código inline e consistente com README v4.
+FINDINGS:
+- Direita corrigida: `dx=(n-1)*travel` crescente 0→75 com `flipped(img)` — desloca para direita, sem inversão.
+- Esquerda correta: `dx=canvasW-W-dx` decrescente 96→21 sem flip — desloca para esquerda, nativa esquerda.
+- Bug R1 de ambos ramos invertendo dx eliminado; ramos agora distintos e opostos.
+- README documenta pipeline intencional: Aseprite/contact/previews gerados no Lua, PNG/JSON e GIFs via export CLI posterior; comandos com `--script-param` antes de `--script`, `--sheet-type horizontal`, `--scale 6` para 960x384 coerentes com `canvasW=160,H=64`.
+- Sem alteração em histerese/dash hold/revive air/redundant play no trecho; alpha binário/OUT/paleta/atlas fora do escopo do snippet, sem contradição.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Análise limitada a lógica estática inline e coerência documental; sem validação runtime, visual gameplay ou inspeção binária.
+NEXT_STEP: Manter v4 apta para revisão estática pendente; sem nova correção de preview.
