@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Animação `jump` estática 3 poses conforme objetivo: seleção por `velocity.y` com limite 40.0 (0=subida/1=ápice/2=queda), prioridade morte>dash>jump>walk/idle preservada em `_apply_animation_state` com guards `set_dashing`/`set_dead`, retomada ao pousar via `state_changed/pose_changed` e limpeza no spawn terminando em IDLE frame0 playing. Ordem `physics_step` antes dos setters preservada, sem mudança física/colisão. Ordem atlas ascent/apex/fall corresponde a índices 17-19/regiões 1088/1152/1216, base idle preservada, 17 frames 0-16 intactos. Facing `DASH=1 else -1` cobre JUMP igual IDLE/WALK. `speed_scale` jump/dash/dead=1.0, walk com clamp. Bounds com checagem `nx/ny`. Aceite do principal sobre contato registrado, não equivale a avaliação do usuário. Sem inspeção PNG/editor — premissas `load_steps`/paleta/`gdignore`/import aceitas como contexto.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum — sem regressão real em seleção fase/reset/priority/facing/speed_scale/bounds/atlas nas fontes inline. Sobreposição de clusters tratada como técnica intencional, sem juízo sem RGBA.
+NEXT_STEP: Liberar integração das 3 poses e aguardar validação de gameplay pelo usuário.

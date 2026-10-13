@@ -1,0 +1,12 @@
+STATUS: done
+SUMMARY: Revisão estática da implementação V2 de peso do pulo e pixel art concluída com sucesso. A lógica de estados aéreos e transições em `PlayerVisual` e `Player` atende estritamente às especificações do escopo:
+1. **Prioridade de Estados**: A cadeia de precedência `morte > dash > ar > land > walk/idle` está rigorosamente implementada e preservada em `_apply_animation_state()`.
+2. **Ciclo Aéreo e Ápice**: Os clipes `jump_rise`, `jump_apex` e `jump_fall` utilizam `loop: true` no SpriteFrames, permitindo articulação contínua durante o tempo de voo. As trocas ocorrem exclusivamente na transição de fase com base no limiar simétrico `JUMP_APEX_SPEED_LIMIT` (80.0 px/s), sem interrupções artificiais ou frames estáticos a cada tick de velocidade. A janela de ápice (~100 ms sob gravidade 1600 px/s²) acomoda adequadamente os 2 frames de 45 ms (90 ms).
+3. **Aterrissagem Cancelável e Conclusão**: `jump_land` possui `loop: false` (3 frames x 45 ms = 135 ms). A aterrissagem é cancelável imediatamente por transições de maior prioridade (pulo/ar via `set_grounded(false)`, dash via `set_dashing(true)` e morte via `set_dead(true)`). O callback `_on_character_animation_finished` limpa `_is_landing` e transiciona suavemente para walk ou idle. Enquanto `_is_landing == true`, `_set_walk_speed_scale()` mantém `speed_scale == 1.0`, impedindo distorções na taxa de quadros da aterrissagem.
+4. **Supressão de Landing Artificial**: O par `_has_ground_contact` e `_airborne_seen` garante que tanto o spawn quanto o `reset_to_spawn()` / `reset_air_state()` suprimam a aterrissagem artificial até que ocorra contato efetivo prévio com o solo seguido de elevação/queda.
+5. **Facing e Sinais**: `_apply_facing()` respeita a orientação nativa (-1 para idle/walk/jump e 1 para dash), respondendo a mudanças de direção e ao sinal `animation_changed`.
+6. **Coerência de Pipeline e Assets**: O manifest JSON manual (26 frames de 64x64, total 1664x64), as durações declaradas, os recortes de atlas no SpriteFrames e o script Lua de 9 poses articuladas (com sola travada em `dy=0` nas três etapas de land `2->1->0` e proteção de limites de tela) estão perfeitamente alinhados e sem inconsistências de bounds.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum
+NEXT_STEP: Prosseguir com a integração e estabilização pelo agente principal conforme o fluxo estabelecido do projeto.

@@ -1,0 +1,9 @@
+STATUS: done
+
+SUMMARY: Revisão só do texto inline; pixels de PNG/GIF não foram vistos. Extração fecha o contrato: 8 painéis em 1536×1024, nearest 9:1 (centro 192→32, baseline 56), α≥224 gravado como 255 na amostra AI, paleta 27, âncoras e vetores `bodyDx` / `headDy` / `armLeft` iguais aos metadados. Cabeça = idle do atlas snapshot, x 0..63 (quadro 0), linhas 0..32, bob ±1 com passo de 1 px inclusive no loop; layer de cabeça separada e `bodyOnly` clonado antes da cópia, então o idle não é duplicado no corpo. Bounds informados assentam o pé em y=56 nas 8 poses e o topo 7/8/7/6 acompanha `headDy`. Estudo guarda o RGBA original; o limiar fica só nas máscaras. Integrador troca só os frames ASE 7..14 (runtime 6..13), relê o snapshot permanente, exige duração e tags intactas e confere o restante do atlas contra as cels originais; PNG 1600×64 com roundtrip. SpriteFrames walk 384..832 passo 64, 8×0,075 s, loop true. `PlayerVisual`: walk com nativo −1 (igual ao idle) e `speed_scale` 0,65..1,35 sobre 260. GIF em centésimos não entra no runtime.
+
+RISKS: baixa — extração, `clearThrough=32+headDy[i]` (por volta da linha 115): nas elevações i=4 e i=8 (`headDy=-1`) o clear inclusive para em y=31, a linha AI y=32 x=15..48 fica no corpo, e o sy=32 do idle vai para y=31. Nas outras seis poses o destino cobre 0..32. Franja de 1 px é hipótese, sem pixel. Hipótese (não defeito): o blit dos braços (y=37..43, x=20..27 / 38..45) perde 1 px na borda quando `armLeft≠0`. O export PNG/GIF não veio no texto; o integrador prova PNG de poses → frames 6..13, não a fusão das duas layers ASE.
+
+CHANGED_FILES: none
+TESTS: none
+NEXT_STEP: nenhum bloqueio de integração. Ajuste opcional só se quiserem apagar também y=32 no bob −1.

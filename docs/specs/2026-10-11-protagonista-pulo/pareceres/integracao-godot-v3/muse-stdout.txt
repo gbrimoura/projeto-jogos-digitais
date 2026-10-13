@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Integração 8 poses 64x64 -> atlas 25f 1600x64 consistente no inline. Regiões Rect2 sequenciais 64px sem gap/overlap 0..1600, 17 primeiros com durações V2 exatas, rise 17..19 110/95/110ms non-loop com hold por guarda `animation!=target`, apex 20 45ms / fall 21 85ms single-hold sem reinício por tick, land 22..24 3x45ms=135ms non-loop com guarda `!= ou not is_playing` + `animation_finished` liberando. PlayerVisual: limiar vy +-80, prioridade dead>dash>air>landing>walk/idle, `reset_air_state` zera `has_contact/airborne/landing` sem falso pouso, facing nativo dash RIGHT vs demais LEFT preserva aprovada por flip sem redesenho, sem lock física; jump 640/gravity 1600 => janela rise ~350ms vs clipe 315ms com hold curto, jumpcut 0.5 pode abreviar. Registro inteiro Y comum -5/compressão +1/net -4 com bottom inclusivo 56 igual idle, paleta 27 cores alpha binário sem exigir indexed. Sem inspeção de pixels PNG/GIF — só código inline; import headless não é gameplay.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum defeito concreto — nenhuma linha com severidade a reportar no escopo inline
+NEXT_STEP: Congelar e seguir fluxo sem solicitar testes como requisito

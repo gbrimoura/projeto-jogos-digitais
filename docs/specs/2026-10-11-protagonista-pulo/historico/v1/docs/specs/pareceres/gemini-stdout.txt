@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática da animação de pulo concluída sobre as fontes inline congeladas. A lógica de seleção das 3 poses por velocidade vertical (`ascent`, `apex`, `fall`), a hierarquia de prioridades (`morte > dash > jump > walk/idle`), a retomada da animação ao pousar, a limpeza no respawn, a escala de velocidade neutra no ar (`speed_scale = 1.0`), o espelhamento direcional (`facing`) e os limites de atlas/transformação em Aseprite (1088/1152/1216 em 1280x64) estão consistentes e sem regressões.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum achado real com severidade; critérios de transição, resets de estado e limites do atlas validados.
+NEXT_STEP: Prosseguir com o fluxo de integração/congelamento dos assets e documentação no branch ativo conforme o plano do projeto.

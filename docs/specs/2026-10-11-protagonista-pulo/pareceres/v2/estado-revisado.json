@@ -1,0 +1,26 @@
+[
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player_visual.gd",
+    "sha256": "658871cf4587a797431104b7569da5293daf7ee86286d267cdb1b1807b556620"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player.gd",
+    "sha256": "2e86fdfc1040046b53e1d7ac3dd4f3d8bebf5d9278b765e693662744676c7099"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\player_sprite_frames.tres",
+    "sha256": "34224da2f32274641b8140a8d2dce6a78fd2cef1ebfbee6e4213e25d4f9735a8"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\player\\player-animations.png",
+    "sha256": "d04e34d9179070c2f5298fbc7490ef50d352917c3da5df457dc28af7803264cb"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\player\\source\\player-animations.aseprite",
+    "sha256": "515cd891dd3a1129018bb1e81cfe2d3b3fcd3bee752b4904f9c0a6445077c42a"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\GDD_Dieselpunk_Noir\\pitch-assets\\protagonista-pulo\\protagonista-pulo-v2.lua",
+    "sha256": "3ea76aa16a3548f9af53c6d42c3291053ea4b475c5250f91e0797e4c82309aae"
+  }
+]

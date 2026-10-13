@@ -1,0 +1,9 @@
+{
+  "projeto-jogos-digitais/assets/player/player-animations.png": "1b3b6a8fc75e7c55346b3d2de86c2fa20bb82712a81db5a207962a29ae023f36",
+  "projeto-jogos-digitais/assets/player/source/player-animations.aseprite": "74922dd3bc240dd981c807f7866f9e92f4da73c48292b35ad88c3285bfd24d0b",
+  "projeto-jogos-digitais/resources/player_sprite_frames.tres": "ff45afd4124cbff029f564990acd1d12def5945b048c9a775c970cd598dcdc30",
+  "projeto-jogos-digitais/scripts/player/player_visual.gd": "658871cf4587a797431104b7569da5293daf7ee86286d267cdb1b1807b556620",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-pulo-v3/integrar-godot-v3.lua": "dc58dcd6e36f040177ee70057b38e4bfa95d6c5cf6bd5a2c1493f5c05c2e5be2",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-pulo-v3/runtime-v3-metadata.json": "3446ed77e1dedf77e1e7a2078ad8432eb3f138a384467a126df909481150a8d3",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-pulo-v3/runtime-v3-contact.png": "e98ce9b1608ede12241c1d191bd31c827ed206ba440a3e71a533877f91a96d8f"
+}

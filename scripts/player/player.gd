@@ -90,7 +90,7 @@ func _physics_process(delta: float) -> void:
 	)
 	player_visual.set_facing_direction(movement_controller.facing_direction)
 	player_visual.set_dashing(movement_controller.is_dashing)
-	player_visual.set_grounded(is_on_floor())
+	player_visual.set_grounded(is_on_floor(), velocity.y)
 	var is_walking := is_on_floor() \
 		and not movement_controller.is_dashing \
 		and absf(velocity.x) > 8.0
@@ -116,6 +116,7 @@ func reset_to_spawn(spawn_position: Vector2) -> void:
 	global_position = spawn_position
 	velocity = Vector2.ZERO
 	movement_controller.reset()
+	player_visual.reset_air_state()
 	player_visual.set_facing_direction(movement_controller.facing_direction)
 	player_visual.set_dashing(false)
 	player_visual.set_walking(false)

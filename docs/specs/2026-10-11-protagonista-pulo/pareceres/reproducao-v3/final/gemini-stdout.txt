@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática inline do script Lua e manifesto concluída com aprovação. As quatro correções identificadas pelos revisores foram devidamente integradas: o comparativo de contato agora usa mappedYAnchor de forma simétrica em ambos os lados (linha 187); o clamp estrito x=18..365 nas caixas delimitadoras e nos seeds de preenchimento (linhas 49-50, 59-60) impede a inclusão de molduras laterais; a pose de recuperação expandiu o limite vertical inferior para y=385 (linha 30), preservando a sola; e a remoção das linhas de chão passou a operar por correspondência cromática por pixel individual (linhas 68-81), evitando o apagamento de traços do personagem que cruzam a mesma coordenada horizontal.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum defeito concreto ou regressão identificados no código Lua ou no manifesto
+NEXT_STEP: Executar o script no Aseprite (`--script`) para geração dos arquivos base e exportar externamente o GIF 4x via CLI (`--scale 4 --save-as`) conforme o pipeline documentado no manifesto.

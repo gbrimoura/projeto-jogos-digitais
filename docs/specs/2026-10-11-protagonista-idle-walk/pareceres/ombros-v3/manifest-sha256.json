@@ -1,0 +1,16 @@
+{
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros.lua": "696c58e50350b3e1459b24c4779f29ef21c3b255d7ff300ec409514e1ba0b339",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/integrate-walk-v8-v3-ombros.lua": "2d5807e612b8fcb75027a0f590191b82e33bda365f08079babe7caca61062aef",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-poses.aseprite": "26ed755636dee22402d2546b4d99ed0686611d0f23435fa099179cf1fe832d60",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-poses.png": "fb10ba44021724aac9e3939300cf2c3424cfcd76ee408b5efd39c20430b8f5a3",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-metadata.json": "80297b372eb970e2c585cb8ef8386278ce275951a275d4e77ea88166396079fe",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-contact-4x.png": "d2011ab3b2429da924557ddfa6e1061f706ba1605530b520a95b2446d8c2524a",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-contact-detalhe-antes-depois-8x.png": "2bbac0fc5480c8741361b5ae65114bcdc4d6fe190c21d7deff864d65c0bf4e24",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-preview-esquerda.gif": "d06520b81b29ca2b7ef213db9ccc7b56b390c45193fba16fe835be0786238b45",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-preview-direita.gif": "fc695f48f394153a7547a06f8dbb472a6ddeeb26a776baa72a84e1ba4b79cf6d",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/diff-v3-ombros.txt": "c31cd8f72726e65931f9570eff19a88d9f1b16cd1123f49b0c31811d5c843cd7",
+  "projeto-jogos-digitais/assets/player/player-animations.png": "58059c4b51f502f210922f624accb0f10baba1a042b73c39fcd04a277982c9bc",
+  "projeto-jogos-digitais/assets/player/source/player-animations.aseprite": "f56e61168412cd423072bac4de9000d65833c424ee5ed37fba634f989cbb6412",
+  "projeto-jogos-digitais/resources/player_sprite_frames.tres": "ff45afd4124cbff029f564990acd1d12def5945b048c9a775c970cd598dcdc30",
+  "projeto-jogos-digitais/scripts/player/player_visual.gd": "658871cf4587a797431104b7569da5293daf7ee86286d267cdb1b1807b556620"
+}

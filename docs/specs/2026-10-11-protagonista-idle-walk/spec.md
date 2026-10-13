@@ -47,3 +47,12 @@ A V7 parte da caminhada frontal V6 e altera somente os braços nas oito poses. M
 Cabeça, torso/bob, pernas, botas, idle, dash, facing, cadência e SpriteFrames permanecem iguais à V6. O atlas continua com 17 quadros: idle 0–5, walk 6–13 e dash 14–16; caminhada 8×75 ms. A revisão estática V7 e a aprovação visual do usuário ainda não foram registradas.
 
 Consulte [spec-v7-bracos.md](spec-v7-bracos.md) para arquivos, hashes e registro da importação Godot.
+
+
+## Incremento prospectivo V8
+
+A próxima caminhada será reproduzida da prancha frontal gerada em 12/10/2026 e deve preservar a identidade do idle, criar apoios/peso legíveis e manter invariantes de atlas e cadência. O contrato, critérios visuais e gate de aprovação estão em [spec-v8-referencia.md](spec-v8-referencia.md).
+
+## Caminhada V8 integrada — 12/10/2026
+
+[Spec e resultado V8](spec-v8-referencia.md): pernas da referência nova, cabeça do idle estabilizada e balanço curto dos braços. Integrada apenas6–13; idle/dash/puloV3 preservados. Import Godot exit0 e revisão estática Gemini/Muse/Grok concluída; Opus por quota. Avaliação estética do usuário em jogo pendente.

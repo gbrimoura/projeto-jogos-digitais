@@ -43,3 +43,8 @@ O principal inspecionou o contact comparativo após a correção e considerou as
 ## Incremento de braços V7
 
 A V7 move antebraço e luva como um cluster em arco vertical local de ±1 px, com ombros ancorados e swing lateral V6 mantido. Não altera cabeça, torso/bob, pernas, botas, idle, dash, facing ou cadência. O principal inspecionou o contact comparativo e autorizou integrar. PNG/Aseprite foram copiados ao runtime e reimportados no Godot editor; exit 0, stderr vazio. Nenhum teste ou gameplay foi executado. Detalhes e hashes em [spec-v7-bracos.md](spec-v7-bracos.md).
+
+
+## Incremento V8 — reprodução da caminhada frontal
+
+**Estado:** V8 refinada e aceita pelo principal, integrada apenas em walk 6–13 no atlas de 25 quadros; import editor Godot exit 0. Gemini/Muse/Grok concluídos, Opus por quota. Avaliação visual pelo usuário em jogo pendente. A spec prospectiva e o snapshot reproduzível pre-V8 estão em [spec-v8-referencia.md](spec-v8-referencia.md) e [historico/pre-walk-v8/README.md](historico/pre-walk-v8/README.md).

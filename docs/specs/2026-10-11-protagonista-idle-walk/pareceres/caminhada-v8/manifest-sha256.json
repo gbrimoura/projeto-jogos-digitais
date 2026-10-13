@@ -1,0 +1,16 @@
+{
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/referencia-walk-v8-v1.png": "c3b11e73b36410344e730abfe41c62b3bd557d1d92ab77d74b200c7c6bf0d45f",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2.lua": "f99f0fed11b1ae4ffb32e19a4271598fdb6fd78072f5d2b3772b48e64bc97362",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/integrate-walk-v8.lua": "34adab1192de7926e727481815857163ea0bf18d11ddaa7e15b2ed9fb12107c3",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2-metadata.json": "25fb5f5ee453795f8fabbc6f9afeae91b02180c4200b47e3494e5e0c955a2d57",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2-poses.aseprite": "6c0e2806f95ac6a969c1d6ac3865189d287e5c78edccb1c0ee62cefa201fd471",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2-poses.png": "ba456cba4d5243bdc3d322d33d52af7ad8fec5df8468d54db6041ebee5660ba8",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2-contact-4x.png": "7527d63974c4a382c65eaf27d82e14e70e051116bd86c93e18b90add83db0c32",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2-contact-comparativo-4x.png": "ec6d7721fc2c9b2ce84a9af763bc54c64c113686b367962b64fe5a5594e199d3",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2-preview-esquerda.gif": "32a3d3dcbc6279268bfe691d3e0be3bb6c2d1650f308610e9fe5a871acf5f2e1",
+  "GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v2-preview-direita.gif": "5dcee028e42578aa9db6a2ef153de46fe7e46cdf688a76b214d894b7a0b7a519",
+  "projeto-jogos-digitais/assets/player/player-animations.png": "7d790057de1c01873acbb44e658596d0198a0cc09593081c68f7daf6748da8c5",
+  "projeto-jogos-digitais/assets/player/source/player-animations.aseprite": "9e8e40979dfe7c9d2879dbd6be3d3e572f165c6f858f6383f85b98395f5a1c9b",
+  "projeto-jogos-digitais/resources/player_sprite_frames.tres": "ff45afd4124cbff029f564990acd1d12def5945b048c9a775c970cd598dcdc30",
+  "projeto-jogos-digitais/scripts/player/player_visual.gd": "658871cf4587a797431104b7569da5293daf7ee86286d267cdb1b1807b556620"
+}

@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Inspeção Aseprite dos pixels registered pré-clear nas compressões locais1/runtime7 e5/runtime11. Em y33, x24–28 e34 são #F6ECDD/255 (cream). Frame1 x35=#020213/255, x36–39 transparentes. Frame5 x35=#020213/255, x36=#060419/255, x37–39 transparentes. Nenhum desses11pontos é amarelo #FCC203. Pixels cream/outline pertencem à antiga cabeça/mandíbula AI; ombros amarelos aparecem emy35. Restaurar os sites reintroduziria a mandíbula sob a cabeça idle.
+CHANGED_FILES: none
+TESTS: none; inspeção de pixels Aseprite em modo leitura, helpers temporários removidos.
+RISKS: Cabeça e corpo são contíguos, mas cor/posição mostramy33como oldhead, não top dospads.
+NEXT_STEP: Manter V3; principal descarta a restauração sugerida.

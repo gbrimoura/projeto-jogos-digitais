@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: A prioridade morte > dash > ar > pouso > walk/idle fecha no `_apply_animation_state`. Rise/apex/fall só reiniciam quando a fase muda, com loop e `speed_scale` 1; o ápice usa |vy| ≤ 80 (janela ~100 ms a 1600 px/s²) e clipes de 2×45 ms. O pouso é 3×45 ms, sem loop, cancelável por ar, dash, morte e reset, e o spawn não dispara pouso sem contato anterior. Física, facing, eventos, atlas 17+9 e as 9 poses batem com o recorte.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum
+NEXT_STEP: Nenhuma correção no escopo; manter a frente congelada.

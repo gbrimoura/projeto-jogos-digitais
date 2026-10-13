@@ -1,0 +1,20 @@
+{
+ "revision":"jump v1 — três poses frontais selecionadas pela velocidade vertical",
+ "status":"arte integrada após aprovação do principal; revisão externa e gameplay pendentes",
+ "source_atlas":"protagonista-pulo-input-atlas-1088x64.png",
+ "source_atlas_sha256":"eb354cbe5f5b3a4eb4c07fe277f1fb118cc05e809044c8d0269bf795be3bda65",
+ "frame_size":{"width":64,"height":64},
+ "atlas_size":{"width":1280,"height":64},
+ "palette_colors":27,
+ "alpha":"binário",
+ "native_facing":"left",
+ "preserved_frames":{"idle":[0,5],"walk":[6,13],"dash":[14,16]},
+ "jump_frames":{"ascent":17,"apex":18,"fall":19},
+ "jump_frame_duration_ms":100,
+ "phase_selection":{"ascent":"velocity_y < -40 px/s","apex":"abs(velocity_y) <= 40 px/s","fall":"velocity_y > 40 px/s"},
+ "art_notes":"cabeça e torso copiados do idle; antebraços articulados e botas recolhidas na subida/ápice; pernas prontas para apoio na queda",
+ "preview_notes":"GIF demonstra deslocamento vertical num arco; translação é apenas demonstrativa e não pertence aos frames runtime",
+ "preview_canvas":{"width":64,"height":128},
+ "contact":"protagonista-pulo-contact.png",
+ "previews":["protagonista-pulo-preview-esquerda.gif","protagonista-pulo-preview-direita.gif"]
+}

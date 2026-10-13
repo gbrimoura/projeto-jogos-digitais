@@ -34,3 +34,11 @@ Consulte [pareceres e decisões v5](caminhada-v5/README.md). Gemini, Muse e Grok
 ## Braços V7 — balanço leve
 
 [Resultados e decisões](bracos-v7/README.md): Gemini/Muse/Grok concluídos sem bugs apontados no escopo; Opus por quota. Arte integrada; avaliação visual do usuário pendente.
+
+## Caminhada V8 — reprodução da referência
+
+[Pareceres e avaliação](caminhada-v8/README.md): Gemini/Muse/Grok concluídos sem defeitos concretos; Grok levantou hipóteses baixas avaliadas pelo principal. Opus bloqueado por quota. Arte integrada e importada; avaliação visual em jogo pelo usuário pendente.
+
+## Correção dos ombros V3
+
+[Revisões e decisões](ombros-v3/README.md): Gemini/Muse/Grok concluídos; principal investigou possível falha na compressão e descartou restauração por serem pixels da antiga mandíbula AI. Opus bloqueado por quota. Correção integrada, importação final sem erros; avaliação visual do usuário no jogo pendente.

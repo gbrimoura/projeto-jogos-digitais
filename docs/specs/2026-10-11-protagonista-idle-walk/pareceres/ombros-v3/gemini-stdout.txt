@@ -1,0 +1,9 @@
+STATUS: done
+SUMMARY: Revisão estática da correção mínima de ombros (Walk V8 V3). A remoção cirúrgica de 11 pixels por quadro da camada da cabeça em `sy=32` elimina a duplicação dos shoulder pads e o desacoplamento com o torso AI, preservando perfeitamente o colar central, capacete, antena e a integridade dos 17 quadros protegidos do atlas.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum defeito concreto identificado. Análise dos eixos:
+- **Ombromask e Hierarquia:** A máscara `sy==32 and ((x>=24 and x<=28) or (x>=34 and x<=39))` filtra com precisão cirúrgica os dois clusters amarelos com contorno (5 px à esquerda + 6 px à direita = 11 px), deixando intacto o colar central (`x=29..33`), visor, capacete e antena. A camada `bodyOnly` tem 0 pixels alterados e o torso AI mantém seu par de ombros próprio em `y=33..35`.
+- **Coordenadas, Bob e Diff:** Os deltas verticais (`headDy = {0, 1, 0, -1, 0, 1, 0, -1}`) mapeiam estritamente as linhas afetadas nos frames 0..7 (`y=32` nos frames 0, 2, 4, 6; `y=33` nos frames 1, 5; `y=31` nos frames 3, 7). O diff do artefato confirma exatamente 11 pixels por frame na layer de cabeça (88 pixels no total) e 0 na layer de corpo.
+- **Preservação e Integração:** O integrador consome o snapshot `pre-ombros-v3` (Walk V8 V2 + Jump V3), substitui unicamente os quadros 6..13 (walk 0..7) e valida via asserts de igualdade de cor (`rgbaEq`) e integridade estrutural (dimensões 1600x64, 25 frames, durações nominais de 75 ms e tags idênticas) para todos os quadros protegidos (idle 0..5, dash 14..16 e jump 17..24). Import Godot resolvido headless com exit 0.
+NEXT_STEP: Proceder com a consolidação documental e aprovação da entrega do asset Walk V8 V3 ombros pelo agente principal.

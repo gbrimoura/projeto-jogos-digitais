@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Nas fontes inline, `set_grounded` escolhe quadro 0/1/2 com `velocity.y` em -40/+40 (subida/ápice/queda, Y do Godot para baixo). `_apply_animation_state` mantém morte > dash > jump > walk/idle; o pouso dá `play` em idle/walk; no spawn vivo, `set_grounded(true, 0)`, dash/walk e `set_dead(false)` zeram pose, `speed_scale` e trilha. O jump usa o facing nativo do idle (-1), com `flip_h` reaplicado em `animation_changed`. No ar e no dash a escala volta a 1. O script desloca pernas e braços em deltas inteiros que permanecem no quadro 64 e gera a ordem subida/ápice/queda, alinhada aos quadros 0–2 (regiões 17–19). Inputs e a ordem `physics_step` antes dos setters permanecem como no trecho.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum
+NEXT_STEP: Encaminhar este parecer; a avaliação visual do usuário continua sendo o passo seguinte.

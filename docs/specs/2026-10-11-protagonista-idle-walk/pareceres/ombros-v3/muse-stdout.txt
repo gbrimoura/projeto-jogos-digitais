@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Delta minimo coerente: remove SOMENTE 11px/frame `sy==32 x24-28,34-39` da headlayer com `ty=sy+headDy`, `headDy=[0,1,0,-1,0,1,0,-1]`; colar central/capacete/visor/antena preservados, bodyAI/arms/legs inalterados. Hierarquia 2 layers sem duplicacao: `bodyOnly` apos `clearThrough=32+headDy` + `head` idle exato menos pads. Diff declarado: bodyLayer 0, headLayer 11/frame 88 total, PNG flat 88 na regiao `y32+headDy` — so fonte/diff declarado, sem alegar inspecao de pixels PNG/GIF. Preservacao: runtime 25/1600x64, so walk 6..13, 17 quadros/duracoes/tags inalterados, input INTEGRADOR `pre-ombros-v3` = V2+JUMPV3.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum defeito concreto severity/linha. Hipoteses sem pixels: `clearThrough=33` em frames `headDy=1` + pads removidos pode expor 1px lateral em y33 se ombro AI era opaco ali — principal aceitou ligacao em contact/detail 8x; info trivial: string assert `Spritesheet V2 precisa de 512x64` deveria dizer V3, sem impacto funcional.
+NEXT_STEP: Congelar e handoff Manual V3 ombros; sem testes/gameplay/quality-audit por escopo.

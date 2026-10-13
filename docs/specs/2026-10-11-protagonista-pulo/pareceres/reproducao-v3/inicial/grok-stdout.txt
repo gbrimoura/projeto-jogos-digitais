@@ -1,0 +1,84 @@
+A revisão cobre só o Lua e o manifesto inline. Nenhum pixel de PNG, GIF ou contact foi inspecionado. Os números abaixo são consequência direta do código e do JSON.
+
+## Confirmados
+
+**Alta — contact não compara o mesmo alinhamento nas quatro poses ancoradas.** O sprite usa `mappedYAnchor` (sola = base do bbox). O painel esquerdo do contact usa sempre `pose.ground`. O comentário desse bloco pede a mesma escala e o mesmo alinhamento.
+
+```112:114:LUA
+local function mappedYAnchor(pose)
+ if pose.anchored then return pose.bounds.y+pose.bounds.h-1 end
+ return pose.ground
+end
+```
+
+```123:124:LUA
+local sx=math.floor(x*SCALE-29)
+local sy=math.floor(anchor-3+(y-GROUND_OUT)*SCALE)
+```
+
+```186:187:LUA
+local sx=math.floor(x*SCALE-29)
+local sy=math.floor(pose.ground-3+(y-GROUND_OUT)*SCALE)
+```
+
+Delta sola − chão, em pixels da prancha:
+
+- impulso: 434 − 427 = +7, exatamente 1 pixel de saída, mesma fase
+- contato: 383 − 391 = −8, fase diferente (resto −1 mod 7)
+- compressão: 384 − 392 = −8, mesma fase diferente
+- recuperação: 382 − 399 = −17, cerca de 2,4 pixels de saída (resto −3 mod 7)
+
+Nas aéreas o delta é 0, então o par é válido. A inspeção do contact não valida o registro das poses de contato: esquerda e direita não mostram as mesmas linhas da prancha.
+
+**Alta — o recorte é o limite do bbox, fora do miolo semeado (x 18..365).** O manifesto bate com a fórmula inclusiva `clip = {minX, maxX, minY, maxY}`.
+
+- recolhimento, clip `{8,324,43,406}`: bbox local x=8, y=43, maxY=406. Três lados encostados. x=8 está à esquerda da seed.
+- compressão, clip `{12,373,136,394}`: bbox local y=136 e maxX=373. Topo e direita encostados. x=373 está à direita da seed (365).
+- recuperação, clip `{38,352,38,382}`: maxY=382 encostado, e essa linha é a âncora (manifesto `anchor_y` 894 = 512+382).
+
+Pixel fora do clip nunca entra na máscara nem na âncora. O `assert(count>200)` passou (38k–49k) e não detecta isso.
+
+**Média — limpeza de chão apaga a linha inteira, não só o pixel azul-cinza.**
+
+```72:76:LUA
+local function visible(x,y)
+ ...
+ if bg[i] or lineRows[y] then return false end
+```
+
+A busca é `ground±7` com limiar `count>=80` em x=18..365. No impulso, `ground=427` cai dentro do span do bbox (139..434). Uma linha detectada nesse intervalo fura o corpo na máscara de estudo. A rede do 64px desse pose é `sy ≡ 4 (mod 7)`; y=427 ≡ 0, então um corte só nessa linha some no sheet e no lado direito do contact.
+
+## Riscos
+
+**Alto — impulso é o único ancorado cuja sola fica abaixo do chão declarado** (+7 px). Nas outras, a sola fica 8, 8 e 17 px acima. Sem pixels há duas leituras: a sola atravessa a linha, ou a linha apagou o contato e o bbox desceu até resíduo não classificado como chão. A âncora 434 é o que o algoritmo mediu, não uma sola marcada à parte.
+
+**Médio — o predicado de fundo inclui duas cores da paleta de 27.** `(0,17,35)` e `(3,23,39)` satisfazem `backgroundCandidate` (linha 33). `(26,66,118)` satisfaz `groundColor` (linha 37). O flood é 4-conectado a partir da borda. Cavidade fechada por contorno fora do predicado permanece. Navy do personagem ligado ao exterior, ou um buraco diagonal no contorno, é comido. As margens do bbox em cinco poses mostram que o flood limpou o exterior; isso não mede erosão na silhueta.
+
+**Médio — topo do recolhimento e base da recuperação.** O topo y=43 é vizinho de subida (49) e ápice (47), então pode ser um clip justo de um recolhimento real. A base da recuperação (382) está a 1–2 px das solas de contato (383) e compressão (384), então pode ser a sola real sem folga. Continua sendo o clip que impede ver qualquer pixel além.
+
+**Baixo — queda** tem 1 px de folga no topo (bbox y=18, clip y=17). **Ápice** tem 4 px à direita (maxX=346, clip 350).
+
+## Hipóteses
+
+- Fileira grossa de chão no impulso incluir y=424 ou y=431, que caem na rede do 64px e abririam um buraco visível. A espessura não está no manifesto.
+- x=8 do recolhimento e x=373 da compressão serem moldura não-navy (o predicado não a trata como fundo) ou membro que realmente chega lá. A posição fora da seed e o encosto no clip tornam a moldura mais plausível; os pixels não estão aqui.
+- GIF arredondar a duração 95 ms da subida para centésimos. O script grava 0,095 s no `.aseprite`. O GIF 256×256 não é escrito por este Lua.
+
+## Verificado, sem defeito de registro
+
+- Escala uniforme 7 nos dois eixos. `sx = floor(7x−29)` centra o painel: o centro 191,5 cai no centro de saída 31,5. As oito silhuetas medidas cabem em 64×64.
+- A fase `−3` é o centro da janela de 7 px (`floor(SCALE/2)`), comum a todas as poses. A linha da âncora não é o texel de y=61; y=61 copia `anchor−3`. O pé de todas as poses continua na mesma linha de saída. Não é deslocamento entre poses.
+- Aéreas usam `pose.ground`; contato usa a base do bbox. O manifesto reproduz essas âncoras (434, 429, 428, 433, 917, 895, 896, 894).
+- Alpha do 64px é binário: amostra com alpha > 0 vira 255; o resto fica sem pixel. Paleta com 27 cores, empate fica na primeira. Sheet `64*8` por 64.
+- Estudo: original intacto mais oito máscaras no lugar da prancha. O alpha desse arquivo é o da fonte, não o binário do 64px.
+- O GIF não leva arco: os cels saem em `(0,0)`. O script salva `animacao.aseprite` em 64×64 e não exporta o GIF; o manifesto cita `animacao-4x.gif`. O tamanho informado (256×256, 8 frames) é 4× de 64×64, compatível com export externo. O comentário “4x em Aseprite” não descreve o sprite salvo.
+- JSON manual: sintaxe válida e campos iguais às contas do script.
+
+```text
+STATUS: done
+SUMMARY: Defects are in the Lua, not in the manifest dump. Contact left side is ground-aligned while the four anchored sprites are sole-aligned (deltas +7, -8, -8, -17 source px), so that sheet cannot verify contact registration. Recolhimento (3 edges), compressao (top and right), and recuperacao (sole=clip bottom) are clip-limited; recolhimento x=8 and compressao x=373 sit outside the flood seed inset. Ground cleanup deletes whole rows; impulso ground y=427 lies inside the body span and is off the 64px lattice. Background predicate includes palette colors (0,17,35) and (3,23,39). Uniform 7x scale, binary alpha on the 64px path, panel centering, aerial-vs-sole anchors, sheet 512x64, and manifest arithmetic check out. GIF 256x256 is not produced by this script.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Impulso sole-below-ground may be a deleted contact row plus leftover pixels, or a real sole through the line; 64px hides a single-row cut at y=427. Frame-vs-limb at the saturated outer edges is unresolved without pixels. Closed non-navy outlines would block flood leaks; gaps would not. Palette identity versus the game file was out of scope. GIF delay for the 95ms frame was not in the reviewed script.
+NEXT_STEP: Point the contact left sample at mappedYAnchor, widen the flush clips past the frame and reject frame pixels by geometry, delete ground by pixel color inside the body span instead of the whole row, and keep character palette colors out of backgroundCandidate. Re-export only after those mask changes; the current contact cannot clear the anchored poses.
+```

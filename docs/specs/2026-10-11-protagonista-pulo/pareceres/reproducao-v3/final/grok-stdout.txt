@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: As quatro correções estão no Lua e batem com o manifesto colado (sem leitura de pixels). O clamp x=18..365 deixa a moldura citada (x8 e x373) fora das máscaras; o clip da recuperação inclui y=385 e bounds/âncora chegam nessa linha (897 no painel 7). Chão sai só por cor, nas rows com ≥80 amostras. Sprite 64px e os dois lados do contact usam `mappedYAnchor`: sola nas poses `anchored`, `ground` nas aéreas. Bounds finais continuam dentro dos clips depois do clamp.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum
+NEXT_STEP: nenhum

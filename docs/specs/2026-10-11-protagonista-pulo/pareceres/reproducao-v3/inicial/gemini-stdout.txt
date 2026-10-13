@@ -1,0 +1,41 @@
+STATUS: done
+SUMMARY: Revisão estática documental do script Lua de reprodução artística para Aseprite 1.3.18.6 e seu manifesto JSON. Foram auditados os algoritmos de segmentação/máscara, corte, escala 1:7 (nearest-neighbor), quantização de paleta, alpha binário, âncoras verticais e contratos de exportação. Foram identificados defeitos concretos de recorte por limites rígidos de clip (poses 7 e 6), eliminação horizontal indiscriminada de linhas inteiras do personagem por `lineRows`, omissão da geração do arquivo GIF pelo script Lua apesar de contratado no manifesto, e desalinhamento vertical comparativo no contact sheet para poses de contato.
+
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+
+### Defeitos Concretos (com severidade e linha)
+
+1. **[Severidade Alta] Linha 26 — Truncamento dos pés da pose "recuperacao" por limite rígido de `clip`:**
+   - *Evidência:* Na pose 7 (`recuperacao`), o recorte foi configurado com `clip={38,352,38,382}` e `ground=399`. No manifesto gerado, `source_bounds.y = 553` (offset 41 no painel) e `height = 342`, o que resulta em `maxY = 41 + 342 - 1 = 382`.
+   - *Defeito:* `maxY` atinge exatamente o teto de corte inferior (`clip[4] = 382`). Como a linha de solo de referência está em `y = 399` (17 pixels abaixo), a sola dos pés foi truncada artificialmente pela caixa de recorte antes de alcançar o piso. Além disso, como `anchored = true`, o cálculo de âncora `mappedYAnchor` (linha 116) usou `maxY = 382` (894 global) em vez da sola real no chão.
+
+2. **[Severidade Alta] Linhas 74 e 85 — Supressão cega de linhas inteiras do personagem por `lineRows`:**
+   - *Evidência:* Na linha 74, `lineRows[y] = true` marca qualquer linha `y` que apresente `count >= 80` de cor de chão no painel. Na linha 85, a função de visibilidade executa: `if bg[i] or lineRows[y] then return false end`.
+   - *Defeito:* `lineRows` é um vetor unidimensional de coordenadas `y`, sem teste de posição `x` nem teste da cor real do pixel `(x, y)`. Se a linha de chão atrás ou ao lado do personagem atingir 80 pixels de continuidade horizontal, a linha `y` inteira é apagada transversalmente através do personagem, gerando fatiamento horizontal ou furos transparentes em botas, pernas e solas. A verificação correta exige conferência local (`if bg[i] or (lineRows[y] and groundColor(pixelAt(pose.panel, x, y))) then return false end`).
+
+3. **[Severidade Alta] Linha 215 vs. Manifesto Linha 223 — Omissão de geração do arquivo GIF pelo script Lua:**
+   - *Evidência:* O manifesto registra o contrato `"gif": "protagonista-pulo-v3-referencia-v1-animacao-4x.gif"`. No entanto, o script Lua executa apenas `gifSprite:saveAs(out(BASE.."-animacao.aseprite"))` (linha 215) e nunca invoca salvamento ou exportação do `.gif` de 256x256.
+   - *Defeito:* O script Lua sozinho não cumpre o contrato de arquivos divulgado pelo próprio manifesto. A geração do GIF de 256x256 depende de etapa externa via CLI do Aseprite (`--scale 4 --save-as`) que não consta no arquivo de script.
+
+4. **[Severidade Média/Alta] Linha 25 — Truncamento lateral direito e invasão de perímetro na pose "compressao":**
+   - *Evidência:* Na pose 6 (`compressao`), `clip={12,373,136,394}`. No manifesto, `x = 796` (offset 28 no painel) e `width = 346`, resultando em `maxX = 28 + 346 - 1 = 373`.
+   - *Defeito:* `maxX` atinge exatamente o limite direito `clip[2] = 373`, indicando corte lateral abrupto da silhueta. Além disso, `clip[2] = 373` ultrapassa a borda de sementes do flood-fill (`x = 365`, linha 56), deixando a faixa de `x = 366..373` fora do anel perimetral de injeção da máscara de fundo.
+
+5. **[Severidade Média] Linhas 190 vs. 123 — Desalinhamento vertical comparativo no contact sheet:**
+   - *Evidência:* Na renderização final `render64()` (linha 123), poses ancoradas utilizam `anchor = mappedYAnchor(pose)` (baseado na sola `maxY`). No contact sheet comparativo (linha 190), a projeção do painel original à esquerda usa invariavelmente `sy = math.floor(pose.ground - 3 + (y - GROUND_OUT)*SCALE)`.
+   - *Defeito:* Quebra da premissa descrita na linha 175 ("Mesma escala/alinhamento em cada par"). Para as quatro poses ancoradas (`impulso`, `contato`, `compressao`, `recuperacao`), o lado esquerdo (referência) fica ancorado na linha de chão, enquanto o lado direito (sprite) fica ancorado na sola. Quando `pose.ground != anchor` (diferença de até 17 pixels no source na recuperação), o par comparativo fica visivelmente deslocado no contact sheet 4x. A linha 190 deveria usar `mappedYAnchor(pose)`.
+
+---
+
+### Riscos e Hipóteses Identificados
+
+1. **[Risco — Recorte] Linha 21 (`recolhimento`):** `clip[1] = 8` e `source_bounds.x = 776` (offset 8 no painel). Como `minX == clip[1]`, a silhueta toca exatamente a borda esquerda do recorte, com risco de truncamento de extremidades (capa/cotovelo).
+2. **[Risco — Máscara de Fundo] Linhas 32 e 56-57:** As sementes do flood-fill partem de `x = 18` e `x = 365`. A paleta de 27 cores inclui entradas como `{0,17,35}` e `{3,23,39}`, que satisfazem integralmente a função `backgroundCandidate()`. Se alguma pose cruzar a linha `x = 18` ou `x = 365` com uma dessas cores escuras da paleta do protagonista, o flood-fill entrará inadvertidamente pelo corpo do personagem.
+3. **[Risco — Paleta] Linhas 98-105 e 106-114:** A paleta de 27 cores possui 12 variações de azul-escuro/preto com diferenças euclidianas minúsculas (1 a 3 canais RGB) e pares redundantes de azuis (`{46,101,176}` vs. `{48,105,181}`) e beges (`{245,233,216}` vs. `{246,236,221}`). Como a quantização usa distância euclidiana simples sem modelo perceptual, ruídos de 1 valor de cor na imagem de entrada causam variação arbitrária entre índices quase gêmeos (ruído de quantização "salt-and-pepper").
+4. **[Risco — Formato Aseprite] Linhas 147-161:** Os arquivos `.aseprite` são salvos como sprites RGBA com tabela de paleta anexada, e não convertidos para o modo de cor `ColorMode.INDEXED`. Isso preserva o alpha binário, mas cels armazenam 32-bit RGBA em vez de índices diretos de paleta.
+5. **[Hipótese — Amostragem Nearest 1:7] Linhas 124-125:** A redução por amostragem pontual (`x*7 - 29`, `anchor - 3 + ...`) descarta 48 de cada 49 pixels da prancha original. Detalhes finos de 1 a 2 pixels no original (como contornos de olhos ou fios de tecido) estão sujeitos a desaparecimento ou aliasing severo dependendo do deslocamento fracionário da malha.
+
+NEXT_STEP: Encaminhar ao agente principal para correção dos limites de `clip` nas poses 7 (`recuperacao`), 6 (`compressao`) e 2 (`recolhimento`), refatoração da verificação em `lineRows` (tornando-a condicional à cor de chão pontual), unificação da âncora no contact sheet (linha 190 com `mappedYAnchor`) e inclusão explícita do comando de exportação do GIF 4x 256x256 no script ou na esteira de build.

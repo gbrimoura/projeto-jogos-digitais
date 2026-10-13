@@ -1,0 +1,40 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Revisão somente leitura do LUA inline + MANIFEST inline. Sem inspeção visual de PNG/GIF. Escala 1:7 uniforme confirmada, alpha binário confirmado, paleta 27 cores confere, âncoras conferem com manifest (ancoradas=sola, aéreas=ground da prancha), contratos dimensionais sheet 512x64 e GIF 256x256/8f coerentes. Achado principal: loop do contact usa `pose.ground` na esquerda e `anchor` (sola) na direita, quebrando alinhamento alegado nos pares ancorados. Restante são riscos de máscara/borda/paleta-modo, não defeitos visuais confirmados.
+CHANGED_FILES: none
+TESTS: none
+
+DETALHE POR ALGORITMO:
+
+1. [Média - defeito concreto de revisão, não do sprite final] Contact esquerda/direita desalinhadas:
+- `render64`: `sy=floor(anchor-3+(y-61)*7)` onde `anchor=bounds_bottom` se `anchored`.
+- Contact esquerda: `sy=floor(pose.ground-3+(y-61)*7)` para todas as poses.
+- Diferença `anchor-ground`: impulso +7src (~+1px out), contato -8src (~-1.1px out), compressão -8src, recuperação -17src (~-2.4px out). No contact 4x = 4-10px de deslocamento.
+- Quebra comentário "Mesma escala/alinhamento em cada par". Direita está correta pela regra intencional; esquerda é referência com ground. RISCO confirmado por aritmética, não hipótese.
+
+2. [Média - risco, precisa confirmação do principal no contact] Recorte pode truncar:
+- `segment(): visible()` + `pose.clip` + `assert(count>200)` sem guarda de toque em borda.
+- Pelo MANIFEST vs clip: recolhimento clip {8,324,43,406} vs bounds local 8..281,43..406 toca 3 bordas; compressão {12,373,136,394} vs 28..373 toca direita; recuperação {38,352,38,382} vs 68..306,41..382 toca fundo.
+- Pode ser crop justo intencional ou truncamento. Hipótese, não afirmação. Principal já inspecionou contact - pedir confirmação explícita desses 3.
+
+3. [Média - risco] `lineRows[y]` apaga linha inteira:
+- `segment()`: `if count>=80 then lineRows[y]=true` em `x=18..365`, janela `ground±7`; `visible()` retorna false se `lineRows[y]`.
+- Falso positivo apagaria fatia do personagem; falso negativo deixaria linha.
+- Para queda (ground405 vs clip ymax397), recolhimento (428 vs 406), ápice (433 vs 418), contato (391 vs 390), recuperação (399 vs 382) a janela fica fora do clip = no-op por construção, OK. Só impulso/subida/compressão dependem do threshold. Risco, não defeito confirmado.
+
+4. [Baixa-Média - risco] Flood-fill sem validação de cobertura + halo binário:
+- Seeds `x=18..365,y=18/PANEL_H-19` e `x=18/365`. Se nenhum seed for `backgroundCandidate`, `bg` vazio passa silencioso e `count>200` ainda passa com fundo incluído.
+- `backgroundCandidate` estreito deixa anti-alias de borda como `visible`; `quantized()` força `alpha 255`. Retenção de franja é garantida pela lógica, espessura/existência depende de pixels não fornecidos. Risco.
+
+5. [Baixa - risco contratual] Modo de cor:
+- `Sprite(CW,CH)` sem `ColorMode.INDEXED` + `setPalette(pal)`. Pixels usam só 27 RGBs por `quantized()`, mas arquivo pode permanecer RGB e `sheet PNG` RGBA, não indexado. Se engine espera indexado, divergência. Verificar no Aseprite, sem alterar.
+
+6. [Info - risco de uso] Jitter horizontal intencional:
+- `sx=floor(x*7-29)` fixo = centrada no painel, não no personagem. Preserva offsets X da prancha (ex. recolhimento x~8 vs demais ~50 = ~6px out de diferença). Escala uniforme OK, mas animação terá wobble X. Coerente com "GIF demonstra poses, sem arco". Uso em jogo precisará âncora X - fora de escopo Godot.
+
+CONTRATOS: `writeManifest()` manual correto para dados fixos; GIF `...-animacao-4x.gif` não salvo pelo LUA, depende de export externo citado (exit 0). Durations `/1000` correto. Study preserva original + 8 máscaras no local original, correto.
+
+RISKS: contact comparativo enganoso em Y para 4 poses ancoradas; possível truncamento em recolhimento/compressão/recuperação; possível franja escura por alpha binário; `lineRows` pode falhar se linha ocluída; modo RGB vs indexado indefinido.
+NEXT_STEP: Principal confirmar no contact já inspecionado: bordas de recolhimento/compressão/recuperação, ausência de linha de chão em impulso/subida/compressão, e aceitar desalinhamento Y do contact como limitação de comparação; definir contrato de âncora X para uso futuro. Nenhuma mudança no workspace.

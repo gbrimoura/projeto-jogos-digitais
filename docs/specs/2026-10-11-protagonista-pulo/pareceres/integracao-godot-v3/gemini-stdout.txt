@@ -1,0 +1,46 @@
+STATUS: done
+SUMMARY: Integração Godot dos 25 quadros (1600x64) revisada estaticamente com sucesso. Mapeamento SpriteFrames 1:1 com o atlas, durações e loops alinhados às especificações, clipes non-loop mantêm hold no último quadro sem reinício por tick no PlayerVisual, e registro Y preserva a linha de contato da sola em Y=56.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum defeito concreto identificado nas referências de atlas, timing, registro Y, preservação ou máquina visual.
+NEXT_STEP: Prosseguir com o pipeline de importação e validação da frente v3 conforme o plano geral.
+
+---
+
+### Detalhamento da Revisão Estática Documental
+
+1. **Atlas e Mapeamento UV (`SpriteFrames` vs Gerador/Atlas 1600x64)**:
+   - Os 25 quadros possuem recortes contíguos exatos de 64x64 sem sobreposição ou lacuna:
+     - `idle` (6 quadros): X = 0, 64, 128, 192, 256, 320 (`Rect2(x, 0, 64, 64)`).
+     - `walk` (8 quadros): X = 384, 448, 512, 576, 640, 704, 768, 832.
+     - `dash` (3 quadros): X = 896, 960, 1024.
+     - `jump_rise` (3 quadros): X = 1088, 1152, 1216 (correspondentes aos frames 17, 18, 19 da base).
+     - `jump_apex` (1 quadro): X = 1280 (frame 20).
+     - `jump_fall` (1 quadro): X = 1344 (frame 21).
+     - `jump_land` (3 quadros): X = 1408, 1472, 1536 (frames 22, 23, 24).
+   - Extensão horizontal total: $1536 + 64 = 1600\text{ px}$. Compatibilidade total com o atlas gerado de $1600 \times 64$.
+
+2. **Durações e Sincronismo Físico (`MovementConfig` vs Clipes)**:
+   - `jump_rise` ($110\text{ ms} + 95\text{ ms} + 110\text{ ms} = 315\text{ ms}$): com $v_0 = -640\text{ px/s}$ e $g = 1600\text{ px/s}^2$, o limiar de subida ($v < -80\text{ px/s}$) dura exatamente $350\text{ ms}$ num salto pleno. O clipe conclui seus três quadros aos $315\text{ ms}$ e sustenta o último quadro (*recolhimento*) por ~35 ms adicionais até cruzar o limiar de ápice. Em jump-cut, a subida é abreviada organicamente sem quebra de estado.
+   - `jump_apex` ($45\text{ ms}$, quadro único): a janela física de ápiono ($v \in [-80, +80]\text{ px/s}$) dura $100\text{ ms}$. O clipe de quadro único não-loop sustenta a pose durante todo o intervalo sem oscilações.
+   - `jump_fall` ($85\text{ ms}$, quadro único): pose sustentada até o contato com o solo.
+   - `jump_land` ($45\text{ ms} + 45\text{ ms} + 45\text{ ms} = 135\text{ ms}$): reprodução não-loop acionada exclusivamente após queda real (`_airborne_seen`), liberando o controle visual ao término via sinal `animation_finished`.
+
+3. **Comportamento de Clipes Non-Loop e Ausência de Reinício por Tick**:
+   - Em `PlayerVisual._apply_animation_state()`, a guarda condicional `if character_sprite.animation != target_animation: character_sprite.play(target_animation)` impede que chamadas periódicas em `_process` ou via setters de física chamem `play()` repetidamente no mesmo clipe.
+   - Os clipes `jump_rise`, `jump_apex`, `jump_fall` e `jump_land` avançam normalmente e mantêm o quadro final parado (*hold*) conforme a especificação do Godot para `loop = false`.
+
+4. **Registro Y e Linha de Base (Sola em Y=56)**:
+   - O deslocamento base de $-5\text{ px}$ aplicado aos quadros 17 a 22 e 24 alinha os pés da pose de contato com o nível de repouso de `idle` ($Y=56$).
+   - O quadro de compressão (pose 7 / frame 23) recebe compensação adicional $+1\text{ px}$ (deslocamento líquido $-4\text{ px}$), preservando o contato da sola com o solo sem artefatos de penetração ou flutuação.
+   - Translação exclusivamente inteira de pixels, sem interpolação, sem subpixel e sem reescalonamento.
+
+5. **Prioridade de Transição e Cancelamento**:
+   - Hierarquia estrita e preservada: `morte > dash > ar > pouso > movimento/repouso`.
+   - `reset_air_state()` zera flags de pouso e contato prévio, prevenindo falso gatilho de landing ao spawnar ou reposicionar.
+   - O dash cancela o pouso imediatamente (`_is_landing = false`).
+
+6. **Preservação de Dados, Paleta e Espelhamento**:
+   - Os 17 primeiros quadros (idle, walk, dash) permanecem idênticos ao snapshot V2 em dimensões, durações e pixels.
+   - Paleta fechada em 27 cores RGBA e transparência binária estrita validada no script Aseprite.
+   - Espelhamento direcional preservado: `native_direction = 1` para dash e `-1` para as demais poses (idle, walk e pulo nativamente virados para a esquerda).

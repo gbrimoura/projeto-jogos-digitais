@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Walk V8 V2 íntegro: extração 9:1 α224 paleta27 Y56, registroX [-2,-1,1,0,-2,-1,0,0] + head bob [0,1,0,-1,0,1,0,-1] rows0..32 idle-exato + braços contrafase [1,1,0,-1,-1,-1,0,1] y37..43, head layer separada sem duplicação; integrador só walk6..13, idle0..5/dash14..16/jump17..24 pixels/durations/tags preservados, atlas25/1600x64 walk8x75ms loop true, facing+speedscale inalterados. Aceito principal: pernas articuladas, head estável idle, braços curtos.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum defeito concreto; sem inspeção PNG/GIF pixels não fornecidos
+NEXT_STEP: congelar snapshot/runtime V8 para próxima frente

@@ -85,3 +85,41 @@ Hashes e artefatos estão em [spec-v7-bracos.md](spec-v7-bracos.md).
 ## Revisão final V7
 
 Gemini, Muse e Grok concluíram a revisão estática delimitada dos braços sem bugs apontados. Opus claude-opus-5-5-high bloqueado por quota no preflight, sem parecer. Saídas originais, hashes e avaliação do principal em pareceres/bracos-v7/README.md. Nenhuma fórmula ou imagem alterada após a revisão. Os deslocamentos de 1 px são relativos ao torso; a posição absoluta também inclui o bob existente. Avaliação estética do usuário pendente; importação sem erros, sem testes ou gameplay.
+
+
+
+## Correção local dos ombros — caminhada V8 V3, 12/10/2026
+
+O principal apontou uma separação leve nos ombros da caminhada V8. A causa foi confirmada no mapa de pixels: a camada da cabeça, copiada do idle até y=32, ainda continha os dois pads amarelos e seus contornos (x=24–28 e x=34–39). Ao mesmo tempo, o corpo gerado por IA já tinha seu próprio par de ombros ligado ao torso, em y=33–35. Como a cabeça e o torso usam deslocamentos independentes, a cópia dos pads podia aparecer duplicada ou separada do braço.
+
+A correção remove somente esses 11 pixels da camada da cabeça em cada pose, nas coordenadas y=32, 33, 32, 31, 32, 33, 32 e 31. A camada do corpo não teve alterações. O par de ombros que pertence ao corpo permanece; o colar central x=29–33 e os pixels reais do capacete, visor, antena e cabeça também permanecem. A comparação de oito poses registra 88 pixels alterados no composto, todos na remoção dos pads da camada da cabeça. O diff detalhado está em [diff-v3-ombros.txt](../../../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/diff-v3-ombros.txt).
+
+O principal inspecionou o comparativo normal e o detalhe ampliado 8×, com V2 acima e V3 abaixo, e aprovou a integração. A imagem de detalhe é [protagonista-walk-v8-v3-ombros-contact-detalhe-antes-depois-8x.png](../../../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-contact-detalhe-antes-depois-8x.png). A [folha de contato normal](../../../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-contact-4x.png) e os GIFs [esquerda](../../../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-preview-esquerda.gif) e [direita](../../../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/protagonista-walk-v8-v3-ombros-preview-direita.gif) também foram exportados.
+
+A integração partiu do snapshot de runtime [pre-ombros-v3](historico/pre-ombros-v3/README.md), que preserva o estado V8 V2 de 25 quadros antes da substituição. Foram atualizados somente o PNG runtime e sua fonte Aseprite editável de duas camadas. No atlas, apenas os quadros de caminhada 6–13 receberam o patch local; os outros 17 quadros foram preservados pixel a pixel. Durações, tags, facing e SpriteFrames permaneceram iguais: caminhada de oito quadros a 75 ms cada, baseline y=56. Não houve alteração de scripts, cenas, física, input, combate ou TRES.
+
+### Arquivos e hashes SHA-256
+
+Arte e prévias em GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8:
+
+- protagonista-walk-v8-v3-ombros.lua — 696C58E50350B3E1459B24C4779F29EF21C3B255D7FF300EC409514E1BA0B339
+- integrate-walk-v8-v3-ombros.lua — 2D5807E612B8FCB75027A0F590191B82E33BDA365F08079BABE7CACA61062AEF
+- protagonista-walk-v8-v3-ombros-poses.aseprite — 26ED755636DEE22402D2546B4D99ED0686611D0F23435FA099179CF1FE832D60
+- protagonista-walk-v8-v3-ombros-poses.png — FB10BA44021724AAC9E3939300CF2C3424CFCD76EE408B5EFD39C20430B8F5A3
+- protagonista-walk-v8-v3-ombros-metadata.json — 80297B372EB970E2C585CB8EF8386278CE275951A275D4E77EA88166396079FE
+- Contact 4× — D2011AB3B2429DA924557DDFA6E1061F706BA1605530B520A95B2446D8C2524A
+- Comparativo de detalhe antes/depois 8× — 2BBAC0FC5480C8741361B5AE65114BCDC4D6FE190C21D7DEFF864D65C0BF4E24
+- GIF esquerda — D06520B81B29CA2B7EF213DB9CCC7B56B390C45193FBA16FE835BE0786238B45
+- GIF direita — FC695F48F394153A7547A06F8DBB472A6DDEEB26A776BAA72A84E1BA4B79CF6D
+
+Runtime:
+
+- assets/player/player-animations.png — 58059C4B51F502F210922F624ACCB0F10BABA1A042B73C39FCD04A277982C9BC
+- assets/player/source/player-animations.aseprite — F56E61168412CD423072BAC4DE9000D65833C424EE5ED37FBA634F989CBB6412
+- assets/player/player-animations.png.import — FEB38B6EC7B49D4BC2C050E2012A688027825B08A9564A30853E842FBB8C5815 (igual ao snapshot)
+- resources/player_sprite_frames.tres — FF45AFD4124CBFF029F564990ACD1D12DEF5945B048C9A775C970CD598DCDC30 (igual ao snapshot)
+
+### Exportação e importação
+
+As exportações e a integração no Aseprite 1.3.18.6 terminaram com status OK. A primeira chamada ao Godot exibiu erro de cópia/carregamento da extensão do addon godot-git-plugin (DLL); a saída observada não apontou erro no PNG, no TRES ou em scripts, e o exit code dessa chamada não foi registrado separadamente. Uma nova importação com Godot 4.7.2 usando --headless --editor --path projeto-jogos-digitais --import --quit foi capturada com exit code 0, stderr vazio e sem erro de recurso no stdout. O import atualizou o cache .ctex do atlas. Os logs finais estão em GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk-v8/godot-import-v3-ombros-stdout.txt e godot-import-v3-ombros-stderr.txt. Nenhum teste de gameplay foi executado.
+Pareceres finais da correção: [ombrosV3](pareceres/ombros-v3/README.md). Gemini/Muse/Grok recebidos; possível apagamento de ombro sugerido porGrok descartado após leitura dos pixels pré-clear: cream/contorno da mandíbula AI, não amarelo dospads. Arte/runtime sem mudanças após a revisão. Opus por quota.
