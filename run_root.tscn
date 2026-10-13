@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://bgflx5722meon"]
+
+[ext_resource type="Script" uid="uid://c0iyae0gy1p7m" path="res://scripts/world/run_controller.gd" id="1_15b2t"]
+[ext_resource type="PackedScene" uid="uid://dlgvrryxeujdh" path="res://scenes/main.tscn" id="2_aqf68"]
+
+[node name="RunRoot" type="Node2D" unique_id=367920003]
+script = ExtResource("1_15b2t")
+floors_per_run = 1
+common_room_scene = ExtResource("2_aqf68")
+boss_room_scene = ExtResource("2_aqf68")
+
+[node name="RoomContainer" type="Node2D" parent="." unique_id=1516175426]
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=283979848]
+
+[node name="ProgressLabel" type="Label" parent="HUD" unique_id=1603542726]
+anchors_preset = -1
+anchor_left = 0.033854168
+anchor_bottom = 1.9429013
+offset_right = 40.0
+offset_bottom = 23.0
+metadata/_edit_use_anchors_ = true
+
+[node name="StatusLabel" type="Label" parent="HUD" unique_id=1635771128]
+offset_right = 40.0
+offset_bottom = 23.0
+metadata/_edit_use_anchors_ = true

@@ -1,5 +1,6 @@
 class_name RicochetBall
 extends CharacterBody2D
+const ImpactSparkEffect = preload("res://scripts/projectile/impact_spark.gd")
 
 ## Bola cinética com reflexão determinística. O contrato de lançamento continua
 ## recebendo apenas a direção inicial e um Resource de configuração.
@@ -16,6 +17,8 @@ var _has_finished: bool = false
 var _bounce_count: int = 0
 var _pending_motion: Vector2 = Vector2.ZERO
 var _damaged_targets_this_tick: Dictionary = {}
+var _return_target: Node2D
+var _is_returning: bool = false
 
 var bounce_count: int:
 	get:
@@ -37,6 +40,36 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 	_apply_collision_radius()
 	queue_redraw()
 
+func set_return_target(target: Node2D) -> void:
+	_return_target = target
+
+
+func _start_returning() -> void:
+	_is_returning = true
+	velocity = Vector2.ZERO
+	_pending_motion = Vector2.ZERO
+	queue_redraw()
+
+
+func _return_to_player(delta: float) -> void:
+	if not is_instance_valid(_return_target):
+		_finish("return_target_missing")
+		return
+
+	var destination := _return_target.global_position
+	var capture_distance := maxf(_config.collision_radius + 8.0, 14.0)
+
+	if global_position.distance_to(destination) <= capture_distance:
+		global_position = destination
+		_finish("returned")
+		return
+
+	var return_speed := maxf(_config.speed * 1.5, 150.0)
+	global_position = global_position.move_toward(
+		destination,
+		return_speed * delta
+	)
+	
 func cancel() -> void:
 	_finish("cancelled")
 
@@ -45,6 +78,9 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_damaged_targets_this_tick.clear()
+	if _is_returning:
+		_return_to_player(delta)
+		return
 
 	var motion_delta := minf(delta, maxf(_lifetime_remaining, 0.0))
 	var expires_after_motion := _lifetime_remaining <= delta
@@ -84,16 +120,19 @@ func _physics_process(delta: float) -> void:
 
 		var next_bounce_index := _bounce_count + 1
 		if next_bounce_index > _config.max_bounces:
-			_finish("bounce_limit")
+			_start_returning()
 			return
-
 		_bounce_count = next_bounce_index
 		velocity = BounceResolver.reflect_velocity(velocity, surface_normal, _config.speed)
 		var impact_position := collision.get_position()
 		global_position += surface_normal * _config.collision_skin
 		_apply_impact_damage(collision.get_collider())
 		bounced.emit(_bounce_count, impact_position, surface_normal)
-
+		if _bounce_count >= _config.max_bounces:
+			_start_returning()
+			return
+		_spawn_impact_spark(impact_position)
+		
 		var remainder := collision.get_remainder()
 		if remainder.is_zero_approx() or velocity.is_zero_approx():
 			if expires_after_motion:
@@ -149,3 +188,12 @@ func _draw() -> void:
 		maxf(visual_radius * 0.2, 1.0),
 		Color("#fff2ca")
 	)
+	
+func _spawn_impact_spark(impact_position: Vector2) -> void:
+	var effect_parent := get_parent()
+	if effect_parent == null:
+		return
+
+	var spark := ImpactSparkEffect.new() as Node2D
+	effect_parent.add_child(spark)
+	spark.global_position = impact_position

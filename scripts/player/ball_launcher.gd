@@ -46,6 +46,7 @@ func try_launch(triggered: bool) -> bool:
 	_projectile_parent.add_child(ball)
 	_active_ball = ball
 	ball.finished.connect(_on_ball_finished.bind(ball))
+	ball.set_return_target(_shot_origin)
 	ball.global_position = spawn_position
 	ball.launch(direction, projectile_config)
 	return true

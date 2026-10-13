@@ -132,5 +132,5 @@ ser validados. Invulnerabilidade e interações contextuais do dash ainda devem 
    acompanha ambos.
 10. Confirmar que o preview some durante o voo e reaparece quando a bola termina.
 11. Atingir o alvo de treino; conferir o flash, a redução da barra de vida e
-    o contador do HUD até a remoção após três impactos válidos. Separar os
-    disparos se a bola atingir o limite de ricochetes antes dos três acertos.
+	o contador do HUD até a remoção após três impactos válidos. Separar os
+	disparos se a bola atingir o limite de ricochetes antes dos três acertos.

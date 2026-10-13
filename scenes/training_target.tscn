@@ -1,54 +1,53 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://ut08m28pkxds"]
 
-[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+[ext_resource type="Script" uid="uid://4t2l80tm7sqp" path="res://scripts/world/training_target.gd" id="1_training_target"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
-size = Vector2(72.0, 96.0)
+size = Vector2(72, 96)
 
-[node name="TrainingTarget" type="StaticBody2D" groups=["damageable", "combat_enemy"]]
+[node name="TrainingTarget" type="StaticBody2D" unique_id=896379576 groups=["combat_enemy", "damageable"]]
+z_index = 1
 collision_layer = 8
 collision_mask = 0
-z_index = 1
 script = ExtResource("1_training_target")
-max_health = 3
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1361483660]
 shape = SubResource("RectangleShape2D_training_target")
 
-[node name="Visuals" type="Node2D" parent="."]
+[node name="Visuals" type="Node2D" parent="." unique_id=1920731819]
 
-[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+[node name="BodyBorder" type="Polygon2D" parent="Visuals" unique_id=794398661]
 color = Color(0.062745, 0.090196, 0.133333, 1)
-polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+polygon = PackedVector2Array(-36, -48, 36, -48, 36, 48, -36, 48)
 
-[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+[node name="BodyFill" type="Polygon2D" parent="Visuals" unique_id=670780876]
 color = Color(0.219608, 0.278431, 0.34902, 1)
-polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+polygon = PackedVector2Array(-33, -45, 33, -45, 33, 45, -33, 45)
 
-[node name="Visor" type="Polygon2D" parent="Visuals"]
+[node name="Visor" type="Polygon2D" parent="Visuals" unique_id=1602531262]
 color = Color(0.396078, 0.466667, 0.541176, 1)
-polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+polygon = PackedVector2Array(-24, -36, 24, -36, 24, -12, -24, -12)
 
-[node name="UpperStripe" type="Line2D" parent="Visuals"]
+[node name="UpperStripe" type="Line2D" parent="Visuals" unique_id=73883786]
+points = PackedVector2Array(-28, 18, 28, 18)
 width = 4.0
 default_color = Color(0.764706, 0.494118, 0.25098, 1)
-points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
 
-[node name="LowerStripe" type="Line2D" parent="Visuals"]
+[node name="LowerStripe" type="Line2D" parent="Visuals" unique_id=1988935512]
+points = PackedVector2Array(-22, 30, 22, 30)
 width = 4.0
 default_color = Color(0.764706, 0.494118, 0.25098, 1)
-points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
 
-[node name="FootLine" type="Line2D" parent="Visuals"]
+[node name="FootLine" type="Line2D" parent="Visuals" unique_id=893945197]
+points = PackedVector2Array(-29, 42, 29, 42)
 width = 4.0
 default_color = Color(0.062745, 0.090196, 0.133333, 1)
-points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
 
-[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+[node name="HealthFrame" type="Polygon2D" parent="Visuals" unique_id=1280922192]
 color = Color(0.062745, 0.090196, 0.133333, 1)
-polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+polygon = PackedVector2Array(-40, -64, 40, -64, 40, -56, -40, -56)
 
-[node name="HealthFill" type="Polygon2D" parent="Visuals"]
-position = Vector2(-38.0, -60.0)
+[node name="HealthFill" type="Polygon2D" parent="Visuals" unique_id=687749142]
+position = Vector2(-38, -60)
 color = Color(0.894118, 0.435294, 0.345098, 1)
-polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)
+polygon = PackedVector2Array(0, -2, 76, -2, 76, 2, 0, 2)
