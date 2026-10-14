@@ -1,0 +1,8 @@
+{
+  "../GDD_Dieselpunk_Noir/pitch-assets/inimigos-cartoon-v2/reproduzir-inimigos-cartoon-v2.lua": true,
+  "assets/enemy/rivet_worker/rivet_worker.aseprite": true,
+  "assets/enemy/training_target/training_target-atlas.png": true,
+  "assets/enemy/training_target/training_target.aseprite": true,
+  "assets/enemy/rivet_worker/rivet_worker-atlas.png": true,
+  "../GDD_Dieselpunk_Noir/pitch-assets/inimigos-cartoon-v2/metadata-inimigos-cartoon-v2.json": true
+}

@@ -1,0 +1,102 @@
+[
+  {
+    "expected_changed": false,
+    "file": "scripts/world/training_target.gd",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scripts/enemy/rivet_worker.gd",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scenes/training_target.tscn",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scenes/rivet_worker.tscn",
+    "unchanged": true
+  },
+  {
+    "expected_changed": true,
+    "file": "assets/enemy/training_target/training_target-atlas.png",
+    "unchanged": false
+  },
+  {
+    "expected_changed": true,
+    "file": "assets/enemy/training_target/training_target.aseprite",
+    "unchanged": false
+  },
+  {
+    "expected_changed": true,
+    "file": "assets/enemy/rivet_worker/rivet_worker-atlas.png",
+    "unchanged": false
+  },
+  {
+    "expected_changed": true,
+    "file": "assets/enemy/rivet_worker/rivet_worker.aseprite",
+    "unchanged": false
+  },
+  {
+    "expected_changed": false,
+    "file": "resources/enemy/training_target_sprite_frames.tres",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "resources/enemy/rivet_worker_sprite_frames.tres",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scripts/enemy/enemy_hit_flash.gdshader",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scenes/player.tscn",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "assets/player/player-animations.png",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "assets/player/source/player-animations.aseprite",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "resources/player_sprite_frames.tres",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scenes/solid_platform.tscn",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scripts/world/solid_platform.gd",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scenes/main.tscn",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scripts/world/main.gd",
+    "unchanged": true
+  },
+  {
+    "expected_changed": false,
+    "file": "scenes/second_room.tscn",
+    "unchanged": true
+  }
+]

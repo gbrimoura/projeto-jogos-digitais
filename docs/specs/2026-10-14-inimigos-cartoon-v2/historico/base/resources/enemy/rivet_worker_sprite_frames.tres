@@ -1,0 +1,26 @@
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemy/rivet_worker/rivet_worker-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle"]
+atlas = ExtResource("1_atlas")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk"]
+atlas = ExtResource("1_atlas")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aim"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fire"]
+atlas = ExtResource("1_atlas")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery"]
+atlas = ExtResource("1_atlas")
+region = Rect2(256, 0, 64, 64)
+
+[resource]
+animations = [{"frames": [{"duration": 0.25, "texture": SubResource("AtlasTexture_idle")}], "loop": true, "name": &"idle", "speed": 1.0}, {"frames": [{"duration": 0.12, "texture": SubResource("AtlasTexture_idle")}, {"duration": 0.12, "texture": SubResource("AtlasTexture_walk")}], "loop": true, "name": &"walk", "speed": 1.0}, {"frames": [{"duration": 0.65, "texture": SubResource("AtlasTexture_aim")}], "loop": true, "name": &"aim", "speed": 1.0}, {"frames": [{"duration": 0.12, "texture": SubResource("AtlasTexture_fire")}], "loop": true, "name": &"fire", "speed": 1.0}, {"frames": [{"duration": 0.8, "texture": SubResource("AtlasTexture_recovery")}], "loop": true, "name": &"recovery", "speed": 1.0}]

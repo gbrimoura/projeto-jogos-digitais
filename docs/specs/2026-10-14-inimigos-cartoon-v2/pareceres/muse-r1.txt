@@ -1,0 +1,17 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: needs-input (static text-only review; no runtime/visual/hash verification possible)
+SUMMARY: Lua sampling/mask/atlas logic is internally consistent with unchanged `*.tres`/scene registration; no code/scene/resource change required for dimensions/order/durations except one preview-only mismatch below. Visual coherence, palette provenance, pivots vs V1, SHA/exit0 not verifiable here by design.
+CHANGED_FILES: none
+TESTS: none
+
+FINDINGS:
+1. [LOW] `reproduzir-inimigos-cartoon-v2.lua:worker.idle duration=200` vs `resources/enemy/rivet_worker_sprite_frames.tres:idle duration=0.25` — runtime governed by `.tres`, so no runtime effect; only `.aseprite`/preview timing unrepresentative. Align preview to 250 or document intentional.
+2. [INFO] `lua: muzzle={1084,600}/{1475,600}` defined but never consumed/validated. Coords are inside respective `rect` and both +88px right of `anchorX` (+11 cells, nativeRIGHT plausible), but muzzle-vs-old-pivot registration against unchanged resources unverifiable statically — needs in-engine visual check.
+3. [LOW] `isBackground(): chroma<=9, value 22-58` + 4-connected flood from edges correctly preserves navy-black outlines `{0,0,13}/{25,32,49}/{55,63,77}` and interior shadows; disconnected exterior speckles inside `rect` would quantize instead of clear. No fix; only note vs "less noise" claim.
+4. [LOW] `orangeThreat: inThreat + r>=150 + r>g*1.22 + g>b*1.15` correctly rejects threat reds e.g. `(217,75,75)`, but visor AA fringe outside gate falls back to `nearestPalette()`. Expected hard edge; confirm on `contact-*-4x.png` in engine.
+5. [INFO] Crop/mask/dimensions check OK: `buildAtlas()` gives `192x64` target / `320x64` worker, `Rect2(0/64/128…,64,64)` and `Rect2(0…256…,64,64)` match; all `anchor/baseline` inside `rect`, all `threatRect` inside `rect`; pivot `(32,56)`, single nearest `8:1`, `alpha 0/255` only, max `14+1` colors, `threat`-gated orange. `METADATA CONTRACT: null` — manual check only.
+
+RISKS: New art must conform to frozen pivots/colliders (`target baseEDGE56/collider72x96`, `worker feet0/collider46x64`, `scale2`); point-sampled edges + foreground charcoal with `value 22-58` but `chroma>9` would survive as dark navy — only engine screenshot reveals.
+NEXT_STEP: Freeze runtime PNGs; in-engine screenshot check Target `idle/impact/disabled` + Worker `idle/walk/aim/fire/recovery` for feet/base alignment and muzzle tip, then principal visual sign-off. No commit/push per task.

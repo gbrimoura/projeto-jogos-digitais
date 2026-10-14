@@ -1,0 +1,64 @@
+STATUS: done
+SUMMARY: Revisão estática somente leitura da substituição de assets Cartoon V2 dos inimigos concluída com sucesso. A lógica de extração Aseprite Lua preserva fielmente dimensões (células 64x64, atlases 192x64 e 320x64), amostragem nearest 8:1 sem desfoque, remoção de fundo por flood fill com alfa binário (0/255), paleta de 14 cores herdadas + 1 swatch localizado (#FE5B01 no visor), pivôs (32, 56) alinhados aos colisores inalterados e registro consistente do muzzle entre mira e disparo.
+CHANGED_FILES: none
+TESTS: none
+
+### Parecer Técnico Detalhado
+
+#### 1. Lógica de Crop e Amostragem Nearest 8:1
+- **Amostragem**: A fórmula `sx = math.floor(anchorX + (x - 32) * 8)` e `sy = math.floor(baselineY + (y - 56) * 8)` implementa um downscale nearest-neighbor estrito de proporção 8:1 sem interpolação bilinear ou bicúbica. Preserva bordas pixel-art nítidas e ausência de ruído/dithering.
+- **Recorte (Bounding Box)**: Cada pose define retângulos `rect` sem interseção entre quadros adjacentes na prancha de origem, impedindo vazamento de caracteres vizinhos para as células de 64x64.
+- **Baselines Fixas**: `baselineY = 416` (Target, 3 poses) e `baselineY = 742` (Worker, 5 poses) são perfeitamente uniformes ao longo de todos os quadros de cada entidade, garantindo que não ocorra flutuação ou salto vertical de contato com o solo entre frames.
+
+#### 2. Máscara, Remoção de Fundo e Silhueta
+- **Detecção de Fundo**: Critério `high - low <= 9 and value >= 22 and value <= 58` identifica com precisão o carvão neutro da prancha (#222 a #3a3a3a).
+- **Preservação de Outlines**: O contorno azul-preto (`{0, 0, 13}`) possui cromaticidade `high - low = 13 > 9`, evitando sua inclusão acidental como fundo.
+- **Flood Fill 4-Conectado**: Iniciado estritamente nas bordas (x=0,63 e y=0,63), o flood preenche apenas o exterior contíguo. Regiões internas escuras ou sombreados fechados pelo contorno não são alcançados nem apagados.
+- **Transparência Binária**: Saída rigorosa em alfa 0 ou 255, prevenindo artefatos de semi-transparência durante a execução dos shaders de flash de dano (`ShaderMaterial_target_hit_flash` e `ShaderMaterial_worker_hit_flash`).
+
+#### 3. Paleta e Swatch de Ameaça (#FE5B01)
+- **Paleta Base**: 14 cores derivadas dos swatches existentes do protagonista e da fábrica, mapeadas via distância euclidiana ponderada por luminância perceptual (`0.299*dr² + 0.587*dg² + 0.114*db²`).
+- **Swatch Localizado de Visor**: `#FE5B01` (`rgb(254, 91, 1)`) é aplicado exclusivamente quando `inThreat` é verdadeiro (delimitado por `threatRect`) e atende aos limites de saturação quente `c[1] >= 150`, `c[1] > c[2] * 1.22` e `c[2] > c[3] * 1.15`.
+- **Isolamento**: Impossível de vazar para carcaça, botas ou armas. O Target desativado não possui `threatRect`, assegurando visor apagado na desativação. Orçamento final respeita o limite <= 15 cores.
+
+#### 4. Dimensões, Índices e Mapeamento de Recursos
+- **Training Target**: 3 poses (`idle`, `impacto`, `desativado`) geram atlas de 192x64. Corresponde perfeitamente às sub-regiões de [training_target_sprite_frames.tres](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/resources/enemy/training_target_sprite_frames.tres):
+  - `AtlasTexture_idle`: `Rect2(0, 0, 64, 64)`
+  - `AtlasTexture_impact`: `Rect2(64, 0, 64, 64)`
+  - `AtlasTexture_disabled`: `Rect2(128, 0, 64, 64)`
+- **Rivet Worker**: 5 poses (`idle`, `andando`, `mirando`, `disparo`, `recuperacao`) geram atlas de 320x64. Corresponde perfeitamente a [rivet_worker_sprite_frames.tres](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/resources/enemy/rivet_worker_sprite_frames.tres):
+  - `AtlasTexture_idle`: `Rect2(0, 0, 64, 64)`
+  - `AtlasTexture_walk`: `Rect2(64, 0, 64, 64)`
+  - `AtlasTexture_aim`: `Rect2(128, 0, 64, 64)`
+  - `AtlasTexture_fire`: `Rect2(192, 0, 64, 64)`
+  - `AtlasTexture_recovery`: `Rect2(256, 0, 64, 64)`
+
+#### 5. Pivôs e Registro Físico
+- **Pivô Base**: Célula centralizada em X=32 e com base em Y=56.
+- **Target**:
+  - `BodySprite` em [training_target.tscn](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/training_target.tscn) possui `centered = true`, escala 2.0x e posição (0, 0).
+  - Offset do pivô Y=56: `(56 - 32) * 2 = +48`. Corresponde à base inferior do colisor 72x96 (Y=+48).
+- **Rivet Worker**:
+  - `BodySprite` em [rivet_worker.tscn](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/rivet_worker.tscn) possui `centered = true`, escala 2.0x e posição `Vector2(0, -48)`.
+  - Offset do pivô Y=56: `-48 + (56 - 32) * 2 = -48 + 48 = 0.0` (pés no chão Y=0).
+  - Offset X=32: `0 + (32 - 32) * 2 = 0.0` (origem horizontal no centro do colisor 46x64).
+
+#### 6. Registro de Muzzle (Boca da Arma)
+- No script Lua:
+  - `mirando`: `muzzle = {1084, 600}`, `anchorX = 996`, `baselineY = 742`, `scale = 8`.
+    - Na célula 64x64: `X = (1084 - 996)/8 + 32 = 43`; `Y = (600 - 742)/8 + 56 = 38.25` (~38).
+  - `disparo`: `muzzle = {1475, 600}`, `anchorX = 1387`, `baselineY = 742`, `scale = 8`.
+    - Na célula 64x64: `X = (1475 - 1387)/8 + 32 = 43`; `Y = (600 - 742)/8 + 56 = 38.25` (~38).
+- **Conclusão**: O ponto de origem do disparo permanece fixo em `(43, 38)` na célula (espaço local Godot `Vector2(+22, -36)`), sem salto visual ou jitter durante a transição mira -> disparo.
+
+### Achados Concretos
+
+| Arquivo | Gravidade | Descrição do Achado |
+|---|---|---|
+| `reproduzir-inimigos-cartoon-v2.lua` | INFO | Duração do frame `idle` do Worker no Lua está definida como `200 ms` (`0.2s` nos metadados do `.aseprite`), enquanto em [rivet_worker_sprite_frames.tres](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/resources/enemy/rivet_worker_sprite_frames.tres) permanece `0.25 s`. Como o Godot consome o recurso `.tres` inalterado e o loop de animação é contínuo, não afeta a cadência de combate nem o runtime. |
+
+RISKS:
+- Nenhum risco de colisão física, desalinhamento de pivô ou quebra de shaders identificado. Os 4 arquivos substituídos são substitutos drop-in exatos para os equivalentes V1.
+- Incertezas ausentes no escopo estático: metadados, tamanhos e coordenadas conferidos matematicamente contra as definições das cenas e recursos inalterados.
+
+NEXT_STEP: Concluir a rodada de revisões e prosseguir com a consolidação dos pareceres pelo agente principal. Nenhuma alteração em código ou cena é necessária.
