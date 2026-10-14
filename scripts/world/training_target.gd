@@ -10,6 +10,7 @@ enum AttackState { IDLE, WINDUP, ACTIVE, RECOVERY }
 const PLAYER_MASK: int = 2
 const WORLD_MASK: int = 1
 const MAX_QUERY_RESULTS: int = 32
+const CLAIMED_META := &"_target_claimed"
 
 @export_range(1, 100, 1) var max_health: int = 3
 @export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
@@ -20,6 +21,12 @@ const MAX_QUERY_RESULTS: int = 32
 @export_range(1, 100, 1) var attack_damage: int = 1
 @export_range(0.05, 5.0, 0.01) var recovery_duration: float = 1.4
 @export_range(0.0, 0.5, 0.01) var recovery_fade_duration: float = 0.18
+
+@export_group("Spawn")
+## Posiciona o inimigo automaticamente em cima de uma plataforma da sala.
+@export var spawn_on_platform: bool = true
+## Distância mínima entre o inimigo e as bordas da plataforma.
+@export var edge_margin: float = 16.0
 
 @onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
 @onready var _health_fill: Polygon2D = $Visuals/HealthFill
@@ -37,6 +44,7 @@ var _defeated_emitted: bool = false
 var _area_shape: CircleShape2D
 var _area_query: PhysicsShapeQueryParameters2D
 var _line_of_sight_query: PhysicsRayQueryParameters2D
+var _placement_pending: bool = false
 
 func _ready() -> void:
 	health = maxi(max_health, 1)
@@ -45,6 +53,11 @@ func _ready() -> void:
 	_configure_physics_queries()
 	_set_attack_visual(&"hidden", 0.0)
 	_update_visuals()
+	if spawn_on_platform:
+		# Fica inativo até ser posicionado, para não detectar o jogador no lugar errado.
+		_placement_pending = true
+		# Deferido para rodar depois que todas as plataformas já se posicionaram.
+		_place_on_platform.call_deferred()
 
 func take_damage(amount: int, _source: Node = null) -> bool:
 	if _defeated_emitted or health <= 0 or amount <= 0:
@@ -62,7 +75,7 @@ func take_damage(amount: int, _source: Node = null) -> bool:
 
 func _physics_process(delta: float) -> void:
 	_update_hit_flash(delta)
-	if _defeated_emitted:
+	if _defeated_emitted or _placement_pending:
 		return
 	if not _is_inside_current_scene():
 		_cancel_attack()
@@ -302,4 +315,61 @@ func _node_is_inside_current_scene(node: Node) -> bool:
 	var scene_root := get_tree().current_scene
 	return is_instance_valid(scene_root) and (scene_root == node or scene_root.is_ancestor_of(node))
 
+## Retângulo da colisão em coordenadas locais (relativo à origem do inimigo).
+func _get_collision_rect() -> Rect2:
+	for child in get_children():
+		var collision := child as CollisionShape2D
+		if collision != null and collision.shape != null:
+			var rect := collision.shape.get_rect()
+			rect.position += collision.position
+			return rect
+	# Sem CollisionShape2D: assume que a origem está no centro da base.
+	return Rect2(-16.0, -32.0, 32.0, 32.0)
 
+func _place_on_platform() -> void:
+	_placement_pending = false
+	var body := _get_collision_rect()
+	var needed_width := body.size.x + edge_margin * 2.0
+
+	# Prefere plataformas livres; o Floor só entra se não sobrar nenhuma,
+	# e plataformas já ocupadas por outro inimigo ficam por último.
+	var free: Array[SolidPlatform] = []
+	var floors: Array[SolidPlatform] = []
+	var taken: Array[SolidPlatform] = []
+	for node in get_tree().get_nodes_in_group(&"solid_platform"):
+		var candidate := node as SolidPlatform
+		if candidate == null or candidate.size.x < needed_width:
+			continue
+		if candidate.name == &"Floor":
+			floors.append(candidate)
+		elif candidate.has_meta(CLAIMED_META):
+			taken.append(candidate)
+		else:
+			free.append(candidate)
+
+	var pool: Array[SolidPlatform] = free
+	if pool.is_empty():
+		pool = floors
+	if pool.is_empty():
+		pool = taken
+	if pool.is_empty():
+		push_warning("%s: nenhuma plataforma larga o bastante; mantendo a posição original." % name)
+		return
+
+	var rng := RandomNumberGenerator.new()
+	if SolidPlatform.room_seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = hash([SolidPlatform.room_seed, get_index(), "training_target"])
+
+	var platform := pool[rng.randi_range(0, pool.size() - 1)]
+	platform.set_meta(CLAIMED_META, true)
+
+	var platform_left := platform.global_position.x - platform.size.x * 0.5
+	var platform_right := platform.global_position.x + platform.size.x * 0.5
+	var platform_top := platform.global_position.y - platform.size.y * 0.5
+
+	# Mantém a colisão do inimigo inteira sobre a plataforma, com a base tocando o topo.
+	var min_x := platform_left + edge_margin - body.position.x
+	var max_x := platform_right - edge_margin - body.end.x
+	global_position = Vector2(rng.randf_range(min_x, max_x), platform_top - body.end.y)

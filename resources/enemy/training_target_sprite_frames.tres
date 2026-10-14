@@ -1,6 +1,10 @@
-[gd_resource type="SpriteFrames" load_steps=5 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://npjlmss8ot51"]
 
-[ext_resource type="Texture2D" path="res://assets/enemy/training_target/training_target-atlas.png" id="1_atlas"]
+[ext_resource type="Texture2D" uid="uid://j41jcj06ctmm" path="res://assets/enemy/training_target/training_target-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_disabled"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 0, 64, 64)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_idle"]
 atlas = ExtResource("1_atlas")
@@ -10,9 +14,29 @@ region = Rect2(0, 0, 64, 64)
 atlas = ExtResource("1_atlas")
 region = Rect2(64, 0, 64, 64)
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_disabled"]
-atlas = ExtResource("1_atlas")
-region = Rect2(128, 0, 64, 64)
-
 [resource]
-animations = [{"frames": [{"duration": 0.25, "texture": SubResource("AtlasTexture_idle")}], "loop": true, "name": &"idle", "speed": 1.0}, {"frames": [{"duration": 0.12, "texture": SubResource("AtlasTexture_impact")}], "loop": true, "name": &"impact", "speed": 1.0}, {"frames": [{"duration": 0.25, "texture": SubResource("AtlasTexture_disabled")}], "loop": true, "name": &"disabled", "speed": 1.0}]
+animations = [{
+"frames": [{
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_disabled")
+}],
+"loop": 1,
+"name": &"disabled",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_idle")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_impact")
+}],
+"loop": 1,
+"name": &"impact",
+"speed": 1.0
+}]

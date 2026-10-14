@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://dlgvrryxeujdh"]
+[gd_scene format=3 uid="uid://dlgvrryxeujdh"]
 
 [ext_resource type="Script" uid="uid://07rr2hs2ow5b" path="res://scripts/world/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
@@ -6,9 +6,9 @@
 [ext_resource type="Script" uid="uid://dfipmxwk2041v" path="res://scripts/world/combat_room.gd" id="4_combat_room"]
 [ext_resource type="PackedScene" path="res://scenes/solid_platform.tscn" id="5_solid_platform"]
 [ext_resource type="PackedScene" path="res://scenes/rivet_worker.tscn" id="6_rivet_worker"]
-[ext_resource type="Script" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+[ext_resource type="Script" uid="uid://b117rfp65cpip" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
 [ext_resource type="PackedScene" path="res://scenes/exit_door.tscn" id="8_exit_door"]
-[ext_resource type="Texture2D" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="9_factory_atlas"]
+[ext_resource type="Texture2D" uid="uid://7opqxpeloevh" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="9_factory_atlas"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
 size = Vector2(32, 648)
@@ -19,26 +19,8 @@ size = Vector2(32, 648)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
 size = Vector2(1152, 32)
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
-size = Vector2(1152, 88)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_a"]
-size = Vector2(220, 24)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_b"]
-size = Vector2(190, 24)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_c"]
-size = Vector2(190, 24)
-
 [node name="Main" type="Node2D" unique_id=206969936]
 script = ExtResource("1_main")
-next_room_scene_path = "res://scenes/second_room.tscn"
-room_title = "SALA 01"
-reward_enabled = true
-room_title_label_path = NodePath("CombatRoom/HUD/RoomLabel")
-build_status_label_path = NodePath("CombatRoom/HUD/BuildLabel")
-player_spawn_marker_path = NodePath("PlayerSpawnMarker")
 
 [node name="SandboxVisual" type="Node2D" parent="." unique_id=562336220]
 z_index = -10
@@ -209,53 +191,48 @@ points = PackedVector2Array(0, 528, 1152, 528)
 width = 1.0
 default_color = Color(0.17, 0.22, 0.29, 0.35)
 
-[node name="FactoryPanelUpper" type="Sprite2D" parent="SandboxVisual"]
-z_index = 0
+[node name="FactoryPanelUpper" type="Sprite2D" parent="SandboxVisual" unique_id=1543758630]
+modulate = Color(0.56, 0.52, 0.45, 0.68)
 texture_filter = 1
-texture = ExtResource("9_factory_atlas")
 position = Vector2(704, 150)
-modulate = Color(0.56, 0.52, 0.45, 0.68)
 scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
 region_enabled = true
 region_rect = Rect2(96, 0, 32, 32)
 
-[node name="FactoryPanelEast" type="Sprite2D" parent="SandboxVisual"]
-z_index = 0
+[node name="FactoryPanelEast" type="Sprite2D" parent="SandboxVisual" unique_id=1054473756]
+modulate = Color(0.56, 0.52, 0.45, 0.68)
 texture_filter = 1
-texture = ExtResource("9_factory_atlas")
 position = Vector2(1000, 280)
-modulate = Color(0.56, 0.52, 0.45, 0.68)
 scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
 region_enabled = true
 region_rect = Rect2(96, 0, 32, 32)
 
-[node name="FactoryPipeVertical" type="Sprite2D" parent="SandboxVisual"]
-z_index = 0
-texture_filter = 1
-texture = ExtResource("9_factory_atlas")
-position = Vector2(832, 130)
+[node name="FactoryPipeVertical" type="Sprite2D" parent="SandboxVisual" unique_id=663887830]
 modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(832, 130)
 scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
 region_enabled = true
 region_rect = Rect2(96, 64, 32, 32)
 
-[node name="FactoryPipeCorner" type="Sprite2D" parent="SandboxVisual"]
-z_index = 0
-texture_filter = 1
-texture = ExtResource("9_factory_atlas")
-position = Vector2(832, 194)
+[node name="FactoryPipeCorner" type="Sprite2D" parent="SandboxVisual" unique_id=1693359314]
 modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(832, 194)
 scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
 region_enabled = true
 region_rect = Rect2(96, 96, 32, 32)
 
-[node name="FactoryPipeHorizontal" type="Sprite2D" parent="SandboxVisual"]
-z_index = 0
-texture_filter = 1
-texture = ExtResource("9_factory_atlas")
-position = Vector2(896, 194)
+[node name="FactoryPipeHorizontal" type="Sprite2D" parent="SandboxVisual" unique_id=1250197829]
 modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(896, 194)
 scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
 region_enabled = true
 region_rect = Rect2(96, 32, 32, 32)
 
@@ -280,12 +257,11 @@ shape = SubResource("RectangleShape2D_ceiling")
 position = Vector2(576, 604)
 size = Vector2(1152, 88)
 fill_color = Color(0.101961, 0.14902, 0.196078, 1)
-factory_surface_style = 1
-
-[node name="CollisionShape2D" parent="Floor" index="0"]
-shape = SubResource("RectangleShape2D_floor")
+factory_skin_enabled = null
+factory_surface_style = null
 
 [node name="FloorDetail" type="Line2D" parent="Floor" unique_id=717280858]
+visible = false
 position = Vector2(0, -12)
 points = PackedVector2Array(-576, 0, 576, 0)
 width = 1.0
@@ -293,28 +269,25 @@ default_color = Color(0.145098, 0.215686, 0.27451, 1)
 
 [node name="PlatformA" parent="." unique_id=1192556465 instance=ExtResource("5_solid_platform")]
 position = Vector2(290, 452)
-
-[node name="CollisionShape2D" parent="PlatformA" index="0"]
-shape = SubResource("RectangleShape2D_platform_a")
+factory_skin_enabled = null
+factory_surface_style = null
 
 [node name="PlatformB" parent="." unique_id=1509114514 instance=ExtResource("5_solid_platform")]
 position = Vector2(615, 362)
 size = Vector2(190, 24)
-
-[node name="CollisionShape2D" parent="PlatformB" index="0"]
-shape = SubResource("RectangleShape2D_platform_b")
+factory_skin_enabled = null
+factory_surface_style = null
 
 [node name="PlatformC" parent="." unique_id=1065536872 instance=ExtResource("5_solid_platform")]
 position = Vector2(915, 452)
 size = Vector2(190, 24)
+factory_skin_enabled = null
+factory_surface_style = null
 
-[node name="CollisionShape2D" parent="PlatformC" index="0"]
-shape = SubResource("RectangleShape2D_platform_c")
-
-[node name="ExitDoor" parent="." instance=ExtResource("8_exit_door")]
+[node name="ExitDoor" parent="." unique_id=1371105835 instance=ExtResource("8_exit_door")]
 position = Vector2(1080, 522)
 
-[node name="PlayerSpawnMarker" type="Marker2D" parent="."]
+[node name="PlayerSpawnMarker" type="Marker2D" parent="." unique_id=745801978]
 position = Vector2(160, 560)
 
 [node name="Player" parent="." unique_id=349601874 instance=ExtResource("2_player")]
@@ -323,26 +296,23 @@ position = Vector2(160, 560)
 [node name="TrainingTarget" parent="." unique_id=2030093939 instance=ExtResource("3_training_target")]
 position = Vector2(940, 392)
 
-[node name="WorkerPatrolArea" type="Node2D" parent="."]
+[node name="WorkerPatrolArea" type="Node2D" parent="." unique_id=958438701]
 position = Vector2(670, 560)
 script = ExtResource("7_enemy_patrol_area")
 
-[node name="LeftLimit" type="Marker2D" parent="WorkerPatrolArea"]
+[node name="LeftLimit" type="Marker2D" parent="WorkerPatrolArea" unique_id=1059147527]
 position = Vector2(-250, 0)
 
-[node name="RightLimit" type="Marker2D" parent="WorkerPatrolArea"]
+[node name="RightLimit" type="Marker2D" parent="WorkerPatrolArea" unique_id=1529381367]
 position = Vector2(250, 0)
 
-[node name="PreviewLine" type="Line2D" parent="WorkerPatrolArea"]
-z_index = 0
+[node name="PreviewLine" type="Line2D" parent="WorkerPatrolArea" unique_id=603405082]
+points = PackedVector2Array(-250, 0, 250, 0)
 width = 2.0
 default_color = Color(0.83, 0.62, 0.3, 0.42)
-points = PackedVector2Array(-250, 0, 250, 0)
 
-[node name="RivetWorker" parent="." instance=ExtResource("6_rivet_worker")]
+[node name="RivetWorker" parent="." unique_id=950643860 instance=ExtResource("6_rivet_worker")]
 position = Vector2(650, 560)
-patrol_speed = 90.0
-patrol_end_pause = 0.35
 patrol_area_path = NodePath("../WorkerPatrolArea")
 
 [node name="CombatRoom" type="Node" parent="." unique_id=594426197]
@@ -350,7 +320,6 @@ script = ExtResource("4_combat_room")
 counter_label_path = NodePath("HUD/CounterLabel")
 status_label_path = NodePath("HUD/StatusLabel")
 health_label_path = NodePath("HUD/HealthLabel")
-player_path = NodePath("../Player")
 
 [node name="HUD" type="CanvasLayer" parent="CombatRoom" unique_id=1348876616]
 layer = 10
@@ -373,7 +342,7 @@ theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
 theme_override_font_sizes/font_size = 22
 text = "ENCONTRO ATIVO"
 
-[node name="RoomLabel" type="Label" parent="CombatRoom/HUD"]
+[node name="RoomLabel" type="Label" parent="CombatRoom/HUD" unique_id=1070069963]
 offset_left = 32.0
 offset_top = 120.0
 offset_right = 260.0
@@ -382,7 +351,7 @@ theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
 theme_override_font_sizes/font_size = 18
 text = "SALA 01"
 
-[node name="HealthLabel" type="Label" parent="CombatRoom/HUD"]
+[node name="HealthLabel" type="Label" parent="CombatRoom/HUD" unique_id=1507086004]
 offset_left = 32.0
 offset_top = 88.0
 offset_right = 250.0
@@ -391,7 +360,7 @@ theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
 theme_override_font_sizes/font_size = 18
 text = "VIDA: 5 / 5"
 
-[node name="BuildLabel" type="Label" parent="CombatRoom/HUD"]
+[node name="BuildLabel" type="Label" parent="CombatRoom/HUD" unique_id=1510303184]
 offset_left = 32.0
 offset_top = 154.0
 offset_right = 520.0
