@@ -6,6 +6,7 @@ Leia este índice antes de qualquer tarefa no repositório. Para o plano ativo, 
 
 | Plano | Estado | Pasta |
 |---|---|---|
+| Sentinela de contenção (antigo alvo) | Ataque circular local: raio140, aviso650ms, ativo140ms, recovery1,4s e dano1; LOS/cápsula/invulnerabilidade. Gemini/Muse/Grok R2 sem bloqueios; Opus quota, sem runtime/testes. Design V2 publicado antes; ataque sem push. | [specs/2026-10-14-alvo-ataque-area/](specs/2026-10-14-alvo-ataque-area/) |
 | Inimigos cartoon V2 | Nova prancha reproduzida no Aseprite; formas/expressões simplificadas, 4PNG/ASE substituídos. Scripts/cenas/colisões/AI preservados. Gemini/Muse sem defeitos; Grok sem parecer, Opus quota; sem Godot/runtime. | [specs/2026-10-14-inimigos-cartoon-v2/](specs/2026-10-14-inimigos-cartoon-v2/) |
 | Sprites dos dois inimigos | Prancha reproduzida no Aseprite e integrada em TrainingTarget/RivetWorker; física/AI/tempos preservados. Gemini/Muse sem bloqueios; Grok sem parecer útil, Opus quota; sem Godot/runtime. | [specs/2026-10-14-sprites-inimigos/](specs/2026-10-14-sprites-inimigos/) |
 | Colisão das superfícies da fábrica | Corrigido ParseError do helper; colliders de8 superfícies salvos nas duas salas, independentes da skin. Gemini/Muse/Grok sem bloqueios, Opus quota; runtime pendente. | [specs/2026-10-14-colisao-fabrica/](specs/2026-10-14-colisao-fabrica/) |
@@ -130,6 +131,7 @@ O fluxo persistente é referência visual com ImageGen, alinhamento aos sprites/
 Após aprovação do contact, seis poses Aseprite 64×64 foram anexadas ao atlas como frames 28–33 e expostas como animação `parry_body` de 200 ms. A arte preserva braços e luva sem duplicar a raquete; o runtime usa anchors por pose e segue o progresso físico do controller, respeitando death/hurt/dash/air/land. Os 28 frames anteriores foram preservados por comparação pixel a pixel com snapshot. [Especificação, implementação e baseline imutável](specs/2026-10-14-rebatida/spec-integracao-v3.md). A arte editável, metadata, crops, contact aprovado e Lua reprodutível estão em [protagonista-rebatida-aseprite-v3](../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-aseprite-v3/). Nenhum teste, Godot ou import foi executado.
 
 Pareceres rebatida V3: Gemini R3 e Muse R2 sem bloqueios funcionais; Grok timeout10min sem saída utilizável e Opus quota. [Registros e hashes](specs/2026-10-14-rebatida/pareceres/aseprite-v3/README.md). Gameplay/importação pendentes.
+
 
 
 

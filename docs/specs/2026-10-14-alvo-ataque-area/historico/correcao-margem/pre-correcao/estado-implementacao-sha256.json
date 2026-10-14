@@ -1,0 +1,13 @@
+{
+  "captured_after_implementation": "2026-10-14 14:46:31 -03:00",
+  "files": {
+    "scripts/world/training_target.gd": "63245ebc6fab4de113bf08663ddb9c90602148c18bb4ff7a0d14ee7061549105",
+    "scenes/training_target.tscn": "95a0028c50a4be3ed201bf985a842c082558f02db499042d73fae35d1e2cb532",
+    "scripts/enemy/containment_attack_visual.gd": "0ce4db2202a00beb495832dad7eea710e0aeecbca9d4b0ec199fb85e707911a9",
+    "docs/specs/2026-10-14-alvo-ataque-area/plano.md": "b46d9dc2a204ad1908741be3469cabdd18a64987896b6c3bda96c418552f3201",
+    "docs/specs/2026-10-14-alvo-ataque-area/spec.md": "ba51944f0707aec5113daa16e1b1b24bb262a615d5fc61dd763f915b4702f6b8",
+    "docs/specs/2026-10-14-alvo-ataque-area/implementacao.md": "c5e1c2c7b417e3ad77d823feb83b256f2b8339f89daea5807487d9647afcf189",
+    "docs/specs/2026-10-14-alvo-ataque-area/pareceres/README.md": "c8d89a29d012e92a8b175777f19b46ddff30c3a9fc5c1441230f95ffd4940c37",
+    "docs/specs/2026-10-14-alvo-ataque-area/historico/base/sha256-before.json": "fc0427e96ad3737b7e9c5626518c2778cd020342adc1b1007a5c80d839e285a4"
+  }
+}

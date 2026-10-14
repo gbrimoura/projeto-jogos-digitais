@@ -1,0 +1,26 @@
+STATUS: done
+SUMMARY: Revisão somente leitura concluída sobre o pacote inline da sentinela de contenção (`training_target.gd`, `containment_attack_visual.gd`, `training_target.tscn`, `plano.md` e `spec.md`). A implementação é estaticamente sólida, com tipagem GDScript 4 rigorosa, sintaxe e assinaturas de CanvasItem/Physics válidas, respeito estrito à API de dano do jogador (`take_damage`, camada 2, invulnerabilidade e deduplicação por golpe), tratamento defensivo de overshoot na transição windup->active e preservação dos contratos legados (`damageable`, `combat_enemy`, sinal `defeated`). Não há defeitos impeditivos em tempo de compilação ou regressões imediatas nos dois cenários atuais de teste.
+
+CHANGED_FILES: none
+TESTS: none (limite declarado: execução de Godot, importação, testes unitários ou runtime não foram executados, em estrito cumprimento às instruções da tarefa de revisão somente leitura).
+
+RISKS:
+1. **[Hipótese configurável / Risco de integração] Dependência de `get_tree().current_scene` para ativação e validação do jogador**
+   - **Arquivo/Linha:** [scripts/world/training_target.gd#L237-L242](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/training_target.gd#L237-L242) (e chamadas em L63 e L114).
+   - **Contexto:** `_node_is_inside_current_scene` valida nós estritamente contra `get_tree().current_scene`. Nos dois cenários atuais onde a sala é a cena corrente, funciona perfeitamente. Contudo, se a arquitetura evoluir para salas carregadas sob um `WorldManager`/nó raiz sem que `current_scene` seja explicitamente reatribuído pelo carregador, ou se o jogador for instanciado persistentemente como irmão sob `root`, `_node_is_inside_current_scene` retornará `false`, cancelando e desativando permanentemente o ataque da sentinela.
+   - **Mitigação recomendada:** Adicionar fallback para checagem de árvore (`is_inside_tree() and not is_queued_for_deletion()`) caso `current_scene` seja `null`.
+
+2. **[Hipótese configurável] Herança de escala/transformação no nó `AttackAreaVisual`**
+   - **Arquivo/Linha:** [scenes/training_target.tscn#L62-L65](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/training_target.tscn#L62-L65), [scripts/world/training_target.gd#L220-L229](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/training_target.gd#L220-L229) e [scripts/enemy/containment_attack_visual.gd#L7-L13](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/enemy/containment_attack_visual.gd#L7-L13).
+   - **Contexto:** O desenho nativo desenha um círculo em espaço local de `AttackAreaVisual` (filho de `TrainingTarget`), enquanto as consultas físicas (`PhysicsShapeQueryParameters2D`) utilizam coordenadas globais absolutas sem rotação/escala. Atualmente, os dois cenários utilizam escala `(1.0, 1.0)` e rotação zero (sem defeito presente). Se um futuro cenário aplicar escala (ex.: sentinela gigante `scale = 2.0` ou espelhamento `scale.x = -1.0`), o aviso visual sofrerá distorção/escala geométrica descompassando do raio físico real de 140 px.
+   - **Mitigação recomendada:** Se instâncias com escala forem suportadas no futuro, marcar `top_level = true` em `AttackAreaVisual` ou compensar a escala inversa do nó pai.
+
+3. **[Hipótese configurável / Limitação de design] Oclusão de linha de visão pontual ao centro da cápsula**
+   - **Arquivo/Linha:** [scripts/world/training_target.gd#L117-L130](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/training_target.gd#L117-L130).
+   - **Contexto:** A consulta física de área detecta sobreposição com qualquer extremidade da cápsula do Player (altura 76, raio 14), mas a linha de visão do raio parte de `area_center` e testa exclusivamente o centro do `CollisionShape2D` (`y = -38`). Geometrias de mundo (máscara 1) como muretas baixas ou cantos de plataformas que cubram o centro do jogador bloquearão o ataque mesmo se a cabeça ou pés estiverem dentro do raio visual de 140 px. O código cumpre fielmente a especificação aprovada, mas constitui uma particularidade de gameplay.
+
+4. **[Comportamento intencional / Baixo risco] Cancelamento imediato de Recovery ao eliminar o jogador**
+   - **Arquivo/Linha:** [scripts/world/training_target.gd#L66-L68](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/training_target.gd#L66-L68).
+   - **Contexto:** Se o golpe for letal, a flag síncrona `player.is_dead` torna-se `true`. No frame seguinte de `_physics_process`, a checagem `_attack_state != AttackState.IDLE and not _is_alive_player(_locked_player)` cancela o estado, abortando o restante do tempo de `RECOVERY` e o fade visual. Esse comportamento atende à regra de cancelamento por morte da spec e é inócuo no teaser single-player.
+
+NEXT_STEP: Prosseguir com o fluxo de aprovação das revisões estáticas independentes pelo agente principal (Cursor Grok e Muse Spark) e, caso autorizado pelo usuário para testes manuais/Godot, verificar em gameplay o feedback do aviso visual (alpha e espessura do arco) e a leitura dos 650 ms de windup contra as esquivas do jogador.

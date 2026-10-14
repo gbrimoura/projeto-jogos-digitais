@@ -1,0 +1,17 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Revisão estática inline concluída. Sem defeito bloqueante atual: máquina IDLE/WINDUP/ACTIVE/RECOVERY com overshoot preserva 1 aplicação, dano 1x/jogada via `take_damage(amount,self)`, LOS World1, máscara Player2, cancelamento morte/cena e contrato `TrainingTarget/defeated/queue_free` compatíveis. Limite: sem execução/Godot/testes/QA, sem leitura de baseline/hashes/cenas — verificado só pacote inline.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P2-atual menor [scripts/world/training_target.gd:_update_visuals]: `impact` forçado também em `ACTIVE`, não só em flash. Plano diz “impact prioritária durante flash”; extensão para ACTIVE é plausível como feedback, não quebra arte idle/impact, mas diverge da descrição.
+- P2-atual menor [scripts/world/training_target.gd:_configure/_find]: `margin=0.08` expande consulta vs `draw_arc` no raio efetivo puro. Diferença subpixel, tecnicamente viola “mesmo raio”; sem impacto gameplay.
+- P2-atual menor [scripts/world/training_target.gd:_update_active/_apply]: `impact` visual persiste até RECOVERY e 2º `_apply` no frame seguinte é dedupado — correto, apenas notar que tentativa bloqueada por invuln 0.5s consome a única tentativa da janela 0.14s. Conforme spec “uma tentativa”, compatível com `PlayerHealth` rejeita dead/invuln.
+- P3-hipótese [scripts/world/training_target.gd:_physics_process]: cancelamento em RECOVERY se `_locked_player` morrer anula penalidade 1.4s e volta a IDLE. Conforme “morte cancela/oculta”, mas permite re-windup imediato pós-respawn — só se respawn em área.
+- P3-hipótese [scripts/world/training_target.gd:_is_alive_player/_apply]: cancela pelo `_locked_player`; 2º player em co-op na mesma área seria ignorado no cancelamento. Irrelevante single-player atual.
+- P3-hipótese [scripts/world/training_target.gd+visual escala]: física usa `Transform2D(0,center)` mundo + raio clamp 16-400; visual é `Node2D` filho com `position=offset` e `draw_circle` local. Igual só porque cenários instanciam sem escala/rotação — declarado, não verificado aqui. Escala futura quebraria acordo aviso/consulta.
+- P3-hipótese [LOS]: `WORLD_MASK=1`, exclui self, ignora player layer2 — correto. Origem dentro de parede, shape player desabilitado, `MAX_QUERY_RESULTS=32` cheio ou `windup_duration` editado mid-windup só afetam colocação/config extrema.
+- P3-hipótese [tscn]: root `StaticBody2D` layer8/mask0, caixa 72x96, grupos, `class_name`, sem `Area2D`, visual `Node2D` sem `class_name` — preserva projéteis/CombatRoom. `load_steps=7` coerente. `disabled` não usado, `idle/impact` inalterados — sem verificação de `.tres/.gdshader`.
+NEXT_STEP: Liberar para observação manual no jogo de legibilidade do círculo 140px/650ms e sensação 140ms/1400ms; sem mudança de código requerida por esta revisão.

@@ -1,0 +1,9 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Correção `margin 0.08->0.0` encerra achado R1 de zona oculta maior que aviso; raio físico/visual seguem 140 inalterados e contrato textual de reuso `impact` em ACTIVE sem flash agora explícito e coerente com `_update_visuals` descrito. Sem regressão funcional.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Variação de borda 0.08px subpixel, estritamente favorável ao jogador; sem runtime/Godot por instrução.
+NEXT_STEP: Manter frente congelada; sem nova correção necessária.

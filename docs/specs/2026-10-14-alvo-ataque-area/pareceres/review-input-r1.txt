@@ -1,0 +1,507 @@
+Papel: revisor somente leitura de implementação Godot 4.x. Não use ferramentas, não altere arquivos, não execute comandos/testes/Godot. Analise exclusivamente o pacote inline completo abaixo. Timeout10min. Objetivo: alvo estático vira inimigo corpo a corpo circular com aviso. Verifique GDScript/sintaxe/tipos, timers/transições/overshoot, cápsula Player2, LOS World1, dano uma vez/ API invulnerabilidade, cancelamento morte/cena, compatibilidade. Parâmetros provisórios 140px, windup650ms, active140ms, recovery1400ms, damage1. Dois cenários atuais instanciam TrainingTarget sem escala/rotação alterada. Player root CharacterBody2D layer2, CollisionShape2D capsule radius14 height76 pos(0,-38); Player.is_dead getter health.is_dead; Player.take_damage(amount,source)->bool delega PlayerHealth que rejeita dead/invuln .5s; death notifica com emissão síncrona e apresentação deferida. CombatRoom conta combat_enemy e escuta defeated. Arte atual idle/impact/disabled e recursos inalterados. Não reporte falta de execução como defeito; declare limite. Formato stdout STATUS done|blocked|needs-input; SUMMARY; CHANGED_FILES none; TESTS none; RISKS com achados priorizados e arquivo/linha; NEXT_STEP. Distinguir defeito atual de hipótese configurável.
+FILE: docs/specs/2026-10-14-alvo-ataque-area/plano.md
+# Plano — sentinela de contenção
+
+**Estado:** implementação concluída e congelada para revisão estática.
+**Data:** 14/10/2026.
+
+## Objetivo
+
+Transformar o `TrainingTarget` existente em um inimigo sentinela estacionário que inicia um golpe circular corpo a corpo quando o jogador vivo entra na área. A ação mostra um círculo vermelho/laranja de aviso, espera o tempo de reação, consulta o corpo físico real do jogador e aplica dano pela API existente.
+
+## Decisões provisórias
+
+- Raio único da área: 140 px em coordenadas de mundo. A detecção usa o mesmo `CircleShape2D` e centro do golpe, para o aviso, a consulta de acerto e a geometria do círculo concordarem.
+- Dano: 1; aviso: 0,65 s; janela ativa: 0,14 s; recuperação: 1,4 s. Vida e flash existentes permanecem.
+- Estados no `_physics_process`: `IDLE`, `WINDUP`, `ACTIVE` e `RECOVERY`; sem movimentação, perseguição, teleporte ou rastreamento do jogador após o início.
+- O acerto usa `PhysicsDirectSpaceState2D.intersect_shape` sobre o corpo na camada Player e raycast de LOS pela camada World. As plataformas e paredes bloqueiam dano.
+- O nó segue usando o path e o contrato `TrainingTarget`, grupos `damageable`/`combat_enemy`, sinal `defeated` e remoção imediata após os 3 HP padrão.
+- O efeito visual é desenho nativo em `Node2D`, sem textura ou asset raster novo. A pose existente `impact` continua prioritária durante o flash.
+
+## Escopo
+
+Runtime autorizado: `scripts/world/training_target.gd`, `scenes/training_target.tscn` e novo `scripts/enemy/containment_attack_visual.gd` sem `class_name`. Documentação somente nesta pasta. Jogador, vida, trabalhador, projéteis, salas, colisões de mundo, projeto, arte, recursos e estado Git ficam fora do escopo.
+
+## Revisão e validação
+
+Snapshots e SHA-256 dos dois arquivos runtime que serão editados foram capturados antes da implementação em `historico/base/`. A revisão de código é solicitada pelo agente principal após congelar o estado. Por instrução da tarefa, não executar Godot, importação, testes ou QA.
+
+
+FILE: docs/specs/2026-10-14-alvo-ataque-area/spec.md
+# Especificação — sentinela de contenção
+
+**Estado:** implementado; valores de combate locais provisórios para o protótipo.
+**Data:** 14/10/2026.
+**Baseline:** arquivos antes da implementação preservados em `historico/base/`, com hashes em `sha256-before.json`.
+
+## Comportamento
+
+`TrainingTarget` permanece imóvel e mantém sua caixa física existente de 72×96, os 3 HP, o flash de 120 ms, o HUD de vida, os grupos `damageable` e `combat_enemy`, o método `take_damage` e o sinal `defeated`. Enquanto o jogador vivo está dentro do círculo e tem linha de visão, a sentinela começa um golpe centrado na própria posição mais `attack_center_offset`.
+
+Parâmetros locais iniciais: raio/detecção 140 px, offset `(0,0)`, dano 1, windup 0,65 s, janela ativa 0,14 s e recuperação 1,4 s. A detecção usa o mesmo círculo do acerto: não há zona oculta maior do que o aviso. Um jogador pode sair durante o windup e evitar o ataque; um jogador que entrar durante a janela ativa pode receber um único pedido de dano naquela janela.
+
+A silhueta circular nativa é visível durante `WINDUP` e `ACTIVE`; sua circunferência é desenhada no mesmo raio consultado pela física. Ao entrar em `RECOVERY`, ela desaparece por fade curto e então se oculta. A sentinela não segue o jogador; o centro é capturado no início do golpe.
+
+## Consultas de física e dano
+
+- As consultas ocorrem somente em `_physics_process`, contra corpos reais com grupo `player`, camada física 2 e método `take_damage`; a cápsula configurada em `CollisionShape2D` participa da sobreposição.
+- O raio de visão parte do centro travado e termina no centro global do `CollisionShape2D` do jogador. Máscara World 1; paredes e plataformas bloqueiam o golpe.
+- Cada instância de jogador pode receber no máximo uma tentativa por golpe. A deduplicação é por `get_instance_id()` e é limpa no próximo golpe.
+- A chamada é `Player.take_damage(damage, self)`. O script do jogador e seu estado de invulnerabilidade não são alterados; nenhum HP é escrito diretamente.
+- Um avanço de física que ultrapasse o windup ainda avalia o começo da janela ativa antes de avançar para recuperação, evitando pular o golpe.
+- Morte/remoção do inimigo, morte/remoção do jogador ou saída do nó da cena corrente cancelam e ocultam a ação. `defeated` é emitido uma vez e o inimigo usa `queue_free()` como antes.
+
+## Integração
+
+A cena é compartilhada pelas salas atuais. A alteração mantém caminhos, root `StaticBody2D`, caixa de colisão, camada e grupos. Não há `Area2D` persistente que possa interceptar projéteis. O visual usa primitives nativas e reutiliza idle/impacto da arte Cartoon V2 já instalada.
+
+## Limites
+
+Os parâmetros não representam balanceamento final. A integração é estática por instrução: sem Godot, importação, testes, gameplay ou QA nesta tarefa. Avaliação de leitura do aviso e sensação do golpe permanece pendente de observação manual no jogo.
+
+
+FILE: scripts/world/training_target.gd
+class_name TrainingTarget
+extends StaticBody2D
+
+## Sentinela estacionária de contenção integrada ao contrato antigo TrainingTarget.
+
+signal defeated
+
+enum AttackState { IDLE, WINDUP, ACTIVE, RECOVERY }
+
+const PLAYER_MASK: int = 2
+const WORLD_MASK: int = 1
+const MAX_QUERY_RESULTS: int = 32
+
+@export_range(1, 100, 1) var max_health: int = 3
+@export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
+@export_range(16.0, 400.0, 1.0) var attack_radius: float = 140.0
+@export var attack_center_offset: Vector2 = Vector2.ZERO
+@export_range(0.05, 3.0, 0.01) var windup_duration: float = 0.65
+@export_range(0.05, 1.0, 0.01) var active_window: float = 0.14
+@export_range(1, 100, 1) var attack_damage: int = 1
+@export_range(0.05, 5.0, 0.01) var recovery_duration: float = 1.4
+@export_range(0.0, 0.5, 0.01) var recovery_fade_duration: float = 0.18
+
+@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
+@onready var _health_fill: Polygon2D = $Visuals/HealthFill
+@onready var _attack_visual: Node2D = $AttackAreaVisual
+
+var health: int
+var _flash_remaining: float = 0.0
+var _attack_state: AttackState = AttackState.IDLE
+var _state_remaining: float = 0.0
+var _recovery_fade_remaining: float = 0.0
+var _locked_attack_center: Vector2 = Vector2.ZERO
+var _locked_player: PhysicsBody2D
+var _damaged_player_ids: Dictionary = {}
+var _defeated_emitted: bool = false
+var _area_shape: CircleShape2D
+var _area_query: PhysicsShapeQueryParameters2D
+var _line_of_sight_query: PhysicsRayQueryParameters2D
+
+func _ready() -> void:
+	health = maxi(max_health, 1)
+	add_to_group("damageable")
+	add_to_group("combat_enemy")
+	_configure_physics_queries()
+	_set_attack_visual(&"hidden", 0.0)
+	_update_visuals()
+
+func take_damage(amount: int, _source: Node = null) -> bool:
+	if _defeated_emitted or health <= 0 or amount <= 0:
+		return false
+
+	health = maxi(health - amount, 0)
+	_flash_remaining = maxf(flash_duration, 0.0)
+	_update_visuals()
+	if health == 0:
+		_defeated_emitted = true
+		_cancel_attack()
+		defeated.emit()
+		queue_free()
+	return true
+
+func _physics_process(delta: float) -> void:
+	_update_hit_flash(delta)
+	if _defeated_emitted:
+		return
+	if not _is_inside_current_scene():
+		_cancel_attack()
+		return
+	if _attack_state != AttackState.IDLE and not _is_alive_player(_locked_player):
+		_cancel_attack()
+		return
+
+	var physics_step := maxf(delta, 0.0)
+	match _attack_state:
+		AttackState.IDLE:
+			var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
+			if detected_player != null:
+				_begin_windup(detected_player)
+		AttackState.WINDUP:
+			_update_windup(physics_step)
+		AttackState.ACTIVE:
+			_update_active(physics_step)
+		AttackState.RECOVERY:
+			_update_recovery(physics_step)
+
+func _configure_physics_queries() -> void:
+	_area_shape = CircleShape2D.new()
+	_area_shape.radius = _effective_attack_radius()
+	_area_query = PhysicsShapeQueryParameters2D.new()
+	_area_query.shape = _area_shape
+	_area_query.collision_mask = PLAYER_MASK
+	_area_query.collide_with_bodies = true
+	_area_query.collide_with_areas = false
+	_area_query.margin = 0.08
+	_area_query.exclude = [get_rid()]
+
+	_line_of_sight_query = PhysicsRayQueryParameters2D.new()
+	_line_of_sight_query.collision_mask = WORLD_MASK
+	_line_of_sight_query.collide_with_bodies = true
+	_line_of_sight_query.collide_with_areas = false
+	_line_of_sight_query.exclude = [get_rid()]
+
+func _effective_attack_radius() -> float:
+	return clampf(attack_radius, 16.0, 400.0)
+
+func _find_player_in_attack_area(area_center: Vector2) -> PhysicsBody2D:
+	if _area_query == null or _area_shape == null:
+		return null
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, area_center)
+	var overlaps: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		if _has_clear_line_of_sight(player_body, area_center):
+			return player_body
+	return null
+
+func _is_alive_player(candidate: PhysicsBody2D) -> bool:
+	if not is_instance_valid(candidate):
+		return false
+	if not candidate.is_in_group("player") or not candidate.has_method("take_damage"):
+		return false
+	var dead_value: Variant = candidate.get("is_dead")
+	if typeof(dead_value) != TYPE_BOOL or bool(dead_value):
+		return false
+	return _node_is_inside_current_scene(candidate)
+
+func _has_clear_line_of_sight(player_body: PhysicsBody2D, area_center: Vector2) -> bool:
+	_line_of_sight_query.from = area_center
+	_line_of_sight_query.to = _get_player_collider_center(player_body)
+	var obstruction: Dictionary = get_world_2d().direct_space_state.intersect_ray(
+		_line_of_sight_query
+	)
+	return obstruction.is_empty()
+
+func _get_player_collider_center(player_body: PhysicsBody2D) -> Vector2:
+	var player_shape := player_body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if player_shape != null and not player_shape.disabled:
+		return player_shape.global_position
+	return player_body.global_position
+
+func _begin_windup(player_body: PhysicsBody2D) -> void:
+	_locked_player = player_body
+	_locked_attack_center = global_position + attack_center_offset
+	_damaged_player_ids.clear()
+	_attack_state = AttackState.WINDUP
+	_state_remaining = maxf(windup_duration, 0.05)
+	_recovery_fade_remaining = 0.0
+	_update_attack_area_visual()
+
+func _update_windup(delta: float) -> void:
+	var before_step := _state_remaining
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		var overshoot := maxf(delta - before_step, 0.0)
+		_enter_active()
+		_apply_attack_area()
+		if overshoot >= maxf(active_window, 0.05):
+			_enter_recovery()
+		else:
+			_state_remaining = maxf(active_window, 0.05) - overshoot
+		return
+	_update_attack_area_visual()
+
+func _enter_active() -> void:
+	_attack_state = AttackState.ACTIVE
+	_state_remaining = maxf(active_window, 0.05)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_active(delta: float) -> void:
+	_apply_attack_area()
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		_enter_recovery()
+
+func _apply_attack_area() -> void:
+	if _defeated_emitted or _attack_state != AttackState.ACTIVE:
+		return
+	var overlaps: Array[Dictionary] = _find_overlaps_at_locked_center()
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		var player_id := player_body.get_instance_id()
+		if _damaged_player_ids.has(player_id):
+			continue
+		if not _has_clear_line_of_sight(player_body, _locked_attack_center):
+			continue
+		_damaged_player_ids[player_id] = true
+		var damage_result: Variant = player_body.call(
+			"take_damage",
+			maxi(attack_damage, 1),
+			self
+		)
+		if typeof(damage_result) == TYPE_BOOL and bool(damage_result):
+			_set_attack_visual(&"impact", 1.0)
+
+func _find_overlaps_at_locked_center() -> Array[Dictionary]:
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, _locked_attack_center)
+	return get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+
+func _enter_recovery() -> void:
+	_attack_state = AttackState.RECOVERY
+	_state_remaining = maxf(recovery_duration, 0.05)
+	_recovery_fade_remaining = maxf(recovery_fade_duration, 0.0)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_recovery(delta: float) -> void:
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	_recovery_fade_remaining = maxf(_recovery_fade_remaining - delta, 0.0)
+	_update_attack_area_visual()
+	if _state_remaining <= 0.0:
+		_attack_state = AttackState.IDLE
+		_state_remaining = 0.0
+		_recovery_fade_remaining = 0.0
+		_locked_player = null
+		_damaged_player_ids.clear()
+		_set_attack_visual(&"hidden", 0.0)
+		_update_visuals()
+
+func _update_attack_area_visual() -> void:
+	match _attack_state:
+		AttackState.WINDUP:
+			var windup_progress := 1.0 - clampf(
+				_state_remaining / maxf(windup_duration, 0.05),
+				0.0,
+				1.0
+			)
+			_set_attack_visual(&"windup", 0.58 + windup_progress * 0.34)
+		AttackState.ACTIVE:
+			_set_attack_visual(&"active", 1.0)
+		AttackState.RECOVERY:
+			var fade_alpha := 0.0
+			if recovery_fade_duration > 0.0:
+				fade_alpha = _recovery_fade_remaining / recovery_fade_duration
+			_set_attack_visual(&"recovery", clampf(fade_alpha, 0.0, 1.0))
+		_:
+			_set_attack_visual(&"hidden", 0.0)
+
+func _set_attack_visual(phase: StringName, alpha: float) -> void:
+	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_area_state"):
+		return
+	_attack_visual.call(
+		"set_area_state",
+		_effective_attack_radius(),
+		attack_center_offset if _attack_state == AttackState.IDLE else _locked_attack_center - global_position,
+		phase,
+		alpha
+	)
+
+func _update_hit_flash(delta: float) -> void:
+	if _flash_remaining <= 0.0:
+		return
+	_flash_remaining = maxf(_flash_remaining - maxf(delta, 0.0), 0.0)
+	_update_visuals()
+
+func _update_visuals() -> void:
+	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
+		return
+	var desired_animation: StringName = &"impact" if _flash_remaining > 0.0 or _attack_state == AttackState.ACTIVE else &"idle"
+	if _body_sprite.animation != desired_animation or not _body_sprite.is_playing():
+		_body_sprite.play(desired_animation)
+	var hit_flash := _body_sprite.material as ShaderMaterial
+	if hit_flash != null:
+		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
+	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
+	_health_fill.scale.x = health_ratio
+
+func _cancel_attack() -> void:
+	_attack_state = AttackState.IDLE
+	_state_remaining = 0.0
+	_recovery_fade_remaining = 0.0
+	_locked_player = null
+	_damaged_player_ids.clear()
+	_set_attack_visual(&"hidden", 0.0)
+	_update_visuals()
+
+func _is_inside_current_scene() -> bool:
+	return _node_is_inside_current_scene(self)
+
+func _node_is_inside_current_scene(node: Node) -> bool:
+	if not is_instance_valid(node):
+		return false
+	var scene_root := get_tree().current_scene
+	return is_instance_valid(scene_root) and (scene_root == node or scene_root.is_ancestor_of(node))
+
+
+FILE: scripts/enemy/containment_attack_visual.gd
+extends Node2D
+
+var _radius: float = 140.0
+var _phase: StringName = &"hidden"
+var _opacity: float = 0.0
+
+func set_area_state(radius: float, center_offset: Vector2, phase: StringName, opacity: float) -> void:
+	_radius = maxf(radius, 0.0)
+	position = center_offset
+	_phase = phase
+	_opacity = clampf(opacity, 0.0, 1.0)
+	visible = _phase != &"hidden" and _opacity > 0.001
+	queue_redraw()
+
+func _draw() -> void:
+	if not visible or _radius <= 0.0:
+		return
+
+	var fill_alpha := 0.045
+	var outline_alpha := 0.88
+	var outline_width := 2.0
+	var color := Color(1.0, 0.27, 0.055)
+	match _phase:
+		&"windup":
+			color = Color(1.0, 0.32, 0.055)
+			fill_alpha = 0.055
+			outline_alpha = 0.82
+		&"active":
+			color = Color(1.0, 0.16, 0.035)
+			fill_alpha = 0.09
+			outline_alpha = 1.0
+			outline_width = 3.0
+		&"impact":
+			color = Color(1.0, 0.76, 0.24)
+			fill_alpha = 0.13
+			outline_alpha = 1.0
+			outline_width = 4.0
+		&"recovery":
+			color = Color(1.0, 0.27, 0.055)
+			fill_alpha = 0.035
+			outline_alpha = 0.55
+
+	draw_circle(Vector2.ZERO, _radius, Color(color.r, color.g, color.b, fill_alpha * _opacity))
+	draw_arc(
+		Vector2.ZERO,
+		_radius,
+		0.0,
+		TAU,
+		96,
+		Color(color.r, color.g, color.b, outline_alpha * _opacity),
+		outline_width,
+		true
+	)
+
+FILE: scenes/training_target.tscn
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
+[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+[ext_resource type="Script" path="res://scripts/enemy/containment_attack_visual.gd" id="4_attack_visual"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+size = Vector2(72.0, 96.0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_target_hit_flash"]
+resource_local_to_scene = true
+shader = ExtResource("3_hit_flash_shader")
+
+[node name="TrainingTarget" type="StaticBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 0
+z_index = 1
+script = ExtResource("1_training_target")
+max_health = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_training_target")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+material = SubResource("ShaderMaterial_target_hit_flash")
+sprite_frames = ExtResource("2_target_frames")
+animation = &"idle"
+autoplay = &"idle"
+centered = true
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+
+[node name="Visor" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+
+[node name="UpperStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+
+[node name="LowerStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+
+[node name="FootLine" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-38.0, -60.0)
+color = Color(0.894118, 0.435294, 0.345098, 1)
+polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)
+
+[node name="AttackAreaVisual" type="Node2D" parent="."]
+visible = false
+z_index = 1
+script = ExtResource("4_attack_visual")
+
+

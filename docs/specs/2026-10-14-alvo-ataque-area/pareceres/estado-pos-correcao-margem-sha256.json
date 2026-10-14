@@ -1,0 +1,15 @@
+{
+  "captured_after_margin_correction": "2026-10-14 14:54:06 -03:00",
+  "files": {
+    "scripts/world/training_target.gd": "26b735080aec2b72261aa9aef6997edffe616d4d2a5bbd69f660082cd253a43b",
+    "docs/specs/2026-10-14-alvo-ataque-area/plano.md": "69ead69269b20bb6a4a02d559e86b37b529064f2b09db09c72a86041b5074d85",
+    "docs/specs/2026-10-14-alvo-ataque-area/spec.md": "ae3e9aa9c7c3ee7dd633337dc38d696f7640d47ec1d7420d6dcb2134520bab11",
+    "docs/specs/2026-10-14-alvo-ataque-area/historico/correcao-margem/README.md": "a416cdd97a414b3b479af5d6f3fbe102151813eb10d7e5d1a5f33315b8a038b6",
+    "docs/specs/2026-10-14-alvo-ataque-area/historico/correcao-margem/pre-correcao/scripts/world/training_target.gd": "63245ebc6fab4de113bf08663ddb9c90602148c18bb4ff7a0d14ee7061549105",
+    "docs/specs/2026-10-14-alvo-ataque-area/historico/correcao-margem/pre-correcao/docs/plano.md": "b46d9dc2a204ad1908741be3469cabdd18a64987896b6c3bda96c418552f3201",
+    "docs/specs/2026-10-14-alvo-ataque-area/historico/correcao-margem/pre-correcao/docs/spec.md": "ba51944f0707aec5113daa16e1b1b24bb262a615d5fc61dd763f915b4702f6b8",
+    "docs/specs/2026-10-14-alvo-ataque-area/historico/correcao-margem/pre-correcao/estado-implementacao-sha256.json": "8336a97a029ab3e01e7f065b49a01ca39a4b607508db2cc6755dfc486b99d509",
+    "docs/specs/2026-10-14-alvo-ataque-area/historico/correcao-margem/pre-correcao/sha256-before.json": "a3dd15a910a1b4a41cf1d379d98ee81a8cd518c3e715abcfb680d5c052f087c0",
+    "docs/specs/2026-10-14-alvo-ataque-area/pareceres/estado-implementacao-sha256.json": "8336a97a029ab3e01e7f065b49a01ca39a4b607508db2cc6755dfc486b99d509"
+  }
+}

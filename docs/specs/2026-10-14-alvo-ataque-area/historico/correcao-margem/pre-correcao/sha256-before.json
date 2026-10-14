@@ -1,0 +1,9 @@
+{
+  "captured_before_margin_correction": "2026-10-14 14:53:52 -03:00",
+  "files": {
+    "scripts/world/training_target.gd": "63245ebc6fab4de113bf08663ddb9c90602148c18bb4ff7a0d14ee7061549105",
+    "docs/specs/2026-10-14-alvo-ataque-area/plano.md": "b46d9dc2a204ad1908741be3469cabdd18a64987896b6c3bda96c418552f3201",
+    "docs/specs/2026-10-14-alvo-ataque-area/spec.md": "ba51944f0707aec5113daa16e1b1b24bb262a615d5fc61dd763f915b4702f6b8",
+    "docs/specs/2026-10-14-alvo-ataque-area/pareceres/estado-implementacao-sha256.json": "8336a97a029ab3e01e7f065b49a01ca39a4b607508db2cc6755dfc486b99d509"
+  }
+}

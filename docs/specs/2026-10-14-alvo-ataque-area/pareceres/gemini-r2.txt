@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Análise estática R2 concluída com sucesso sobre a correção delimitada em `training_target.gd` e sua especificação. A redefinição de `_area_query.margin = 0.0` encerra o apontamento de R1, sincronizando perfeitamente o raio de colisão física ao raio visual nativo de 140 px (`draw_circle`/`draw_arc`) sem expansão residual. A formalização textual na especificação clarifica o contrato visual: a pose `impact` é reutilizada no estado `ACTIVE` sem shader flash, enquanto o dano recebido preserva prioridade estrita de shader (`flash_amount = 1.0` exclusivo de `flash_remaining > 0`) sem resetar animação em andamento. Não foram introduzidas regressões na máquina de estados, na checagem de visada, na deduplicação de dano ou no ciclo de vida do nó.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Parâmetros numéricos de combate (raio de 140 px, tempos de windup/ativo/recuperação) continuam sendo valores locais provisórios de protótipo que requerem avaliação manual de gameplay e leitura visual quando os testes com Godot forem autorizados.
+NEXT_STEP: Prosseguir com o registro do parecer e consolidação dos artefatos da rodada R2 no histórico documental do plano.

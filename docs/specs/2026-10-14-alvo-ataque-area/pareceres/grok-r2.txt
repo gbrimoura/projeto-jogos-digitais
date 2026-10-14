@@ -1,0 +1,36 @@
+STATUS: done  
+SUMMARY: A correção delimitada encerra os dois achados R1 sem regressão de contrato. `_area_query.margin = 0.0` alinha a consulta ao `CircleShape2D.radius` 140 e ao `draw_circle`/`draw_arc` 140; a silhueta deixa de exceder o círculo consultado. O contrato textual de impact/flash foi fechado na spec (pose ACTIVE reutiliza Cartoon V2 impact sem shader; flash só pelo timer de dano, com prioridade sobre o golpe). O runtime de `_update_visuals` não mudou nesta frente. A linha em branco extra no fim de `training_target.gd` não altera comportamento.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: Nenhum defeito bloqueante no pacote R2. A detecção fica 0,08 px mais justa na borda; isso é o efeito pretendido da correção, não um desvio do raio documentado. Avaliação de leitura do aviso e da sensação do golpe permanece pendente de observação manual, como já está nos Limites da spec. Nas salas atuais (Player descendente de `current_scene`, TrainingTarget sem escala/rotação) o raio 140 em espaço local coincide com o desenho e com a query.  
+NEXT_STEP: Encerrar a correção de margem; manter cena, helper, hashes e demais contratos intactos. Próximo incremento só se houver nova frente autorizada (observação in-game do aviso/golpe, não desta linha).
+
+---
+
+## Achado 1 — margem 0,08 excedia o círculo
+
+**Antes (R1):** `PhysicsShapeQueryParameters2D.margin = 0.08` alargava a interseção além do raio 140 usado pela shape e pelo desenho.
+
+**Agora:** a única alteração runtime efetiva é `margin = 0.0`. Raio físico 140 e primitivas visuais 140 permanecem iguais. A spec passa a exigir circunferência no mesmo raio da física, com margem da shape query igual a zero.
+
+Isso fecha o achado: detecção, aviso e número documentado passam a descrever o mesmo disco. Não há zona oculta maior do que o aviso por causa da query.
+
+Não há regressão de contrato nas salas atuais: o alvo não tem escala/rotação, então 140 local = 140 mundo = 140 desenhado. Jogador exatamente na borda que só entrava pelos 0,08 px extras deixa de ser considerado dentro; isso restaura o círculo anunciado, não quebra o raio 140.
+
+## Achado 2 — contrato textual de impact incompleto
+
+**Antes (R1):** o código já usava impact em ACTIVE e restringia o shader ao timer de hurt; a spec não dizia isso com clareza.
+
+**Agora:** o runtime de `_update_visuals` não entra neste diff. Continua: impact se `flash_remaining > 0` **ou** `attack_state == ACTIVE`; não reinicia a animação se já estiver tocando; `flash_amount = 1` só se `flash_remaining > 0`. A spec agora descreve reuso da pose ACTIVE sem flash de golpe, e prioridade do flash de dano recebido.
+
+O achado era documental. Fecha-se pela spec/plano, não por mudança de código. Não há regressão visual/shader nesta frente.
+
+## O que o diff não toca
+
+Cena compartilhada, helper, caixa 72×96, 3 HP, flash 120 ms, HUD, grupos, `take_damage`, `defeated`, queries só em `_physics_process`, LoS, deduplicação por `get_instance_id()`, `Player.take_damage(damage, self)`, avanço que não pula ACTIVE, cancelamento por morte/saída de cena, hashes: intactos, como declarado.
+
+A linha em branco final não cria comportamento novo.
+
+## Conclusão
+
+Correção suficiente e proporcional. Os dois achados R1 estão encerrados. Nenhum defeito novo bloqueante no runtime apresentado.
