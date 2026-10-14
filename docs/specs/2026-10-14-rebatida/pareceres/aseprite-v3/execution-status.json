@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-14",
+  "gemini_r1": "exit0; false positives withdrawn by R3",
+  "gemini_r2": "exit0; GIF preview approved",
+  "gemini_r3": "exit0; no functional blockers",
+  "muse_r1": "exit0; false positives withdrawn by R2",
+  "muse_r2": "exit0; no functional blockers",
+  "grok_r1": "timeout10min; Ctrl-C; empty stdout",
+  "opus_r1": "exit1; ActionRequiredError usage limit; no review",
+  "tests": "none",
+  "godot": "not run",
+  "mode": "read-only inline review",
+  "model_substitution": "none"
+}

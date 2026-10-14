@@ -1,0 +1,85 @@
+### Parecer Técnico de Integração: Godot 4.7.2 (`RacketVisual` + Shader Mask + Hand/IK + Ball/Parry Wiring)
+
+---
+
+### 1. Visão Geral e Conformidade da Arquitetura
+
+A integração avaliada substitui o antigo arranjo rígido `RacketPivot`/`scenes/racket.tscn` por um sistema híbrido adaptativo (`RacketVisual`), combinando:
+1. **IK procedural analítico de 2 ossos** com máscara de shader no atlas do corpo para estados em solo (`idle`, `walk`).
+2. **Ancoragem estática per-frame** (`HAND_ANCHORS`) para estados dinâmicos aéreos/especiais (`jump`, `fall`, `dash`, `hurt`), preservando o braço nativo do sprite 64×64.
+3. **Disparo e Parry síncronos** sem introdução de frames de delay físico.
+
+A análise estática das fontes autorizadas identificou problemas técnicos concretos (P1 e P2), detalhados a seguir, separando bloqueios de limitações estéticas conhecidas.
+
+---
+
+### 2. Achados Concretos por Função e Causa
+
+#### [P1] `_solve_elbow()` e `_update_pose()` — Vetor de Dobra Degenerado e Jitter do Cotovelo
+- **Localização:** [`scripts/player/racket_visual.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/player/racket_visual.gd#L161-L167) e [`_solve_elbow()`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/player/racket_visual.gd#L233-L245).
+- **Causa Raiz:** Em `_update_pose()`, `_solve_elbow(shoulder, _grip, direction)` é chamado passando `direction` como argumento `preferred_side`. Em seguida, dentro de `_solve_elbow()`:
+  ```gdscript
+  var axis := offset / raw_distance # axis é colinear com direction
+  var side := axis.orthogonal()     # side é estritamente perpendicular a axis
+  if side.dot(preferred_side) < 0.0:
+      side = -side
+  ```
+  Como `preferred_side` é igual a `direction` (colinear com `axis`), o produto escalar de dois vetores perpendiculares é matematicamente zero (`side.dot(preferred_side) == 0.0`). Na aritmética de ponto flutuante, esse valor oscila imprevisivelmente em torno de zero ($+10^{-16}$ vs $-10^{-16}$) conforme o jogador mira nos 360°.
+- **Impacto:** O cotovelo inverte instantaneamente 180° (um salto brusco de ~10 pixels) entre poses consecutivas ou ao cruzar quadrantes de mira, gerando instabilidade visual severa (jitter/flicker) tanto na mira livre quanto no disparo.
+- **Correção Recomendada:** `preferred_side` deve ser um vetor lateral de referência (ex.: `direction.orthogonal()`, `direction.rotated(PI * 0.5)` ou `Vector2.DOWN`), e não o eixo longitudinal do próprio membro.
+
+---
+
+#### [P2] `racket_arm_mask.gdshader` e `_set_arm_mask()` — Resíduo de Mão Nativa por Incompatibilidade na Altura do Retângulo (Y = 45)
+- **Localização:** [`scripts/player/racket_arm_mask.gdshader`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/player/racket_arm_mask.gdshader#L4-L12) e [`racket_visual.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/player/racket_visual.gd#L216).
+- **Causa Raiz:** O retângulo de corte define `arm_mask_rect = Vector4(39.0, 37.0, 45.0, 44.0)`, limitando a máscara vertical ao intervalo $Y \in [37.0, 44.0]$. Contudo, a tabela de âncoras nativas de solo define a mão em $Y = 45$:
+  - `&"idle"`: todos os quadros possuem âncora em `Vector2(41, 45)`.
+  - `&"walk"`: os quadros 0, 4, 5, 6 e 7 possuem âncoras com $Y = 45$.
+- **Impacto:** A linha inferior da mão desenhada no sprite original não é cortada pelo shader e vaza visualmente como um resíduo de 1 pixel ("ghost hand") embaixo da manopla procedural em todas as poses de repouso e passada.
+- **Correção Recomendada:** Expandir o limite inferior do retângulo para $Y = 45.0$ (`Vector4(39.0, 37.0, 45.0, 45.0)`).
+
+---
+
+#### [P2] Ciclo de Vida e Cancelamento — Dessincronia de Estado em `cancel()` e Dano Não Letal
+- **Localização:** [`scripts/player/racket_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/player/racket_controller.gd#L165-L175) e [`scripts/player/player.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/player/player.gd#L145-L151).
+- **Causa Raiz:** O cancelamento do parry em `RacketController.cancel()` redefine `_active = false`, mas não emite sinal de interrupção nem chama `racket_visual.clear_transient()`. Da mesma forma, `Player._on_damage_accepted()` não limpa o estado transiente do visual.
+- **Impacto:** Se o jogador tomar dano ou sofrer bloqueio de entrada discreta (`is_discrete_input_blocked`) durante um parry ativo (sem morrer), a janela mecânica de defesa é encerrada no controlador, mas `RacketVisual` continua executando a animação de golpe de 200 ms até o fim, dessincronizando gameplay e apresentação.
+- **Correção Recomendada:** Emitir um sinal `swing_cancelled` em `RacketController` (ou chamar `racket_visual.clear_transient()` diretamente no cancelamento e em `Player._on_damage_accepted()`).
+
+---
+
+#### [P2] Resolução Frágil de Nós e Custo por Quadro em `_process()`
+- **Localização:** [`scripts/player/racket_visual.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/player/racket_visual.gd#L102-L107).
+- **Causa Raiz:** 
+  1. `_process()` executa `_body_sprite = get_parent().get_node("AnimatedSprite2D") as AnimatedSprite2D` todos os quadros por busca de string, ignorando a referência já armazenada em `@onready var _body_sprite` na linha 48.
+  2. A expressão `get_parent().get_parent() as Player` carece de guarda defensiva: se o nó for executado fora da hierarquia esperada ou em transição de cena com pai nulo, causa crash imediato (`Nil base reference`).
+- **Impacto:** Overhead desnecessário na main thread a 60/120 Hz e fragilidade em testes de cena isolada.
+- **Correção Recomendada:** Utilizar diretamente a variável em cache `_body_sprite` e adicionar verificação `var parent := get_parent(); if parent == null: return`.
+
+---
+
+### 3. Limitações Estéticas vs. Bloqueios Reais
+
+1. **Recuperação Estática pós-Contato no Disparo (Limitação Estética):**
+   - Em `_attack_kind == &"shot"`, os quadros de recuperação (índices 3, 4 e 5) mantêm o grip orbitando a posição do `contact` da bola em vez de interpolar o retorno para o corpo do jogador. Isso causa uma parada súbita da mão no ponto de lançamento, mas não compromete a física nem viola requisitos de tempo (duração exata de 125 ms).
+2. **Alcance Máximo e Paredes (Limitação Estética / Regra de Rig):**
+   - O clamping `_clamp_grip(..., MAX_ARM_REACH)` impede deslocamento hiper-estendido da cabeça da raquete quando o projétil nasce afastado ou rente a obstáculos. Conforme premissa declarada da V4, o contato visual não é 100% garantido colado à parede, evitando artefatos de membros deformados.
+
+---
+
+### 4. Aspectos Verificados e Aprovados
+
+- **Disparo sem Delay/Física:** Em `ball_launcher.gd`, `launch_accepted` é disparado sincronicamente dentro de `try_launch()`, inicializando `RacketVisual` no mesmo frame do input sem aguardar `_physics_process`.
+- **Mira 360° e Direção Congelada:** O parry e o disparo capturam o vetor mundo normalizado na inicialização e congelam `_attack_world_direction`. O visual não segue o ponteiro do mouse enquanto o golpe transiente estiver em andamento.
+- **Scene Wiring e Assets:** Remoção limpa de `RacketPivot`/`scenes/racket.tscn`, inserção correta de `RacketVisual` em `PlayerVisual` com `z_index = 1` e escala 2x do head 14×14 `racket_head_v4.png`.
+
+---
+
+```text
+STATUS: done
+SUMMARY: Revisão estática da integração RacketVisual concluída. Identificados P1 em cálculo de IK (preferred_side colinear gerando jitter no cotovelo), P2 em dimensão de máscara do shader (resíduo de mão em Y=45), P2 em cancelamento de parry sem interrupção do visual e P2 de lookup redundante em _process. Scene wiring, disparo sem delay e congelamento de mira validados com sucesso.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Jitter visual visível no cotovelo ao mirar em 360°; resíduo de pixels da mão original visível durante idle/walk; visual executando parry fantasma se jogador sofrer dano sem morrer durante o swing.
+NEXT_STEP: Ajustar preferred_side em _solve_elbow(), estender arm_mask_rect.w para 45.0 no shader/script e conectar sinal de cancelamento do parry ao clear_transient().
+```

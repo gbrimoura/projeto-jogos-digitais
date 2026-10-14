@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-13",
+  "scope": "Jump17..24 scale0.85 only;20protectedframes",
+  "review_input_sha256": "038b14588d8460c121ee9874e523cbdb484143fa1a85f4bf6d2d1c2699b7f4d0",
+  "hashes": {
+    "assets/player/player-animations.png": "f03e8e500767603a29a3f2820b66d86adf16cde00da1e94189768e16e4ea24c6",
+    "assets/player/source/player-animations.aseprite": "b6987828456b17eace9a66641abc993c2e47849dbc560effbef579c8b10b82ce",
+    "resources/player_sprite_frames.tres": "38c1de56c724dfd0526bef8d3cc49859eec4a4c195d2045f293f4a353d947164",
+    "scripts/player/player_visual.gd": "278b897a0ca12cae987725b0fc25c609536e8d31b0ce747ec5f785fc6745153f",
+    "scripts/player/player.gd": "5c0eb27ca07f933db71a3aa5a4b0368aa6c293c5b0810f488d715cfa6d344951",
+    "scripts/player/player_health.gd": "1127f2e826c2dcfb04c6d9ad121b3802fa9504428fd4d3e6f6d727b299b8ee8e",
+    "scenes/player.tscn": "a98540a71c4309c32136e39d3179f21a52e5463d88254b19bcbea1ba8700b45e",
+    "protagonista-pulo-escala-v4.lua": "2293b01cdd603321401dd53c202ce812bf111e276d0d1fd10eb404f754616253",
+    "integrar-protagonista-pulo-escala-v4.lua": "56382d23ec0f64cde859f8cce8cf17d3e1c9f449f677d0622bf883c2ac37b313",
+    "protagonista-pulo-escala-v4.aseprite": "41ca803cd4f9801c78532d8342d0cea0c6fe89f7bc14b7b381a917d4b5ebc4d1",
+    "protagonista-pulo-escala-v4-animacao-4x.gif": "f945ac4b9aa00fc00bdb8d6a3bfff3b814f64b6c3a5a765db0e829c599ba51f8",
+    "protagonista-pulo-escala-v4-contact-idle-old-new-4x.png": "87ef537469bc5aba13693f4855f72adbc22b01f7897b11532df752c2c457f4ea",
+    "protagonista-pulo-escala-v4-metadata.json": "ee55404f871bba563b5e07e00928c4d49fdc300b44517b3621f79f6c5b9ad24b"
+  },
+  "validation": "Aseprite generation/integration + Godot recovery editor import; no tests/gameplay"
+}

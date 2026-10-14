@@ -51,3 +51,9 @@ NEXT_STEP: próxima ação recomendada
 ## Exceção explícita — upgrades básicos (10/10/2026)
 
 O usuário dispensou Claude Opus 5.5 High somente para o trabalho de upgrades básicos do teaser: revisão final do plano v0.3 e implementações das etapas A, B e C. As revisões Gemini 3.8 Flash High, Cursor Grok 4.7 XHigh Fast e Muse Spark 1.3 xhigh continuam exigidas em cada etapa. Esta exceção não altera o requisito global de Opus para outros trabalhos, e não autoriza registrar um parecer Opus inexistente.
+
+## Procedimento de animações do protagonista — 14/10/2026
+
+Em novas ações animadas, gerar primeiro uma prancha de referência visual com ImageGen; alinhar proporções, paleta, escala, silhueta, articulações, acessórios, antena/assimetria e pegada aos sprites/assets atuais; ajustar as poses para o timing curto já definido pela ação no Godot; reproduzir/exportar no Aseprite sobre a grade de pixels, conferindo previews e preservando poses-base; e integrar ao runtime somente após alinhar visual e timing, preservando controles, movimento e incompatibilidades/prioridades entre ações. A primeira imagem gerada é referência, não asset pronto, e não deve substituir a identidade do sprite.
+
+O alvo desta rebatida é uma prancha de seis poses em 200 ms, ocupando a mesma janela física. É uma escolha específica da rebatida, não uma regra global de contagem ou duração de quadros.

@@ -1,0 +1,8 @@
+C87E5D07A4B375378330A56AD1307DED9A8464D95FFB53F9DC09C838E7E211E6  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\assets\player\player-animations.png
+59065A95A80E8F00EA8867CC42CDB780773F4F0BB9520CD5D014ED9173B9955F  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\assets\player\source\player-animations.aseprite
+38C1DE56C724DFD0526BEF8D3CC49859EEC4A4C195D2045F293F4A353D947164  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\resources\player_sprite_frames.tres
+239FDDEABB72B5891F61F0F65ABAAA8D4A03EE8A7F5131E1149C1676CDAD2A57  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\scripts\player\ball_launcher.gd
+278B897A0CA12CAE987725B0FC25C609536E8D31B0CE747EC5F785FC6745153F  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\scripts\player\player_visual.gd
+5CA659039885F24C807863701E826707CA7B13E11EA7941C7630726AA831BEA0  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\scripts\player\player.gd
+2978FC63BE6A310B6C7FEB7F87A58C69EFFFD9ADB1FD430321CF0E7D1ECC3F51  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\scripts\player\racket_controller.gd
+AD9EBF413A4702671DF1561B24F2E4CA134B6ACE0FE932F0C82847A681769C23  .\docs\specs\2026-10-14-rebatida\historico\aseprite-v3\base-runtime\scripts\player\racket_visual.gd

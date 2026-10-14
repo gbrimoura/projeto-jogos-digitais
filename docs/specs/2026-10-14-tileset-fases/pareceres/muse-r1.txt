@@ -1,0 +1,13 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: READ-ONLY static review of final stable visual-only reskin — PASS, no blockers. `factory_surface_visual.gd` triplet tiling math is correct: Platform `source_y=96.0` row3, Block top `0.0`/fill `32.0`/bottom `96-h` rows0/1/2, caps `min(32,width/4)` no-stretch, top-anchored crop `min(32,h/2)` preserves top collision edge, Block `64+fill+64` contiguous for `1152x88` Floor (`-44..20..44`). `solid_platform.gd` preserves `RectangleShape2D.size=size` with `resource_local_to_scene` duplicate guard, hides `Fill/TopEdge/FloorDetail` only when `factory_skin_enabled` (fallback toggle intact). `solid_platform.tscn` defaults `220x24` + skin on, Floors override `factory_surface_style=1` only. Scene diffs only: `Background` color, `Grid.visible=false`, 5x `Sprite2D` decor `region_rect(96,0/32/64/96,32,32)` col3 scale2 NEAREST `modulate(0.56,0.52,0.45,0.68)` at non-colliding positions, `load_steps+1` — no position/size/collision/actor/HUD changes in diff.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Low/Med `factory_surface_visual.gd:_draw`+`solid_platform.gd:_sync_surface_skin`: if `get_source(0)==null` or `atlas==null`, `_draw` silent-return while `Fill.visible=false` → invisible solid. Mechanism requires broken/mismatched `resources/environment/factory_tileset_v1.tres`; not triggered per stable contract, mitigated by `factory_skin_enabled=false` fallback.
+- Low `factory_surface_visual.gd:_draw_platform`: height>64 draws only 64 top-anchored, leaves bottom gap. Not triggered (all Platform `24`, Floor uses BLOCK).
+- Low `factory_surface_visual.gd:_draw_block`: height<=64 draws top-row only, bottom-edge art unused. Not triggered (Floor `88`).
+- Low dual-source `factory_tileset_v1.tres` vs direct `assets/.../tileset-fabrica-v1-atlas.png` decor regions could diverge on future atlas edit.
+NEXT_STEP: Freeze `scripts/world/factory_surface_visual.gd`, `scripts/world/solid_platform.gd`, `scenes/solid_platform.tscn`, `scenes/main.tscn`, `scenes/second_room.tscn`; proceed to next front.

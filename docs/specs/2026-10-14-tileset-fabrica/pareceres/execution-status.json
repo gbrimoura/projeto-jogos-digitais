@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-14",
+  "gemini": "exit0; no functional bug",
+  "muse_r1": "exit0; nonblocking documentation concerns",
+  "muse_r2": "exit0; accepted docs correction/design",
+  "grok": "timeout3min; interrupted; empty stdout",
+  "opus": "exit1; quota; no review",
+  "implementer": "gpt-6-luna xhigh Codex; same model/variant via OpenCode for final descriptions",
+  "fast": "not confirmable",
+  "tests": "none",
+  "godot": "not executed",
+  "model_substitution": "none"
+}

@@ -2,7 +2,7 @@
 
 ## Estado e referência
 
-O runtime vigente é V3: oito poses reproduzidas da prancha foram integradas em 12/10/2026; o principal aceitou o contact, as revisões estáticas da integração estão em andamento e a avaliação visual do usuário no jogo está pendente. O texto anterior desta especificação registra a V2 histórica, substituída esteticamente pelo usuário; a definição vigente está no adendo de integração runtime V3 ao final.
+O runtime vigente contém a correção de escala V4 nos oito quadros de pulo, integrada em 13/10/2026 após aprovação do principal; a revisão estática Gemini/Muse/Grok está em andamento e a avaliação visual do usuário no jogo está pendente. A V3 abaixo permanece como histórico de animação; o adendo de escala V4 ao final registra a correção vigente.
 
 A V2 substitui as três poses estáticas da primeira integração por nove desenhos articulados. O principal inspecionou o contact de nove poses e aceitou a arte antes da integração. Foi removido um deslocamento duplicado no quadril que deixava um vão escuro entre segmentos. A revisão estática da implementação V2 e a avaliação visual do usuário ainda não foram registradas.
 
@@ -55,3 +55,15 @@ A fonte visual passa a ser protagonista-pulo-v3-referencia-v2-poses-64px.aseprit
 Direção nativa do pulo é esquerda, coerente com visor/frente do capacete e a maioria das poses; o impulso conserva sua assimetria original. Direções nativas existentes de idle/walk à esquerda e dash à direita são preservadas. A linha de contato do idle é y=56. As oito poses recebem deslocamento inteiro comum Y=-5; a compressão recebe compensação de registro adicional +1 px, ficando em Y=-4. Esse ajuste é somente translacional, sem redesenho, escala ou autofit individual.
 
 A lógica existente de PlayerVisual já selecionava fases aéreas pela velocity.y (limiar ±80 px/s), só chamava play quando a fase mudava, mantinha prioridade death > dash > ar > land > walk/idle e limpava histórico de pouso no reset. Por isso, ela não foi modificada. Física e controles ficam intactos. A importação do editor terminou com exit 0; gameplay, testes e inspeção final no jogo não foram executados.
+
+## Adendo de escala runtime V4 — 13/10/2026
+
+A correção responde ao aumento aparente do personagem no pulo. A medição Aseprite Lua, sobre o atlas atual de 28 quadros, registrou o casco+visor idle0 em 17×18 px e média de cerca de 21,3×21,8 px nos oito quadros jump17–24. O torso central já estava próximo do idle (aproximadamente 13–14×13 px); variações dos bounds totais se explicam principalmente por membros em posições estendidas. Por isso, os oito quadros receberam a mesma escala de 0,85, sem autofit por pose ou redesenho. A inclinação natural altera o envelope por quadro.
+
+O principal aprovou a comparação contact 4× com idle, origem e resultado antes de integrar. Os quadros continuam em canvases 64×64, paleta de 27 cores e alfa 0/255. O eixo X comum é 32; Y=56 para impulso17 e contato/pouso22–24, Y=32 para poses aéreas18–21. Timings e tags do Aseprite foram preservados, e o SpriteFrames `.tres` não foi alterado.
+
+A integração substituiu pixels apenas nos frames 17–24 da base atual de 28 frames (1792×64). Frames 0–16 e 25–27, incluindo hurt, são pixel-exatos ao snapshot prévio; durações 28/28 e tags 8/8 permanecem iguais. Godot 4.7.2 recovery-mode import terminou com exit 0. Detalhes, hashes e arte comparativa em `spec-escala-v4.md`; fontes reproduzíveis fora do repositório em `GDD_Dieselpunk_Noir/pitch-assets/protagonista-pulo-escala-v4/`. Sem execução de jogo, testes ou quality audit; revisão externa em andamento.
+
+## Encerramento da revisão de escala V4 — 13/10/2026
+
+Gemini, Muse e Grok concluíram revisão estática sem correções obrigatórias. Opus bloqueado por quota. [Pareceres originais, decisões e hashes](pareceres/escala-v4/README.md). Arte aprovada pelo principal e integrada/importada; avaliação estética do usuário no jogo pendente.

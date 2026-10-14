@@ -1,5 +1,32 @@
 # Especificação — dash do protagonista
 
+## Estado atual — escala v5 (13/10/2026)
+
+A escala V5 aplica fator uniforme 0,85, nearest-neighbor, somente aos quadros
+14–16 da animação lateral +X. O atlas atual tem 28 quadros (1792×64) e já
+contém o pulo V4 corrigido em 17–24 e hurt V1 em 25–27. Os 25 quadros não-dash
+permanecem pixel-exatos, assim como 28/28 durações e 8/8 tags; `.tres`, `.import`,
+scripts, cenas, física e controles não foram alterados. O pivô comum é X=32,
+Y=56; os tempos dash continuam 40/40/60 ms, total 140 ms, não cíclico. A
+importação de recursos do editor Godot 4.7.2 em recovery mode terminou com
+exit 0. Não houve gameplay, testes ou quality audit. Gemini/Muse/Grok revisam os
+arquivos congelados; Opus está bloqueado por quota.
+
+Veja [diagnóstico, transformação, hashes e resultado V5](spec-escala-v5.md),
+[implementação](implementacao.md#dash-escala-v5--13-10-2026) e as fontes e
+previews em `GDD_Dieselpunk_Noir/pitch-assets/protagonista-dash-escala-v5/`.
+
+## V4 — histórico
+
+A V4 introduziu a referência lateral +X nos quadros 14–16 do atlas então
+composto por 25 quadros. A decisão de escala foi sucedida pela V5. Veja
+[referência, métricas e parâmetros v4](spec-v4-referencia.md),
+[resultado da integração V4](implementacao.md#dash-v4--13-10-2026) e os
+arquivos congelados em `GDD_Dieselpunk_Noir/pitch-assets/protagonista-dash-v4/`.
+O histórico de pareceres V4 está em [referência V4](pareceres/referencia-v4/README.md).
+
+## Histórico de especificações — v1 a v3
+
 ## Fonte e atlas
 
 - Fonte de entrada: `GDD_Dieselpunk_Noir/pitch-assets/protagonista-walk/protagonista-walk-v3.aseprite`, com os doze frames aprovados de idle e caminhada.
@@ -48,7 +75,7 @@ existente. O espelhamento continua limitado ao `AnimatedSprite2D`; a trilha
 Não há mudança de velocidade, duração, colisão, entrada, controle, raquete,
 combate ou cenas.
 
-## Estado e pendências
+## Estado histórico e pendências anteriores à v4
 
 Implementado e exportado; PNG runtime e fonte Aseprite combinada atualizados. As tags originais são restauradas após acrescentar quadros para impedir autoexpansão da tag walk. R2 Gemini/Muse/Grok concluídas; Opus bloqueado por quota. Conferência manual no Godot pendente. Nenhum teste, execução do Godot ou quality_audit realizado.
 
@@ -67,3 +94,7 @@ Usuário autorizou corrigir a silhueta ampla de corrida da v2. Cabeça baixa enc
 ## Orientação nativa por animação
 
 Idle e walk têm direção nativa -X; dash tem direção nativa +X. AnimatedSprite2D.flip_h é true quando a direção lógica difere da direção nativa. animation_changed reaplica essa regra nas transições. DashTrail continua usando somente a direção lógica, sem inverter a trilha com base no desenho.
+
+## Encerramento da revisão de escala V5 — 13/10/2026
+
+Gemini, Muse e Grok concluíram a revisão estática; achados avaliados pelo principal sem correção de runtime necessária. Opus bloqueado por quota, sem parecer. [Relatórios originais, decisões e hashes](pareceres/escala-v5/README.md). Integração e importação concluídas; avaliação estética do usuário em jogo pendente.

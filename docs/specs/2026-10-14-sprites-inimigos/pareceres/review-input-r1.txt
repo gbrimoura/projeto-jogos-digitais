@@ -1,0 +1,685 @@
+READ-ONLY static implementation review; no tools, edits, tests, engine. Timeout10min. Two EXISTING enemy placeholders reskinned via reference ImageGen then Aseprite native64x64 nearest alpha0/255. Target collider72x96 centered0, sprite scale2centered0, baseedgey56=world+48; impact on existing120ms flash, death immediatequeue_free unchanged. Worker collider46x64 feet0 sprite center(0,-48)scale2 and existingVisuals.scale.x facing, nativefaceRIGHT. Frames0idle/1walk/2aim/3fire/4recovery; 2-framewalk120ms each, WINDUP650/RECOVERY800 authoritativeAI. Fire120ms visual ONLY after successfully launched projectile; no pretend shot for cancelled spawn. No changes to mechanics, physics, damage, cooldowns, movement, projectile origin or detection. Existing masks/layers and healthbars/warnings/sound preserved. Shader corrected by principal review: vertex varying captures modulate BEFORE texture multiply; fragment mix preserves alpha. PNGs/ASE decoded completely and match runtime copies bytewise; Aseprite emitted libpng Write Error but produced valid PNG IEND/CRCs, warnings logged (do NOT claim cleanexport). Defender initially blocked, user authorized SINGLEAPP whitelist nowconfirmed; no protections disabled. Full original files are snapshotted; provided DIFFS represent only changed script/scene blocks, not whole files. Full unchanged coupling methods and complete new resources/Lua follow. Do not infer missing code from diffs. All methods outside these diffs byte-preserved. Return STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP; only concrete bugs/severity/file, make conditional risks explicit.
+INCREMENTAL DIFF scripts/world/training_target.gd
+diff --git a/docs/specs/2026-10-14-sprites-inimigos/historico/base/training_target.gd b/scripts/world/training_target.gd
+index a01f818..0d4676f 100644
+--- a/docs/specs/2026-10-14-sprites-inimigos/historico/base/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -12,6 +12,7 @@ var max_health: int = 3
+ var flash_duration: float = 0.12
+ 
+ @onready var _body_fill: Polygon2D = $Visuals/BodyFill
++@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
+ @onready var _health_fill: Polygon2D = $Visuals/HealthFill
+ 
+ var health: int
+@@ -45,9 +46,14 @@ func _process(delta: float) -> void:
+ 	_update_visuals()
+ 
+ func _update_visuals() -> void:
+-	if not is_instance_valid(_body_fill) or not is_instance_valid(_health_fill):
++	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
+ 		return
+ 
+-	_body_fill.color = Color("#fff1c7") if _flash_remaining > 0.0 else Color("#384759")
++	var desired_animation: StringName = &"impact" if _flash_remaining > 0.0 else &"idle"
++	if _body_sprite.animation != desired_animation or not _body_sprite.is_playing():
++		_body_sprite.play(desired_animation)
++	var hit_flash := _body_sprite.material as ShaderMaterial
++	if hit_flash != null:
++		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
+ 	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
+ 	_health_fill.scale.x = health_ratio
+INCREMENTAL DIFF scripts/enemy/rivet_worker.gd
+diff --git a/docs/specs/2026-10-14-sprites-inimigos/historico/base/rivet_worker.gd b/scripts/enemy/rivet_worker.gd
+index 1ac2ec8..8299bf2 100644
+--- a/docs/specs/2026-10-14-sprites-inimigos/historico/base/rivet_worker.gd
++++ b/scripts/enemy/rivet_worker.gd
+@@ -35,6 +35,7 @@ const REPOSITION_SEARCH_DISTANCE: float = 128.0
+ const POSITION_EPSILON: float = 3.0
+ 
+ @onready var _body_fill: Polygon2D = $Visuals/BodyFill
++@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
+ @onready var _health_fill: Polygon2D = $Visuals/HealthFill
+ @onready var _visuals: Node2D = $Visuals
+ @onready var _warning_line: Line2D = $WarningLine
+@@ -60,6 +61,7 @@ var _patrol_for_angle: bool = false
+ var _patrol_step_pending: bool = false
+ var _facing_direction: int = -1
+ var _flash_remaining: float = 0.0
++var _shot_visual_remaining: float = 0.0
+ var _defeated_emitted: bool = false
+ var _active_rivet: HostileRivet
+ var _query: PhysicsRayQueryParameters2D
+@@ -109,6 +111,11 @@ func take_damage(amount: int, _source: Node = null) -> bool:
+ 		queue_free()
+ 	return true
+ 
++func _process(delta: float) -> void:
++	if _shot_visual_remaining > 0.0:
++		_shot_visual_remaining = maxf(_shot_visual_remaining - delta, 0.0)
++	_update_body_animation()
++
+ func _physics_process(delta: float) -> void:
+ 	_patrol_step_pending = false
+ 	if _defeated_emitted or health <= 0:
+@@ -444,6 +451,8 @@ func _fire_locked_rivet() -> void:
+ 	rivet.launch(_locked_direction, self, rivet_speed, rivet_damage, rivet_lifetime)
+ 	_active_rivet = rivet
+ 	rivet.finished.connect(_on_rivet_finished.bind(rivet), CONNECT_ONE_SHOT)
++	_shot_visual_remaining = 0.12
++	_set_body_animation(&"fire")
+ 
+ func _on_rivet_finished(_reason: String, rivet: HostileRivet) -> void:
+ 	if rivet == _active_rivet:
+@@ -569,12 +578,34 @@ func _prepare_warning_sound() -> void:
+ 	_warning_sound.volume_db = warning_volume_db
+ 
+ func _update_visuals() -> void:
+-	if not is_instance_valid(_body_fill) or not is_instance_valid(_health_fill):
++	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
+ 		return
+-	_body_fill.color = Color("#fff1c7") if _flash_remaining > 0.0 else Color("#384759")
++	var hit_flash := _body_sprite.material as ShaderMaterial
++	if hit_flash != null:
++		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
+ 	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
+ 	_health_fill.scale.x = health_ratio
+ 
++func _update_body_animation() -> void:
++	if not is_instance_valid(_body_sprite):
++		return
++	var desired_animation: StringName = &"idle"
++	if _shot_visual_remaining > 0.0:
++		desired_animation = &"fire"
++	elif _state == AttackState.WINDUP:
++		desired_animation = &"aim"
++	elif _state == AttackState.RECOVERY:
++		desired_animation = &"recovery"
++	elif absf(velocity.x) > 1.0:
++		desired_animation = &"walk"
++	_set_body_animation(desired_animation)
++
++func _set_body_animation(animation: StringName) -> void:
++	if not is_instance_valid(_body_sprite):
++		return
++	if _body_sprite.animation != animation or not _body_sprite.is_playing():
++		_body_sprite.play(animation)
++
+ func _apply_facing_direction() -> void:
+ 	if is_instance_valid(_visuals):
+ 		_visuals.scale.x = float(_facing_direction)
+INCREMENTAL DIFF scenes/training_target.tscn
+diff --git a/docs/specs/2026-10-14-sprites-inimigos/historico/base/training_target.tscn b/scenes/training_target.tscn
+index f59d9fe..be517b7 100644
+--- a/docs/specs/2026-10-14-sprites-inimigos/historico/base/training_target.tscn
++++ b/scenes/training_target.tscn
+@@ -1,10 +1,16 @@
+-[gd_scene load_steps=3 format=3]
++[gd_scene load_steps=6 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
++[ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
++[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+ 
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+ size = Vector2(72.0, 96.0)
+ 
++[sub_resource type="ShaderMaterial" id="ShaderMaterial_target_hit_flash"]
++resource_local_to_scene = true
++shader = ExtResource("3_hit_flash_shader")
++
+ [node name="TrainingTarget" type="StaticBody2D" groups=["damageable", "combat_enemy"]]
+ collision_layer = 8
+ collision_mask = 0
+@@ -17,29 +23,44 @@ shape = SubResource("RectangleShape2D_training_target")
+ 
+ [node name="Visuals" type="Node2D" parent="."]
+ 
++[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
++scale = Vector2(2.0, 2.0)
++texture_filter = 1
++material = SubResource("ShaderMaterial_target_hit_flash")
++sprite_frames = ExtResource("2_target_frames")
++animation = &"idle"
++autoplay = &"idle"
++centered = true
++
+ [node name="BodyBorder" type="Polygon2D" parent="Visuals"]
++visible = false
+ color = Color(0.062745, 0.090196, 0.133333, 1)
+ polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+ 
+ [node name="BodyFill" type="Polygon2D" parent="Visuals"]
++visible = false
+ color = Color(0.219608, 0.278431, 0.34902, 1)
+ polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+ 
+ [node name="Visor" type="Polygon2D" parent="Visuals"]
++visible = false
+ color = Color(0.396078, 0.466667, 0.541176, 1)
+ polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+ 
+ [node name="UpperStripe" type="Line2D" parent="Visuals"]
++visible = false
+ width = 4.0
+ default_color = Color(0.764706, 0.494118, 0.25098, 1)
+ points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+ 
+ [node name="LowerStripe" type="Line2D" parent="Visuals"]
++visible = false
+ width = 4.0
+ default_color = Color(0.764706, 0.494118, 0.25098, 1)
+ points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+ 
+ [node name="FootLine" type="Line2D" parent="Visuals"]
++visible = false
+ width = 4.0
+ default_color = Color(0.062745, 0.090196, 0.133333, 1)
+ points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+INCREMENTAL DIFF scenes/rivet_worker.tscn
+diff --git a/docs/specs/2026-10-14-sprites-inimigos/historico/base/rivet_worker.tscn b/scenes/rivet_worker.tscn
+index 45ea859..12fc0f8 100644
+--- a/docs/specs/2026-10-14-sprites-inimigos/historico/base/rivet_worker.tscn
++++ b/scenes/rivet_worker.tscn
+@@ -1,11 +1,17 @@
+-[gd_scene load_steps=4 format=3]
++[gd_scene load_steps=7 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/enemy/rivet_worker.gd" id="1_rivet_worker"]
+ [ext_resource type="PackedScene" path="res://scenes/hostile_rivet.tscn" id="2_hostile_rivet"]
++[ext_resource type="SpriteFrames" path="res://resources/enemy/rivet_worker_sprite_frames.tres" id="3_worker_frames"]
++[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="4_hit_flash_shader"]
+ 
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_rivet_worker"]
+ size = Vector2(46.0, 64.0)
+ 
++[sub_resource type="ShaderMaterial" id="ShaderMaterial_worker_hit_flash"]
++resource_local_to_scene = true
++shader = ExtResource("4_hit_flash_shader")
++
+ [node name="RivetWorker" type="CharacterBody2D" groups=["damageable", "combat_enemy"]]
+ collision_layer = 8
+ collision_mask = 1
+@@ -35,36 +41,53 @@ shape = SubResource("RectangleShape2D_rivet_worker")
+ 
+ [node name="Visuals" type="Node2D" parent="."]
+ 
++[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
++position = Vector2(0.0, -48.0)
++scale = Vector2(2.0, 2.0)
++texture_filter = 1
++material = SubResource("ShaderMaterial_worker_hit_flash")
++sprite_frames = ExtResource("3_worker_frames")
++animation = &"idle"
++autoplay = &"idle"
++centered = true
++
+ [node name="BodyBorder" type="Polygon2D" parent="Visuals"]
++visible = false
+ color = Color(0.062745, 0.090196, 0.133333, 1)
+ polygon = PackedVector2Array(-25.0, -64.0, 25.0, -64.0, 25.0, -5.0, -25.0, -5.0)
+ 
+ [node name="BodyFill" type="Polygon2D" parent="Visuals"]
++visible = false
+ color = Color(0.219608, 0.278431, 0.34902, 1)
+ polygon = PackedVector2Array(-22.0, -61.0, 22.0, -61.0, 22.0, -8.0, -22.0, -8.0)
+ 
+ [node name="Helmet" type="Polygon2D" parent="Visuals"]
++visible = false
+ color = Color(0.396078, 0.466667, 0.541176, 1)
+ polygon = PackedVector2Array(-19.0, -66.0, 19.0, -66.0, 16.0, -53.0, -16.0, -53.0)
+ 
+ [node name="Visor" type="Line2D" parent="Visuals"]
++visible = false
+ position = Vector2(0.0, -55.0)
+ width = 4.0
+ default_color = Color(0.941176, 0.321569, 0.305882, 1)
+ points = PackedVector2Array(-12.0, 0.0, 12.0, 0.0)
+ 
+ [node name="Arm" type="Line2D" parent="Visuals"]
++visible = false
+ position = Vector2(0.0, -29.0)
+ width = 5.0
+ default_color = Color(0.568627, 0.647059, 0.721569, 1)
+ points = PackedVector2Array(15.0, 0.0, 25.0, -4.0)
+ 
+ [node name="WeaponMuzzle" type="Polygon2D" parent="Visuals"]
++visible = false
+ position = Vector2(26.0, -33.0)
+ color = Color(0.768627, 0.494118, 0.25098, 1)
+ polygon = PackedVector2Array(-4.0, -4.0, 7.0, -4.0, 7.0, 4.0, -4.0, 4.0)
+ 
+ [node name="BeltStripe" type="Line2D" parent="Visuals"]
++visible = false
+ position = Vector2(0.0, -19.0)
+ width = 4.0
+ default_color = Color(0.764706, 0.494118, 0.25098, 1)
+FULL COUPLING METHOD _ready
+func _ready() -> void:
+	health = maxi(max_health, 1)
+	_configure_patrol_bounds()
+	add_to_group("damageable")
+	add_to_group("combat_enemy")
+	_player = get_tree().get_first_node_in_group("player") as Node2D
+	_query = PhysicsRayQueryParameters2D.new()
+	_query.collision_mask = WORLD_MASK
+	_query.collide_with_bodies = true
+	_query.collide_with_areas = false
+	_ground_query = PhysicsRayQueryParameters2D.new()
+	_ground_query.collision_mask = WORLD_MASK
+	_ground_query.collide_with_bodies = true
+	_ground_query.collide_with_areas = false
+	_rivet_shape = CircleShape2D.new()
+	_rivet_shape.radius = 6.0
+	_rivet_query = PhysicsShapeQueryParameters2D.new()
+	_rivet_query.shape = _rivet_shape
+	_rivet_query.collision_mask = WORLD_MASK
+	_rivet_query.collide_with_bodies = true
+	_rivet_query.collide_with_areas = false
+	_rivet_query.margin = 0.08
+	_prepare_warning_sound()
+	_update_visuals()
+	_apply_facing_direction()
+	_set_warning_visible(false)
+
+
+FULL COUPLING METHOD take_damage
+func take_damage(amount: int, _source: Node = null) -> bool:
+	if _defeated_emitted or health <= 0 or amount <= 0:
+		return false
+
+	health = maxi(health - amount, 0)
+	_flash_remaining = maxf(flash_duration, 0.0)
+	_update_visuals()
+	if health == 0:
+		_defeated_emitted = true
+		_set_warning_visible(false)
+		defeated.emit()
+		queue_free()
+	return true
+
+
+FULL COUPLING METHOD _physics_process
+func _physics_process(delta: float) -> void:
+	_patrol_step_pending = false
+	if _defeated_emitted or health <= 0:
+		velocity = Vector2.ZERO
+		_set_warning_visible(false)
+		return
+	if _flash_remaining > 0.0:
+		_flash_remaining = maxf(_flash_remaining - delta, 0.0)
+		_update_visuals()
+	_shot_cooldown_remaining = maxf(_shot_cooldown_remaining - delta, 0.0)
+
+	if not is_on_floor():
+		velocity.y = minf(velocity.y + 1600.0 * delta, 900.0)
+	else:
+		velocity.y = 0.0
+
+	if _player == null or not is_instance_valid(_player):
+		_player = get_tree().get_first_node_in_group("player") as Node2D
+	if _player == null or not is_instance_valid(_player):
+		_patrol_for_angle = false
+		_set_warning_visible(false)
+		if _state == AttackState.WINDUP:
+			_state = AttackState.APPROACH
+			_windup_remaining = 0.0
+		elif _state == AttackState.RETREAT:
+			_state = AttackState.APPROACH
+			_retreat_remaining = 0.0
+		var previous_x := global_position.x
+		if _state == AttackState.RECOVERY:
+			_process_recovery(delta)
+			velocity.x = 0.0
+		else:
+			_process_patrol(delta)
+		move_and_slide()
+		_finish_patrol_step(previous_x)
+		return
+	if _player.get("is_dead") == true:
+		_patrol_for_angle = false
+		velocity.x = 0.0
+		_set_warning_visible(false)
+		move_and_slide()
+		return
+
+	var was_retreating := _state == AttackState.RETREAT
+	var previous_x := global_position.x
+	match _state:
+		AttackState.WINDUP:
+			_process_windup(delta)
+			velocity.x = 0.0
+		AttackState.RECOVERY:
+			_process_recovery(delta)
+			velocity.x = 0.0
+		AttackState.RETREAT:
+			_process_retreat(delta)
+		AttackState.APPROACH:
+			_decide_ready_state(delta)
+			_apply_ready_motion(delta)
+
+	move_and_slide()
+	if was_retreating and _state == AttackState.RETREAT:
+		var travelled := absf(global_position.x - previous_x)
+		_retreat_remaining = maxf(_retreat_remaining - travelled, 0.0)
+		if travelled < 0.01 or _retreat_remaining <= POSITION_EPSILON:
+			velocity.x = 0.0
+			_state = AttackState.APPROACH
+	_finish_patrol_step(previous_x)
+
+
+FULL COUPLING METHOD _process_windup
+func _process_windup(delta: float) -> void:
+	_windup_remaining = maxf(_windup_remaining - delta, 0.0)
+	_update_warning_line()
+	if _windup_remaining <= 0.0:
+		_fire_locked_rivet()
+		_state = AttackState.RECOVERY
+		_recovery_remaining = maxf(recovery_duration, 0.0)
+		_shot_cooldown_remaining = maxf(minimum_shot_interval, 0.0)
+		_retreat_used_this_cycle = false
+
+
+FULL COUPLING METHOD _process_recovery
+func _process_recovery(delta: float) -> void:
+	_recovery_remaining = maxf(_recovery_remaining - delta, 0.0)
+	if _recovery_remaining <= 0.0:
+		_state = AttackState.APPROACH
+
+
+FULL COUPLING METHOD _fire_locked_rivet
+func _fire_locked_rivet() -> void:
+	_set_warning_visible(false)
+	if _defeated_emitted or health <= 0 or rivet_scene == null or _player == null or not is_instance_valid(_player):
+		return
+	var muzzle := _locked_muzzle_position
+	if muzzle.distance_to(_get_player_aim_point()) < MINIMUM_SAFE_SHOT_DISTANCE:
+		return
+	if _active_rivet != null and is_instance_valid(_active_rivet):
+		return
+	var parent := get_tree().get_first_node_in_group("hostile_projectile_container")
+	if parent == null:
+		parent = get_parent()
+	if parent == null:
+		return
+	if not _is_clear_rivet_spawn(muzzle, _locked_direction):
+		return
+	var rivet := rivet_scene.instantiate() as HostileRivet
+	if rivet == null:
+		return
+	parent.add_child(rivet)
+	rivet.global_position = muzzle + _locked_direction * RIVET_SPAWN_OFFSET
+	rivet.launch(_locked_direction, self, rivet_speed, rivet_damage, rivet_lifetime)
+	_active_rivet = rivet
+	rivet.finished.connect(_on_rivet_finished.bind(rivet), CONNECT_ONE_SHOT)
+	_shot_visual_remaining = 0.12
+	_set_body_animation(&"fire")
+
+
+FULL COUPLING METHOD _get_muzzle_position_at
+func _get_muzzle_position_at(x_position: float, facing: int) -> Vector2:
+	return Vector2(x_position + float(facing) * 22.0, global_position.y - 36.0)
+
+
+FULL COUPLING METHOD _apply_facing_direction
+func _apply_facing_direction() -> void:
+	if is_instance_valid(_visuals):
+		_visuals.scale.x = float(_facing_direction)
+
+FULL SOURCE resources/enemy/training_target_sprite_frames.tres
+[gd_resource type="SpriteFrames" load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemy/training_target/training_target-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle"]
+atlas = ExtResource("1_atlas")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact"]
+atlas = ExtResource("1_atlas")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_disabled"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 0, 64, 64)
+
+[resource]
+animations = [{"frames": [{"duration": 0.25, "texture": SubResource("AtlasTexture_idle")}], "loop": true, "name": &"idle", "speed": 1.0}, {"frames": [{"duration": 0.12, "texture": SubResource("AtlasTexture_impact")}], "loop": true, "name": &"impact", "speed": 1.0}, {"frames": [{"duration": 0.25, "texture": SubResource("AtlasTexture_disabled")}], "loop": true, "name": &"disabled", "speed": 1.0}]
+
+FULL SOURCE resources/enemy/rivet_worker_sprite_frames.tres
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemy/rivet_worker/rivet_worker-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle"]
+atlas = ExtResource("1_atlas")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk"]
+atlas = ExtResource("1_atlas")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aim"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fire"]
+atlas = ExtResource("1_atlas")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery"]
+atlas = ExtResource("1_atlas")
+region = Rect2(256, 0, 64, 64)
+
+[resource]
+animations = [{"frames": [{"duration": 0.25, "texture": SubResource("AtlasTexture_idle")}], "loop": true, "name": &"idle", "speed": 1.0}, {"frames": [{"duration": 0.12, "texture": SubResource("AtlasTexture_idle")}, {"duration": 0.12, "texture": SubResource("AtlasTexture_walk")}], "loop": true, "name": &"walk", "speed": 1.0}, {"frames": [{"duration": 0.65, "texture": SubResource("AtlasTexture_aim")}], "loop": true, "name": &"aim", "speed": 1.0}, {"frames": [{"duration": 0.12, "texture": SubResource("AtlasTexture_fire")}], "loop": true, "name": &"fire", "speed": 1.0}, {"frames": [{"duration": 0.8, "texture": SubResource("AtlasTexture_recovery")}], "loop": true, "name": &"recovery", "speed": 1.0}]
+
+FULL SOURCE scripts/enemy/enemy_hit_flash.gdshader
+shader_type canvas_item;
+
+uniform float flash_amount : hint_range(0.0, 1.0) = 0.0;
+uniform vec4 flash_color : source_color = vec4(1.0, 0.945098, 0.780392, 1.0);
+
+varying vec4 vertex_modulate;
+
+void vertex() {
+	vertex_modulate = COLOR;
+}
+
+void fragment() {
+	vec4 source = texture(TEXTURE, UV);
+	vec3 rgb = mix(source.rgb, flash_color.rgb, clamp(flash_amount, 0.0, 1.0));
+	COLOR = vec4(rgb, source.a) * vertex_modulate;
+}
+
+FULL SOURCE ../GDD_Dieselpunk_Noir/pitch-assets/inimigos-aseprite-v1/reproduzir-inimigos.lua
+-- Reprodução fiel da prancha confirmada como referência. Executar a partir de
+-- projeto-jogos-digitais com Aseprite 1.3.18: aseprite -b --script <este arquivo>
+-- A transformação usa um único nearest por personagem; pixels vêm da prancha.
+
+local p = app.params or {}
+local OUT = app.fs.normalizePath(p.out or "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/inimigos-aseprite-v1")
+local SOURCE = app.fs.normalizePath("C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/inimigos-referencia-v1/referencia-alvo-rebiteiro-v1.png")
+local HERO = app.fs.normalizePath("C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais/assets/player/player-animations.png")
+local function out(name) return app.fs.joinPath(OUT,name) end
+local source = Image{ fromFile = SOURCE }
+local heroAtlas = Image{ fromFile = HERO }
+
+local palette = {
+  {14,13,14}, {29,27,26}, {48,45,42}, {67,62,57},
+  {91,82,73}, {117,105,87}, {144,129,106}, {186,170,139},
+  {211,195,167}, {231,207,173}, {74,45,33}, {86,56,41},
+  {112,67,44}, {146,90,54}, {179,121,73}, {198,141,88},
+  {143,112,89}, {166,130,102}, {183,131,66}, {210,167,92}
+}
+
+local threatPalette = {{240,82,78}, {255,114,86}, {255,179,160}}
+
+local target = {
+  {name="idle", duration=250, rect={200,90,340,445}, anchorX=367, baselineY=528, scale=9, lightRect={346,214,96,40}},
+  {name="impacto", duration=120, rect={600,120,340,415}, anchorX=765, baselineY=528, scale=9, lightRect={741,234,104,40}},
+  {name="desativado", duration=250, rect={1000,140,340,390}, anchorX=1168, baselineY=528, scale=9}
+}
+local worker = {
+  {name="idle", duration=200, rect={100,670,220,255}, anchorX=183, baselineY=914, scale=7, lightRect={188,722,54,38}},
+  {name="andando", duration=120, rect={360,670,250,255}, anchorX=454, baselineY=914, scale=7, lightRect={461,722,60,38}},
+  {name="mirando", duration=650, rect={630,670,280,255}, anchorX=720, baselineY=914, scale=7, muzzle=true, lightRect={729,722,60,40}},
+  {name="disparo", duration=120, rect={930,670,290,255}, anchorX=1000, baselineY=914, scale=7, muzzle=true, keepOrangeFx=true, lightRect={1007,722,64,40}},
+  {name="recuperacao", duration=800, rect={1220,670,250,255}, anchorX=1320, baselineY=914, scale=7, lightRect={1288,722,60,40}}
+}
+
+local function rgba(r,g,b,a)
+  return app.pixelColor.rgba(r,g,b,a or 255)
+end
+
+local function colorComponents(pixel)
+  return app.pixelColor.rgbaR(pixel), app.pixelColor.rgbaG(pixel), app.pixelColor.rgbaB(pixel), app.pixelColor.rgbaA(pixel)
+end
+
+local function nearestPalette(r,g,b,allowThreat)
+  local best, bestDistance = palette[1], math.huge
+  local colors = palette
+  if allowThreat then
+    colors = {}
+    for _, c in ipairs(palette) do colors[#colors+1]=c end
+    for _, c in ipairs(threatPalette) do colors[#colors+1]=c end
+  end
+  for _, c in ipairs(colors) do
+    local dr, dg, db = r-c[1], g-c[2], b-c[3]
+    local distance = 0.299*dr*dr + 0.587*dg*dg + 0.114*db*db
+    if distance < bestDistance then best, bestDistance = c, distance end
+  end
+  return rgba(best[1],best[2],best[3],255)
+end
+
+local function isBackground(r,g,b,a)
+  return a < 128 or (math.max(r,g,b) <= 19 and math.max(r,g,b)-math.min(r,g,b) <= 9)
+end
+
+local function samplePose(pose, isWorker)
+  local image = Image(64,64,ColorMode.RGB)
+  local sampled = {}
+  local rx, ry, rw, rh = pose.rect[1], pose.rect[2], pose.rect[3], pose.rect[4]
+  for y=0,63 do
+    for x=0,63 do
+      local sx = math.floor(pose.anchorX + (x-32)*pose.scale)
+      local sy = math.floor(pose.baselineY + (y-56)*pose.scale)
+      local inside = sx >= rx and sx < rx+rw and sy >= ry and sy < ry+rh
+      local r,g,b,a = 0,0,0,0
+      if inside then r,g,b,a = colorComponents(source:getPixel(sx,sy)) end
+      local lightRect=pose.lightRect
+      local inLight=lightRect and sx>=lightRect[1] and sx<lightRect[1]+lightRect[3] and sy>=lightRect[2] and sy<lightRect[2]+lightRect[4]
+      local preserveThreat=inLight and r>=125 and r>g*1.28 and g>b*1.12
+      local index = y*64+x
+      sampled[index] = {r,g,b,a,preserveThreat}
+    end
+  end
+
+  -- Remove apenas o fundo quase preto conectado às bordas, preservando sombras
+  -- escuras fechadas no interior da silhueta.
+  local seen, queue = {}, {}
+  local head, tail = 1, 0
+  local function enqueue(x,y)
+    if x<0 or x>63 or y<0 or y>63 then return end
+    local index = y*64+x
+    if seen[index] then return end
+    local c = sampled[index]
+    if isBackground(c[1],c[2],c[3],c[4]) then
+      seen[index] = true
+      tail = tail+1
+      queue[tail] = {x,y}
+    end
+  end
+  for x=0,63 do enqueue(x,0); enqueue(x,63) end
+  for y=1,62 do enqueue(0,y); enqueue(63,y) end
+  while head<=tail do
+    local p=queue[head]; head=head+1
+    enqueue(p[1]-1,p[2]); enqueue(p[1]+1,p[2]); enqueue(p[1],p[2]-1); enqueue(p[1],p[2]+1)
+  end
+
+  for y=0,63 do
+    for x=0,63 do
+      local index=y*64+x
+      local c=sampled[index]
+      if c[4] >= 128 and not seen[index] then
+        local beyondTool = isWorker and pose.muzzle and x > 47
+        local preservedFlash = beyondTool and pose.keepOrangeFx and c[1] >= 165 and c[2] >= 65 and c[1] > c[2]*1.35
+        if not beyondTool or preservedFlash then
+          image:drawPixel(x,y,nearestPalette(c[1],c[2],c[3],c[5]))
+        else
+          image:drawPixel(x,y,rgba(0,0,0,0))
+        end
+      else
+        image:drawPixel(x,y,rgba(0,0,0,0))
+      end
+    end
+  end
+  return image
+end
+
+local function buildAtlas(poses)
+  local atlas=Image(64*#poses,64,ColorMode.RGB)
+  for i,pose in ipairs(poses) do
+    for y=0,63 do
+      for x=0,63 do atlas:drawPixel((i-1)*64+x,y,pose.image:getPixel(x,y)) end
+    end
+  end
+  return atlas
+end
+
+local function saveAseprite(poses, path, layerName)
+  local sprite=Sprite(64,64,ColorMode.RGB)
+  local layer=sprite.layers[1]
+  layer.name=layerName
+  for i,pose in ipairs(poses) do
+    if i>1 then sprite:newEmptyFrame(i) end
+    sprite:newCel(layer,i,pose.image,Point(0,0))
+    sprite.frames[i].duration=pose.duration/1000
+  end
+  sprite:saveAs(path)
+end
+
+for _,pose in ipairs(target) do pose.image=samplePose(pose,false) end
+for _,pose in ipairs(worker) do pose.image=samplePose(pose,true) end
+
+local targetAtlas=buildAtlas(target)
+local workerAtlas=buildAtlas(worker)
+targetAtlas:saveAs(out("training_target-atlas.png"))
+workerAtlas:saveAs(out("rivet_worker-atlas.png"))
+saveAseprite(target,out("training_target.aseprite"),"TrainingTarget")
+saveAseprite(worker,out("rivet_worker.aseprite"),"RivetWorker")
+
+-- Cópia sem escalonamento do primeiro cel de 64×64 do atlas atual do herói.
+local heroIdle=Image(heroAtlas,Rectangle(0,0,64,64))
+heroIdle:saveAs(out("protagonista-idle-comparacao.png"))
+
+-- Contato em grade nativa 5×2 e ampliação nearest 4× para inspeção visual.
+local native=Image(320,128,ColorMode.RGB)
+local bg=rgba(43,38,35,255)
+for y=0,127 do for x=0,319 do native:drawPixel(x,y,bg) end end
+local function blit64(src,col,row)
+  for y=0,63 do for x=0,63 do
+    local pixel=src:getPixel(x,y)
+    local _,_,_,alpha=colorComponents(pixel)
+    if alpha>0 then native:drawPixel(col*64+x,row*64+y,pixel) end
+  end end
+end
+blit64(target[1].image,0,0)
+blit64(heroIdle,1,0)
+blit64(target[2].image,2,0)
+blit64(target[3].image,3,0)
+for i,pose in ipairs(worker) do blit64(pose.image,i-1,1) end
+local contact=Image(1280,512,ColorMode.RGB)
+for y=0,511 do
+  for x=0,1279 do contact:drawPixel(x,y,native:getPixel(math.floor(x/4),math.floor(y/4))) end
+end
+contact:saveAs(out("contact-inimigos-4x.png"))
+
+print("EXPORTED training_target 3 frames; rivet_worker 5 frames; contact 4x")
+
+
+
+
+
+METADATA CONTRACT
+{"palette":{"source":"../tileset-fabrica-v1/palette-fabrica-v1.json","colors_in_base_palette":20,"localized_existing_threat_colors":[{"role":"RivetWorker visor","hex":"#F0524E"},{"role":"WarningMark","hex":"#FF7256"},{"role":"HostileRivet highlight","hex":"#FFB3A0"}],"maximum_active_colors":23,"hard_limit":31,"quantization":"nearest por distância RGB ponderada; cores de ameaça só em luzes/visores amostrados na prancha; sem pixels inventados"},"atlases":{"training_target":{"file":"training_target-atlas.png","size_px":[192,64],"frames":3},"rivet_worker":{"file":"rivet_worker-atlas.png","size_px":[320,64],"frames":5}},"registration":{"training_target":{"pivot_px":[32,56],"base_y_px":56,"runtime_scale_planned":2,"body_nominal_px":[36,48],"collider_px":[72,96]},"rivet_worker":{"pivot_px":[32,56],"facing":"right","runtime_scale_planned":2,"body_nominal_px":[23,32],"collider_px":[46,64],"desired_muzzle_px":[43,38],"estimated_art_muzzle_px":[47,34],"muzzle_delta_px":[4,-4],"muzzle_tolerance_px":4,"tool_trim":"Mira/disparo cortados no limite x=47 para registrar a boca dentro da tolerância; partículas laranja de referência do disparo preservadas além do limite."}}}

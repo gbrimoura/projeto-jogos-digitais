@@ -1,0 +1,14 @@
+STATUS: done
+SUMMARY: Revisão estática da pipeline e arte do dash v4 (referência 1536x1024 -> Aseprite -> Godot) concluída. Os scripts de amostragem uniforme (escala 1:9, centro X=256->32, apoio pés Y=56 via âncoras 724/723/724) e integração preservam rigorosamente os 22 quadros do snapshot (0–13 e 17–24), todas as 25 durações e tags. O atlas 1600x64 mapeia perfeitamente as regiões de dash no Godot (Rect2 896, 960, 1024 em 64x64, durações 0.04/0.04/0.06s, não-loop) e a regra de facing no `PlayerVisual` (`native_direction = 1` para dash, `-1` para demais) assegura espelhamento correto em runtime. Identificado apenas um defeito cosmético na geração do GIF demonstrativo.
+
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+- Linha 143 do script GERADOR (`local leftPoses = {3, 3, 2, 2, 1, 1, 1}`):
+  * Severidade: Baixa (cosmética; restrita exclusivamente ao artefato de prévia `protagonista-dash-v4-horizontal-demo.gif`, sem qualquer impacto no atlas runtime, no `.aseprite` ou na cena Godot).
+  * Descrição: Durante o percurso de retorno para a esquerda no GIF, as poses foram invertidas cronologicamente (reproduzindo recuperação -> avanço -> impulso), em vez de manter a progressão temporal normal `{1, 1, 2, 2, 3, 3, 3}` espelhada via `mirror()`.
+  * Correção recomendada: Ajustar para `local leftPoses = {1, 1, 2, 2, 3, 3, 3}` caso se deseje regenerar a prévia fiel.
+- Demais componentes (amostragem, quantização para 27 cores, corte/bounds [Ymax=56 cravado], substituição cirúrgica dos quadros 14–16, tags e recursos Godot): nenhum defeito detectado.
+
+NEXT_STEP: Aprovar a integração do atlas e `.aseprite` no repositório; opcionalmente corrigir a linha 143 do gerador se houver necessidade de arquivar o GIF de demonstração com a marcha esquerda em ordem estrita.

@@ -1,0 +1,54 @@
+STATUS: done
+SUMMARY: Revisão estática concluída com sucesso. A causa raiz da queda do jogador (ParseError de `FactorySurfaceVisual` impedindo a execução de `_sync_geometry()` e mantendo o collider do chão no tamanho herdado padrão de 220x24, fora do ponto de spawn em x=160/128) foi eliminada. A remoção de `class_name` global e o desacoplamento via `as Node2D` e `.set()` eliminam o erro de parse do GDScript. A gravação explícita das sub-resources de `CollisionShape2D` (index 0) em `main.tscn` e `second_room.tscn` garante colisão estática imediata de 1152x88 no chão e altura 24 em todas as plataformas, casando com a camada 1 de colisão e a máscara 9 do jogador.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- `scripts/world/solid_platform.gd`: O uso de chamadas reflexivas `.set("surface_size", ...)` e `.set("surface_style", ...)` previne erros de parse entre scripts `@tool`, porém transfere eventuais erros de digitação de propriedades para tempo de execução (falha silenciosa caso as propriedades sejam renomeadas no visual).
+- `scripts/world/factory_surface_visual.gd`: Se o arquivo atlas `res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png` estiver ausente ou não importado, `_draw()` retorna sem desenhar nada. Como `visual_fill` e `top_edge` são desativados quando `factory_skin_enabled = true`, a plataforma ficaria visualmente invisível, embora com física intacta.
+NEXT_STEP: Proceder com a validação da cena na engine Godot quando autorizado, conferindo que o jogador spawna e aterrissa estavelmente sobre o chão de 1152x88 em ambas as fases (`scenes/main.tscn` e `scenes/second_room.tscn`).
+
+---
+
+### Avaliação Estática Detalhada e Achados
+
+#### 1. GDScript Parse e Resolução de Tipos
+- **`scripts/world/solid_platform.gd`**: A eliminação de qualquer referência à classe `FactorySurfaceVisual` (substituída por tipagem segura para `Node2D` via `get_node_or_null("Visuals/FactorySurfaceVisual") as Node2D` e atribuição via `.set()`) resolve o `ParseError` em tempo de carga/edição de scripts `@tool`. A sintaxe é 100% válida em GDScript 2.0 (Godot 4).
+- **`scripts/world/factory_surface_visual.gd`**: Mantém `@tool` e herda diretamente de `Node2D` sem expor `class_name` global. Não gera dependência circular ou conflito de nomes globais no projeto.
+
+#### 2. Herança de Cena e `load_steps`
+- **`scenes/solid_platform.tscn`**:
+  - `load_steps=4`: ExtResource 1 (`solid_platform.gd`), ExtResource 2 (`factory_surface_visual.gd`), SubResource 1 (`RectangleShape2D_platform`), e a própria cena. Contagem exata.
+  - O nó filho index 0 é `CollisionShape2D`, tornando correta a referência `index="0"` nas instâncias derivadas.
+- **`scenes/main.tscn`**:
+  - `load_steps` incrementado de 13 para 17 (+4 sub-resources: `RectangleShape2D_floor`, `RectangleShape2D_platform_a`, `RectangleShape2D_platform_b`, `RectangleShape2D_platform_c`). Contagem exata.
+  - `[node name="CollisionShape2D" parent="Floor" index="0"]` define explicitamente `RectangleShape2D_floor` com `size = Vector2(1152, 88)`.
+  - Plataformas A (220x24), B (190x24) e C (190x24) definem explicitamente seus respectivos colliders.
+- **`scenes/second_room.tscn`**:
+  - `load_steps` incrementado de 12 para 16 (+4 sub-resources: `RectangleShape2D_floor`, `RectangleShape2D_west_platform`, `RectangleShape2D_upper_platform`, `RectangleShape2D_east_platform`). Contagem exata.
+  - `Floor` recebe collider 1152x88.
+  - `WestPlatform` (240x24), `UpperPlatform` (190x24) e `EastPlatform` (170x24) recebem colliders de altura 24.
+
+#### 3. Formas, Camadas e Gameplay
+- **Player Capsule e Spawns**:
+  - Player: raio 14, altura 76, centro -38 (base dos pés em y=0 local).
+  - Colisão do player: `layer = 2`, `mask = 9` (bits 1 e 4 -> camadas 1 e 4).
+  - Spawn em `main.tscn`: (160, 560).
+  - Spawn em `second_room.tscn`: (128, 560).
+  - `Floor`: `collision_layer = 1`, `collision_mask = 1`, tamanho (1152, 88).
+  - Com o chão de largura 1152 centrado em x=576 (cobrindo x de 0 a 1152), tanto x=160 quanto x=128 ficam sustentados pelo collider. A base do chão em y=604 dá uma face superior em y=560 (`604 - 44 = 560`), coincidindo perfeitamente com o ponto de contato do spawn do jogador em y=560.
+- **Alturas das Plataformas**:
+  - Todas as plataformas não-chão têm altura exata de 24.0.
+  - Ambos os pisos têm altura exata de 88.0.
+- **Decorações sem física**:
+  - `resources/environment/factory_tileset_v1.tres` não define camadas de física (`physics_layer`).
+  - `FactorySurfaceVisual` é apenas um `Node2D` com desenho visual no CanvasItem. Não interfere na detecção física.
+
+---
+
+### Concrete Bugs
+
+- **Nenhum bug bloqueante encontrado** no conjunto de arquivos e diffs analisados.
+- **Severidade Baixa / Risco de Manutenção**:
+  - Arquivo: [scripts/world/solid_platform.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/solid_platform.gd)
+  - Severidade: Low (Code Smell / Tipagem Dinâmica)
+  - Descrição: Uso de strings literais `"surface_size"` e `"surface_style"` em `surface_visual.set()`. Embora intencional para evitar dependência de parse, não possui validação estática de tipos e requer disciplina para não renomear essas propriedades em `factory_surface_visual.gd`.

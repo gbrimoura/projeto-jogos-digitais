@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: dash v4 3x64x64 40/40/60 non-loop nativo RIGHT consistente; escala 1:9 centro 256->32 foot 56 base 724/723/724; regioes 896/960/1024 (14-16) preserva 22/25 durs/tags; demo 136x64 16q 880ms sem clipping/blank, root-motion so demo.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum — sem defeito concreto inline; sem inspecao visual PNG/GIF
+NEXT_STEP: manter congelado e arquivar metadata/sha como registro final

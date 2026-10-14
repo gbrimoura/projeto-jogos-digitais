@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/solid_platform.tscn" id="5_solid_platform"]
 [ext_resource type="PackedScene" path="res://scenes/rivet_worker.tscn" id="6_rivet_worker"]
 [ext_resource type="Script" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+[ext_resource type="Texture2D" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="8_factory_atlas"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
 size = Vector2(32, 648)
@@ -16,6 +17,18 @@ size = Vector2(32, 648)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
 size = Vector2(1152, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
+size = Vector2(1152, 88)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_west_platform"]
+size = Vector2(240, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_upper_platform"]
+size = Vector2(190, 24)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_east_platform"]
+size = Vector2(170, 24)
 
 [node name="SecondRoom" type="Node2D"]
 script = ExtResource("1_main")
@@ -30,13 +43,64 @@ player_spawn_marker_path = NodePath("PlayerSpawnMarker")
 z_index = -10
 
 [node name="Background" type="Polygon2D" parent="SandboxVisual"]
-color = Color(0.055, 0.075, 0.09, 1)
+color = Color(0.065, 0.07, 0.064, 1)
 polygon = PackedVector2Array(0, 0, 1152, 0, 1152, 648, 0, 648)
 
 [node name="GridVertical" type="Line2D" parent="SandboxVisual"]
+visible = false
 points = PackedVector2Array(96, 0, 96, 560, 1056, 560, 1056, 0)
 width = 2.0
 default_color = Color(0.74, 0.39, 0.22, 0.18)
+
+[node name="FactoryPanelUpper" type="Sprite2D" parent="SandboxVisual"]
+z_index = 0
+texture_filter = 1
+texture = ExtResource("8_factory_atlas")
+position = Vector2(800, 145)
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+scale = Vector2(2, 2)
+region_enabled = true
+region_rect = Rect2(96, 0, 32, 32)
+
+[node name="FactoryPanelWest" type="Sprite2D" parent="SandboxVisual"]
+z_index = 0
+texture_filter = 1
+texture = ExtResource("8_factory_atlas")
+position = Vector2(256, 260)
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+scale = Vector2(2, 2)
+region_enabled = true
+region_rect = Rect2(96, 0, 32, 32)
+
+[node name="FactoryPipeVertical" type="Sprite2D" parent="SandboxVisual"]
+z_index = 0
+texture_filter = 1
+texture = ExtResource("8_factory_atlas")
+position = Vector2(912, 150)
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+scale = Vector2(2, 2)
+region_enabled = true
+region_rect = Rect2(96, 64, 32, 32)
+
+[node name="FactoryPipeCorner" type="Sprite2D" parent="SandboxVisual"]
+z_index = 0
+texture_filter = 1
+texture = ExtResource("8_factory_atlas")
+position = Vector2(912, 214)
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+scale = Vector2(2, 2)
+region_enabled = true
+region_rect = Rect2(96, 96, 32, 32)
+
+[node name="FactoryPipeHorizontal" type="Sprite2D" parent="SandboxVisual"]
+z_index = 0
+texture_filter = 1
+texture = ExtResource("8_factory_atlas")
+position = Vector2(976, 214)
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+scale = Vector2(2, 2)
+region_enabled = true
+region_rect = Rect2(96, 32, 32, 32)
 
 [node name="BallContainer" type="Node2D" parent="." groups=["hostile_projectile_container"]]
 z_index = 1
@@ -59,6 +123,10 @@ shape = SubResource("RectangleShape2D_ceiling")
 position = Vector2(576, 604)
 size = Vector2(1152, 88)
 fill_color = Color(0.11, 0.17, 0.19, 1)
+factory_surface_style = 1
+
+[node name="CollisionShape2D" parent="Floor" index="0"]
+shape = SubResource("RectangleShape2D_floor")
 
 [node name="FloorDetail" type="Line2D" parent="Floor"]
 position = Vector2(0, -12)
@@ -71,15 +139,24 @@ position = Vector2(340, 430)
 size = Vector2(240, 24)
 fill_color = Color(0.14, 0.2, 0.22, 1)
 
+[node name="CollisionShape2D" parent="WestPlatform" index="0"]
+shape = SubResource("RectangleShape2D_west_platform")
+
 [node name="UpperPlatform" parent="." instance=ExtResource("5_solid_platform")]
 position = Vector2(615, 385)
 size = Vector2(190, 24)
 fill_color = Color(0.14, 0.2, 0.22, 1)
 
+[node name="CollisionShape2D" parent="UpperPlatform" index="0"]
+shape = SubResource("RectangleShape2D_upper_platform")
+
 [node name="EastPlatform" parent="." instance=ExtResource("5_solid_platform")]
 position = Vector2(950, 460)
 size = Vector2(170, 24)
 fill_color = Color(0.14, 0.2, 0.22, 1)
+
+[node name="CollisionShape2D" parent="EastPlatform" index="0"]
+shape = SubResource("RectangleShape2D_east_platform")
 
 [node name="PlayerSpawnMarker" type="Marker2D" parent="."]
 position = Vector2(128, 560)

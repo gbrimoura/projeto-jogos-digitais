@@ -1,4 +1,12 @@
+# Versão atual — escala do dash V5 (13/10/2026)
+
+Correção de escala0,85 integrada ao atlas atual de28quadros; puloV4 e hurtV1 preservados. Gemini/Muse/Grok concluídos e avaliados, Opus quota. [Relatórios e hashes V5](escala-v5/README.md). Seções abaixo são histórico.
+
 # Pareceres — animação dash
+
+## Versão atual V4 — 13/10/2026
+
+Referência gerada → reprodução Aseprite → integração apenas14–16 → importação Godot concluída. Gemini/Muse/Grok R2 sem defeitos concretos pendentes; Opus quota, sem parecer. [Consolidação, stdout e hashes V4](referencia-v4/README.md). GIF de retorno corrigido. Sem gameplay/testes. As seções abaixo são histórico v1–v3.
 
 ## Estado final
 

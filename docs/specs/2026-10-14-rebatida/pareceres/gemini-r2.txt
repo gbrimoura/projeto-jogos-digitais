@@ -1,0 +1,58 @@
+# Parecer de Revisão R2 (Esclarecimento de Código Completo)
+
+**Revisor:** Gemini 3.8 Flash (High)  
+**Escopo:** `RacketController.gd`, `BallLauncher.gd` e especificações de `RacketVisual.gd`  
+**Modo:** Análise estática read-only (sem ferramentas / sem alterações no workspace)
+
+---
+
+### 1. Retratação Formal dos Falsos P1 da Rodada R1
+Com a apresentação dos arquivos de código completos (que eliminaram o truncamento da visualização parcial anterior), **todos os 3 apontamentos P1 de R1 são formalmente retirados**:
+1. **`get_catch_radius()` com corpo completo**: Presente em `RacketController` (`reach + maxf(projectile_radius, 0.0)`).
+2. **`request_stop_active_sweep()` com corpo completo**: Presente em `BallLauncher` (verificação segura e delegação para `_active_ball.request_stop_sweep()`).
+3. **`_update_racket_visual()` e `_update_feedback()` implementados**: Ambos existem, contêm lógica integral de sincronização visual e atualização de shaders/polígonos de feedback.
+4. **Alegações de erro de parse/métodos faltantes**: Canceladas na íntegra.
+
+---
+
+### 2. Confirmação dos Pontos Autoritativos e Regras de Negócio
+
+* **Bloqueio de disparo e ciclo de vida do swing (`is_launch_available`)**:
+  * Em `BallLauncher.is_launch_available()`, a guarda `if _racket_controller == null or _racket_controller.is_swing_active(): return false` garante que, durante todo o intervalo do swing ativo (`_active == true`), o disparo de bola é estritamente impedido.
+  * O retorno visual da raquete em `KEY 7` (`PARRY_KEY_TIME[6] = 1.0`, com `grip (24.0, 0.0)` e `head_angle 0.0`) coincide exatamente com a pose de repouso (`IDLE`). Consequentemente, ao atingir `progress = 1.0` (final de `active_duration`), a transição para renderização via IDLE é natural, fluida e contínua. É **desnecessário** impor hold artificial ou bloqueio extra pós-swing.
+  * Durante o cooldown posterior (`_cooldown_remaining > 0`), como `_active` já é `false`, o disparo é autorizado (bloqueio restrito apenas à janela ativa de parry), comportamento consistente com a regra de parry ágil do GDD.
+
+* **Sinais com 2 argumentos**:
+  * `RacketController.swing_started`: declarado com `(direction: Vector2, duration: float)` e emitido com `(_frozen_direction, _active_remaining)` (2 argumentos).
+  * `BallLauncher.launch_accepted`: declarado com `(spawn_position: Vector2, direction: Vector2)` e emitido com `(spawn_position, direction)` (2 argumentos).
+  * Ambas as assinaturas e pontos de emissão estão plenamente sincronizados.
+
+* **Guarda NULL fail-closed intencional em `BallLauncher`**:
+  * `_racket_controller == null -> return false`: O contrato do jogo estabelece que a mecânica de disparo pertence exclusivamente à entidade do `Player` provida de `RacketController`. Launcher isolado não é cenário autorizado, tornando a guarda `fail-closed` correta e segura contra execuções em nós órfãos.
+
+* **Base preexistente estável (Mouse e Cancel Cooldown)**:
+  * A obtenção de direção via mouse em `_begin_swing` e o tratamento de cancelamento de cooldown constituem legado preexistente intocado. A ausência de suporte a gamepad está adequadamente demarcada fora de escopo.
+
+* **Encaminhamento de mira para `RacketVisual`**:
+  * A função `set_aim_direction()` atualiza `_aim_direction` e chama `_update_racket_visual()` imediatamente quando fora do estado ativo.
+  * `_update_racket_visual()` despacha `_frozen_direction` (se ativo) ou `_aim_direction` (se inativo) para `_racket_visual.set_aim_direction()`, mantendo o desacoplamento correto.
+
+---
+
+### 3. Verificação de Novos Bugs (P1 / P2)
+Após revisão linha a linha das rotinas matemáticas e físicas:
+* O cálculo de sweep vetorial `to_local(start_position + motion) - local_start` converte corretamente o vetor deslocamento para o referencial local sem distorção posicional.
+* A filtragem de proximidade geométrica (`Geometry2D.is_point_in_polygon`), a aproximação por cápsulas e a checagem angular `motion.dot(relative_hit) >= -0.0001` impedem parry de projéteis em fuga.
+* A limpeza adiada em `BallLauncher.reset()` via `call_deferred("_cleanup_ball_after_flush", ...)` previne mutações concorrentes durante o flush de física do Godot.
+* **Nenhum bug P1 ou P2 identificado.** O código está íntegro e robusto.
+
+---
+
+```text
+STATUS: done
+SUMMARY: Parecer R2 concluído com sucesso. Falsos P1s de R1 formalmente retratados após análise dos arquivos completos. Regras de bloqueio de disparo, ciclo visual IDLE na KEY 7, fail-closed nulo de RacketController, emissão de sinais com 2 argumentos e delegação de mira validadas sem novos bugs P1/P2.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco impeditivo identificado nos scripts analisados.
+NEXT_STEP: Prosseguir com o fluxo de consolidação dos pareceres da rodada sem necessidade de correções adicionais nos módulos avaliados.
+```

@@ -1,0 +1,6 @@
+STATUS: blocked
+SUMMARY: Windows Defender Controlled Folder Access blocked Aseprite.exe writing project art directory. Event1123 confirmed, libpng Write Error not caused by Lua paths. Runtime untouched. Final visor-color reproduction/export pending OS permission.
+CHANGED_FILES: prospective docs and reproduction source/drafts in pitch-assets/inimigos-aseprite-v1; no Godot runtime source/scene changed.
+TESTS: none. Aseprite production export attempted; no Godot/import/gameplay/QA. No final validation claimed.
+RISKS: Some regenerated atlas outputs are missing after failed save; do not consume draft files. Metadata may describe pre-correction palette and must be regenerated after permission is restored.
+NEXT_STEP: User allow exact Aseprite.exe in Controlled Folder Access; then resume same Luna xhigh art stage, inspect final contact, integrate and review.

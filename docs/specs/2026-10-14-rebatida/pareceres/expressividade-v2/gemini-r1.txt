@@ -1,0 +1,10 @@
+STATUS: done
+SUMMARY: Revisão incremental do RacketVisual (expressividade-v2) concluída. A reparametrização para 8 keyframes preserva a integridade estrutural, matemática e funcional: arrays com tamanhos consistentes (8 elementos), tempos estritamente monotônicos sem divisão por zero, continuidade C0 em todas as transições de easing, alcance do braço estritamente contido no envelope IK [2.001, 26.0], rotação 360°/espelhamento sem inversão indesejada de cotovelo, retorno exato ao repouso sem popping, rotina de disparo (`shot`) e acoplamento com o relógio físico (`get_swing_progress`) 100% inalterados.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1 (Bloqueios): Nenhum risco impeditivo identificado.
+- P2 (Atenção matemática/visual):
+  1. Extensão máxima no keyframe 5 (t=0.58): grip em `(23.0, 12.0)` resulta em alcance $\|(23, 12)\| \approx 25.942\text{ px}$, operando a 99.78% do alcance máximo de 26.0 px (14+12). O solver trata com `sqrt(maxf(..., 0.0))` e clamping seguro, mas deixa o braço praticamente reto (perpendicular ~ 0.55 px). Válido e seguro matematicamente, risco puramente estético de rigidez no ápice do follow-through.
+  2. Especulativo vs Bloqueio: O recuo para `(10.0, -5.0)` no windup (-80°) e avanço rápido para contato em t=0.50 acentuam o contraste dinâmico sem violar a janela física de parry.
+NEXT_STEP: Liberar integração do diff do RacketVisual no branch/workspace principal.

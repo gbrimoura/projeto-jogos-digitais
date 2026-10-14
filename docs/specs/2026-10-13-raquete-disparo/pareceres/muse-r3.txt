@@ -1,0 +1,9 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: R3 verificado inline: `_solve_elbow` usa `fallback_axis.orthogonal()`+`ARM_SIDE_EPSILON`, sem relookup, clamp+`maxf/sqrt` anti-dobra colinear; `cancel()` zera antes de `swing_cancelled.emit()` e `reset()->cancel()`, conectado a `clear_transient()`; `_clamp_grip` projeta em eixo com fallback; mask `39,37,45,44` preserva corpo Y45; shader só `COLOR.a=0` com `floor+mod64` sem squared; sem mudança hurt/parry/input. Não reaberto QA-pixel/standalone.
+CHANGED_FILES: none
+TESTS: none
+RISKS: P2-literal `2.001/26` não visível inline (só `MIN/MAX_ARM_REACH`+`SUM-0.001`, possível divergência grip vs elbow); P2-morte em `_process` esconde+desliga mask mas `clear_transient/cancel` só via `reset()`, se morte não chamar `reset` pose volta suja; P2-shader borda inclusiva pode off-by-one em padding atlas.
+NEXT_STEP: manter congelado para integração Godot; só revalidar constantes `MIN/MAX/UPPER/FOREARM/EPSILON` e chamada `reset()` na morte no código-base, sem alterar este parecer.

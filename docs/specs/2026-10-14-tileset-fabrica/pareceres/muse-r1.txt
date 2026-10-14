@@ -1,0 +1,14 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Static read-only review of 5 sources (lua generator, .tres, demo_editor.tscn, palette JSON, manifest JSON). Methodology/scope compliant: 16x32px cells in 128 atlas, 20-color set, binary alpha 128, nearest-only, no collision, no runtime writes (all writes via OUT/pitch-assets). No gameplay/scene/physics changes. 3 concrete non-blocking issues below; no engine execution occurred.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- [LOW concrete doc bug] Generator writes contradictory lifecycle status in same run. Evidence: lua mf:write `V3 ... approved ... prepared` vs rd:write `await principal approval of this contact`. Fix by aligning one string; no runtime effect.
+- [MEDIUM concrete visual-continuity bug] Repeatable platform beam height-mismatched to caps with top-align. Evidence: manifest `left:16, mid:10, right:17` + lua platform branch `dw=CELL, top aligned` + demo `left+3xmid+right` contiguous at py=96. Result: 6-7px bottom step across 5-cell beam. If straight beam intended, mid ROI (85px tall vs 145px caps) is wrong source or needs height note in usage; if stepped look intentional, usage `repeatable platform beam` needs explicit warning.
+- [LOW concrete validation weakness] Contact assert is tautological. Evidence: `iy=py+supportY-50` then `assert(iy+50==py+supportY)`. Passes by construction; does not independently verify beam support or horizontal foot overlap. Harmless (demo is visual-only) but gives false confidence.
+- [Harmless future maintenance, not current bug] `supportY` scans only x=4..27; current mid tile is full-width (opaque x0 w32) so finds row 0. Edge-only future beam would be missed. Player scan limited to 0..63 top-left assumes frame0 at origin; brittle if sheet layout changes.
+- [Unverified, not bugs] Aesthetics (weld readability, rust/amber balance, 9x point downsample aliasing on terrain, corner +9/-10 registration, pipe port continuity), byte-identical hash claim, and `;` comment parsing in .tres cannot be verified without PNGs/engine run. Intentional limits by scope: no collision/terrain/physics in .tres, demo previews PNG not TileSet, palette is provisional not GDD-locked.
+NEXT_STEP: Principal decision: (1) accept/document stepped platform vs re-crop mid to match 16-17px caps; (2) fix README/manifest status wording to single approved/pending state; (3) keep TileSet visual-only until collision pass is explicitly scoped.

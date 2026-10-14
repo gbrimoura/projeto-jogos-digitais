@@ -1,0 +1,21 @@
+
+> plan · gpt-6-luna
+
+BEGIN_JSON
+{
+  "platform_left_usage": "Left platform beam; visual only. Its end-cap has a 16 px deep lower support bracket, matching the original ImageGen reference. The straight middle beam is 10 px deep; all three segments share a continuous top surface and 32 px width. The underside shape is intentional, not a broken playable surface.",
+  "platform_mid_usage": "Repeatable middle platform beam; visual only. It is a straight 10 px beam between the end-cap support brackets. The left and right brackets are 16 px and 17 px deep, matching the original ImageGen reference. All three segments share a continuous top surface and 32 px width; these are intentional underside shapes, not a broken playable surface.",
+  "platform_right_usage": "Right platform beam; visual only. Its end-cap has a 17 px deep lower support bracket, matching the original ImageGen reference. The straight middle beam is 10 px deep; all three segments share a continuous top surface and 32 px width. The underside shape is intentional, not a broken playable surface.",
+  "readme_generator_status_sentence": "V3 visual contact is approved and all three binary copies match their approved versions, but runtime integration is not verified; the standalone 16-cell, 32 px TileSet has no collision data and has not been loaded or tested in the engine.",
+  "platform_explanation": "The three visual segments share a continuous top surface and 32 px width. The end caps have deeper lower support brackets than the straight 10 px middle beam: 16 px on the left and 17 px on the right, matching the original ImageGen reference. These are intentional underside shapes, not breaks in the playable surface.",
+  "bounds_explanation": "output_bounds is the allocated sampling and registration rectangle, while opaque_bounds is the actual alpha footprint. For example, an elbow can have an allocated height of 32 px but an actual opaque height of 21 px after translation. These bounds describe different measurements and should not be treated as equal.",
+  "registration_explanation": "The invariant iy=py+supportY-50; assert(iy+50==py+supportY) checks only the arithmetic placement relation. It does not independently verify support alignment or collision behavior."
+}
+END_JSON
+
+STATUS: done
+SUMMARY: Supplied replacement documentation strings using only the facts in the request.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Repository files and the approved manifest were not inspected, as requested; confirm wording against them before applying.
+NEXT_STEP: Apply these strings to the existing documentation literals without changing numeric fields or runtime assets.

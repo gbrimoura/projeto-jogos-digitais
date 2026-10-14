@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: Static-only review of GENERADOR+INTEGRADOR+METADATA. Indices 14..16 zero-based consistently mapped to cel 15..17, inverse-nearest around pivot 32,56 preserves floor y1=56 and 27-color alpha 0/255, stride 64, 28 timings, 8 tags protected, 25/25 frames pixel-exact logic correct, contact/GIF preview-only with correct 1,1,2,2,3,3,3 7x20ms=140ms preserving 40/40/60 native, no script/TRES/scene/import edits in code paths.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Medium: no assert linking runtime dash tag name/range to 14..16, preservation check would still pass if snapshot misaligned — mitigated only by Principal pre-approval of contact. Low: mirror W-1-x puts mirrored pivot at 31 but drawn at rootX-32 = 1px left bias on left direction, preview-only. Low: demo idle orientation pops — first idle mirrored at 40 before right unmirrored motion, middle idle unmirrored before left mirrored motion; motion poses/durations themselves correct, preview-only. Low: idle floor not asserted, only dash floor 52..56 checked. Info: palette/mode/layer-name order not asserted, only rgba pixel equality — sufficient for RGB correctness. Info: final PNG C87E..211E6 / ASE 5906..9555F, 74 gd/tres/tscn hashes, Godot import exit0 not verifiable statically; no PNG visual inspection per scope.
+NEXT_STEP: Defer aesthetic 0.85 vs 0.9/0.8 to Principal; if re-running, add dash-tag-range assert 14..16 and keep runtime locked.

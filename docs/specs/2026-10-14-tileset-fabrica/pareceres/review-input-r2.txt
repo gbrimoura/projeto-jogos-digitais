@@ -1,0 +1,46 @@
+READ-ONLY focused R2 review. No tools/tests/files. Timeout3min. Your R1 found nonblocking docs/lifecycle issue and interpreted platform cap16/17 vs mid10 as a possible broken beam. Principal explicitly accepts ORIGINAL SOURCE DESIGN: caps have downward support brackets (triangular underneath); center10px is a straight horizontal beam. All3 share continuous top,32px width and verified contact preview; different underside heights are intended, no collision is defined. Do not resize/redraw faithful source to make underside a uniform rectangle. Exact gpt-6-luna xhigh via OpenCode authored documentation correction after Codex Luna quota; principal applied texts ONLY. ALL raster PNG/Aseprite/TRES/scene/palette files and algorithms are unchanged, hashes confirmed. Lua usage strings now describe brackets vs straight middle. Generated README contradictory await-approval sentence replaced with approved V3 + standalone resource prepared/engine not loaded. Manifest/README clarify output_bounds allocated sampling rectangle vs opaque_bounds actual alpha. Contact formula assert only arithmetic invariant, not independent support/collision test; no tests added/executed. Reconsider your HIGH/MEDIUM/LOW R1 as appropriate; report actual remaining blockers only with evidence. Return stdout STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP. Below complete modified descriptions and CURRENT targeted Lua document lines; other runtime/artist code reviewedR1 is unchanged. Bookkeeping-only correction, no new gameplay behavior.
+AUTHOR JSON/HANDOFF
+
+> plan · gpt-6-luna
+
+BEGIN_JSON
+{
+  "platform_left_usage": "Left platform beam; visual only. Its end-cap has a 16 px deep lower support bracket, matching the original ImageGen reference. The straight middle beam is 10 px deep; all three segments share a continuous top surface and 32 px width. The underside shape is intentional, not a broken playable surface.",
+  "platform_mid_usage": "Repeatable middle platform beam; visual only. It is a straight 10 px beam between the end-cap support brackets. The left and right brackets are 16 px and 17 px deep, matching the original ImageGen reference. All three segments share a continuous top surface and 32 px width; these are intentional underside shapes, not a broken playable surface.",
+  "platform_right_usage": "Right platform beam; visual only. Its end-cap has a 17 px deep lower support bracket, matching the original ImageGen reference. The straight middle beam is 10 px deep; all three segments share a continuous top surface and 32 px width. The underside shape is intentional, not a broken playable surface.",
+  "readme_generator_status_sentence": "V3 visual contact is approved and all three binary copies match their approved versions, but runtime integration is not verified; the standalone 16-cell, 32 px TileSet has no collision data and has not been loaded or tested in the engine.",
+  "platform_explanation": "The three visual segments share a continuous top surface and 32 px width. The end caps have deeper lower support brackets than the straight 10 px middle beam: 16 px on the left and 17 px on the right, matching the original ImageGen reference. These are intentional underside shapes, not breaks in the playable surface.",
+  "bounds_explanation": "output_bounds is the allocated sampling and registration rectangle, while opaque_bounds is the actual alpha footprint. For example, an elbow can have an allocated height of 32 px but an actual opaque height of 21 px after translation. These bounds describe different measurements and should not be treated as equal.",
+  "registration_explanation": "The invariant iy=py+supportY-50; assert(iy+50==py+supportY) checks only the arithmetic placement relation. It does not independently verify support alignment or collision behavior."
+}
+END_JSON
+
+STATUS: done
+SUMMARY: Supplied replacement documentation strings using only the facts in the request.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Repository files and the approved manifest were not inspected, as requested; confirm wording against them before applying.
+NEXT_STEP: Apply these strings to the existing documentation literals without changing numeric fields or runtime assets.
+
+CURRENT LUA DOC LINES (excerpt, not full file)
+ {name='terrain_top_left',c=0,r=0,k='terrain',roi={x=54,y=80,w=286,h=280},usage='upper-left block corner'},
+ {name='terrain_top_mid',c=1,r=0,k='terrain',roi={x=344,y=80,w=279,h=280},usage='repeatable top segment'},
+ {name='terrain_top_right',c=2,r=0,k='terrain',roi={x=630,y=80,w=280,h=280},usage='upper-right block corner'},
+ {name='steel_panel',c=3,r=0,k='prop',roi={x=912,y=78,w=295,h=275},mw=32,mh=32,usage='decorative steel panel'},
+ {name='terrain_side_left',c=0,r=1,k='terrain',roi={x=54,y=367,w=286,h=273},usage='left block edge'},
+ {name='terrain_fill',c=1,r=1,k='terrain',roi={x=344,y=367,w=279,h=273},usage='repeatable interior fill'},
+ {name='terrain_side_right',c=2,r=1,k='terrain',roi={x=630,y=367,w=280,h=273},usage='right block edge'},
+ {name='pipe_horizontal',c=3,r=1,k='prop',roi={x=908,y=426,w=300,h=148},mw=32,mh=32,usage='decorative horizontal pipe, edge-to-edge'},
+ {name='terrain_bottom_left',c=0,r=2,k='terrain',roi={x=54,y=647,w=286,h=266},usage='lower-left block corner'},
+ {name='terrain_bottom_mid',c=1,r=2,k='terrain',roi={x=344,y=647,w=279,h=266},usage='repeatable base segment'},
+ {name='terrain_bottom_right',c=2,r=2,k='terrain',roi={x=630,y=647,w=280,h=266},usage='lower-right block corner'},
+ {name='pipe_vertical',c=3,r=2,k='prop',roi={x=990,y=622,w=130,h=305},mw=32,mh=32,usage='decorative vertical pipe, edge-to-edge'},
+ {name='platform_left',c=0,r=3,k='platform',roi={x=54,y=936,w=286,h=155},mw=32,mh=16,usage='Left platform beam; visual only. Its end-cap has a 16 px deep lower support bracket, matching the original ImageGen reference. The straight middle beam is 10 px deep; all three segments share a continuous top surface and 32 px width. The underside shape is intentional, not a broken playable surface.'},
+ {name='platform_mid',c=1,r=3,k='platform',roi={x=344,y=936,w=279,h=155},mw=32,mh=16,usage='Repeatable middle platform beam; visual only. It is a straight 10 px beam between the end-cap support brackets. The left and right brackets are 16 px and 17 px deep, matching the original ImageGen reference. All three segments share a continuous top surface and 32 px width; these are intentional underside shapes, not a broken playable surface.'},
+ {name='platform_right',c=2,r=3,k='platform',roi={x=630,y=936,w=280,h=155},mw=32,mh=16,usage='Right platform beam; visual only. Its end-cap has a 17 px deep lower support bracket, matching the original ImageGen reference. The straight middle beam is 10 px deep; all three segments share a continuous top surface and 32 px width. The underside shape is intentional, not a broken playable surface.'},
+ {name='pipe_corner',c=3,r=3,k='prop',roi={x=990,y=912,w=230,h=235},mw=32,mh=32,usage='decorative elbow, top and right connection; ports centered at x16 and y16'}
+mf:write(' "platform_support_note":"The three visual segments share a continuous top surface and 32 px width. The end caps have deeper lower support brackets than the straight 10 px middle beam: 16 px on the left and 17 px on the right, matching the original ImageGen reference. These are intentional underside shapes, not breaks in the playable surface.",\n')
+mf:write(' "bounds_note":"output_bounds is the allocated sampling and registration rectangle, while opaque_bounds is the actual alpha footprint. For example, an elbow can have an allocated height of 32 px but an actual opaque height of 21 px after translation. These bounds describe different measurements and should not be treated as equal.",\n')
+mf:write(' "registration_note":"The invariant iy=py+supportY-50; assert(iy+50==py+supportY) checks only the arithmetic placement relation. It does not independently verify support alignment or collision behavior.",\n')
+rd:write('The demo compares the exact 23x50 crop from the current player idle at native 1x scale. It is a visual composition only: no collision or new behavior is specified. Set nearest filtering on CanvasItem/TileMapLayer, not TileSet. V3 visual contact is approved and all three binary copies match their approved versions, but runtime integration is not verified; the standalone 16-cell, 32 px TileSet has no collision data and has not been loaded or tested in the engine.\n')
+

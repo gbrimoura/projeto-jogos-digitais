@@ -1,0 +1,26 @@
+[
+  {
+    "path": "assets/player/player-animations.png",
+    "unchanged": true
+  },
+  {
+    "path": "resources/player_sprite_frames.tres",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/player.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/racket_controller.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/ball_launcher.gd",
+    "unchanged": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png",
+    "unchanged": true
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\racket_visual.gd",
+    "Hash": "DCAA9CA3EEB77E4F165014C8658ED142DCB8CDA2A98D32A83E5FF1D9C3EF6B3B"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\racket_arm_mask.gdshader",
+    "Hash": "B866DF6D115546D6C655788D46D48E0AA1918BF331F8E5D1C695AA0AE6791895"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player.gd",
+    "Hash": "5CA659039885F24C807863701E826707CA7B13E11EA7941C7630726AA831BEA0"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\ball_launcher.gd",
+    "Hash": "41376049656FF69FBC9EDB3C9168DEA4DF6567AED2A5B6DC233BF6CA10ADED7A"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\racket_controller.gd",
+    "Hash": "142A7DDA9C9FF5E27503A34C20B9D7F09E6EAF5327AF8E15DB845B6D38BA9FDE"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scenes\\player.tscn",
+    "Hash": "D0AE3607DFD35B37AFD95A4EF5A6F60DD619EF7EE3EAEE9A376B4C4DF897F19D"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\player\\racket\\generate_racket_head_v4.lua",
+    "Hash": "C254293DF571601A48489DA2D5E6B92EF98BB17B12CEF394F7283EDB2C2446B0"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\player\\racket\\racket_head_v4.aseprite",
+    "Hash": "3B3EB1CC5BC4707278C06D146AC9B61CD4662CA205B86B2274FC547473A26D89"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\player\\racket\\racket_head_v4.png",
+    "Hash": "0E3C453B6CEF557B027B46670EA59C96CE1108A3C83605F8F0F66D44E842BBBF"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\player\\racket\\racket_head_v4.png.import",
+    "Hash": "E7AB0C6FEC52F2F624148B810B9779B4D1030465B7B21A4D13E5DB5C29E954B4"
+  }
+]

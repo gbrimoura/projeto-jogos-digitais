@@ -1,0 +1,104 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy/rivet_worker.gd" id="1_rivet_worker"]
+[ext_resource type="PackedScene" path="res://scenes/hostile_rivet.tscn" id="2_hostile_rivet"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rivet_worker"]
+size = Vector2(46.0, 64.0)
+
+[node name="RivetWorker" type="CharacterBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 1
+floor_snap_length = 6.0
+floor_stop_on_slope = true
+floor_constant_speed = true
+z_index = 1
+script = ExtResource("1_rivet_worker")
+max_health = 3
+move_speed = 150.0
+minimum_attack_range = 220.0
+maximum_attack_range = 360.0
+windup_duration = 0.65
+rivet_speed = 400.0
+rivet_damage = 1
+recovery_duration = 0.8
+minimum_shot_interval = 2.6
+close_range_retreat_step = 64.0
+rivet_lifetime = 2.0
+player_aim_offset = Vector2(0.0, -60.0)
+rivet_scene = ExtResource("2_hostile_rivet")
+warning_volume_db = -20.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0.0, -32.0)
+shape = SubResource("RectangleShape2D_rivet_worker")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-25.0, -64.0, 25.0, -64.0, 25.0, -5.0, -25.0, -5.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-22.0, -61.0, 22.0, -61.0, 22.0, -8.0, -22.0, -8.0)
+
+[node name="Helmet" type="Polygon2D" parent="Visuals"]
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-19.0, -66.0, 19.0, -66.0, 16.0, -53.0, -16.0, -53.0)
+
+[node name="Visor" type="Line2D" parent="Visuals"]
+position = Vector2(0.0, -55.0)
+width = 4.0
+default_color = Color(0.941176, 0.321569, 0.305882, 1)
+points = PackedVector2Array(-12.0, 0.0, 12.0, 0.0)
+
+[node name="Arm" type="Line2D" parent="Visuals"]
+position = Vector2(0.0, -29.0)
+width = 5.0
+default_color = Color(0.568627, 0.647059, 0.721569, 1)
+points = PackedVector2Array(15.0, 0.0, 25.0, -4.0)
+
+[node name="WeaponMuzzle" type="Polygon2D" parent="Visuals"]
+position = Vector2(26.0, -33.0)
+color = Color(0.768627, 0.494118, 0.25098, 1)
+polygon = PackedVector2Array(-4.0, -4.0, 7.0, -4.0, 7.0, 4.0, -4.0, 4.0)
+
+[node name="BeltStripe" type="Line2D" parent="Visuals"]
+position = Vector2(0.0, -19.0)
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-18.0, 0.0, 18.0, 0.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+position = Vector2(0.0, -78.0)
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-21.0, -3.0, 21.0, -3.0, 21.0, 3.0, -21.0, 3.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-19.0, -78.0)
+color = Color(0.894118, 0.294118, 0.278431, 1)
+polygon = PackedVector2Array(0.0, -1.5, 38.0, -1.5, 38.0, 1.5, 0.0, 1.5)
+
+[node name="WarningLine" type="Line2D" parent="."]
+visible = false
+z_index = 2
+width = 12.0
+default_color = Color(1.0, 0.27451, 0.247059, 0.82)
+points = PackedVector2Array(0.0, 0.0, 100.0, 0.0)
+
+[node name="WarningMark" type="Node2D" parent="."]
+visible = false
+z_index = 3
+position = Vector2(0.0, -104.0)
+
+[node name="WarningStem" type="Polygon2D" parent="WarningMark"]
+color = Color(1.0, 0.447059, 0.337255, 1)
+polygon = PackedVector2Array(-3.0, -12.0, 3.0, -12.0, 2.0, 3.0, -2.0, 3.0)
+
+[node name="WarningDot" type="Polygon2D" parent="WarningMark"]
+color = Color(1.0, 0.447059, 0.337255, 1)
+polygon = PackedVector2Array(-3.0, 6.0, 3.0, 6.0, 3.0, 12.0, -3.0, 12.0)
+
+[node name="WarningSound" type="AudioStreamPlayer2D" parent="."]
+volume_db = -20.0

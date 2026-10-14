@@ -1,0 +1,13 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Integração válida sem P1. Parse GDScript/Shader OK, wiring player.tscn OK (16→17, sem RacketPivot, RacketVisual+Head scale2 Nearest centered), ciclo morte/reset OK (clear em reset+died, hide+mask off se is_dead), máscara source-texel flip-invariante OK, IK clamp/NaN-safe OK, mira360 congelada OK (set_aim bloqueado em ataque + basis_xform_inv com scale.x mirror), disparo síncrono sem delay/physics OK. Só P2 estéticos/derivação pequena.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1: none. POSE_DURATION 200ms / SHOT 125ms, SHOT_POSES [2,3,4,5], HAND_ANCHORS→((p-32)*2,-50) e SHOULDER(14,-44)/reach 24/26 coerentes; launch_accepted(spawn,dir)→start_shot e swing_started(dir)→start_parry assinaturas conferem; _update_pose/_solve_elbow/_clamp_grip sem div0/NaN; _draw/_set_arm_mask(rect 39,37,45,44 inclusivo) só em idle/walk.
+- P2 estética: generate_racket_head_v4.lua edge usa índice linear (y-1)*W+x sem guarda borda — direita de row full (y7,8) colide com início da próxima (ex. 6*14+15==7*14+1==99) e esquerda análoga; falta outline em ~4px laterais, fica vermelho. Alfa binário/14x14 intacto, não bloqueia.
+- P2 deriva: start_shot guarda offset=spawn-old_global-dir*21 e depois to_local(new_global+offset)=spawn-dir*21+(new-old); movimento vivo em 125ms desliza grip/head poucos px. Causa offset vs ponto-mundo. Aceitável; perto parede já documentado sem 100% contato.
+- P2 robustez: _process refaz get_node AnimatedSprite2D e scale.x=-1 se flip_h todo frame; _ready sobrescreve material (base era NONE, flash via modulate parent preservado). Sem bloqueios.
+NEXT_STEP: Manter como está; se polir, corrigir guarda borda no lua e guardar contato-mundo em start_shot (world=spawn-dir*21) sem mudar física/cooldowns/PlayerVisual.

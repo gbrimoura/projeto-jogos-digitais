@@ -1,0 +1,22 @@
+STATUS: done
+SUMMARY: Static read-only review of the complete sources (`player_visual.gd`, `racket_visual.gd`, `player.gd` diff, integrator script) confirms that the grounded parry body animation integration is structurally sound. Reconsideration of R1 findings with full source visibility demonstrates that previously flagged HIGH and MEDIUM concerns (facing desync, duplicate arm drawing, dead hand anchors, and air priority conflicts) are non-issues due to synchronous signal wiring (`animation_changed`), per-frame rig toggling (`_ground_rig_active`), and intentional jump priority retention. No functional regressions or blocking bugs were identified.
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+- [RESOLVED / DISPROVED] R1 Facing Desync (formerly HIGH):
+  - Evidence: `scripts/player/player_visual.gd` line 33 connects `character_sprite.animation_changed.connect(_apply_facing)`. Whenever animation transitions to or from `parry_body`, `_apply_facing()` executes synchronously. Line 217 restricts `_parry_facing` strictly to `_is_parrying and character_sprite.animation == PARRY_BODY_ANIMATION`, while lines 215-216 correctly flip native axes (`DASH` and `PARRY_BODY` = +1, all others = -1). Exit to `idle`/`walk` restores normal `_facing_direction` immediately without desync.
+- [RESOLVED / DISPROVED] R1 Duplicate Arm / Shader Bleed (formerly HIGH):
+  - Evidence: `scripts/player/racket_visual.gd` line 98 re-evaluates `_ground_rig_active = _body_sprite.animation == &"idle" or _body_sprite.animation == &"walk"` every `_process` tick. During `parry_body`, `_ground_rig_active` is strictly `false`. Line 99 passes `false` to `_set_arm_mask()`, keeping the body sprite intact. Lines 182-184 early-return in `_draw()` before any procedural arm lines, elbow joints, or cuffs are drawn. Only the separate grip and racket head are drawn.
+- [RESOLVED / DISPROVED] R1 Unused Hand Anchors (formerly MEDIUM):
+  - Evidence: `scripts/player/racket_visual.gd` line 147 executes `_grip = _native_hand_anchor()` whenever `not _ground_rig_active`. `HAND_ANCHORS[&"parry_body"]` (lines 46-49) provides 6 precise `Vector2` coordinates mapped 1:1 to `_body_sprite.frame`. The anchors are actively utilized to anchor the racket grip to the sprite's hand across all 6 frames.
+- [RESOLVED / DISPROVED] R1 Airborne Parry Inconsistency (formerly MEDIUM):
+  - Evidence: `scripts/player/player_visual.gd` lines 172-180 enforce jump animations ahead of parry body in `_apply_animation_state()`. In `racket_visual.gd` line 133, `character_is_parry_body()` returns `false` during jump animations, preserving the legacy `PARRY_HEAD_ANGLE` rotational sweep anchored to jump hand anchors. This faithfully maintains the higher priority of airborne physics and combat responsiveness without truncating vertical motion visuals.
+- [LOW] Durations Duplication & Coupling (Maintenance):
+  - Line/Function: `player_visual.gd` lines 15-16 (`PARRY_FRAME_DURATIONS`, `PARRY_TOTAL_DURATION`); `racket_visual.gd` lines 16, 168 (`PARRY_BODY_DURATIONS`, hardcoded `0.200` in `_parry_body_head_angle`); integrator script line 18 (`durations`).
+  - Evidence: Frame durations (`[0.030, 0.035, 0.025, 0.025, 0.040, 0.045]`) and total duration (`0.200s`) are currently identical across all sites. However, duplicating these values across visual scripts, procedural math, and generation tooling creates a maintenance hazard if swing active duration or frame timings are re-tuned in only one location.
+- [LOW] Inter-Process Phase Alignment (Edge Case):
+  - Line/Function: `player.gd` line 104 (`_physics_process`) vs `racket_visual.gd` lines 88, 108 (`_process`).
+  - Evidence: `PlayerVisual.set_parry_state()` syncs on physics frames, while `RacketVisual._advance_attack()` advances on render frames. If `is_swing_active()` drops to `false` between ticks, `RacketVisual` clears its transient parry state up to one render frame before `PlayerVisual` exits `parry_body`. During this sub-frame interval, `_ground_rig_active` remains `false`, safely keeping the racket grip anchored to the final parry hand frame without visual pop or procedural arm glitching.
+
+NEXT_STEP: Increment is validated and ready for integration. Proceed with staging the runtime assets (`player-animations.aseprite`, `player-animations.png`, `player_visual.gd`, `racket_visual.gd`, and `player.gd`) without modifying runtime behavior or uncommitted dependencies.

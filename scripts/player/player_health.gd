@@ -2,10 +2,11 @@ class_name PlayerHealth
 extends Node
 
 signal health_changed(current_health: int, maximum_health: int)
+signal damage_accepted(amount: int, current_health: int, maximum_health: int)
 signal died
 
 @export_range(1, 100, 1) var maximum_health: int = 5
-@export_range(0.0, 5.0, 0.05) var invulnerability_duration: float = 0.8
+@export_range(0.0, 5.0, 0.05) var invulnerability_duration: float = 0.5
 
 var current_health: int
 var _invulnerability_remaining: float = 0.0
@@ -34,6 +35,7 @@ func take_damage(amount: int, _source: Node = null) -> bool:
 	current_health = maxi(current_health - amount, 0)
 	_invulnerability_remaining = maxf(invulnerability_duration, 0.0)
 	health_changed.emit(current_health, maximum_health)
+	damage_accepted.emit(amount, current_health, maximum_health)
 	if is_dead:
 		died.emit()
 	return true

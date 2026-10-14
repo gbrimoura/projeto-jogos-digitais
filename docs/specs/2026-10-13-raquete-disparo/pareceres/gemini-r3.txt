@@ -1,0 +1,8 @@
+STATUS: done
+SUMMARY: Revisão R3 das correções inline concluída com aprovação técnica. A formulação analítica do IK em `_solve_elbow` elimina singularidades e divisões por zero com `clampf(raw_distance, MIN_ARM_REACH, UPPER + FOREARM - 0.001)` e estabiliza a orientação do cotovelo via `side_reference` com limiar `-ARM_SIDE_EPSILON`. O sinal `swing_cancelled` emitido após zerar o estado interno de `RacketController` e conectado a `clear_transient()` em `RacketVisual` resolve integralmente o travamento visual de swing em cancelamentos e resets. A máscara de braço no shader CanvasItem com `arm_mask_rect = vec4(39.0, 37.0, 45.0, 44.0)` preserva a linha Y45 do torso enquanto recorta a luva/braço em coordenadas de texel nativo com `floor(UV * atlas_size)`. A integridade da física de parry/hurt da base e os hashes de atlas permanecem intactos.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P2 (Visual): Transição de quadrante no IK (`side.dot(side_reference) < -ARM_SIDE_EPSILON`) pode gerar salto discreto (snap) da curvatura do cotovelo se a mira varrer além de 90° em relação à direção preferencial durante transiente.
+- P2 (Shader): `mod(floor(UV.x * atlas_size.x), 64.0)` depende estritamente do padrão uniforme de 64px por quadro no atlas (validado pelos 28 frames intactos).
+NEXT_STEP: Prosseguir com a integração estável das alterações no branch de trabalho e validação das rodadas de revisão restantes conforme a orquestração do projeto.

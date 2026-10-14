@@ -1,0 +1,11 @@
+
+> plan · gpt-6-luna
+
+**Plan**
+1. In an implementation phase, create the three prospective docs first, recording the visual-only scope and preserving the stated geometry and gameplay constraints.
+2. Add `factory_surface_visual.gd` to draw the factory atlas within the existing platform and floor bounds, cropping partial tiles rather than stretching or changing dimensions.
+3. Wire the visual into `SolidPlatform` with guarded editor-time setters and a fallback toggle. Keep collision and geometry synchronization unchanged; hide and restore the legacy visuals only when the skin is enabled.
+4. Update only the approved scene files: enable the skin, use block style for both floors, hide existing grid lines, and add sparse, low-contrast factory details behind gameplay.
+5. Return the requested JSON payload and handoff fields without running tests or Godot.
+
+Plan mode is active, so I can’t author the implementation payload in this response. I used no tools and made no changes.

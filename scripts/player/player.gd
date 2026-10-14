@@ -17,6 +17,7 @@ signal died
 @onready var trajectory_preview: Node2D = $TrajectoryPreview
 @onready var health: PlayerHealth = $Health
 @onready var racket_controller: RacketController = $RacketController
+@onready var racket_visual: RacketVisual = $PlayerVisual/RacketVisual
 
 var is_dead: bool:
 	get:
@@ -47,12 +48,17 @@ func _ready() -> void:
 	movement_controller.configure(self, _base_movement_config.duplicate(true) as MovementConfig)
 	movement_controller.reset()
 	health.health_changed.connect(_on_health_changed)
+	health.damage_accepted.connect(_on_damage_accepted)
 	health.died.connect(_on_died)
 	_on_health_changed(health.current_health, health.maximum_health)
 	aim_controller.aim_changed.connect(reticle_visual.set_aim)
 	reticle_visual.set_aim(aim_controller.aim_direction, aim_controller.aim_target_position)
 	racket_controller.set_aim_direction(aim_controller.aim_direction)
 	ball_launcher.configure(self, aim_controller, shot_origin, _find_projectile_parent())
+	ball_launcher.launch_accepted.connect(racket_visual.start_shot)
+	racket_controller.swing_started.connect(racket_visual.start_parry)
+	racket_controller.swing_cancelled.connect(racket_visual.clear_transient)
+	racket_controller.swing_cancelled.connect(_on_swing_cancelled)
 	trajectory_preview.call("configure", aim_controller, shot_origin, ball_launcher)
 
 func apply_run_build(build: RunBuild) -> void:
@@ -95,6 +101,11 @@ func _physics_process(delta: float) -> void:
 		and not movement_controller.is_dashing \
 		and absf(velocity.x) > 8.0
 	player_visual.set_walking(is_walking, absf(velocity.x))
+	player_visual.set_parry_state(
+		racket_controller.is_swing_active(),
+		racket_controller.get_swing_progress(),
+		racket_controller.get_swing_direction()
+	)
 	ball_launcher.try_launch(launch_pressed)
 
 func _process(_delta: float) -> void:
@@ -121,6 +132,7 @@ func reset_to_spawn(spawn_position: Vector2) -> void:
 	player_visual.set_dashing(false)
 	player_visual.set_walking(false)
 	racket_controller.reset()
+	racket_visual.clear_transient()
 	ball_launcher.reset()
 	if not is_dead:
 		player_visual.set_dead(false)
@@ -137,8 +149,17 @@ func get_aim_target_position() -> Vector2:
 func _on_health_changed(current: int, maximum: int) -> void:
 	health_changed.emit(current, maximum)
 
+func _on_damage_accepted(_amount: int, _current: int, _maximum: int) -> void:
+	if health.is_dead:
+		return
+	player_visual.play_hurt()
+
+func _on_swing_cancelled() -> void:
+	player_visual.set_parry_state(false, 0.0, Vector2.ZERO)
+
 func _on_died() -> void:
 	# take_damage may be called from a projectile sweep; only request a stop here.
+	racket_visual.clear_transient()
 	ball_launcher.request_stop_active_sweep()
 	died.emit()
 

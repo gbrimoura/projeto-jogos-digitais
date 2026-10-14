@@ -35,6 +35,7 @@ const REPOSITION_SEARCH_DISTANCE: float = 128.0
 const POSITION_EPSILON: float = 3.0
 
 @onready var _body_fill: Polygon2D = $Visuals/BodyFill
+@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
 @onready var _health_fill: Polygon2D = $Visuals/HealthFill
 @onready var _visuals: Node2D = $Visuals
 @onready var _warning_line: Line2D = $WarningLine
@@ -60,6 +61,7 @@ var _patrol_for_angle: bool = false
 var _patrol_step_pending: bool = false
 var _facing_direction: int = -1
 var _flash_remaining: float = 0.0
+var _shot_visual_remaining: float = 0.0
 var _defeated_emitted: bool = false
 var _active_rivet: HostileRivet
 var _query: PhysicsRayQueryParameters2D
@@ -108,6 +110,11 @@ func take_damage(amount: int, _source: Node = null) -> bool:
 		defeated.emit()
 		queue_free()
 	return true
+
+func _process(delta: float) -> void:
+	if _shot_visual_remaining > 0.0:
+		_shot_visual_remaining = maxf(_shot_visual_remaining - delta, 0.0)
+	_update_body_animation()
 
 func _physics_process(delta: float) -> void:
 	_patrol_step_pending = false
@@ -444,6 +451,8 @@ func _fire_locked_rivet() -> void:
 	rivet.launch(_locked_direction, self, rivet_speed, rivet_damage, rivet_lifetime)
 	_active_rivet = rivet
 	rivet.finished.connect(_on_rivet_finished.bind(rivet), CONNECT_ONE_SHOT)
+	_shot_visual_remaining = 0.12
+	_set_body_animation(&"fire")
 
 func _on_rivet_finished(_reason: String, rivet: HostileRivet) -> void:
 	if rivet == _active_rivet:
@@ -569,11 +578,33 @@ func _prepare_warning_sound() -> void:
 	_warning_sound.volume_db = warning_volume_db
 
 func _update_visuals() -> void:
-	if not is_instance_valid(_body_fill) or not is_instance_valid(_health_fill):
+	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
 		return
-	_body_fill.color = Color("#fff1c7") if _flash_remaining > 0.0 else Color("#384759")
+	var hit_flash := _body_sprite.material as ShaderMaterial
+	if hit_flash != null:
+		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
 	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
 	_health_fill.scale.x = health_ratio
+
+func _update_body_animation() -> void:
+	if not is_instance_valid(_body_sprite):
+		return
+	var desired_animation: StringName = &"idle"
+	if _shot_visual_remaining > 0.0:
+		desired_animation = &"fire"
+	elif _state == AttackState.WINDUP:
+		desired_animation = &"aim"
+	elif _state == AttackState.RECOVERY:
+		desired_animation = &"recovery"
+	elif absf(velocity.x) > 1.0:
+		desired_animation = &"walk"
+	_set_body_animation(desired_animation)
+
+func _set_body_animation(animation: StringName) -> void:
+	if not is_instance_valid(_body_sprite):
+		return
+	if _body_sprite.animation != animation or not _body_sprite.is_playing():
+		_body_sprite.play(animation)
 
 func _apply_facing_direction() -> void:
 	if is_instance_valid(_visuals):

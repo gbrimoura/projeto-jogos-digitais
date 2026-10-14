@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://resources/player_movement_config.tres" id="2_movement_config"]
@@ -10,10 +10,11 @@
 [ext_resource type="PackedScene" path="res://scenes/ricochet_ball.tscn" id="8_ricochet_ball"]
 [ext_resource type="Resource" path="res://resources/projectile_config.tres" id="9_projectile_config"]
 [ext_resource type="Script" path="res://scripts/player/trajectory_preview.gd" id="10_trajectory_preview"]
-[ext_resource type="PackedScene" path="res://scenes/racket.tscn" id="11_racket"]
 [ext_resource type="Script" path="res://scripts/player/player_health.gd" id="12_player_health"]
 [ext_resource type="Script" path="res://scripts/player/racket_controller.gd" id="13_racket_controller"]
 [ext_resource type="SpriteFrames" path="res://resources/player_sprite_frames.tres" id="14_player_sprite_frames"]
+[ext_resource type="Script" path="res://scripts/player/racket_visual.gd" id="15_racket_visual"]
+[ext_resource type="Texture2D" path="res://assets/player/racket/racket_head_v4.png" id="16_racket_head"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -122,6 +123,16 @@ animation = &"idle"
 autoplay = &"idle"
 centered = true
 
+[node name="RacketVisual" type="Node2D" parent="PlayerVisual"]
+z_index = 1
+script = ExtResource("15_racket_visual")
+
+[node name="RacketHead" type="Sprite2D" parent="PlayerVisual/RacketVisual"]
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+texture = ExtResource("16_racket_head")
+centered = true
+
 [node name="ReticleVisual" type="Node2D" parent="."]
 top_level = true
 z_index = 5
@@ -129,13 +140,6 @@ script = ExtResource("6_reticle_visual")
 
 [node name="ShotOrigin" type="Marker2D" parent="."]
 position = Vector2(0.0, -38.0)
-
-[node name="RacketPivot" type="Node2D" parent="."]
-position = Vector2(26.0, -38.0)
-rotation = 1.12
-z_index = 1
-
-[node name="Racket" parent="RacketPivot" instance=ExtResource("11_racket")]
 
 [node name="RacketController" type="Node2D" parent="."]
 position = Vector2(0.0, -38.0)
@@ -171,4 +175,4 @@ script = ExtResource("10_trajectory_preview")
 [node name="Health" type="Node" parent="."]
 script = ExtResource("12_player_health")
 maximum_health = 5
-invulnerability_duration = 0.8
+invulnerability_duration = 0.5

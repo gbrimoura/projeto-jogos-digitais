@@ -1,0 +1,79 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="Racket" type="Node2D"]
+
+[node name="GripFill" type="Polygon2D" parent="."]
+color = Color(0.376471, 0.439216, 0.513725, 1)
+polygon = PackedVector2Array(-1.61, -0.81, 1.61, 0.81, 8.76, -13.5, 5.54, -15.12)
+
+[node name="GripOutline" type="Line2D" parent="."]
+closed = true
+width = 1.5
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-1.61, -0.81, 1.61, 0.81, 8.76, -13.5, 5.54, -15.12)
+
+[node name="GripStripe" type="Line2D" parent="."]
+width = 1.2
+default_color = Color(0.941176, 0.701961, 0.356863, 1)
+points = PackedVector2Array(1.0, -2.0, 5.0, -10.0)
+
+[node name="BladeFill" type="Polygon2D" parent="."]
+color = Color(0.298039, 0.356863, 0.427451, 1)
+polygon = PackedVector2Array(19.26, -39.52, 22.551, -36.691, 24.385, -32.376, 24.485, -27.248, 22.839, -22.081, 19.695, -17.664, 15.529, -14.668, 11.496, -13.547, 6.739, -14.478, 3.449, -17.309, 1.615, -21.624, 1.515, -26.752, 3.161, -31.919, 6.305, -36.336, 10.471, -39.332, 14.504, -40.453)
+
+[node name="StringLongLeft" type="Line2D" parent="."]
+width = 0.8
+default_color = Color(0.713725, 0.760784, 0.811765, 0.82)
+points = PackedVector2Array(3.945, -16.714, 15.055, -40.416)
+
+[node name="StringLongRight" type="Line2D" parent="."]
+width = 0.8
+default_color = Color(0.713725, 0.760784, 0.811765, 0.82)
+points = PackedVector2Array(10.205, -13.584, 22.055, -37.286)
+
+[node name="StringCross1" type="Line2D" parent="."]
+width = 0.8
+default_color = Color(0.713725, 0.760784, 0.811765, 0.82)
+points = PackedVector2Array(17.114, -15.552, 1.372, -23.422)
+
+[node name="StringCross2" type="Line2D" parent="."]
+width = 0.8
+default_color = Color(0.713725, 0.760784, 0.811765, 0.82)
+points = PackedVector2Array(20.51, -18.548, 1.733, -27.938)
+
+[node name="StringCross3" type="Line2D" parent="."]
+width = 0.8
+default_color = Color(0.713725, 0.760784, 0.811765, 0.82)
+points = PackedVector2Array(22.84, -22.08, 3.16, -31.92)
+
+[node name="StringCross4" type="Line2D" parent="."]
+width = 0.8
+default_color = Color(0.713725, 0.760784, 0.811765, 0.82)
+points = PackedVector2Array(24.27, -26.06, 5.49, -35.45)
+
+[node name="StringCross5" type="Line2D" parent="."]
+width = 0.8
+default_color = Color(0.713725, 0.760784, 0.811765, 0.82)
+points = PackedVector2Array(24.628, -30.578, 8.886, -38.448)
+
+[node name="BladeFrame" type="Line2D" parent="."]
+closed = true
+width = 3.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(19.26, -39.52, 22.551, -36.691, 24.385, -32.376, 24.485, -27.248, 22.839, -22.081, 19.695, -17.664, 15.529, -14.668, 11.496, -13.547, 6.739, -14.478, 3.449, -17.309, 1.615, -21.624, 1.515, -26.752, 3.161, -31.919, 6.305, -36.336, 10.471, -39.332, 14.504, -40.453)
+
+[node name="BladeRim" type="Line2D" parent="."]
+closed = true
+width = 1.2
+default_color = Color(0.941176, 0.701961, 0.356863, 1)
+points = PackedVector2Array(19.26, -39.52, 22.551, -36.691, 24.385, -32.376, 24.485, -27.248, 22.839, -22.081, 19.695, -17.664, 15.529, -14.668, 11.496, -13.547, 6.739, -14.478, 3.449, -17.309, 1.615, -21.624, 1.515, -26.752, 3.161, -31.919, 6.305, -36.336, 10.471, -39.332, 14.504, -40.453)
+
+[node name="GripEndCap" type="Polygon2D" parent="."]
+color = Color(0.941176, 0.701961, 0.356863, 1)
+polygon = PackedVector2Array(2.2, 0.0, 1.56, 1.56, 0.0, 2.2, -1.56, 1.56, -2.2, 0.0, -1.56, -1.56, 0.0, -2.2, 1.56, -1.56)
+
+[node name="GripEndCapOutline" type="Line2D" parent="."]
+closed = true
+width = 0.8
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(2.2, 0.0, 1.56, 1.56, 0.0, 2.2, -1.56, 1.56, -2.2, 0.0, -1.56, -1.56, 0.0, -2.2, 1.56, -1.56)

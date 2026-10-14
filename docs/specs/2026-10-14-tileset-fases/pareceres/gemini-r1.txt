@@ -1,0 +1,11 @@
+STATUS: done
+SUMMARY: Static review of the final factory tileset implementation completed. The implementation strictly adheres to the visual-only contract: collision shapes, transforms, layer masks, actors, HUD, and gameplay logic remain 100% untouched. Atlas sampling (128x128, cells 32x32, scale 2.0x) is mathematically exact with zero texture stretching across all platform and block dimensions. Row 3 platforms correctly render caps and middle segments cropped to the existing 24px collision height, while block styling for thick geometry (e.g., the 88px floor) seamlessly stitches top caps (Row 0), repeating fills (Row 1), and bottom caps (Row 2). Fallback toggling cleanly swaps visibility between `FactorySurfaceVisual` and the legacy polygon/lines (`Fill`, `TopEdge`, `FloorDetail`). Both scripts include `@tool` directives with `queue_redraw()` and `is_inside_tree()` guards for live editor feedback. No concrete bugs or blockers identified.
+
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+- **Hardcoded Preload Dependency**: `scripts/world/factory_surface_visual.gd` hardcodes `preload("res://resources/environment/factory_tileset_v1.tres")`. While safely guarded with null checks on `atlas_source` and `atlas` to prevent crashes, moving or renaming this `.tres` file will silently disable surface skin rendering.
+- **Script vs. Scene Default Disparity**: `factory_skin_enabled` defaults to `false` in `scripts/world/solid_platform.gd` but is set to `true` in `scenes/solid_platform.tscn`. Scene instances in rooms default to enabled as intended, but any programmatic instantiation via `SolidPlatform.new()` without the PackedScene will default to legacy visual mode unless explicitly configured.
+
+NEXT_STEP: Conclude the static review stage and proceed with integrating reviewer findings or requesting user verification of in-game aesthetics if desired.

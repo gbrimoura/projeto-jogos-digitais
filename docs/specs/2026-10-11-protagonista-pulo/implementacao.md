@@ -1,4 +1,4 @@
-# Implementação — ciclo de pulo V2 e integração runtime V3
+# Implementação — ciclo de pulo V2, runtime V3 e escala V4
 
 A implementação V2 responde à avaliação de que os três quadros congelados da V1 não davam movimento às pernas nem peso ao salto. O principal inspecionou o contact V2 e liberou a integração. O agente manteve física, controlador, colisor, combate, input e cenas fora das alterações.
 
@@ -90,3 +90,27 @@ Registro de contato medido: sola idle em y=56; offset inteiro comum de Y=-5 nas 
 Nenhum teste, gameplay ou quality audit foi executado. Gemini, Muse e Grok concluíram a revisão estática desta integração sem defeitos concretos; Opus bloqueado por quota; a avaliação estética em runtime pelo usuário permanece pendente. V2 e os documentos vigentes antes da substituição foram copiados para historico/v2-pre-v3/; hashes e arquivos snapshot estão registrados no README dessa pasta. Nenhum commit ou push foi feito.
 
 Pareceres integrais e decisão do principal: [integração Godot V3](pareceres/integracao-godot-v3/README.md).
+
+## Correção de escala runtime V4 — 13/10/2026
+
+**Aprovação visual:** o principal aprovou a contact sheet de 8 poses em três colunas (idle0, pose atual e pose em escala corrigida), ampliada 4×, antes da integração. O capacete ficou compatível com o idle considerando a inclinação das poses; as articulações, poses comprimidas/estendidas e contato das solas ficaram preservados.
+
+**Arte/runtime:** a fonte foi o snapshot imutável do atlas atual de 28 quadros, 64×64 por quadro (1792×64), e não a antiga base de 25 quadros. A escala nearest-neighbor uniforme 0,85 foi aplicada somente nos frames 17–24. Frames 0–16 e 25–27 (incluindo hurt) estão pixel-exatos: 20/20 frames protegidos. Timings 28/28 e tags 8/8 foram validados por Lua Aseprite. O `.tres`, scripts, cenas e `.import` permaneceram inalterados. A paleta mantém 27 cores e alpha binário. Os pivots são X=32, Y=56 para 17 e 22–24 e Y=32 para 18–21.
+
+**Importação:** Godot 4.7.2 recovery mode com `--headless --editor --recovery-mode --path <repo> --import --quit` concluiu com exit 0, reimportando `player-animations.png`. Não houve execução de testes, gameplay ou quality audit. Revisões estáticas Gemini/Muse/Grok foram solicitadas sobre a arte e fontes congeladas; os resultados ficam no [índice de pareceres da escala V4](pareceres/escala-v4/README.md). Opus 5.5 High não ficou disponível no preflight por quota.
+
+| Arquivo | SHA-256 |
+|---|---|
+| `assets/player/player-animations.png` | `F03E8E500767603A29A3F2820B66D86ADF16CDE00DA1E94189768E16E4EA24C6` |
+| `assets/player/source/player-animations.aseprite` | `B6987828456B17EACE9A66641ABC993C2E47849DBC560EFFBEF579C8B10B82CE` |
+| `resources/player_sprite_frames.tres` (inalterado) | `38C1DE56C724DFD0526BEF8D3CC49859EEC4A4C195D2045F293F4A353D947164` |
+| `scripts/player/player.gd` (inalterado) | `5C0EB27CA07F933DB71A3AA5A4B0368AA6C293C5B0810F488D715CFA6D344951` |
+| `scripts/player/player_visual.gd` (inalterado) | `278B897A0CA12CAE987725B0FC25C609536E8D31B0CE747EC5F785FC6745153F` |
+| `scripts/player/player_health.gd` (inalterado) | `1127F2E826C2DCFB04C6D9AD121B3802FA9504428FD4D3E6F6D727B299B8EE8E` |
+| `scenes/player.tscn` (inalterado) | `A98540A71C4309C32136E39D3179F21A52E5463D88254B19BCBEA1BA8700B45E` |
+
+Arte aprovada, Lua de geração/integração, folha PNG, contact e GIF 4× estão em `GDD_Dieselpunk_Noir/pitch-assets/protagonista-pulo-escala-v4/`, fora do repositório. O snapshot original completo está em `historico/escala-v4-current-28-frames/runtime/`.
+
+## Encerramento da revisão de escala V4 — 13/10/2026
+
+Gemini, Muse e Grok concluíram revisão estática sem correções obrigatórias. Opus bloqueado por quota. [Pareceres originais, decisões e hashes](pareceres/escala-v4/README.md). Arte aprovada pelo principal e integrada/importada; avaliação estética do usuário no jogo pendente.

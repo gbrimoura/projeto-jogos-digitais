@@ -1,6 +1,9 @@
 class_name RacketController
 extends Node2D
 
+signal swing_started(direction: Vector2, duration: float)
+signal swing_cancelled
+
 ## Parry pur de uma janela: a direção é capturada no clique e o movimento do
 ## jogador continua independente da raquete.
 
@@ -10,12 +13,10 @@ extends Node2D
 @export_range(1.0, 200.0, 1.0) var reach: float = 70.0
 
 const ARC_SEGMENTS: int = 12
-const RACKET_FORWARD_OFFSET: float = 1.12
-const RACKET_GRIP_OFFSET: float = 26.0
 const WORLD_MASK: int = 1
 
 @onready var _shot_origin: Node2D = get_parent().get_node_or_null("ShotOrigin") as Node2D
-@onready var _racket_pivot: Node2D = get_parent().get_node_or_null("RacketPivot") as Node2D
+@onready var _racket_visual: RacketVisual = get_parent().get_node_or_null("PlayerVisual/RacketVisual") as RacketVisual
 @onready var _parry_fill: Polygon2D = $ParryFill
 @onready var _parry_outline: Line2D = $ParryOutline
 @onready var _cooldown_ring: Line2D = $CooldownRing
@@ -24,6 +25,7 @@ var _aim_direction: Vector2 = Vector2.RIGHT
 var _frozen_direction: Vector2 = Vector2.RIGHT
 var _swing_id: int = 0
 var _active: bool = false
+var _swing_duration: float = 0.0
 var _active_remaining: float = 0.0
 var _active_window_this_frame: float = 0.0
 var _cooldown_remaining: float = 0.0
@@ -94,6 +96,14 @@ func _physics_process(delta: float) -> void:
 func get_active_swing_id() -> int:
 	return _swing_id if _active and _active_window_this_frame > 0.0 else -1
 
+func is_swing_active() -> bool:
+	return _active
+
+func get_swing_progress() -> float:
+	if _swing_duration <= 0.0:
+		return 0.0
+	return clampf(1.0 - _active_remaining / _swing_duration, 0.0, 1.0)
+
 func get_swing_direction() -> Vector2:
 	return _frozen_direction
 
@@ -149,9 +159,11 @@ func register_parry_success(swing_id: int) -> void:
 
 func cancel() -> void:
 	_active = false
+	_swing_duration = 0.0
 	_active_remaining = 0.0
 	_active_window_this_frame = 0.0
 	_success_flash_remaining = 0.0
+	swing_cancelled.emit()
 	_update_feedback()
 
 func reset() -> void:
@@ -168,8 +180,10 @@ func _begin_swing() -> void:
 	_swing_id += 1
 	_active = true
 	_active_remaining = maxf(active_duration, 0.01)
+	_swing_duration = _active_remaining
 	_active_window_this_frame = _active_remaining
 	_cooldown_remaining = maxf(cooldown_duration, 0.05)
+	swing_started.emit(_frozen_direction, _active_remaining)
 	_update_racket_visual()
 	_update_feedback()
 
@@ -264,12 +278,10 @@ func _world_point_blocked(point: Vector2) -> bool:
 	return not get_world_2d().direct_space_state.intersect_shape(_world_probe_query, 1).is_empty()
 
 func _update_racket_visual() -> void:
-	if _racket_pivot == null:
+	if _racket_visual == null:
 		return
 	var direction := _frozen_direction if _active else _aim_direction
-	if _shot_origin != null:
-		_racket_pivot.position = _shot_origin.position + direction * RACKET_GRIP_OFFSET
-	_racket_pivot.rotation = direction.angle() + RACKET_FORWARD_OFFSET
+	_racket_visual.set_aim_direction(direction)
 
 func _update_feedback() -> void:
 	var player := get_parent()

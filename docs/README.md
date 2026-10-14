@@ -6,8 +6,13 @@ Leia este índice antes de qualquer tarefa no repositório. Para o plano ativo, 
 
 | Plano | Estado | Pasta |
 |---|---|---|
-| Animação de pulo do protagonista | Runtime V3 integrado e importado pelo editor Godot 4.7.2. O principal aceitou a arte reproduzida a partir da prancha; revisões estáticas da integração concluídas por Gemini/Muse/Grok sem defeitos concretos; Opus bloqueado por quota e avaliação visual do usuário no jogo pendente. A V2 rejeitada e os drafts anteriores permanecem preservados em snapshots. | specs/2026-10-11-protagonista-pulo/ |
-| Dash do protagonista | Pose compacta v3; corrigida importação ausente do atlas (.png.import/.ctex). Correção revisada por Gemini/Muse/Grok; Opus por quota. Gameplay após correção pendente. | [`specs/2026-10-11-protagonista-dash/`](specs/2026-10-11-protagonista-dash/) |
+| Sprites dos dois inimigos | Prancha reproduzida no Aseprite e integrada em TrainingTarget/RivetWorker; física/AI/tempos preservados. Gemini/Muse sem bloqueios; Grok sem parecer útil, Opus quota; sem Godot/runtime. | [specs/2026-10-14-sprites-inimigos/](specs/2026-10-14-sprites-inimigos/) |
+| Colisão das superfícies da fábrica | Corrigido ParseError do helper; colliders de8 superfícies salvos nas duas salas, independentes da skin. Gemini/Muse/Grok sem bloqueios, Opus quota; runtime pendente. | [specs/2026-10-14-colisao-fabrica/](specs/2026-10-14-colisao-fabrica/) |
+| Aplicação do tileset nas fases placeholder | Integrada em Sala01 e Sala02, pisos/plataformas/decor; geometria e trabalho local preservados. Gemini/Muse/Grok sem bloqueios atuais, Opus quota; sem runtime. | [specs/2026-10-14-tileset-fases/](specs/2026-10-14-tileset-fases/) |
+| Tileset inicial da fábrica | Arte V3: 16 peças 32×32, atlas 128×128, fonte Aseprite e TileSet visual independentes. GDD consultado antes da geração; Gemini/Muse concluídos, Grok timeout, Opus quota. Importação Godot 4.7.2 e carregamento confirmados; uso visual nas salas registrado em tileset-fases; colisões existentes preservadas. | [specs/2026-10-14-tileset-fabrica/](specs/2026-10-14-tileset-fabrica/) |
+| Reação de dano do protagonista | Hurt de 260 ms + invulnerabilidade de 0,5 s integrados; atlas28 preserva25frames anteriores; import recovery exit0. Gemini/Muse/Grok concluídos, Opus quota. Gameplay pendente. | [specs/2026-10-13-protagonista-dano/](specs/2026-10-13-protagonista-dano/) |
+| Animação de pulo do protagonista | Escala V4: redução uniforme de 15% nos oito quadros 17–24; atlas de 28 quadros preserva os 20 restantes, tempos e tags. Importação em recovery mode: exit 0. Gemini/Muse/Grok concluídos, Opus quota; aparência em gameplay pendente. | [specs/2026-10-11-protagonista-pulo/spec-escala-v4.md](specs/2026-10-11-protagonista-pulo/spec-escala-v4.md) |
+| Dash do protagonista | Escala V5: redução de 15% apenas nos quadros 14–16; atlas de 28 quadros preserva as 25 poses restantes, tempos e tags. Importação em recovery mode: exit 0. Gemini/Muse/Grok concluídos, Opus quota; aparência em jogo pendente. | [specs/2026-10-11-protagonista-dash/spec-escala-v5.md](specs/2026-10-11-protagonista-dash/spec-escala-v5.md) |
 | Idle e caminhada do protagonista | V8 reproduz a referência com pernas articuladas, cabeça original do idle estabilizada e braços em contrafase curta. V3 corrige duplicação dos pads de ombro na camada da cabeça (11pixels/pose). Somente walk6–13 substituído; idle/dash/puloV3 preservados. Godot import exit0; Gemini/Muse/Grok concluídos, Opus por quota. Avaliação visual em jogo pelo usuário pendente. | [specs/2026-10-11-protagonista-idle-walk/](specs/2026-10-11-protagonista-idle-walk/) |
 | Upgrades básicos para o teaser de 14/10/2026 | A/B/C implementadas; revisões estáticas de C concluídas por Muse, Gemini e Grok sem P1/P2. O usuário confirmou manualmente que os upgrades funcionaram; o agente não executou runtime/testes. Textos dos cartões estão objetivos. | [`specs/2026-10-10-upgrades-basicos/`](specs/2026-10-10-upgrades-basicos/) |
 | Feedback de combate para o teaser | Implementado; Gemini/Muse/Grok concluíram revisão estática final sem P1/P2. Opus bloqueado por quota. Runtime do feedback pendente. | [`specs/2026-10-10-feedback-combate/`](specs/2026-10-10-feedback-combate/) |
@@ -22,6 +27,12 @@ O runtime substitui as nove poses V2 pelos oito quadros da reprodução aprovada
 A linha de sola do idle mede y=56. Por isso, as oito poses novas receberam apenas translação comum inteira de Y=-5 px; a compressão recebeu mais +1 px de registro (deslocamento líquido -4 px), conforme decisão do principal, sem redimensionar nem ajustar cada pose. A fonte Aseprite foi gerada pelo Lua real, incluindo tags editáveis, atlas, contact 3×3 ampliado 4× e metadata com bounds, registro e timings. Fonte de integração: GDD_Dieselpunk_Noir/pitch-assets/protagonista-pulo-v3/integrar-godot-v3.lua. A importação de recursos do editor Godot 4.7.2 terminou com exit 0; não houve execução do jogo, testes ou quality audit. Revisão estática da integração e avaliação visual manual no jogo permanecem pendentes.
 
 Snapshots do runtime V2 e de seus documentos antes da substituição estão em specs/2026-10-11-protagonista-pulo/historico/v2-pre-v3/; as fontes originais de arte e os drafts anteriores continuam preservados na pasta pitch-assets. As decisões e hashes desta integração estão no adendo de plano.md, spec.md e implementacao.md.
+
+## Correção de escala V4 da animação de pulo — 13/10/2026
+
+A medição pelo Aseprite Lua encontrou casco+visor de 17×18 px no idle0 e média aproximada de 21,3×21,8 px nas poses jump17–24; o torso já estava próximo ao idle e os bounds totais variam com a abertura dos membros. O principal aprovou a comparação visual antes da integração e escolheu o fator uniforme 0,85 para recuperar a escala da cabeça sem redesenho, mantendo peso e mobilidade. Os pivots mantêm X=32, Y=56 no impulso e pousos e Y=32 nas poses aéreas.
+
+Somente pixels dos frames17–24 do snapshot atual de 28 frames (1792×64) mudaram. Frames0–16 e25–27 (incluindo hurt) permaneceram pixel-exatos; 28/28 durações e 8/8 tags não mudaram, e o `.tres`, scripts, cenas e `.import` ficaram intactos. Godot4.7.2 recovery import terminou com exit0. A arte aprovada, previews, fontes Lua, hashes e spec estão em [spec-escala-v4.md](specs/2026-10-11-protagonista-pulo/spec-escala-v4.md) e `GDD_Dieselpunk_Noir/pitch-assets/protagonista-pulo-escala-v4/`. Gemini/Muse/Grok revisando; Opus indisponível por quota. Sem testes, gameplay ou quality audit.
 
 ## Runtime V2 da animação de pulo — histórico
 
@@ -48,3 +59,80 @@ Pareceres da reprodução corrigida em Aseprite: [V3](specs/2026-10-11-protagoni
 ## Caminhada V8 — 12/10/2026
 
 Referência gerada, reprodução Aseprite refinada e integrada nos oito quadros de caminhada, mantendo o atlas25/1600×64 e a cadência8×75ms. O principal estabilizou cabeça/visor, corrigiu junções e aprovou o contact antes da integração. Godot importou sem erros. [Especificação e resultados V8](specs/2026-10-11-protagonista-idle-walk/spec-v8-referencia.md) e [pareceres](specs/2026-10-11-protagonista-idle-walk/pareceres/caminhada-v8/README.md). Sem gameplay/testes; avaliação estética do usuário pendente.
+
+## Escala do dash V5 — 13/10/2026
+
+O principal aprovou, antes da integração, a redução uniforme de 0,85 nas três
+poses laterais +X. A integração partiu do snapshot corrente de 28 quadros,
+incluindo a escala corrigida do pulo nos frames 17–24 e o hurt nos frames 25–27.
+Somente os pixels dos frames 14–16 mudaram: os outros 25 frames são pixel-exatos;
+28/28 durações e 8/8 tags foram preservadas. O atlas e a fonte Aseprite foram
+importados em Godot 4.7.2 com `--headless --editor --recovery-mode --import --quit`
+(exit 0); `.tres`, `.import`, scripts e cenas mantiveram seus hashes de base.
+Os hashes finais, o snapshot, a comparação visual e os limites estão em
+[`spec-escala-v5.md`](specs/2026-10-11-protagonista-dash/spec-escala-v5.md) e
+[`implementacao.md`](specs/2026-10-11-protagonista-dash/implementacao.md#dash-escala-v5--13-10-2026).
+Gemini, Muse e Grok estão revisando os arquivos congelados; Opus bloqueado por
+quota. Não houve gameplay, testes ou quality audit.
+
+## Dash V4 — 13/10/2026 (histórico)
+
+Nova referência em perfil +X, com impulso baixo, avanço compacto e recuperação
+ainda inclinada, aprovada pelo principal antes da integração. Apenas os quadros
+14–16 mudaram; idle, caminhada V8, pulo V3, seus tempos e tags foram preservados.
+Importação do editor Godot 4.7.2 terminou com exit 0 e stderr vazio. O contact,
+a comparação, o GIF em ambos os sentidos, as fontes reproduzíveis, métricas e
+hashes estão no [registro v4](specs/2026-10-11-protagonista-dash/spec-v4-referencia.md)
+e em `GDD_Dieselpunk_Noir/pitch-assets/protagonista-dash-v4/`. Gemini/Muse/Grok concluídos; Opus bloqueado por quota; sem gameplay, testes ou quality audit.
+
+## Reação de dano do protagonista — 13/10/2026
+
+Três poses de hurt reproduzidas da referência gerada foram aprovadas pelo principal antes da integração. Os frames 25–27 foram anexados ao atlas, preservando pixel a pixel os 25 frames baseline, suas cadências e todas as tags existentes; o atlas final tem 28 frames (1792×64). O clip `hurt` toca uma vez em 80/80/100 ms (260 ms no total), sobrepõe visualmente dash/ar/caminhada sem bloquear movimento, e só inicia após dano aceito não letal. A janela de invulnerabilidade é 0,5 s. Godot 4.7.2 concluiu a importação no recovery mode (exit 0), necessário porque o modo normal cai ao carregar uma GDExtension preexistente. Sem gameplay ou testes. Arte, hashes e registro da integração estão em [`specs/2026-10-13-protagonista-dano/`](specs/2026-10-13-protagonista-dano/) e `GDD_Dieselpunk_Noir/pitch-assets/protagonista-hurt-v1/`; Gemini/Muse/Grok concluíram a revisão estática sem correções obrigatórias; Opus bloqueado por quota.
+
+## Estudo visual de disparo e raquete — 13/10/2026
+
+Foi criado um estudo lateral isolado com seis poses por lado, cabo preso à luva, antebraço articulado e ombreira preservada. Após a preferência do usuário, a V4 usa raquete compacta de pingue-pongue: disco vermelho maior, sem trama, cabo curto e contato da bola ajustado. Os 200 ms são proposta de arte; o GIF 4× usa intervalos ampliados para leitura.
+
+Arte e fonte editável: [protagonista-raquete-estudo-v4](../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-raquete-estudo-v4/README.md). V1–V3 preservadas. GPT-6 Luna xhigh implementou o estudo; Fast/priority não confirmável. Gemini e Muse revisaram V4 sem P1/P2; Grok V4 timeout sem parecer utilizável (base de anatomia V2 revisada por Grok); Opus bloqueado por quota. [Registros e hashes](../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-raquete-estudo-v4/pareceres/README.md).
+
+## Integração visual runtime — 13/10/2026
+
+  A cena substitui o vetor antigo por cabeça pixel art vermelha 14×14 e cabo curto. Em idle/walk, um shader recorta a mão/antebraço original dentro de uma janela nativa do atlas, preserva a ombreira e mostra o braço em dois segmentos preso ao grip; nenhuma textura ou SpriteFrames existente foi alterada. Hurt, dash, pulo e pouso desligam recorte/rig e prendem a raquete à mão existente usando âncoras aproximadas por animação/quadro; morte oculta a raquete.
+
+  O parry visual congela a direção capturada pelo controller e toca as seis poses em 200 ms, inclusive em miss. O disparo visual começa somente após `try_launch` aceitar a bola; a origem/direção emitida pelo launcher são somente visuais. O head parte de uma separação aproximada de contato para deixar o spawn de 48 px desobstruído, mostra as quatro poses de contato/recuperação em 125 ms e depois volta ao idle. Se a parede encurta o spawn ou a âncora torna o braço inatingível, a pose não promete contato gráfico exato. Nenhuma origem, física, detecção ou cooldown foi alterado.
+
+  Arte runtime e Lua reprodutível estão em `assets/player/racket/`; integração prospectiva e snapshots em [`specs/2026-10-13-raquete-disparo/`](specs/2026-10-13-raquete-disparo/). Gemini e Muse concluíram a revisão estática e as correções do IK, cancelamento visual e contorno. Opus bloqueado por quota; Grok expirou sem parecer utilizável. Registros em [implementação e pareceres](specs/2026-10-13-raquete-disparo/implementacao.md). Avaliação visual manual no jogo permanece pendente. Nenhum teste, import ou Godot foi executado.
+
+## Rebatida visual e bloqueio de disparo — 14/10/2026
+
+A animação da raquete agora percorre preparo, varredura acelerada, contato, acompanhamento e retorno dentro da duração ativa recebida do controller, com progresso lido diretamente do relógio físico do swing. A direção continua congelada pelo parry. No rig de chão, as pegadas interpoladas passam pelos helpers de alcance e o cotovelo é recalculado pelo IK existente; nas demais animações, a raquete continua presa à âncora nativa da mão.
+
+`RacketController.is_swing_active()` expõe o estado físico. `BallLauncher.is_launch_available()` o consulta, cobrindo a prévia da trajetória e a tentativa direta; cliques durante a janela não são enfileirados. A duração visual recebe a mesma duração efetiva usada pela janela. O cooldown de 0,55 s e a janela física padrão de 0,20 s não mudaram. Cancelamento, reset e morte continuam limpando a ação.
+
+Implementação por subagente GPT-6 Luna xhigh; Fast/priority não confirmável pela interface. Gemini R2 e Muse R1 concluíram revisão estática sem correções obrigatórias pendentes; Opus bloqueado por quota e Grok timeout sem parecer. Saídas originais e decisões estão em pareceres/README.md na pasta da rodada. Nenhum teste ou comando de Godot foi executado; `git diff --check` terminou com exit 0 e avisos de normalização CRLF do workspace.
+
+Especificação, snapshots de base e estado de revisão: [2026-10-14-rebatida](specs/2026-10-14-rebatida/).
+
+### Expressividade da rebatida v2 — 14/10/2026
+
+O gesto começa no idle, retrai o grip até raio 11,3 px e inclina o head a -80°, atravessa o contato em t=0,50 da janela, abre o follow-through a +60° e retorna com pequeno overshoot desacelerado ao grip `(24, 0)` e head `0` do idle. Somente as curvas da rebatida em `racket_visual.gd` mudaram; os 200 ms físicos continuam sendo o relógio autoritativo, com clamp e IK existentes e mão nativa nas poses aéreas. A timeline de disparo ficou intacta. Implementação congelada para revisão externa; sem execução de testes ou Godot. [Proposta, snapshot v1 e registro](specs/2026-10-14-rebatida/spec-expressividade-v2.md).
+
+Expressividade V2 do rebate: preparação recolhida a -80 graus, passagem mais rápida pelo contato e finalização a +60 graus, com sobreposição curta e retorno exato ao idle. Mantidos timer físico e bloqueio de disparo. Gemini/Muse concluíram revisão estática; Opus quota, Grok sem parecer utilizável. [Registro](specs/2026-10-14-rebatida/pareceres/expressividade-v2/consolidado.md). Gameplay não executado.
+
+
+## Procedimento de animações do protagonista — 14/10/2026
+
+O fluxo persistente é referência visual com ImageGen, alinhamento aos sprites/assets atuais, ajuste das poses ao timing curto da ação existente no Godot, reprodução/exportação em Aseprite com previews e preservação das poses-base, e integração após alinhar visual e timing, sem mudar controles/movimento/incompatibilidades. A imagem inicial é referência, não asset final, e não deve substituir a identidade do sprite. Para esta rebatida, o alvo é seis poses em 200 ms na mesma janela física; não generalizar esse timing para outras animações. Consulte o [procedimento completo](../AGENTS.md).
+
+### Rebatida V3 — arte de corpo+braço integrada — 14/10/2026
+
+Após aprovação do contact, seis poses Aseprite 64×64 foram anexadas ao atlas como frames 28–33 e expostas como animação `parry_body` de 200 ms. A arte preserva braços e luva sem duplicar a raquete; o runtime usa anchors por pose e segue o progresso físico do controller, respeitando death/hurt/dash/air/land. Os 28 frames anteriores foram preservados por comparação pixel a pixel com snapshot. [Especificação, implementação e baseline imutável](specs/2026-10-14-rebatida/spec-integracao-v3.md). A arte editável, metadata, crops, contact aprovado e Lua reprodutível estão em [protagonista-rebatida-aseprite-v3](../../GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-aseprite-v3/). Nenhum teste, Godot ou import foi executado.
+
+Pareceres rebatida V3: Gemini R3 e Muse R2 sem bloqueios funcionais; Grok timeout10min sem saída utilizável e Opus quota. [Registros e hashes](specs/2026-10-14-rebatida/pareceres/aseprite-v3/README.md). Gameplay/importação pendentes.
+
+
+
+
+
+
+

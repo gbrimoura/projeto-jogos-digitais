@@ -1,0 +1,12 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Reskin-only verified in diffs — no high/medium concrete bugs. Mechanics/physics/damage/cooldowns/movement/origins untouched; 120ms flash + immediate queue_free preserved; fire visual only after successful launch. One low-sev drift noted.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Low — resources/enemy/rivet_worker_sprite_frames.tres: idle 0.25s vs reproduzir-inimigos.lua worker idle 200ms (aim 0.65/recovery 0.8/walk 0.12/fire 0.12 match). Single-frame, no visual impact.
+- Conditional/unverified (no-tools per brief): full-file byte-preservation outside diffs, CollisionShape offsets (feet0), HealthFill/WarningLine/sound, asset paths load, PNG/ASE bytewise match + IEND/CRC, palette 23/31 — IF any missing THEN load/visual break. Do NOT claim clean export: libpng Write Error warnings logged per brief.
+- Accepted: rivet_worker art muzzle est. [47,34] vs code [43,38] delta [4,-4] at tolerance 4; disabled anim orphaned by immediate queue_free — by frozen-origin/frozen-death design.
+NEXT_STEP: Proceed to in-engine visual check only if user requests it; no code fix required.

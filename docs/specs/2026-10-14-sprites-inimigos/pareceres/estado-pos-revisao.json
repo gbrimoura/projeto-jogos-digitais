@@ -1,0 +1,11 @@
+{
+  "../GDD_Dieselpunk_Noir/pitch-assets/inimigos-aseprite-v1/metadata-inimigos.json": true,
+  "scripts/world/training_target.gd": true,
+  "scenes/training_target.tscn": true,
+  "scenes/rivet_worker.tscn": true,
+  "scripts/enemy/rivet_worker.gd": true,
+  "../GDD_Dieselpunk_Noir/pitch-assets/inimigos-aseprite-v1/reproduzir-inimigos.lua": true,
+  "resources/enemy/rivet_worker_sprite_frames.tres": true,
+  "resources/enemy/training_target_sprite_frames.tres": true,
+  "scripts/enemy/enemy_hit_flash.gdshader": true
+}

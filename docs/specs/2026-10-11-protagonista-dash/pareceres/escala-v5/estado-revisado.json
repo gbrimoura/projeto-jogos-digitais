@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-13",
+  "scope": "Scale0.85 dash14..16 only;25protectedframes",
+  "review_input_sha256": "83f7e91b4af7e228894715c2a468c749b829272272d30f0e490490c7835ca2aa",
+  "frozen_sources": {
+    "protagonista-dash-escala-v5.lua": {
+      "review_input": "3c64967bdbea4f3dc2477b8971347b1daf5e01e363e51cc21dde3433880bf974",
+      "current": "3c64967bdbea4f3dc2477b8971347b1daf5e01e363e51cc21dde3433880bf974",
+      "same": true
+    },
+    "integrar-dash-escala-v5.lua": {
+      "review_input": "87ed2a760815d5f1c72cf8e73d724dba05d5408cdf4ec49efa6532ee8c9a55fa",
+      "current": "87ed2a760815d5f1c72cf8e73d724dba05d5408cdf4ec49efa6532ee8c9a55fa",
+      "same": true
+    },
+    "protagonista-dash-escala-v5-metadata.json": {
+      "review_input": "6e239fc4aedc2207ab064855b6ad76e6ff384244e2b5c5fcab8bdf5cb9ddccd5",
+      "current": "6e239fc4aedc2207ab064855b6ad76e6ff384244e2b5c5fcab8bdf5cb9ddccd5",
+      "same": true
+    }
+  },
+  "hashes": {
+    "assets/player/player-animations.png": "c87e5d07a4b375378330a56ad1307ded9a8464d95ffb53f9dc09c838e7e211e6",
+    "assets/player/source/player-animations.aseprite": "59065a95a80e8f00ea8867cc42cdb780773f4f0bb9520cd5d014ed9173b9955f",
+    "resources/player_sprite_frames.tres": "38c1de56c724dfd0526bef8d3cc49859eec4a4c195d2045f293f4a353d947164",
+    "scripts/player/player_visual.gd": "278b897a0ca12cae987725b0fc25c609536e8d31b0ce747ec5f785fc6745153f",
+    "scripts/player/player.gd": "5c0eb27ca07f933db71a3aa5a4b0368aa6c293c5b0810f488d715cfa6d344951",
+    "scripts/player/player_health.gd": "1127f2e826c2dcfb04c6d9ad121b3802fa9504428fd4d3e6f6d727b299b8ee8e",
+    "scenes/player.tscn": "a98540a71c4309c32136e39d3179f21a52e5463d88254b19bcbea1ba8700b45e",
+    "protagonista-dash-escala-v5.lua": "3c64967bdbea4f3dc2477b8971347b1daf5e01e363e51cc21dde3433880bf974",
+    "integrar-dash-escala-v5.lua": "87ed2a760815d5f1c72cf8e73d724dba05d5408cdf4ec49efa6532ee8c9a55fa",
+    "protagonista-dash-escala-v5-metadata.json": "6e239fc4aedc2207ab064855b6ad76e6ff384244e2b5c5fcab8bdf5cb9ddccd5",
+    "protagonista-dash-escala-v5.aseprite": "d5a23632fb0cb9debe1dd935a18725caffd07c7f175cf1dca2f5d12e782faf2c",
+    "protagonista-dash-escala-v5-horizontal-demo.gif": "e308b532a024ef1912ed5f1aa52ef4873f0b544bfa51247ea88d41a9489b4522",
+    "protagonista-dash-escala-v5-contact-idle-old-new-4x.png": "cf8502b1b721b78c5d231882cea356563cde589e894eb2a7fb172b2573617e9b"
+  },
+  "validation": "Aseprite generation/integration and Godot recovery editor import only; no tests/gameplay"
+}

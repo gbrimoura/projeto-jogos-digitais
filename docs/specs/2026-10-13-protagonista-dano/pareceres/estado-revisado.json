@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-13",
+  "review_input_sha256": "2de01cb1d4fe9b251fc1677187f8d4ac54b3e9cf0ed49048c2e057bd766b5f38",
+  "hashes": {
+    "assets/player/player-animations.png": "ff8ede966ab19a3395cad1ea7b28e3b5920d7042736ed0d4eb965ef3fff69fda",
+    "assets/player/source/player-animations.aseprite": "faad4270fc0a8b8ca08d2662bf1eb64fe84195baf5483e3f5e9b11212a5debb3",
+    "scripts/player/player_health.gd": "1127f2e826c2dcfb04c6d9ad121b3802fa9504428fd4d3e6f6d727b299b8ee8e",
+    "scripts/player/player.gd": "5c0eb27ca07f933db71a3aa5a4b0368aa6c293c5b0810f488d715cfa6d344951",
+    "scripts/player/player_visual.gd": "278b897a0ca12cae987725b0fc25c609536e8d31b0ce747ec5f785fc6745153f",
+    "resources/player_sprite_frames.tres": "38c1de56c724dfd0526bef8d3cc49859eec4a4c195d2045f293f4a353d947164",
+    "scenes/player.tscn": "a98540a71c4309c32136e39d3179f21a52e5463d88254b19bcbea1ba8700b45e",
+    "referencia-hurt-v1.png": "f610ae075ad7c847551ce6b42072b97e9e7848a926892db97e811e91d24cd338",
+    "protagonista-hurt-v1.lua": "90055e04f93e6c8e21b5cd4bde8a11483adb7ba8c6c94f28ee1dfdad55ff656a",
+    "integrar-protagonista-hurt-v1.lua": "a3fffc51752213f96ffafc96f627086520dab20641ae9f60be17ea7323908b45",
+    "protagonista-hurt-v1.aseprite": "fb3e4b7937232aea509a569f3423964dc554990b7e11a2bd599daa5046324bd3",
+    "protagonista-hurt-v1-preview-4x.gif": "3205369fd06994b6fb21c3b612a6c37a313da8991a24f68c4e54e706a59f958c"
+  },
+  "validation": "Aseprite generation/integration and Godot editor recovery import only; no gameplay/tests"
+}

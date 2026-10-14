@@ -1,0 +1,298 @@
+[
+  {
+    "path": "scripts\\world\\training_target.gd",
+    "sha256": "446EBA14D845B4A2DD800E2EA35ECBC9DFF44B93F10EFBD9DE8A3CBE72F79008"
+  },
+  {
+    "path": "scripts\\world\\solid_platform.gd",
+    "sha256": "237976B41116C4DED6646C6DF03C183F36A41FA1BDB9066895491C582F600F1F"
+  },
+  {
+    "path": "scripts\\world\\sandbox_visual.gd",
+    "sha256": "676B281D427B2D62C5E43B04ADF64A810E557A21E97001143457D431868FA02B"
+  },
+  {
+    "path": "scripts\\world\\room_transition.gd",
+    "sha256": "2A0EDA364FAEEEEE7BA06B349A8F1AEAF37407F3C29907543E52B8D075A08461"
+  },
+  {
+    "path": "scripts\\world\\main.gd",
+    "sha256": "7E1669BC8457DDE9A60A32FA8756363104C385FFE503577C72488829AF367C12"
+  },
+  {
+    "path": "scripts\\world\\exit_door.gd",
+    "sha256": "D6C16A86E68869CC3B01C1FC228AD0FAE4311DE05AAA9F8B2455D9896FF116ED"
+  },
+  {
+    "path": "scripts\\world\\enemy_patrol_area.gd",
+    "sha256": "A2080E7F3B3BE5925C2D2274347B17DEA50182CF31058A520D70CDE3FA6ACF71"
+  },
+  {
+    "path": "scripts\\world\\combat_room.gd",
+    "sha256": "87F8FB4CC6F920554EC3DD6C3B101327963C54EF60F6FB5262B574A97784B003"
+  },
+  {
+    "path": "scripts\\ui\\upgrade_offer.gd",
+    "sha256": "4DD7D9006A72E72731F6B36BD48A67DC3DFF1C32227B0C450ECFE4E97B49A216"
+  },
+  {
+    "path": "scripts\\player\\trajectory_preview.gd",
+    "sha256": "EA7E379DF1E98EFEBEE9EC02E381B1D405F8460E3351345379EF35313FD2E2D1"
+  },
+  {
+    "path": "scripts\\enemy\\rivet_worker.gd",
+    "sha256": "866381A75B17BC6ED3E7CA2250EC1B6655C2B9A80FA2E98E9BE7CF25DE06AE73"
+  },
+  {
+    "path": "scripts\\player\\reticle_visual.gd",
+    "sha256": "AD61EDEA31DF07A0F9D69EE9F876B6015DA84E9B7B8A9A2B0E21213A3EF0385E"
+  },
+  {
+    "path": "scripts\\player\\racket_controller.gd",
+    "sha256": "4F90559FF754712ED9BF8EB4373D47AF6F1B2E93425BA89D148E3F0CC3621136"
+  },
+  {
+    "path": "scripts\\player\\player_visual.gd",
+    "sha256": "278B897A0CA12CAE987725B0FC25C609536E8D31B0CE747EC5F785FC6745153F"
+  },
+  {
+    "path": "scripts\\player\\player_health.gd",
+    "sha256": "1127F2E826C2DCFB04C6D9AD121B3802FA9504428FD4D3E6F6D727B299B8EE8E"
+  },
+  {
+    "path": "scripts\\player\\player.gd",
+    "sha256": "5C0EB27CA07F933DB71A3AA5A4B0368AA6C293C5B0810F488D715CFA6D344951"
+  },
+  {
+    "path": "scripts\\player\\movement_controller.gd",
+    "sha256": "59C8987F01C769C40F6657E09BC6E69A1EEB6FEFE98220D84F15D6C9A9F6E6EC"
+  },
+  {
+    "path": "scripts\\player\\movement_config.gd",
+    "sha256": "48968F8BEBBF3650863C9078BA95D2B365D00AFD4A4698DC5275988C0714E331"
+  },
+  {
+    "path": "scripts\\player\\ball_launcher.gd",
+    "sha256": "CB5C6111C540D9F1A6C3D22959041CC9F2C307FDA8541516D836B763E497EE9D"
+  },
+  {
+    "path": "scripts\\player\\aim_controller.gd",
+    "sha256": "C53DCAAD2CECBBB51F07A597EC21F02E2D8518416FCAD7FD88D16631A2ABFB28"
+  },
+  {
+    "path": "cena_inicial.tscn",
+    "sha256": "0BDCC27D49FDBF157EA8DC05DC169833538DD460EAF7E519686096157FE49CB1"
+  },
+  {
+    "path": "scripts\\projectile\\bounce_resolver.gd",
+    "sha256": "691EAEAC119C7415DA56134F4452D3B496E836DF10365175BDFC2FC67D1D945A"
+  },
+  {
+    "path": "resources\\player_movement_config.tres",
+    "sha256": "72BFB502C5069FCFA3CB0681FFCECE9586EF7A807658720A88B85B99D6267202"
+  },
+  {
+    "path": "hello_world_gabriel_moura.gd",
+    "sha256": "DDC5AA67040F09616BC794754C3335D1E7AF9B001FEBF7310D82FDDECBC8973A"
+  },
+  {
+    "path": "scripts\\projectile\\hostile_rivet.gd",
+    "sha256": "16692B87D8C8AEE3E277F90E4C70DD00BE6BE1061CEB4462098276E574B07357"
+  },
+  {
+    "path": "resources\\player_sprite_frames.tres",
+    "sha256": "38C1DE56C724DFD0526BEF8D3CC49859EEC4A4C195D2045F293F4A353D947164"
+  },
+  {
+    "path": "resources\\projectile_config.tres",
+    "sha256": "8ED7C9564A831B3EAC57C0CF86F83A0D914E32EA73D4E37088F7C641040F141D"
+  },
+  {
+    "path": "scripts\\projectile\\ricochet_ball.gd",
+    "sha256": "F285760E2A818BEDCB87394C1B34BD7A865625FB44FA2A176BA129B8FED7D1E0"
+  },
+  {
+    "path": "scripts\\projectile\\projectile_config.gd",
+    "sha256": "24D68B5825A49A03F9E755E3925FA1B3DD20D660A52CD66E95AC807EF3CFE1C9"
+  },
+  {
+    "path": "scripts\\progression\\upgrade_definition_resource.gd",
+    "sha256": "3B2A639D0E16A246632CC313D59C61B610CC4F3B7CAF23053EF056D2619DD8EB"
+  },
+  {
+    "path": "scripts\\progression\\run_build.gd",
+    "sha256": "0E7426DEA962E22CAF3AED7B9F304B7E8698C463124FC0A2441D46A4B1632F2E"
+  },
+  {
+    "path": "resources\\upgrades\\motor_acelerado.tres",
+    "sha256": "2C1C9C1CA1A58592F14EC684CF788D9FA0588A8FA96F9A3FB2813B9089B40640"
+  },
+  {
+    "path": "scripts\\feedback\\combat_feedback_burst.gd",
+    "sha256": "1F0B908C7C37446276C2D138A9AD6D2AC2948677DF804F1F5853B34E9F3DC8B6"
+  },
+  {
+    "path": "scripts\\feedback\\combat_feedback.gd",
+    "sha256": "EC83AB217339CC13C51D0DD18EB7C5A48B55C49B1B5EEB379D2A8722F980AFD5"
+  },
+  {
+    "path": "resources\\upgrades\\impacto_reforcado.tres",
+    "sha256": "ED1DB3CD44780521148401850C3DA45CAD294D08707E4FACCC3ADE5C7A88CCD7"
+  },
+  {
+    "path": "resources\\upgrades\\carga_reativa.tres",
+    "sha256": "105C9E7405C122F1F58BEBCB23CBEA7AEC4073748AA249A434E0B5E416351ACC"
+  },
+  {
+    "path": "scenes\\main.tscn",
+    "sha256": "CEA44A9898E9B3F5B268C2D8BDDF95F4ADAD028B54C86B3D3FE0FB45D6E60444"
+  },
+  {
+    "path": "scenes\\hostile_rivet.tscn",
+    "sha256": "7C37590470350FF236B626C78B035A88C003A7EE03E6FC8F01845419E1E35406"
+  },
+  {
+    "path": "scenes\\player.tscn",
+    "sha256": "A98540A71C4309C32136E39D3179F21A52E5463D88254B19BCBEA1BA8700B45E"
+  },
+  {
+    "path": "scenes\\racket.tscn",
+    "sha256": "9415E2ED16CD197F6CED247475273EF9059CC84F5036C57A7CBABF0261FD7B31"
+  },
+  {
+    "path": "scenes\\exit_door.tscn",
+    "sha256": "0555BEC38FF3E192C61CAD93B3B22E07C3518E21480CE97547B6F8516F71EF94"
+  },
+  {
+    "path": "scenes\\upgrade_offer.tscn",
+    "sha256": "CFCE4F62C7916B2999F7A290E69746A46904AD14D5B25E192467B6B745419AE2"
+  },
+  {
+    "path": "scenes\\training_target.tscn",
+    "sha256": "461F7A2446156AB591B7FBB84548D51493E7F7735ADFB9FD4130518DE8DB14F1"
+  },
+  {
+    "path": "scenes\\solid_platform.tscn",
+    "sha256": "932DB5D8407F78A637D54C0A0B2DBFB3A5BEA0F47A1CFA101EB4B585CDECD366"
+  },
+  {
+    "path": "scenes\\second_room.tscn",
+    "sha256": "D0D3B22425A5251F94923BF4BDFBC3CE3772F4C70D425F58E15FCE1C56554C41"
+  },
+  {
+    "path": "scenes\\rivet_worker.tscn",
+    "sha256": "8ED78A40A1F2BF81D724C987AEA1216508DE3579CDE7D2DFECBA9724A94A3021"
+  },
+  {
+    "path": "scenes\\ricochet_ball.tscn",
+    "sha256": "21AE5870DC57BBF5FD866D6935BC5502860EA4D2ED533186BAF41C12FBFA6891"
+  },
+  {
+    "path": "scenes\\feedback\\combat_feedback_burst.tscn",
+    "sha256": "917579EE8F5EE609233609CC3D5D059E41DEC81959124BE132503DE1051AB991"
+  },
+  {
+    "path": "docs\\specs\\2026-10-13-protagonista-dano\\historico\\baseline\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "FF45AFD4124CBFF029F564990ACD1D12DEF5945B048C9A775C970CD598DCDC30"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-dash\\historico\\pre-dash\\player_visual.gd",
+    "sha256": "2ACCB069271CFFA66EC7A18C70DE67FB160C0CCD9E47872101752E853B00DA1F"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-dash\\historico\\pre-dash\\player_sprite_frames.tres",
+    "sha256": "9B101F342D61ADD8DC2DFFFB62927339A2BA10657E681FBCDE2B9DE0BDA44194"
+  },
+  {
+    "path": "docs\\specs\\2026-10-13-protagonista-dano\\historico\\baseline\\runtime\\scripts\\player\\player_visual.gd",
+    "sha256": "658871CF4587A797431104B7569DA5293DAF7EE86286D267CDB1B1807B556620"
+  },
+  {
+    "path": "docs\\specs\\2026-10-13-protagonista-dano\\historico\\baseline\\runtime\\scripts\\player\\player_health.gd",
+    "sha256": "479B31FF7821BFBC178F73EB69DA8B128BD86801526471CC1E8112ECCF3B93BF"
+  },
+  {
+    "path": "docs\\specs\\2026-10-13-protagonista-dano\\historico\\baseline\\runtime\\scripts\\player\\player.gd",
+    "sha256": "2E86FDFC1040046B53E1D7AC3DD4F3D8BEBF5D9278B765E693662744676C7099"
+  },
+  {
+    "path": "docs\\specs\\2026-10-13-protagonista-dano\\historico\\baseline\\runtime\\scenes\\player.tscn",
+    "sha256": "E347E9580B58B51B70881312C403BD0B867746625CB89356B542568E775DFB46"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-dash\\historico\\pre-dash-v4\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "FF45AFD4124CBFF029F564990ACD1D12DEF5945B048C9A775C970CD598DCDC30"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-dash\\historico\\pre-dash-v4\\runtime\\scripts\\player\\player_visual.gd",
+    "sha256": "658871CF4587A797431104B7569DA5293DAF7EE86286D267CDB1B1807B556620"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-dash\\historico\\pre-dash-v4\\runtime\\scripts\\player\\player.gd",
+    "sha256": "2E86FDFC1040046B53E1D7AC3DD4F3D8BEBF5D9278B765E693662744676C7099"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-dash\\historico\\pre-dash-v4\\runtime\\scripts\\player\\movement_controller.gd",
+    "sha256": "59C8987F01C769C40F6657E09BC6E69A1EEB6FEFE98220D84F15D6C9A9F6E6EC"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-dash\\historico\\escala-v5-current-28-frames\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "38C1DE56C724DFD0526BEF8D3CC49859EEC4A4C195D2045F293F4A353D947164"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\pre-integracao\\scripts\\player\\player_visual.gd",
+    "sha256": "0B5DF3BE8E9109E8BC6659298171209248D1B2CE66C4D88A6029727CE8A362F3"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\pre-integracao\\scripts\\player\\player.gd",
+    "sha256": "8839173BD54A85EC48731B09EAC14413E2EDC7402E41CBB21510EEC7DA8CA53B"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\escala-v4-current-28-frames\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "38C1DE56C724DFD0526BEF8D3CC49859EEC4A4C195D2045F293F4A353D947164"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\pre-integracao\\resources\\player_sprite_frames.tres",
+    "sha256": "59BBE3817C587C5D60D4F8CAE57E7FD9ADA1E3B4A3F5AED6D8E5E1638B33ADE5"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v1\\runtime\\scripts\\player\\player_visual.gd",
+    "sha256": "3E4FC1CCB3E71DBF9730FF9318A6E938E2E8C1B04E5DC846219B55BB3F137C2F"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v1\\runtime\\scripts\\player\\player.gd",
+    "sha256": "09B07B62E6009FF94DC80DCA9397F382CDBB4ACCCC8BC43FF605FC169374AA3C"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v2-pre-v3\\runtime\\scripts\\player\\player_visual.gd",
+    "sha256": "658871CF4587A797431104B7569DA5293DAF7EE86286D267CDB1B1807B556620"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v1\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "3056297F65FC731E743984DD6EB2A02981861DA1F18058C0E1D3BABF2EDC34D3"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v2-pre-v3\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "34224DA2F32274641B8140A8D2DCE6A78FD2CEF1EBFBEE6E4213E25D4F9735A8"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-idle-walk\\historico\\pre-walk-v8\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "FF45AFD4124CBFF029F564990ACD1D12DEF5945B048C9A775C970CD598DCDC30"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v1\\docs\\specs\\historico\\pre-integracao\\scripts\\player\\player_visual.gd",
+    "sha256": "0B5DF3BE8E9109E8BC6659298171209248D1B2CE66C4D88A6029727CE8A362F3"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-idle-walk\\historico\\pre-ombros-v3\\runtime\\resources\\player_sprite_frames.tres",
+    "sha256": "FF45AFD4124CBFF029F564990ACD1D12DEF5945B048C9A775C970CD598DCDC30"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v1\\docs\\specs\\historico\\pre-integracao\\scripts\\player\\player.gd",
+    "sha256": "8839173BD54A85EC48731B09EAC14413E2EDC7402E41CBB21510EEC7DA8CA53B"
+  },
+  {
+    "path": "docs\\specs\\2026-10-11-protagonista-pulo\\historico\\v1\\docs\\specs\\historico\\pre-integracao\\resources\\player_sprite_frames.tres",
+    "sha256": "59BBE3817C587C5D60D4F8CAE57E7FD9ADA1E3B4A3F5AED6D8E5E1638B33ADE5"
+  }
+]

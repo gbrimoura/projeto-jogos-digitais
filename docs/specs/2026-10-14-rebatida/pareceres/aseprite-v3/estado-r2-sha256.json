@@ -1,0 +1,62 @@
+[
+  {
+    "path": "assets/player/player-animations.png",
+    "sha256": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "assets/player/source/player-animations.aseprite",
+    "sha256": "4C8311F9F37AC1362EEA2E884F7D79C7F7D3F7A61B83A3A3D033559CC9BD5FBC",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "resources/player_sprite_frames.tres",
+    "sha256": "8D05D585AEA3D7B92754DAB1490553715FB754BEE9DC35FB9D429A3FD427C269",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "scripts/player/player_visual.gd",
+    "sha256": "C40AF4AD98F8F14BEB83C656CE5725A64D1148C408CB5CD80FD28C1769C58456",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "scripts/player/player.gd",
+    "sha256": "B4239511A0214C9ABF12F257E0B7791835A1A242371575C913D8B7BAB75981A9",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "scripts/player/racket_visual.gd",
+    "sha256": "A21169B24CC9F63334DE9C62BFA5E135C35D28911A44FE3CFE748F65D5C8125D",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "scripts/player/racket_controller.gd",
+    "sha256": "2978FC63BE6A310B6C7FEB7F87A58C69EFFFD9ADB1FD430321CF0E7D1ECC3F51",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "scripts/player/ball_launcher.gd",
+    "sha256": "239FDDEABB72B5891F61F0F65ABAAA8D4A03EE8A7F5131E1149C1676CDAD2A57",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-aseprite-v3/source/reproduzir-rebatida-v3.lua",
+    "sha256": "8CE0771257866C88AB59906989101A3E46F52A6D7A96FFE637323E430E23614E",
+    "unchanged_since_r1": false
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-aseprite-v3/source/integrar-runtime-v3.lua",
+    "sha256": "6AE304E003FB81042DF955D44A42A9737DEF465450BD77F7B0BBD3C462F8F258",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-aseprite-v3/protagonista-rebatida-v3.aseprite",
+    "sha256": "AA83502077D2B2DD6EF7C6C50503C7B90914C7C6512496E3218FAA1D39A32AFE",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-aseprite-v3/protagonista-rebatida-v3-metadata.json",
+    "sha256": "96BCC5B8BECC177DFEB5BB6AF8E10990504A823C333E226CEDB50973D82F4975",
+    "unchanged_since_r1": false
+  }
+]

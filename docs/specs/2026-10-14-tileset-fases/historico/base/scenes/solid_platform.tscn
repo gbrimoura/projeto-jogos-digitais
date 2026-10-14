@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/solid_platform.gd" id="1_platform"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+resource_local_to_scene = true
+size = Vector2(220.0, 24.0)
+
+[node name="SolidPlatform" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_platform")
+fill_color = Color(0.14902, 0.207843, 0.270588, 1)
+size = Vector2(220.0, 24.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_platform")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="Fill" type="Polygon2D" parent="Visuals"]
+color = Color(0.14902, 0.207843, 0.270588, 1)
+polygon = PackedVector2Array(-110.0, -12.0, 110.0, -12.0, 110.0, 12.0, -110.0, 12.0)
+
+[node name="TopEdge" type="Line2D" parent="Visuals"]
+width = 3.0
+default_color = Color(0.941176, 0.701961, 0.356863, 1)
+points = PackedVector2Array(-110.0, -12.0, 110.0, -12.0)

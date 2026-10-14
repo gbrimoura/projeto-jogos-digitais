@@ -1,0 +1,40 @@
+STATUS: done  
+SUMMARY: Visual-only factory skin matches the stated contract in the provided sources. Collision, size, and position stay on `SolidPlatform.size` / `RectangleShape2D`; the skin is a `Node2D` draw overlay. Atlas mapping, scale-2 crop (no stretch), 24px platform cut, Floor as Block, fallback toggle, and `@tool` redraw are consistent. No high-severity contract break in the pasted scripts/diffs. One conditional Medium (platform style does not tile vertically; only Floor is set to Block in the diffs).  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: TileSet source 0 / atlas identity vs decor PNG not in the pasted sources. `@tool` writes `visible` and `texture_filter` (editor dirty / instance-override). Draw failure does not re-show Fill, so a missing atlas would hide surfaces while collision remains. Room chrome (background, grid, decor) is not gated by `factory_skin_enabled`.  
+NEXT_STEP: Principal can accept. Confirm no SolidPlatform in the two rooms is taller than 64px while still on Platform style. Do not treat decor placement or the 88px Floor skipping the middle block row as blockers.
+
+## Contract (confirmed)
+
+- Collisions still come only from `CollisionShape2D` + `rectangle.size = size` in [`scripts/world/solid_platform.gd`](scripts/world/solid_platform.gd). [`FactorySurfaceVisual`](scripts/world/factory_surface_visual.gd) is `Node2D` with no physics.
+- Floor instances keep `position = (576, 604)` and `size = (1152, 88)` in both room diffs. Actor/HUD/gameplay nodes are not in the diffs.
+- Scale 2 is dest = source × 2, not `SolidPlatform.scale`, so collision boxes are not scaled.
+- Crop path always uses `source * WORLD_SCALE` for dest size; remainders use `min(32, remaining/2)` — crop, not stretch.
+- Platform: `source_y = 96` (row 3), cols 0/1/2. Height 24 → 12px source × 2 = 24 dest, origin `-size.y/2` — fills the existing 24px box.
+- Block: row 0 from y=0, fill y=32, bottom `64 + 32 - croppedHeight` (row 2, bottom-aligned). Floor 88 = 64 top + 24 bottom, no gap/overlap. Middle row unused at 88px is correct 9-slice, not a miss.
+- Decor col 3: panel `(96,0)`, H `(96,32)`, V `(96,64)`, corner `(96,96)`, `scale (2,2)`, `texture_filter = 1` (Nearest). Under `SandboxVisual` (`z_index = -10`), no colliders.
+- Fallback: `factory_skin_enabled` swaps `FactorySurfaceVisual` vs `Fill` / `TopEdge` / `FloorDetail`.
+- `@tool`: parent setters call `_sync_surface_skin`; child size/style setters `queue_redraw()` when in tree; child `_ready` also `queue_redraw()`.
+
+## Findings
+
+### Medium (conditional) — platform style is a single top strip
+- File: [`scripts/world/factory_surface_visual.gd`](scripts/world/factory_surface_visual.gd) (`_draw_platform`)
+- Mechanism: one triplet at dest height `min(64, size.y)`, top-aligned. No vertical repeat.
+- Why it matters: packed [`scenes/solid_platform.tscn`](scenes/solid_platform.tscn) has `factory_skin_enabled = true` and default style Platform. Room diffs only set `factory_surface_style = 1` on Floor. A taller instance left on Platform would keep full collision height but only paint the top 64px (24px platforms are covered by the cap contract).
+- Not a blocker if every non-Floor `SolidPlatform` in those rooms is still 24px.
+
+### Low — skin visibility ignores draw success
+- Files: [`scripts/world/solid_platform.gd`](scripts/world/solid_platform.gd) `_sync_surface_skin`; [`scripts/world/factory_surface_visual.gd`](scripts/world/factory_surface_visual.gd) `_draw`
+- Mechanism: Fill is hidden whenever the child node exists and the toggle is on. `_draw` can still return immediately (`get_source(0)` not an atlas, null texture). Result: invisible colliders. Toggle still restores polygons; this is not automatic.
+
+### Low — `@tool` mutates serialized properties
+- Files: both scripts; [`scenes/solid_platform.tscn`](scenes/solid_platform.tscn)
+- Mechanism: `_ready` sets `texture_filter` (saved default is parent/0). `_sync_surface_skin` writes `visible` on Fill/TopEdge/FloorDetail/FactorySurfaceVisual. Saving the editor after `@tool` runs can store those overrides and fight a later fallback toggle on instances.
+
+## Not blockers
+
+- 88px Floor using only block top + cropped bottom (no row 1): 9-slice for height between 1 and 2 world tiles.
+- Background tint, hidden sandbox grid, decor modulate/placement: visual-only, outside the platform fallback toggle.
+- Dual texture path (TileSet preload vs room PNG ExtResource): risk if they diverge, not a defect in the pasted code.

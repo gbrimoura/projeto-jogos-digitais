@@ -1,0 +1,42 @@
+[
+  {
+    "path": "scripts/world/solid_platform.gd",
+    "sha256": "237976B41116C4DED6646C6DF03C183F36A41FA1BDB9066895491C582F600F1F"
+  },
+  {
+    "path": "scenes/solid_platform.tscn",
+    "sha256": "932DB5D8407F78A637D54C0A0B2DBFB3A5BEA0F47A1CFA101EB4B585CDECD366"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "CEA44A9898E9B3F5B268C2D8BDDF95F4ADAD028B54C86B3D3FE0FB45D6E60444"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "D0D3B22425A5251F94923BF4BDFBC3CE3772F4C70D425F58E15FCE1C56554C41"
+  },
+  {
+    "path": "assets/player/player-animations.png",
+    "sha256": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC"
+  },
+  {
+    "path": "resources/player_sprite_frames.tres",
+    "sha256": "8D05D585AEA3D7B92754DAB1490553715FB754BEE9DC35FB9D429A3FD427C269"
+  },
+  {
+    "path": "scripts/player/player.gd",
+    "sha256": "B4239511A0214C9ABF12F257E0B7791835A1A242371575C913D8B7BAB75981A9"
+  },
+  {
+    "path": "scripts/player/racket_controller.gd",
+    "sha256": "2978FC63BE6A310B6C7FEB7F87A58C69EFFFD9ADB1FD430321CF0E7D1ECC3F51"
+  },
+  {
+    "path": "scripts/player/ball_launcher.gd",
+    "sha256": "239FDDEABB72B5891F61F0F65ABAAA8D4A03EE8A7F5131E1149C1676CDAD2A57"
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png",
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5"
+  }
+]

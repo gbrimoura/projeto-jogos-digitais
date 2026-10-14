@@ -1,0 +1,9 @@
+STATUS: done
+SUMMARY: Revisão independente da implementação de animação de dano (hurt v1) e janela curta de invulnerabilidade anti-stagger concluída com aprovação integral. O pipeline de arte (3 frames 64x64, cadência 80/80/100ms = 260ms, native LEFT) expande o atlas para 28 frames (1792x64) mantendo os 25 frames originais, durações e tags estritamente intactos (incluindo dash V4). A máquina de estados visual e lógica respeita a prioridade estrita (`morte > hurt > dash > ar > land > walk`), preserva livre controle e física (sem knockback, hitstop ou root motion), garante alpha 1.0 durante o hurt com pulso translúcido no restante da janela de 500ms de invulnerabilidade, e gerencia corretamente facing, interrupções de pouso, dash e cancelamentos de morte/reset.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Baixo (`PlayerVisual._process`): O pulso de modulate em `_process` utiliza `Time.get_ticks_msec() * 0.035` (wall-clock) em vez de tempo de simulação ou `delta`. Caso `Engine.time_scale` venha a ser modificado no futuro (ex.: câmera lenta), a frequência do pulso visual não escalará com a física do jogo.
+- Baixo (`PlayerVisual.set_grounded`): Aterrissagens que ocorrem enquanto `_is_hurt == true` suprimem a ativação de `_is_landing` por projeto (`not _is_hurt`). Ao término do hurt, o personagem transiciona diretamente para idle/walk sem tocar a animação de squash de impacto no solo.
+- Informativo (`Pipeline Godot / Addons`): O crash de importação em modo padrão decorre de plugin Git pré-existente no ambiente headless; a validação via modo de recuperação (exit 0) confirmou a integridade de imports, classes e recursos sem mutação colateral.
+NEXT_STEP: Prosseguir com a consolidação dos arquivos autorizados no repositório principal e submeter às rodadas subsequentes de revisão/validação quando solicitado pelo usuário.

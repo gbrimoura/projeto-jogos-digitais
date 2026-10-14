@@ -1,0 +1,42 @@
+[
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png",
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+    "unchanged": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1.aseprite",
+    "sha256": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8",
+    "unchanged": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-demo-escala.png",
+    "sha256": "00F5D3B65469ECA6421E8FE1FFDC2ABF1F1F55B1F864AA933DFD2B9D6D941CF1",
+    "unchanged": true
+  },
+  {
+    "path": "assets/environment/factory_v1/demo_editor.tscn",
+    "sha256": "38D1430E99E0EBB77FB371DB32E51190A03119AE669FB2D5F2F3B59D90F40A33",
+    "unchanged": true
+  },
+  {
+    "path": "resources/environment/factory_tileset_v1.tres",
+    "sha256": "C90CA2FAEBC3EA70C43FFCC7E967A069659BB95D68B3E1379EE4FFFFF26BD213",
+    "unchanged": true
+  },
+  {
+    "path": "assets/player/player-animations.png",
+    "sha256": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC",
+    "unchanged": true
+  },
+  {
+    "path": "assets/player/source/player-animations.aseprite",
+    "sha256": "4C8311F9F37AC1362EEA2E884F7D79C7F7D3F7A61B83A3A3D033559CC9BD5FBC",
+    "unchanged": true
+  },
+  {
+    "path": "resources/player_sprite_frames.tres",
+    "sha256": "8D05D585AEA3D7B92754DAB1490553715FB754BEE9DC35FB9D429A3FD427C269",
+    "unchanged": true
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "scenes/solid_platform.tscn": true,
+  "scripts/world/solid_platform.gd": true,
+  "resources/environment/factory_tileset_v1.tres": true,
+  "scenes/second_room.tscn": true,
+  "scenes/main.tscn": true,
+  "scripts/world/factory_surface_visual.gd": true
+}

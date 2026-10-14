@@ -1,0 +1,32 @@
+STATUS: done
+SUMMARY: Revisão estática da integração de escala do pulo (fator 0.85, frames 17..24) concluída com sucesso. Verificada a consistência matemática do resampling nearest-neighbor inverso, preservação estrita de paleta (27 cores) e alpha binário (0/255), ancoragem diferencial de pivôs (solo Y=56 para frames 17 e 22..24; aéreo Y=32 para frames 18..21; X=32 uniforme), integridade pixel-a-pixel dos 20 frames protegidos (0..16 e 25..27), preservação de 28 durações e 8 tags no atlas 1792x64, e total invariância de recursos externos (.tres, scripts, cenas e nós).
+CHANGED_FILES: none
+TESTS: none
+
+### Avaliação Técnica Detalhada (Inline)
+
+1. **Amostragem e Resampling (Nearest-Neighbor Inverso)**:
+   - A função `scaledNearest` emprega decimação inversa por arredondamento nearest (`math.floor((coord - pivot) / 0.85 + pivot + 0.5)`).
+   - O fator 0.85 (redução de ~15% linear) projeta uma redução de área teórica de $0.85^2 \approx 0.7225$ (~27.75% de decaimento de área). A contagem de pixels opacos das métricas confirma aderência rigorosa (ex.: frame 17 com 636/889 = 71.5%; frame 19 com 560/773 = 72.4%; frame 21 com 717/1006 = 71.2%).
+   - Como a amostragem lê diretamente do bitmap fonte sem interpolação linear, a paleta de 27 cores e o canal alpha binário (0 ou 255) foram 100% conservados em todos os frames gerados.
+
+2. **Pivôs e Alinhamento no Solo vs. Ar**:
+   - **Frames de solo / contato / impulso** (17, 22, 23, 24): Ancorados em `pivotY = 56`. Conforme as bounding boxes, a base inferior dos pés permanece cravada em Y=55 (impulso) e Y=56 (contato, compressão, recuperação), garantindo que o personagem não afunde nem levite em relação à linha do chão durante a decolagem e aterrissagem.
+   - **Frames aéreos** (18, 19, 20, 21): Ancorados no centro geométrico `pivotY = 32, pivotX = 32`. A redução preserva o centro de massa no ar sem deslocar visualmente a trajetória da parábola de salto.
+
+3. **Cadências e Durações**:
+   - As 8 poses de pulo mantêm rigorosamente os timings previstos: 110ms (17), 95ms (18), 110ms (19), 45ms (20), 85ms (21), 45ms (22), 45ms (23) e 45ms (24), totalizando 580ms.
+   - O integrador validou a igualdade estrita dos tempos de todos os 28 frames (`durations_preserved = 28/28`).
+
+4. **Preservação de Layout e Estruturas do Atlas**:
+   - Dimensões do atlas: 1792x64 (28 frames de 64x64), layout uniforme 1D horizontal inalterado.
+   - Proteção de frames adjacentes: Os 20 frames não pertencentes ao salto (idle 0..5, walk 6..13, dash V4 14..16, hurt V1 25..27) foram checados pixel a pixel contra o snapshot imutável, com 0 divergências.
+   - Estrutura de tags: As 8 tags do Aseprite (`jump_rise`, `jump_apex`, `jump_fall`, `jump_land`, etc.) mantiveram bounds, direção e contadores de repetição idênticos.
+
+5. **Coerência com Godot e Recursos**:
+   - Os arquivos `.tres` (SpriteFrames), scripts e `.tscn` mantêm SHA idêntico ao baseline. Não foram aplicadas escalas em nós de engine (`scale`, `offset`, `position`), eliminando riscos de desalinhamento de colisores ou artefatos de filtragem de textura na GPU.
+   - Reimportação do editor Godot 4.7.2 em modo recovery finalizada com exit 0.
+
+RISKS: none (achados impeditivos ou quebras estruturais: zero. Como observação estética não bloqueante para eventual refinamento manual futuro pelo artista principal: downsampling nearest a 0.85 inerentemente descarta colunas/linhas isoladas a cada ~6-7 pixels, o que pode gerar pequenas assimetrias de 1px em contornos finos durante poses de alta inclinação, já devidamente submetidas e validadas via contact sheet aprovado pelo Principal).
+
+NEXT_STEP: Prosseguir com o registro documental do parecer na pasta correspondente da spec e submeter aos demais revisores previstos na governança do repositório.

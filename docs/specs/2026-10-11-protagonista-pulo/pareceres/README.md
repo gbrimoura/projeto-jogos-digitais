@@ -1,3 +1,7 @@
+# Versão atual — escala do pulo V4 (13/10/2026)
+
+Luna xhigh corrigiu apenas jump17–24; import Godot concluído. Gemini/Muse/Grok sem correções obrigatórias, Opus quota. [Pareceres e hashes V4](escala-v4/README.md). As seções abaixo são histórico.
+
 # Revisões da reprodução em Aseprite — V3
 
 Arte-fonte corrigida em arquivos referencia-v2; código/runtime Godot continua na V2. A avaliação visual final do usuário permanece pendente. Pareceres iniciais, correções e revisão final: [reprodução V3](reproducao-v3/README.md).

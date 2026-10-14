@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Factory tileset applied visually to main/second_room with scale2 nearest, exact cropping and configurable legacy fallback.
+CHANGED_FILES: scripts/world/factory_surface_visual.gd; scripts/world/solid_platform.gd; scenes/solid_platform.tscn; scenes/main.tscn; scenes/second_room.tscn; prospective plan/spec/review-index.
+TESTS: none. Static diff inspection confirmed grid27+1 hidden, headers repaired, geometry/actors/HUD preserved.
+RISKS: Runtime not executed; principal external reviews required; Fast/priority not confirmable.
+NEXT_STEP: Principal integrated and reviewed; Opus blocked by quota.

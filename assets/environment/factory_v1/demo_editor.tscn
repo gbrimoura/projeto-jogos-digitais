@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/environment/factory_v1/tileset-fabrica-v1-demo-escala.png" id="1_demo"]
+
+[node name="FactoryTilesetPreview" type="Node2D"]
+
+[node name="Demo" type="Sprite2D" parent="."]
+texture = ExtResource("1_demo")
+texture_filter = 1
+centered = false
+scale = Vector2(2, 2)

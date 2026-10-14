@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática R2 do adendo documental e de exportação de arte concluída sem apontamentos ou bloqueios. A compensação centissegundal `gifDurations = {30, 40, 20, 30, 40, 40}` corrige com exatidão a limitação de quantização do GIF89a (passos de 10 ms), eliminando o descarte original de 20 ms (que resultava em 180 ms) e atingindo a soma exata de 200 ms. A janela crítica de contato (quadros 3 e 4) preserva integralmente os 50 ms nativos (20+30 ms vs 25+25 ms). O isolamento do escopo é estrito: `gifDurations` opera exclusivamente na instância do GIF de pré-visualização; o `.aseprite` nativo mantém `durations = {30, 35, 25, 25, 40, 45}`, e os arquivos de runtime, sheets estáticas, contact 4x e hashes baseline (`SpriteFrames` `8D05D585AEA3D7B92754DAB1490553715FB754BEE9DC35FB9D429A3FD427C269`) permanecem inalterados.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco técnico ou de regressão no runtime. A discretização centissegundal do GIF preview apresenta variação visual imperceptível de ±5 ms entre quadros individuais em relação à animação real, mas preserva a fidelidade macro temporal da ação de 200 ms.
+NEXT_STEP: Prosseguir para validação visual manual da rebatida no editor/runtime Godot pelo usuário.

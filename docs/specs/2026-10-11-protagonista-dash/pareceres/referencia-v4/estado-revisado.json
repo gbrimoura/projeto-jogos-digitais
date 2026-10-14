@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-13",
+  "art_directory": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/protagonista-dash-v4",
+  "repo": "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais",
+  "hashes": {
+    "protagonista-dash-v4.lua": "30fb1ad6aed92bd29070561c3d726de3ca2ae023fb80ffb9ebee54d93400d0c4",
+    "integrar-dash-v4.lua": "c6940ae7b42b3feebe617a7540de50ed1bc05b3f724f6d3cd150c1a7c5a274dd",
+    "protagonista-dash-v4.aseprite": "75ef0bd34ca59d9a535eedbf164565fda20428024665272c3b413afc9d73290d",
+    "protagonista-dash-v4-spritesheet.png": "3abac3bf0b8880466e499e84da4a7bb5a6cd77d9eaf52e7b5bcac54e57500ad0",
+    "protagonista-dash-v4-horizontal-demo.gif": "ed60a6017f5f25d0826025644e2a34f3a14f8f6fa9e4f29595f792ec3ddfc55e",
+    "protagonista-dash-v4-contact-3poses.png": "3dcc547cfa4fe7827f28d174e595fb7eb58c7e558a46e537a78e5005ae491893",
+    "protagonista-dash-v4-comparison-idle-dash.png": "341d34cd8e5ce75e6b473799cca29ce79807dc11ee2cd79d0d3ddf16ea74892f",
+    "protagonista-dash-v4-metadata.json": "583bd527754fe722cbe13d748892250c7800668c26905e0957298177098aa7c2",
+    "referencia-dash-v4-v2.png": "bcb6ae4e0b935f55a68bf796738888acf3a6ad64ac8f30d5e04cf74a5048440f",
+    "assets/player/player-animations.png": "b2d86e34b0782d9797ac3ab43d5b7144b87f033d7d32a1a7617aaff17fdb0fd6",
+    "assets/player/source/player-animations.aseprite": "40955fd03dd782aa9188b765a83f00412761657c6788ea81736873dfe506c29a"
+  },
+  "scope": "Somente dash14-16; prévia corrigida;22frames protegidos",
+  "validation": "Import Godot exit0; nenhum gameplay/teste"
+}

@@ -1,0 +1,59 @@
+STATUS: done
+SUMMARY: Revisão incremental estática concluída sobre as fontes inline. Foram identificados 3 defeitos críticos P1 (erros de sintaxe/parse que impedem compilação no Godot 4) e 4 defeitos P2 de lógica/ciclo de vida/mira. As assinaturas dos sinais, IK (14/12), prioridades físicas (-100 vs 0) e a separação de clock (render para shot / físico para parry) estão matematicamente consistentes com o especificado.
+
+### Achados P1 (Erros de Sintaxe / Compilação)
+
+1. **Erro de indentação e método corrompido em [`RacketController.get_catch_radius`](file:///res://scripts/player/racket_controller.gd#L84-L88)**
+   - Código fornecido:
+     ```gdscript
+     func get_catch_radius(projectile_radius: float = 0.0) -> float:
+         return reach + maxf(projectile_radius, 0.0)
+             return
+         _success_flash_remaining = 0.18
+         _update_feedback()
+     ```
+   - O `\t\treturn` aninhado gera `Parse Error: Unexpected indentation`. Além disso, há código inalcançável truncado (aparente resquício de `notify_parry_success()`), impedindo a compilação do script.
+
+2. **Declaração de função incompleta em [`BallLauncher.request_stop_active_sweep`](file:///res://scripts/player/ball_launcher.gd#L74)**
+   - O arquivo termina com `func request_stop_active_sweep() -> void:` sem corpo ou `pass`, gerando `Parse Error: Expected indented block after function declaration`.
+
+3. **Chamadas a métodos inexistentes em [`RacketController`](file:///res://scripts/player/racket_controller.gd)**
+   - `_update_racket_visual()` é chamado em `_ready()`, `set_aim_direction()`, `_physics_process()` e `_begin_swing()`.
+   - `_update_feedback()` é chamado em `_ready()`, `_physics_process()`, `cancel()`, `reset()`, etc.
+   - Nenhum dos dois métodos está declarado em `RacketController`, gerando erro de compilação por símbolo não encontrado.
+
+---
+
+### Achados P2 (Lógica, Ciclo de Vida e Controles)
+
+1. **`BallLauncher.is_launch_available()` bloqueia disparo permanentemente se `_racket_controller == null`**
+   - Na checagem `if _racket_controller == null or _racket_controller.is_swing_active(): return false`, se `_racket_controller` for nulo (cenário de teste unitário, cena isolada de launcher ou falha de resolução na árvore), o disparo fica travado para sempre.
+   - Correção: `if _racket_controller != null and _racket_controller.is_swing_active(): return false`.
+
+2. **Truncamento prematuro da animação de retorno do parry (`PARRY_KEY_TIME[6] = 1.0`)**
+   - Em `RacketController._physics_process`, assim que `_active_remaining <= 0.000001`, `_active` vira `false`.
+   - No frame de render seguinte, `RacketVisual._advance_attack` avalia `not _racket_controller.is_swing_active()` e chama imediatamente `clear_transient()`.
+   - O progresso físico nunca é amostrado em `1.0` pelo visual; a pose corta abruptamente de ~0.916 direto para o idle, sem renderizar a chave 6 de retorno.
+
+3. **`RacketController._begin_swing` quebra mira com gamepad/stick ao consultar mouse diretamente**
+   - Em `_begin_swing()`, a direção é recalculada via `get_global_mouse_position() - global_position`, sobrescrevendo o `_aim_direction` que já vinha sendo injetado pelo `AimController`. Em controles/gamepad, a rebatida é disparada na direção onde o cursor do mouse ficou parado na tela.
+
+4. **`cancel()` e `reset()` não limpam `_cooldown_remaining`**
+   - Se o player morrer ou der reset durante o cooldown de 0.55s, `_cooldown_remaining` permanece ativo no respawn. Deve ser zerado em `cancel()` / `reset()`.
+
+5. **`RacketVisual.set_aim_direction()` nunca é alimentado em repouso (idle)**
+   - `Player` (`[Caller]`) injeta a mira apenas em `racket_controller.set_aim_direction()`. Como `_update_racket_visual()` não foi implementado para repassar a direção ao visual, `RacketVisual._aim_world_direction` permanece congelado em `Vector2.RIGHT` enquanto não há ataque.
+
+---
+
+### Verificações Conformes / Não Aplicáveis
+
+- **Prioridade e Conflito de Clique (-100 vs 0)**: `process_physics_priority = -100` em `RacketController` garante que `_begin_swing()` execute antes de `Player._physics_process`, fazendo com que `is_launch_available()` barre o tiro no mesmo frame.
+- **Cooldown não bloqueia launch**: `is_launch_available()` consulta apenas `is_swing_active()`, liberando o disparo durante os 0.55s de cooldown.
+- **Assinaturas dos Signals**: `swing_started(Vector2, float)` -> `start_parry(Vector2, float)`, `swing_cancelled()` -> `clear_transient()`, e `launch_accepted(Vector2, Vector2)` -> `start_shot(Vector2, Vector2)` estão estritamente compatíveis.
+- **IK e Clamping (14/12)**: Para alcances entre `MIN_ARM_REACH = 2.001` e `MAX_ARM_REACH - 0.001 = 25.999`, o valor de `along` é estritamente menor que 14.0 e o discriminante da raiz em `perpendicular` é estritamente positivo, sem risco de NaN.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS: O patch inline atual não compila no Godot 4 devido aos erros de sintaxe em `get_catch_radius` e `request_stop_active_sweep`, e aos métodos faltantes em `RacketController`.
+NEXT_STEP: Corrigir os 3 pontos de parse (P1), implementar os stubs de `_update_racket_visual` / `_update_feedback`, trocar a guarda nula de `_racket_controller` no launcher e usar `_aim_direction` em `_begin_swing`.

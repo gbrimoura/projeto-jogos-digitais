@@ -1,0 +1,50 @@
+[
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1.lua",
+    "sha256": "1B880E9649646C4A892349BB8A88D3FC340D9E1C759DC3544E81408FCDACB6C6"
+  },
+  {
+    "path": "resources/environment/factory_tileset_v1.tres",
+    "sha256": "C90CA2FAEBC3EA70C43FFCC7E967A069659BB95D68B3E1379EE4FFFFF26BD213"
+  },
+  {
+    "path": "assets/environment/factory_v1/demo_editor.tscn",
+    "sha256": "38D1430E99E0EBB77FB371DB32E51190A03119AE669FB2D5F2F3B59D90F40A33"
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/palette-fabrica-v1.json",
+    "sha256": "8C8484C59D695F2548E216BA521E3B91EFABF2BCD26B07DD43D45CBAE9472D3D"
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-manifest.json",
+    "sha256": "57108D92E51E3F1BDA2B75D628600DE3F2F684CBBCDA626098927C9D033E870A"
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1.aseprite",
+    "sha256": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8"
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-atlas.png",
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5"
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-demo-escala-4x.png",
+    "sha256": "1A6A9FBD1ED078F7DD1B29EEB2332E6B8C39C0F9C3B190311AAA0CF6A9DEF99E"
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/referencia-fabrica-v1.png",
+    "sha256": "DD490241AE719E616B8842E38D9AFD650E3F9A19D928B318CEDF7AECF9BB938B"
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png",
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5"
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1.aseprite",
+    "sha256": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8"
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-demo-escala.png",
+    "sha256": "00F5D3B65469ECA6421E8FE1FFDC2ABF1F1F55B1F864AA933DFD2B9D6D941CF1"
+  }
+]

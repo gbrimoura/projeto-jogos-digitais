@@ -1,0 +1,9 @@
+[0m
+> plan · muse-spark-1.3-contributor
+[0m
+STATUS: done
+SUMMARY: R2 APROVADA só-lógica — leftPoses={1,1,2,2,3,3,3} igual a rightPoses corrige inversão R1; mirror() só espelha pixels W-1-x sem reordenar; cadência 2x20/2x20/3x20=40/40/60 por viagem, 7x20=140ms/viagem, total 16q/880ms; deslocamento 90-40=50px só no canvas preview root_x-32, ASE com cels 0,0 FORWARDx1; gate gif_only=true preserva ASE/sheet/contact/comparison/metadata, GIF sempre via saveCopyAs. Contratos atendidos. Sem inspeção visual de PNG/GIF.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Orientação nativa do idle do baseline não verificável só pelo gerador — coerência dos flips do idle (true@40/false@90) assumida pelo comentário; mirror() usa W global, frágil se reusado; hashes de não-alteração aceitos por relato, não re-verificados neste modo no-tools.
+NEXT_STEP: Manter freeze; validação visual humana externa do GIF ed60a6... e seguir para integração runtime.

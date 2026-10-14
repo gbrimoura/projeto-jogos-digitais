@@ -1,0 +1,445 @@
+READ-ONLY static review; no tools, edits, tests or engine. Timeout10min. User reports falling outside map after skin. EXISTING LOG confirms solid_platform.gd ParseError Could not find type FactorySurfaceVisual causing floor script to fail: scene savedsize1152x88 but collider inherited220x24. Fix removes helperglobalclassname and any casts to it, Node2D.set for visual, collider sync independent of visuals. Shapes now saved per instance via inherited CollisionShape2D index0 override. Review GDScript parse/scene inheritance/load_steps/shapes/layers and preserve gameplay. Decor no physics. All nonfloor platforms24height, floors88. Full scripts/sharedscene/tileset and incremental sceneDIFFS follow; actor/player/HUD nodes unchanged. Player capsule14radius height76 center-38 layer2 mask9, spawn160,560 (main),128,560(second); Worldwalls floorlayer1. Output STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP, concretebugs with file/severity. Do not infer missing code from diffs.
+FULL scripts/world/solid_platform.gd
+@tool
+class_name SolidPlatform
+extends StaticBody2D
+
+@export var size: Vector2 = Vector2(220.0, 24.0):
+	set(value):
+		size = Vector2(maxf(value.x, 1.0), maxf(value.y, 1.0))
+		_sync_geometry()
+
+@export var fill_color: Color = Color("#263545"):
+	set(value):
+		fill_color = value
+		_sync_geometry()
+
+@export var factory_skin_enabled: bool = false:
+	set(value):
+		factory_skin_enabled = value
+		_sync_surface_skin()
+
+@export_enum("Platform", "Block") var factory_surface_style: int = 0:
+	set(value):
+		factory_surface_style = clampi(value, 0, 1)
+		_sync_surface_skin()
+
+func _ready() -> void:
+	_sync_geometry()
+
+func _sync_geometry() -> void:
+	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision_shape != null:
+		var rectangle := collision_shape.shape as RectangleShape2D
+		if rectangle != null:
+			if not rectangle.resource_local_to_scene:
+				rectangle = rectangle.duplicate() as RectangleShape2D
+				rectangle.resource_local_to_scene = true
+				collision_shape.shape = rectangle
+			rectangle.size = size
+
+	var half_size := size * 0.5
+	var visual_fill := get_node_or_null("Visuals/Fill") as Polygon2D
+	if visual_fill != null:
+		visual_fill.color = fill_color
+		visual_fill.polygon = PackedVector2Array([
+			Vector2(-half_size.x, -half_size.y),
+			Vector2(half_size.x, -half_size.y),
+			Vector2(half_size.x, half_size.y),
+			Vector2(-half_size.x, half_size.y),
+		])
+
+	var top_edge := get_node_or_null("Visuals/TopEdge") as Line2D
+	if top_edge != null:
+		top_edge.points = PackedVector2Array([
+			Vector2(-half_size.x, -half_size.y),
+			Vector2(half_size.x, -half_size.y),
+		])
+
+	var floor_detail := get_node_or_null("FloorDetail") as Line2D
+	if floor_detail != null:
+		floor_detail.position = Vector2(0.0, -half_size.y + 32.0)
+		floor_detail.points = PackedVector2Array([
+			Vector2(-half_size.x, 0.0),
+			Vector2(half_size.x, 0.0),
+		])
+
+	_sync_surface_skin()
+
+func _sync_surface_skin() -> void:
+	var surface_visual := get_node_or_null("Visuals/FactorySurfaceVisual") as Node2D
+	var visual_fill := get_node_or_null("Visuals/Fill") as Polygon2D
+	var top_edge := get_node_or_null("Visuals/TopEdge") as Line2D
+	var floor_detail := get_node_or_null("FloorDetail") as Line2D
+	var use_factory_skin: bool = factory_skin_enabled and surface_visual != null
+	if surface_visual != null:
+		surface_visual.set("surface_size", size)
+		surface_visual.set("surface_style", factory_surface_style)
+		surface_visual.visible = use_factory_skin
+	if visual_fill != null:
+		visual_fill.visible = not use_factory_skin
+	if top_edge != null:
+		top_edge.visible = not use_factory_skin
+	if floor_detail != null:
+		floor_detail.visible = not use_factory_skin
+
+FULL scripts/world/factory_surface_visual.gd
+@tool
+extends Node2D
+
+const SOURCE_TILE_SIZE: float = 32.0
+const WORLD_SCALE: float = 2.0
+const WORLD_TILE_SIZE: float = SOURCE_TILE_SIZE * WORLD_SCALE
+const MIN_REMAINDER: float = 0.001
+const FACTORY_TILESET: TileSet = preload("res://resources/environment/factory_tileset_v1.tres")
+
+enum SurfaceStyle { PLATFORM, BLOCK }
+
+@export var surface_size: Vector2 = Vector2(220.0, 24.0):
+	set(value):
+		surface_size = Vector2(maxf(value.x, 0.0), maxf(value.y, 0.0))
+		if is_inside_tree():
+			queue_redraw()
+
+@export_enum("Platform", "Block") var surface_style: int = SurfaceStyle.PLATFORM:
+	set(value):
+		surface_style = clampi(value, SurfaceStyle.PLATFORM, SurfaceStyle.BLOCK)
+		if is_inside_tree():
+			queue_redraw()
+
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func _draw() -> void:
+	if surface_size.x <= 0.0 or surface_size.y <= 0.0:
+		return
+
+	var atlas_source: TileSetAtlasSource = FACTORY_TILESET.get_source(0) as TileSetAtlasSource
+	if atlas_source == null:
+		return
+	var atlas: Texture2D = atlas_source.texture
+	if atlas == null:
+		return
+
+	if surface_style == SurfaceStyle.BLOCK:
+		_draw_block(atlas)
+	else:
+		_draw_platform(atlas)
+
+func _draw_platform(atlas: Texture2D) -> void:
+	var source_height: float = minf(SOURCE_TILE_SIZE, surface_size.y / WORLD_SCALE)
+	_draw_triplet(atlas, 96.0, source_height, -surface_size.y * 0.5, surface_size.x, 0, 1, 2)
+
+func _draw_block(atlas: Texture2D) -> void:
+	var top_height: float = minf(WORLD_TILE_SIZE, surface_size.y)
+	var top_source_height: float = top_height / WORLD_SCALE
+	var top_y: float = -surface_size.y * 0.5
+	_draw_triplet(atlas, 0.0, top_source_height, top_y, surface_size.x, 0, 1, 2)
+
+	var remaining_height: float = surface_size.y - top_height
+	if remaining_height <= 0.0:
+		return
+
+	var bottom_height: float = minf(WORLD_TILE_SIZE, remaining_height)
+	if remaining_height > WORLD_TILE_SIZE:
+		var fill_height: float = remaining_height - WORLD_TILE_SIZE
+		var fill_y: float = top_y + top_height
+		while fill_height > MIN_REMAINDER:
+			var slice_height: float = minf(WORLD_TILE_SIZE, fill_height)
+			_draw_triplet(
+				atlas,
+				32.0,
+				slice_height / WORLD_SCALE,
+				fill_y,
+				surface_size.x,
+				0,
+				1,
+				2
+			)
+			fill_y += slice_height
+			fill_height -= slice_height
+		bottom_height = WORLD_TILE_SIZE
+
+	var bottom_source_height: float = bottom_height / WORLD_SCALE
+	var bottom_source_y: float = 64.0 + SOURCE_TILE_SIZE - bottom_source_height
+	var bottom_y: float = surface_size.y * 0.5 - bottom_height
+	_draw_triplet(atlas, bottom_source_y, bottom_source_height, bottom_y, surface_size.x, 0, 1, 2)
+
+func _draw_triplet(
+	atlas: Texture2D,
+	source_y: float,
+	source_height: float,
+	destination_y: float,
+	width: float,
+	left_column: int,
+	middle_column: int,
+	right_column: int
+) -> void:
+	if width <= 0.0 or source_height <= 0.0:
+		return
+
+	var half_width: float = width * 0.5
+	var source_cap_width: float = minf(SOURCE_TILE_SIZE, width / (WORLD_SCALE * 2.0))
+	var destination_cap_width: float = source_cap_width * WORLD_SCALE
+	var destination_rect: Rect2
+	var source_rect: Rect2
+
+	if destination_cap_width > 0.0:
+		destination_rect = Rect2(
+			Vector2(-half_width, destination_y),
+			Vector2(destination_cap_width, source_height * WORLD_SCALE)
+		)
+		source_rect = Rect2(
+			Vector2(float(left_column) * SOURCE_TILE_SIZE, source_y),
+			Vector2(source_cap_width, source_height)
+		)
+		draw_texture_rect_region(atlas, destination_rect, source_rect, Color.WHITE)
+
+		destination_rect = Rect2(
+			Vector2(half_width - destination_cap_width, destination_y),
+			Vector2(destination_cap_width, source_height * WORLD_SCALE)
+		)
+		source_rect = Rect2(
+			Vector2(
+				float(right_column) * SOURCE_TILE_SIZE + SOURCE_TILE_SIZE - source_cap_width,
+				source_y
+			),
+			Vector2(source_cap_width, source_height)
+		)
+		draw_texture_rect_region(atlas, destination_rect, source_rect, Color.WHITE)
+
+	var middle_start: float = -half_width + destination_cap_width
+	var middle_end: float = half_width - destination_cap_width
+	var cursor: float = middle_start
+	while cursor < middle_end - MIN_REMAINDER:
+		var remaining_middle: float = middle_end - cursor
+		var source_middle_width: float = minf(SOURCE_TILE_SIZE, remaining_middle / WORLD_SCALE)
+		if source_middle_width <= 0.0:
+			break
+		var destination_middle_width: float = source_middle_width * WORLD_SCALE
+		destination_rect = Rect2(
+			Vector2(cursor, destination_y),
+			Vector2(destination_middle_width, source_height * WORLD_SCALE)
+		)
+		source_rect = Rect2(
+			Vector2(float(middle_column) * SOURCE_TILE_SIZE, source_y),
+			Vector2(source_middle_width, source_height)
+		)
+		draw_texture_rect_region(atlas, destination_rect, source_rect, Color.WHITE)
+		cursor += destination_middle_width
+
+FULL scenes/solid_platform.tscn
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/solid_platform.gd" id="1_platform"]
+[ext_resource type="Script" path="res://scripts/world/factory_surface_visual.gd" id="2_factory_surface"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+resource_local_to_scene = true
+size = Vector2(220.0, 24.0)
+
+[node name="SolidPlatform" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_platform")
+fill_color = Color(0.14902, 0.207843, 0.270588, 1)
+size = Vector2(220.0, 24.0)
+factory_skin_enabled = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_platform")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="Fill" type="Polygon2D" parent="Visuals"]
+color = Color(0.14902, 0.207843, 0.270588, 1)
+polygon = PackedVector2Array(-110.0, -12.0, 110.0, -12.0, 110.0, 12.0, -110.0, 12.0)
+
+[node name="TopEdge" type="Line2D" parent="Visuals"]
+width = 3.0
+default_color = Color(0.941176, 0.701961, 0.356863, 1)
+points = PackedVector2Array(-110.0, -12.0, 110.0, -12.0)
+
+[node name="FactorySurfaceVisual" type="Node2D" parent="Visuals"]
+script = ExtResource("2_factory_surface")
+
+FULL resources/environment/factory_tileset_v1.tres
+[gd_resource type="TileSet" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="1_atlas"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_factory_v1"]
+texture = ExtResource("1_atlas")
+texture_region_size = Vector2i(32, 32)
+; (0,0) terrain_top_left — upper-left block corner.
+0:0/0 = 0
+; (1,0) terrain_top_mid — repeatable top span.
+1:0/0 = 0
+; (2,0) terrain_top_right — upper-right block corner.
+2:0/0 = 0
+; (3,0) steel_panel — decorative panel.
+3:0/0 = 0
+; (0,1) terrain_side_left — left block edge.
+0:1/0 = 0
+; (1,1) terrain_fill — repeatable interior fill.
+1:1/0 = 0
+; (2,1) terrain_side_right — right block edge.
+2:1/0 = 0
+; (3,1) pipe_horizontal — decorative horizontal pipe.
+3:1/0 = 0
+; (0,2) terrain_bottom_left — lower-left block corner.
+0:2/0 = 0
+; (1,2) terrain_bottom_mid — repeatable base span.
+1:2/0 = 0
+; (2,2) terrain_bottom_right — lower-right block corner.
+2:2/0 = 0
+; (3,2) pipe_vertical — decorative vertical pipe.
+3:2/0 = 0
+; (0,3) platform_left — visual beam cap, no collision defined.
+0:3/0 = 0
+; (1,3) platform_mid — visual repeatable beam, no collision defined.
+1:3/0 = 0
+; (2,3) platform_right — visual beam cap, no collision defined.
+2:3/0 = 0
+; (3,3) pipe_corner — decorative elbow, top and right connectors.
+3:3/0 = 0
+
+; Set nearest filtering on CanvasItem/TileMapLayer, not on TileSet.
+
+[resource]
+resource_name = "FactoryTilesetV1"
+tile_size = Vector2i(32, 32)
+sources/0 = SubResource("TileSetAtlasSource_factory_v1")
+
+INCREMENTAL SCENE DIFF scenes/main.tscn
+diff --git a/docs/specs/2026-10-14-colisao-fabrica/historico/base/scenes/main.tscn b/scenes/main.tscn
+index 2cc6d65..2380fdd 100644
+--- a/docs/specs/2026-10-14-colisao-fabrica/historico/base/scenes/main.tscn
++++ b/scenes/main.tscn
+@@ -1,4 +1,4 @@
+-[gd_scene load_steps=13 format=3 uid="uid://dlgvrryxeujdh"]
++[gd_scene load_steps=17 format=3 uid="uid://dlgvrryxeujdh"]
+ 
+ [ext_resource type="Script" uid="uid://07rr2hs2ow5b" path="res://scripts/world/main.gd" id="1_main"]
+ [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+@@ -19,6 +19,18 @@ size = Vector2(32, 648)
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+ size = Vector2(1152, 32)
+ 
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
++size = Vector2(1152, 88)
++
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_a"]
++size = Vector2(220, 24)
++
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_b"]
++size = Vector2(190, 24)
++
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_c"]
++size = Vector2(190, 24)
++
+ [node name="Main" type="Node2D" unique_id=206969936]
+ script = ExtResource("1_main")
+ next_room_scene_path = "res://scenes/second_room.tscn"
+@@ -270,6 +282,9 @@ size = Vector2(1152, 88)
+ fill_color = Color(0.101961, 0.14902, 0.196078, 1)
+ factory_surface_style = 1
+ 
++[node name="CollisionShape2D" parent="Floor" index="0"]
++shape = SubResource("RectangleShape2D_floor")
++
+ [node name="FloorDetail" type="Line2D" parent="Floor" unique_id=717280858]
+ position = Vector2(0, -12)
+ points = PackedVector2Array(-576, 0, 576, 0)
+@@ -279,14 +294,23 @@ default_color = Color(0.145098, 0.215686, 0.27451, 1)
+ [node name="PlatformA" parent="." unique_id=1192556465 instance=ExtResource("5_solid_platform")]
+ position = Vector2(290, 452)
+ 
++[node name="CollisionShape2D" parent="PlatformA" index="0"]
++shape = SubResource("RectangleShape2D_platform_a")
++
+ [node name="PlatformB" parent="." unique_id=1509114514 instance=ExtResource("5_solid_platform")]
+ position = Vector2(615, 362)
+ size = Vector2(190, 24)
+ 
++[node name="CollisionShape2D" parent="PlatformB" index="0"]
++shape = SubResource("RectangleShape2D_platform_b")
++
+ [node name="PlatformC" parent="." unique_id=1065536872 instance=ExtResource("5_solid_platform")]
+ position = Vector2(915, 452)
+ size = Vector2(190, 24)
+ 
++[node name="CollisionShape2D" parent="PlatformC" index="0"]
++shape = SubResource("RectangleShape2D_platform_c")
++
+ [node name="ExitDoor" parent="." instance=ExtResource("8_exit_door")]
+ position = Vector2(1080, 522)
+ 
+INCREMENTAL SCENE DIFF scenes/second_room.tscn
+diff --git a/docs/specs/2026-10-14-colisao-fabrica/historico/base/scenes/second_room.tscn b/scenes/second_room.tscn
+index 97f8d8b..03283ae 100644
+--- a/docs/specs/2026-10-14-colisao-fabrica/historico/base/scenes/second_room.tscn
++++ b/scenes/second_room.tscn
+@@ -1,4 +1,4 @@
+-[gd_scene load_steps=12 format=3]
++[gd_scene load_steps=16 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
+ [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+@@ -18,6 +18,18 @@ size = Vector2(32, 648)
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+ size = Vector2(1152, 32)
+ 
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_floor"]
++size = Vector2(1152, 88)
++
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_west_platform"]
++size = Vector2(240, 24)
++
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_upper_platform"]
++size = Vector2(190, 24)
++
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_east_platform"]
++size = Vector2(170, 24)
++
+ [node name="SecondRoom" type="Node2D"]
+ script = ExtResource("1_main")
+ next_room_scene_path = ""
+@@ -113,6 +125,9 @@ size = Vector2(1152, 88)
+ fill_color = Color(0.11, 0.17, 0.19, 1)
+ factory_surface_style = 1
+ 
++[node name="CollisionShape2D" parent="Floor" index="0"]
++shape = SubResource("RectangleShape2D_floor")
++
+ [node name="FloorDetail" type="Line2D" parent="Floor"]
+ position = Vector2(0, -12)
+ points = PackedVector2Array(-576, 0, 576, 0)
+@@ -124,16 +139,25 @@ position = Vector2(340, 430)
+ size = Vector2(240, 24)
+ fill_color = Color(0.14, 0.2, 0.22, 1)
+ 
++[node name="CollisionShape2D" parent="WestPlatform" index="0"]
++shape = SubResource("RectangleShape2D_west_platform")
++
+ [node name="UpperPlatform" parent="." instance=ExtResource("5_solid_platform")]
+ position = Vector2(615, 385)
+ size = Vector2(190, 24)
+ fill_color = Color(0.14, 0.2, 0.22, 1)
+ 
++[node name="CollisionShape2D" parent="UpperPlatform" index="0"]
++shape = SubResource("RectangleShape2D_upper_platform")
++
+ [node name="EastPlatform" parent="." instance=ExtResource("5_solid_platform")]
+ position = Vector2(950, 460)
+ size = Vector2(170, 24)
+ fill_color = Color(0.14, 0.2, 0.22, 1)
+ 
++[node name="CollisionShape2D" parent="EastPlatform" index="0"]
++shape = SubResource("RectangleShape2D_east_platform")
++
+ [node name="PlayerSpawnMarker" type="Marker2D" parent="."]
+ position = Vector2(128, 560)
+ 
+

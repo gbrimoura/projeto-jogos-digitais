@@ -1,0 +1,280 @@
+READ-ONLY STATIC REVIEW, timeout3 minutes for this narrow new asset increment (no gameplay code or scene changes). No tools/tests/Godot/import/modifications. Return stdout STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS concrete severity+evidence/NEXT_STEP. Review full sources below; do not infer missing methods. User asks initial factory tileset via same methodology: GDD first -> ImageGen reference -> faithful Aseprite extraction -> align grid -> standalone Godot resource. GDD Notion official pages: industrial decaying1930s-40s factory, functional steel/pipes, warm charcoal/gray/rust/amber, silhouette & ricochet readability, foreground action > playable surfaces > decorative props > background. Palette/resolution final undecided. This starter slice32px/16tiles/20environmentcolors is a provisional task choice, not GDD decision. Current protagonist idle0 exact23x50 in64cell, blue/ivory/yellow; scale2 current gameplay. No new hazards/machinery physics, no current main/solidPlatform/player changes. Main inspected reference, contact & connector V3, corrected platform32widths, floor side caps, corner ports local copied registration(+9,-10, samecropflange and edge extrusion) and approved final demos. Warm metallic grid welds are intentional reference material, not unwanted grid overlay. Generator preserves reference, quantizes before source export, alpha binary threshold128, nearest. Independent TileSet16 atlas regions32 has no collision/terrain auto solver; nearest1 on CanvasItem in demo_editor, not nonexistent TileSet.filter. .TRES comments use semicolon per official Godot4.7 doc https://docs.godotengine.org/en/4.7/engine_details/file_formats/tscn.html . Atlas native128x128. All source/PNG/demo runtime copies match byte hashes. Palette-source-v1.json is raw frequency analysis only, NOT locked palette; palette-fabrica-v1.json is actual20-color material-balanced set. JSON final status may be updated after art export; generator can reset preparation manifest/README on explicit rerun but NEVER writes runtime assets. Existing local changes must remain intact. Report current concrete bugs, distinguish harmless future maintenance risk and unverified aesthetics. No engine execution has happened.
+FULL SOURCE ../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1.lua
+
+-- Factory tileset v1, reproducible art extraction via Aseprite 1.3.18.6.
+-- Writes only pitch-assets inspection art. No Godot/runtime files are changed.
+local p = app.params or {}
+local OUT = app.fs.normalizePath(assert(p.out, 'Provide out=<pitch-assets folder>'))
+local REF = assert(p.reference, 'Provide reference=<frozen PNG>')
+local PLAYER = assert(p.player_atlas, 'Provide player_atlas=<current player PNG>')
+local function path(n) return app.fs.joinPath(OUT,n) end
+local pc = app.pixelColor
+local CELL, ALPHA, ZOOM = 32, 128, 4
+local groups = {
+ {name='charcoal',role='outline and shadows',colors={'#0E0D0E','#1D1B1A','#302D2A','#433E39'}},
+ {name='warm_steel',role='warm steel and aged cut light',colors={'#5B5249','#756957','#90816A','#BAAA8B','#D3C3A7','#E7CFAD'}},
+ {name='rust_copper',role='rust and maintenance copper',colors={'#4A2D21','#563829','#70432C','#925A36','#B37949','#C68D58','#8F7059','#A68266'}},
+ {name='amber',role='restrained maintenance amber',colors={'#B78342','#D2A75C'}}
+}
+local hexes, rgb = {}, {}
+local function rgbOf(h) return tonumber(h:sub(2,3),16),tonumber(h:sub(4,5),16),tonumber(h:sub(6,7),16) end
+for _,g in ipairs(groups) do for _,h in ipairs(g.colors) do local r,gg,b=rgbOf(h); hexes[#hexes+1]=h; rgb[#rgb+1]={r,gg,b} end end
+assert(#rgb==20,'Expected 20 fixed environment colors')
+local pal=Palette(#rgb)
+for i,c in ipairs(rgb) do pal:setColor(i-1,Color(c[1],c[2],c[3])) end
+local function quantize(raw)
+ local r,g,b=pc.rgbaR(raw),pc.rgbaG(raw),pc.rgbaB(raw)
+ local best,dist=1,math.huge
+ for i,c in ipairs(rgb) do local dr,dg,db=r-c[1],g-c[2],b-c[3]; local d=2*dr*dr+4*dg*dg+3*db*db; if d<dist then best,dist=i,d end end
+ local c=rgb[best]; return Color(c[1],c[2],c[3],255),hexes[best]
+end
+local ref=assert(app.open(REF),'Could not open reference')
+assert(#ref.frames==1 and #ref.cels>=1,'Reference must be static PNG')
+local src=ref.cels[1].image
+assert(src.width==ref.width and src.height==ref.height,'Reference cel must cover canvas')
+local SW,SH=src.width,src.height
+local defs={
+ {name='terrain_top_left',c=0,r=0,k='terrain',roi={x=54,y=80,w=286,h=280},usage='upper-left block corner'},
+ {name='terrain_top_mid',c=1,r=0,k='terrain',roi={x=344,y=80,w=279,h=280},usage='repeatable top segment'},
+ {name='terrain_top_right',c=2,r=0,k='terrain',roi={x=630,y=80,w=280,h=280},usage='upper-right block corner'},
+ {name='steel_panel',c=3,r=0,k='prop',roi={x=912,y=78,w=295,h=275},mw=32,mh=32,usage='decorative steel panel'},
+ {name='terrain_side_left',c=0,r=1,k='terrain',roi={x=54,y=367,w=286,h=273},usage='left block edge'},
+ {name='terrain_fill',c=1,r=1,k='terrain',roi={x=344,y=367,w=279,h=273},usage='repeatable interior fill'},
+ {name='terrain_side_right',c=2,r=1,k='terrain',roi={x=630,y=367,w=280,h=273},usage='right block edge'},
+ {name='pipe_horizontal',c=3,r=1,k='prop',roi={x=908,y=426,w=300,h=148},mw=32,mh=32,usage='decorative horizontal pipe, edge-to-edge'},
+ {name='terrain_bottom_left',c=0,r=2,k='terrain',roi={x=54,y=647,w=286,h=266},usage='lower-left block corner'},
+ {name='terrain_bottom_mid',c=1,r=2,k='terrain',roi={x=344,y=647,w=279,h=266},usage='repeatable base segment'},
+ {name='terrain_bottom_right',c=2,r=2,k='terrain',roi={x=630,y=647,w=280,h=266},usage='lower-right block corner'},
+ {name='pipe_vertical',c=3,r=2,k='prop',roi={x=990,y=622,w=130,h=305},mw=32,mh=32,usage='decorative vertical pipe, edge-to-edge'},
+ {name='platform_left',c=0,r=3,k='platform',roi={x=54,y=936,w=286,h=155},mw=32,mh=16,usage='left platform beam; visual only'},
+ {name='platform_mid',c=1,r=3,k='platform',roi={x=344,y=936,w=279,h=155},mw=32,mh=16,usage='repeatable platform beam; visual only'},
+ {name='platform_right',c=2,r=3,k='platform',roi={x=630,y=936,w=280,h=155},mw=32,mh=16,usage='right platform beam; visual only'},
+ {name='pipe_corner',c=3,r=3,k='prop',roi={x=990,y=912,w=230,h=235},mw=32,mh=32,usage='decorative elbow, top and right connection; ports centered at x16 and y16'}
+}
+local function alpha(x,y) if x<0 or y<0 or x>=SW or y>=SH then return 0 end return pc.rgbaA(src:getPixel(x,y)) end
+local function findBounds(q)
+ local x0,y0,x1,y1=SW,SH,-1,-1
+ for y=q.y,math.min(SH-1,q.y+q.h-1) do for x=q.x,math.min(SW-1,q.x+q.w-1) do
+  if alpha(x,y)>=ALPHA then x0,y0,x1,y1=math.min(x0,x),math.min(y0,y),math.max(x1,x),math.max(y1,y) end
+ end end
+ assert(x1>=x0 and y1>=y0,'Empty source crop')
+ return {x=x0,y=y0,w=x1-x0+1,h=y1-y0+1}
+end
+local tiles,used={},{}
+local function render(d)
+ local b=d.k=='terrain' and d.roi or findBounds(d.roi); d.bounds=b
+ local dw,dh,ox,oy
+ if d.k=='terrain' then dw,dh,ox,oy=CELL,CELL,0,0; d.resample='nearest to 32x32 logical cell'
+ elseif d.k=='platform' then
+  local s=CELL/b.w; dw=CELL; dh=math.max(1,math.floor(b.h*s+0.5)); ox,oy=0,0
+  d.resample='uniform nearest; exact 32px width, proportional height, top aligned'
+ else
+  local s=math.min(d.mw/b.w,d.mh/b.h); dw=math.max(1,math.floor(b.w*s+0.5)); dh=math.max(1,math.floor(b.h*s+0.5))
+  ox=math.floor((CELL-dw)/2); oy=math.floor((CELL-dh)/2); d.resample='uniform nearest fit; proportions preserved'
+ end
+ d.output={x=ox,y=oy,w=dw,h=dh}
+ local im=Image(CELL,CELL)
+ for y=0,dh-1 do local sy=b.y+math.min(b.h-1,math.floor((y+0.5)*b.h/dh)); for x=0,dw-1 do
+  local sx=b.x+math.min(b.w-1,math.floor((x+0.5)*b.w/dw)); local raw=src:getPixel(sx,sy)
+  if pc.rgbaA(raw)>=ALPHA then local col,h=quantize(raw); im:drawPixel(ox+x,oy+y,col); used[h]=true end
+ end end
+ local set={}; for y=0,CELL-1 do for x=0,CELL-1 do local v=im:getPixel(x,y); if pc.rgbaA(v)>0 then set[string.format('#%02X%02X%02X',pc.rgbaR(v),pc.rgbaG(v),pc.rgbaB(v))]=true end end end
+ d.colors=0; for _ in pairs(set) do d.colors=d.colors+1 end
+ return im
+end
+local function alignCorner(raw)
+ local aligned=Image(CELL,CELL)
+ for y=0,CELL-1 do for x=0,CELL-1 do
+  local v=raw:getPixel(x,y)
+  if pc.rgbaA(v)>0 then local nx,ny=x+9,y-10; if nx>=0 and nx<CELL and ny>=0 and ny<CELL then aligned:drawPixel(nx,ny,v) end end
+ end end
+ -- Preserve the reference top flange at the new shared centerline.
+ for y=0,2 do for x=0,CELL-1 do local v=raw:getPixel(x,y); local nx=x+9; if nx<CELL and pc.rgbaA(v)>0 then aligned:drawPixel(nx,y,v) end end end
+ -- Extend exactly one edge column so the outlet reaches the atlas-cell boundary.
+ for y=0,CELL-1 do local v=aligned:getPixel(30,y); if pc.rgbaA(v)>0 then aligned:drawPixel(31,y,v) end end
+ return aligned
+end
+local function extendPipePorts(im)
+ -- Copy only the outermost samples of the same cylinder so its axis reaches both cell boundaries.
+ for y=0,CELL-1 do
+  if pc.rgbaA(im:getPixel(0,y))==0 and pc.rgbaA(im:getPixel(1,y))>0 then im:drawPixel(0,y,im:getPixel(1,y)) end
+  if pc.rgbaA(im:getPixel(31,y))==0 and pc.rgbaA(im:getPixel(30,y))>0 then im:drawPixel(31,y,im:getPixel(30,y)) end
+ end
+end
+for _,d in ipairs(defs) do
+ local im=render(d)
+ if d.name=='pipe_corner' then
+  im=alignCorner(im)
+  d.output={x=11,y=0,w=21,h=32}
+  d.resample='uniform nearest fit; translated +9,-10 px to center top/right ports; top flange restored from same crop and one right-edge pixel extruded'
+ elseif d.name=='pipe_horizontal' then
+  extendPipePorts(im)
+  d.resample=d.resample..'; boundary port columns copied from adjacent same-source samples where transparent'
+ end
+ local bx0,by0,bx1,by1=CELL,CELL,-1,-1
+ for y=0,CELL-1 do for x=0,CELL-1 do if pc.rgbaA(im:getPixel(x,y))>0 then bx0,by0,bx1,by1=math.min(bx0,x),math.min(by0,y),math.max(bx1,x),math.max(by1,y) end end end
+ d.opaque_bounds={x=bx0,y=by0,w=bx1-bx0+1,h=by1-by0+1}
+ tiles[d.name]=im
+end
+local atlas,terrain,props=Image(128,128),Image(128,128),Image(128,128)
+for _,d in ipairs(defs) do local x,y=d.c*CELL,d.r*CELL; atlas:drawImage(tiles[d.name],x,y); if d.k=='prop' then props:drawImage(tiles[d.name],x,y) else terrain:drawImage(tiles[d.name],x,y) end end
+local spr=Sprite(128,128,ColorMode.RGB)
+while #spr.layers>1 do spr:deleteLayer(spr.layers[#spr.layers]) end
+spr:setPalette(pal)
+local base=spr.layers[1]; base.name='Terrain and platforms'; local cel=spr:newCel(base,1); cel.image,cel.position=terrain,Point(0,0)
+local pl=spr:newLayer(); pl.name='Decorative props'; local pcel=spr:newCel(pl,1); pcel.image,pcel.position=props,Point(0,0)
+spr:saveAs(path('tileset-fabrica-v1.aseprite'))
+atlas:saveAs(path('tileset-fabrica-v1-atlas.png'))
+local function zoom(im,n)
+ local z=Image(im.width*n,im.height*n)
+ for y=0,im.height-1 do for x=0,im.width-1 do local v=im:getPixel(x,y); for yy=0,n-1 do for xx=0,n-1 do z:drawPixel(x*n+xx,y*n+yy,v) end end end end
+ return z
+end
+zoom(atlas,ZOOM):saveAs(path('tileset-fabrica-v1-contact-4x.png'))
+-- Native-scale demo: eight-tile floor, five-cell platform and exact idle bounds.
+local demo=Image(304,224); local bg=Color(14,13,14,255)
+for y=0,demo.height-1 do for x=0,demo.width-1 do demo:drawPixel(x,y,bg) end end
+local function put(n,x,y) demo:drawImage(tiles[n],x,y) end
+local fx,fy,nc=16,128,8
+for c=0,nc-1 do local side=c==0 and 'left' or (c==nc-1 and 'right' or 'mid'); local body=c==0 and 'terrain_side_left' or (c==nc-1 and 'terrain_side_right' or 'terrain_fill'); put('terrain_top_'..side,fx+c*32,fy); put(body,fx+c*32,fy+32); put('terrain_bottom_'..side,fx+c*32,fy+64) end
+local px,py=80,96; put('platform_left',px,py); for c=1,3 do put('platform_mid',px+c*32,py) end; put('platform_right',px+128,py)
+put('steel_panel',16,32); put('pipe_vertical',208,0); put('pipe_corner',208,32); put('pipe_horizontal',240,32)
+local player=assert(app.open(PLAYER),'Could not open current player atlas'); local pc1=assert(player.cels[1],'Missing idle cel'); local pim=pc1.image
+local x0,y0,x1,y1=pim.width,pim.height,-1,-1
+for y=0,math.min(63,pim.height-1) do for x=0,math.min(63,pim.width-1) do if pc.rgbaA(pim:getPixel(x,y))>0 then x0,y0,x1,y1=math.min(x0,x),math.min(y0,y),math.max(x1,x),math.max(y1,y) end end end
+assert(x1-x0+1==23 and y1-y0+1==50,string.format('Expected idle 23x50; got %dx%d',x1-x0+1,y1-y0+1))
+local idle=Image(23,50); for y=0,49 do for x=0,22 do idle:drawPixel(x,y,pim:getPixel(x0+x,y0+y)) end end
+local supportY=CELL
+for y=0,CELL-1 do
+ local count=0; for x=4,27 do if pc.rgbaA(tiles.platform_mid:getPixel(x,y))>0 then count=count+1 end end
+ if count>0 then supportY=y; break end
+end
+local ix,iy=px+2*32+4,py+supportY-50; assert(iy+50==py+supportY,'Idle crop must meet the first visible beam row'); demo:drawImage(idle,ix,iy); demo:saveAs(path('tileset-fabrica-v1-demo-escala.png')); zoom(demo,4):saveAs(path('tileset-fabrica-v1-demo-escala-4x.png'))
+local connectorDemo=Image(96,96); for y=0,95 do for x=0,95 do connectorDemo:drawPixel(x,y,bg) end end
+connectorDemo:drawImage(tiles.pipe_vertical,32,0); connectorDemo:drawImage(tiles.pipe_corner,32,32); connectorDemo:drawImage(tiles.pipe_horizontal,64,32)
+connectorDemo:saveAs(path('tileset-fabrica-v1-demo-tubos.png')); zoom(connectorDemo,4):saveAs(path('tileset-fabrica-v1-demo-tubos-4x.png'))
+local mf=assert(io.open(path('tileset-fabrica-v1-manifest.json'),'wb'))
+mf:write('{\n "status":"V3 connector/platform contact approved by principal; runtime copies and TileSet resource prepared",\n')
+mf:write(string.format(' "reference":{"file":"referencia-fabrica-v1.png","canvas":{"width":%d,"height":%d},"alpha_threshold":%d},\n',SW,SH,ALPHA))
+mf:write(' "atlas":{"file":"tileset-fabrica-v1-atlas.png","width":128,"height":128,"columns":4,"rows":4,"cell_width":32,"cell_height":32,"gutter":0,"contact":"tileset-fabrica-v1-contact-4x.png","contact_scale":4},\n')
+mf:write(' "palette_file":"palette-fabrica-v1.json","palette_colors":20,"palette_method":"fixed material-balanced set; weighted nearest RGB (2R,4G,3B), not raw frequency top colors",\n')
+mf:write(' "sampling":{"alpha":"binary threshold 128/255","resampling":"nearest neighbor","props_and_platforms":"uniform proportional fit; platform aligned to cell top","terrain":"each ROI sampled to a square 32x32 cell"},\n')
+mf:write(string.format(' "scale_demo":{"file":"tileset-fabrica-v1-demo-escala.png","file_4x":"tileset-fabrica-v1-demo-escala-4x.png","player_source":"assets/player/player-animations.png frame 0","player_crop":{"x":%d,"y":%d,"width":23,"height":50},"player_scale":1,"support_row_in_mid_tile":%d,"platform_segment_heights_px":{"left":%d,"mid":%d,"right":%d}},\n',x0,y0,supportY,defs[13].output.h,defs[14].output.h,defs[15].output.h))
+mf:write(' "tiles":[\n')
+for i,d in ipairs(defs) do local b,o=d.bounds,d.output; mf:write(string.format('  {"name":"%s","coord":{"column":%d,"row":%d},"usage":"%s","source_roi":{"x":%d,"y":%d,"width":%d,"height":%d},"source_bounds":{"x":%d,"y":%d,"width":%d,"height":%d},"output_bounds":{"x":%d,"y":%d,"width":%d,"height":%d},"opaque_bounds":{"x":%d,"y":%d,"width":%d,"height":%d},"resampling":"%s","unique_colors":%d}%s\n',d.name,d.c,d.r,d.usage,d.roi.x,d.roi.y,d.roi.w,d.roi.h,b.x,b.y,b.w,b.h,o.x,o.y,o.w,o.h,d.opaque_bounds.x,d.opaque_bounds.y,d.opaque_bounds.w,d.opaque_bounds.h,d.resample,d.colors,i==#defs and '' or ',')) end
+mf:write(' ],\n "runtime":{"tile_size":32,"atlas_region_size":32,"filter":"nearest on CanvasItem/TileMapLayer, not TileSet","sample_scale":2,"collision":"none","copy_status":"approved final copy; pixel-identical to approved atlas","atlas_path":"assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"}\n}\n'); mf:close()
+local pf=assert(io.open(path('palette-fabrica-v1.json'),'wb'))
+pf:write('{\n "status":"palette for this reproduction only; not the official GDD palette",\n "count":20,\n "method":"material and tonal clusters balanced before quantization",\n "groups":[\n')
+for gi,g in ipairs(groups) do pf:write(string.format('  {"name":"%s","role":"%s","colors":[',g.name,g.role)); for ci,h in ipairs(g.colors) do pf:write('"'..h..'"'..(ci==#g.colors and '' or ',')) end; pf:write(']}'..(gi==#groups and '\n' or ',\n')) end
+pf:write(' ]\n}\n'); pf:close()
+local rd=assert(io.open(path('README.md'),'wb'))
+rd:write('# Factory Tileset v1 reproduction\n\n')
+rd:write('The generated ImageGen reference is preserved as referencia-fabrica-v1.png. This Aseprite source, 128x128 atlas, 4x nearest contact and native-scale comparison are reproduced from it by tileset-fabrica-v1.lua with Aseprite 1.3.18.6.\n\n')
+rd:write('This task proposes 16 32x32 cells in a 4x4 grid, with no gutter. The environment has its own 20-color warm/desaturated palette balanced by material and tonal ranges. Props and beams preserve proportions with uniform nearest scaling; actual visible beam height and measured source crops are in the manifest. Terrain ROIs are sampled to fill each square cell. Alpha threshold and coordinates are also recorded there.\n\n')
+rd:write('The demo compares the exact 23x50 crop from the current player idle at native 1x scale. It is a visual composition only: no collision or new behavior is specified. Set nearest filtering on CanvasItem/TileMapLayer, not TileSet. Runtime copy and TileSet resource await principal approval of this contact.\n')
+rd:close()
+print(string.format('Generated 16 factory cells, 128x128 atlas and 4x contact from %dx%d reference; player crop %dx%d.',SW,SH,x1-x0+1,y1-y0+1))
+
+FULL SOURCE resources/environment/factory_tileset_v1.tres
+[gd_resource type="TileSet" load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="1_atlas"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_factory_v1"]
+texture = ExtResource("1_atlas")
+texture_region_size = Vector2i(32, 32)
+; (0,0) terrain_top_left — upper-left block corner.
+0:0/0 = 0
+; (1,0) terrain_top_mid — repeatable top span.
+1:0/0 = 0
+; (2,0) terrain_top_right — upper-right block corner.
+2:0/0 = 0
+; (3,0) steel_panel — decorative panel.
+3:0/0 = 0
+; (0,1) terrain_side_left — left block edge.
+0:1/0 = 0
+; (1,1) terrain_fill — repeatable interior fill.
+1:1/0 = 0
+; (2,1) terrain_side_right — right block edge.
+2:1/0 = 0
+; (3,1) pipe_horizontal — decorative horizontal pipe.
+3:1/0 = 0
+; (0,2) terrain_bottom_left — lower-left block corner.
+0:2/0 = 0
+; (1,2) terrain_bottom_mid — repeatable base span.
+1:2/0 = 0
+; (2,2) terrain_bottom_right — lower-right block corner.
+2:2/0 = 0
+; (3,2) pipe_vertical — decorative vertical pipe.
+3:2/0 = 0
+; (0,3) platform_left — visual beam cap, no collision defined.
+0:3/0 = 0
+; (1,3) platform_mid — visual repeatable beam, no collision defined.
+1:3/0 = 0
+; (2,3) platform_right — visual beam cap, no collision defined.
+2:3/0 = 0
+; (3,3) pipe_corner — decorative elbow, top and right connectors.
+3:3/0 = 0
+
+; Set nearest filtering on CanvasItem/TileMapLayer, not on TileSet.
+
+[resource]
+resource_name = "FactoryTilesetV1"
+tile_size = Vector2i(32, 32)
+sources/0 = SubResource("TileSetAtlasSource_factory_v1")
+
+FULL SOURCE assets/environment/factory_v1/demo_editor.tscn
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/environment/factory_v1/tileset-fabrica-v1-demo-escala.png" id="1_demo"]
+
+[node name="FactoryTilesetPreview" type="Node2D"]
+
+[node name="Demo" type="Sprite2D" parent="."]
+texture = ExtResource("1_demo")
+texture_filter = 1
+centered = false
+scale = Vector2(2, 2)
+
+FULL SOURCE ../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/palette-fabrica-v1.json
+{
+ "status":"palette for this reproduction only; not the official GDD palette",
+ "count":20,
+ "method":"material and tonal clusters balanced before quantization",
+ "groups":[
+  {"name":"charcoal","role":"outline and shadows","colors":["#0E0D0E","#1D1B1A","#302D2A","#433E39"]},
+  {"name":"warm_steel","role":"warm steel and aged cut light","colors":["#5B5249","#756957","#90816A","#BAAA8B","#D3C3A7","#E7CFAD"]},
+  {"name":"rust_copper","role":"rust and maintenance copper","colors":["#4A2D21","#563829","#70432C","#925A36","#B37949","#C68D58","#8F7059","#A68266"]},
+  {"name":"amber","role":"restrained maintenance amber","colors":["#B78342","#D2A75C"]}
+ ]
+}
+
+FULL SOURCE ../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-manifest.json
+{
+ "status":"V3 connector/platform contact approved by principal; runtime copies and TileSet resource prepared",
+ "reference":{"file":"referencia-fabrica-v1.png","canvas":{"width":1254,"height":1254},"alpha_threshold":128},
+ "atlas":{"file":"tileset-fabrica-v1-atlas.png","width":128,"height":128,"columns":4,"rows":4,"cell_width":32,"cell_height":32,"gutter":0,"contact":"tileset-fabrica-v1-contact-4x.png","contact_scale":4},
+ "palette_file":"palette-fabrica-v1.json","palette_colors":20,"palette_method":"fixed material-balanced set; weighted nearest RGB (2R,4G,3B), not raw frequency top colors",
+ "sampling":{"alpha":"binary threshold 128/255","resampling":"nearest neighbor","props_and_platforms":"uniform proportional fit; platform aligned to cell top","terrain":"each ROI sampled to a square 32x32 cell"},
+ "scale_demo":{"file":"tileset-fabrica-v1-demo-escala.png","file_4x":"tileset-fabrica-v1-demo-escala-4x.png","player_source":"assets/player/player-animations.png frame 0","player_crop":{"x":21,"y":7,"width":23,"height":50},"player_scale":1,"support_row_in_mid_tile":0,"platform_segment_heights_px":{"left":16,"mid":10,"right":17}},
+ "tiles":[
+  {"name":"terrain_top_left","coord":{"column":0,"row":0},"usage":"upper-left block corner","source_roi":{"x":54,"y":80,"width":286,"height":280},"source_bounds":{"x":54,"y":80,"width":286,"height":280},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":16},
+  {"name":"terrain_top_mid","coord":{"column":1,"row":0},"usage":"repeatable top segment","source_roi":{"x":344,"y":80,"width":279,"height":280},"source_bounds":{"x":344,"y":80,"width":279,"height":280},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":16},
+  {"name":"terrain_top_right","coord":{"column":2,"row":0},"usage":"upper-right block corner","source_roi":{"x":630,"y":80,"width":280,"height":280},"source_bounds":{"x":630,"y":80,"width":280,"height":280},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":15},
+  {"name":"steel_panel","coord":{"column":3,"row":0},"usage":"decorative steel panel","source_roi":{"x":912,"y":78,"width":295,"height":275},"source_bounds":{"x":915,"y":80,"width":286,"height":269},"output_bounds":{"x":0,"y":1,"width":32,"height":30},"opaque_bounds":{"x":0,"y":1,"width":32,"height":30},"resampling":"uniform nearest fit; proportions preserved","unique_colors":15},
+  {"name":"terrain_side_left","coord":{"column":0,"row":1},"usage":"left block edge","source_roi":{"x":54,"y":367,"width":286,"height":273},"source_bounds":{"x":54,"y":367,"width":286,"height":273},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":12},
+  {"name":"terrain_fill","coord":{"column":1,"row":1},"usage":"repeatable interior fill","source_roi":{"x":344,"y":367,"width":279,"height":273},"source_bounds":{"x":344,"y":367,"width":279,"height":273},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":8},
+  {"name":"terrain_side_right","coord":{"column":2,"row":1},"usage":"right block edge","source_roi":{"x":630,"y":367,"width":280,"height":273},"source_bounds":{"x":630,"y":367,"width":280,"height":273},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":14},
+  {"name":"pipe_horizontal","coord":{"column":3,"row":1},"usage":"decorative horizontal pipe, edge-to-edge","source_roi":{"x":908,"y":426,"width":300,"height":148},"source_bounds":{"x":908,"y":426,"width":296,"height":136},"output_bounds":{"x":0,"y":8,"width":32,"height":15},"opaque_bounds":{"x":0,"y":10,"width":32,"height":13},"resampling":"uniform nearest fit; proportions preserved; boundary port columns copied from adjacent same-source samples where transparent","unique_colors":16},
+  {"name":"terrain_bottom_left","coord":{"column":0,"row":2},"usage":"lower-left block corner","source_roi":{"x":54,"y":647,"width":286,"height":266},"source_bounds":{"x":54,"y":647,"width":286,"height":266},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":14},
+  {"name":"terrain_bottom_mid","coord":{"column":1,"row":2},"usage":"repeatable base segment","source_roi":{"x":344,"y":647,"width":279,"height":266},"source_bounds":{"x":344,"y":647,"width":279,"height":266},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":12},
+  {"name":"terrain_bottom_right","coord":{"column":2,"row":2},"usage":"lower-right block corner","source_roi":{"x":630,"y":647,"width":280,"height":266},"source_bounds":{"x":630,"y":647,"width":280,"height":266},"output_bounds":{"x":0,"y":0,"width":32,"height":32},"opaque_bounds":{"x":0,"y":0,"width":32,"height":32},"resampling":"nearest to 32x32 logical cell","unique_colors":15},
+  {"name":"pipe_vertical","coord":{"column":3,"row":2},"usage":"decorative vertical pipe, edge-to-edge","source_roi":{"x":990,"y":622,"width":130,"height":305},"source_bounds":{"x":1006,"y":635,"width":106,"height":281},"output_bounds":{"x":10,"y":0,"width":12,"height":32},"opaque_bounds":{"x":10,"y":0,"width":12,"height":32},"resampling":"uniform nearest fit; proportions preserved","unique_colors":17},
+  {"name":"platform_left","coord":{"column":0,"row":3},"usage":"left platform beam; visual only","source_roi":{"x":54,"y":936,"width":286,"height":155},"source_bounds":{"x":56,"y":942,"width":284,"height":145},"output_bounds":{"x":0,"y":0,"width":32,"height":16},"opaque_bounds":{"x":0,"y":0,"width":32,"height":16},"resampling":"uniform nearest; exact 32px width, proportional height, top aligned","unique_colors":14},
+  {"name":"platform_mid","coord":{"column":1,"row":3},"usage":"repeatable platform beam; visual only","source_roi":{"x":344,"y":936,"width":279,"height":155},"source_bounds":{"x":344,"y":943,"width":279,"height":85},"output_bounds":{"x":0,"y":0,"width":32,"height":10},"opaque_bounds":{"x":0,"y":0,"width":32,"height":10},"resampling":"uniform nearest; exact 32px width, proportional height, top aligned","unique_colors":13},
+  {"name":"platform_right","coord":{"column":2,"row":3},"usage":"right platform beam; visual only","source_roi":{"x":630,"y":936,"width":280,"height":155},"source_bounds":{"x":630,"y":942,"width":280,"height":145},"output_bounds":{"x":0,"y":0,"width":32,"height":17},"opaque_bounds":{"x":0,"y":0,"width":32,"height":17},"resampling":"uniform nearest; exact 32px width, proportional height, top aligned","unique_colors":13},
+  {"name":"pipe_corner","coord":{"column":3,"row":3},"usage":"decorative elbow, top and right connection; ports centered at x16 and y16","source_roi":{"x":990,"y":912,"width":230,"height":235},"source_bounds":{"x":1007,"y":912,"width":197,"height":229},"output_bounds":{"x":11,"y":0,"width":21,"height":32},"opaque_bounds":{"x":11,"y":0,"width":21,"height":21},"resampling":"uniform nearest fit; translated +9,-10 px to center top/right ports; top flange restored from same crop and one right-edge pixel extruded","unique_colors":16}
+ ],
+ "runtime":{"tile_size":32,"atlas_region_size":32,"filter":"nearest on CanvasItem/TileMapLayer, not TileSet","sample_scale":2,"collision":"none","copy_status":"approved final copy; pixel-identical to approved atlas","atlas_path":"assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"}
+}
+

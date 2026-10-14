@@ -1,0 +1,45 @@
+STATUS: done  
+SUMMARY: The reported ParseError and floor collider mismatch are fixed in the provided snapshot. `SolidPlatform` no longer names `FactorySurfaceVisual`; collider sync is independent of the skin; per-instance `CollisionShape2D` index-0 overrides match exported sizes (floors 1152×88, other platforms height 24). Decor has no physics. Player/HUD were not in the packet and are treated as unchanged.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: Floor/wall **positions** and any SolidPlatform instances **not shown** in the diffs are unverifiable (instruction: do not infer missing code). Dual source of truth (`size` export vs saved shape) is consistent here but brittle. First-frame / child-`_ready` skin draw can use 220×24 before the parent writes `surface_size`. Atlas PNG is not in the packet; a missing preload would break only the visual script, not the collider.  
+NEXT_STEP: No collision change required from this review. Optional hygiene: `resource_local_to_scene = true` on instance shapes; persist `size` on PlatformA. In-engine play is outside this pass.
+
+## Findings (concrete, from provided text only)
+
+### Fixed vs the logged failure
+- **ParseError `Could not find type FactorySurfaceVisual`:** gone. [`factory_surface_visual.gd`](scripts/world/factory_surface_visual.gd) has no `class_name`. [`solid_platform.gd`](scripts/world/solid_platform.gd) uses `get_node_or_null("Visuals/FactorySurfaceVisual") as Node2D` and `set("surface_size"|"surface_style", ...)`.
+- **Collider vs saved size:** `_sync_geometry()` writes `RectangleShape2D.size = size` before any skin work; null visual nodes cannot abort it. Packed shape is `220×24` with `resource_local_to_scene = true`. Instance overrides restore the wide/tall floors if the script fails again.
+
+### load_steps / inheritance
+| File | Count | Verdict |
+|---|---|---|
+| [`solid_platform.tscn`](scenes/solid_platform.tscn) | 2 ext + 1 sub + scene = **4** | matches `load_steps=4` |
+| [`factory_tileset_v1.tres`](resources/environment/factory_tileset_v1.tres) | 1 ext + 1 sub + resource = **3** | matches |
+| [`main.tscn`](scenes/main.tscn) | 13 → 17 (+4 subs) | matches the diff |
+| [`second_room.tscn`](scenes/second_room.tscn) | 12 → 16 (+4 subs) | matches the diff |
+
+Packed child order is `CollisionShape2D` then `Visuals`, so `parent="…" index="0"` targets the collider. `FloorDetail` is a new instance child (no `index`), not a hijack of slot 0.
+
+### Shapes vs `size` (provided instances)
+- Floors: `size` 1152×88 and `RectangleShape2D_floor` 1152×88.
+- Non-floors: height **24** throughout (220/190/190 and 240/190/170) with matching override shapes.
+- PlatformA has no instance `size`; packed default 220×24 equals `RectangleShape2D_platform_a`.
+
+### Layers / gameplay surface (from given facts + packed scene)
+- Platforms: `collision_layer = 1`, `collision_mask = 1`.
+- Player: layer 2, mask 9 (includes world bit 1). Compatible.
+- TileSet has **no** `physics_layer`; `FactorySurfaceVisual`, `Fill`, `TopEdge`, `FloorDetail` are draw-only.
+
+---
+
+**[low] [`solid_platform.gd`](scripts/world/solid_platform.gd) / [`factory_surface_visual.gd`](scripts/world/factory_surface_visual.gd)**  
+Child `_ready` runs first and can `queue_redraw()` with default `surface_size` 220×24 before the parent `set("surface_size", size)`. One wrong visual frame on 1152-wide floors. Collider already correct if parent `_ready` ran after, or after the parent setter.
+
+**[low] [`scenes/main.tscn`](scenes/main.tscn), [`scenes/second_room.tscn`](scenes/second_room.tscn)**  
+Instance `RectangleShape2D_*` omit `resource_local_to_scene`. Runtime duplicates when the flag is false, so current sizes still apply. Editor dirtying / future sharing is the residual risk.
+
+**[low] [`scenes/main.tscn`](scenes/main.tscn) `PlatformA`**  
+Shape override is persisted; `size` is not. `_sync_geometry()` treats `size` as source of truth and would overwrite the saved shape if they ever diverged.
+
+No high/medium **logic** bugs in the provided scripts/scenes: the fall-off-map failure mode (script parse fail → inherited 220×24 floor collider) is addressed by both the type-removal and the saved instance shapes.

@@ -1,6 +1,8 @@
 class_name BallLauncher
 extends Node
 
+signal launch_accepted(spawn_position: Vector2, direction: Vector2)
+
 const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
 const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
 
@@ -11,6 +13,7 @@ const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resou
 
 var _player: Node2D
 var _aim_controller: AimController
+var _racket_controller: RacketController
 var _shot_origin: Node2D
 var _projectile_parent: Node
 var _active_ball: RicochetBall
@@ -27,6 +30,7 @@ func configure(
 ) -> void:
 	_player = player
 	_aim_controller = aim_controller
+	_racket_controller = player.get_node_or_null("RacketController") as RacketController if player != null else null
 	_shot_origin = shot_origin
 	_projectile_parent = projectile_parent
 	if _projectile_parent == null and _player != null:
@@ -60,9 +64,12 @@ func try_launch(triggered: bool) -> bool:
 	ball.finished.connect(_on_ball_finished.bind(ball))
 	ball.global_position = spawn_position
 	ball.launch(direction, launch_config)
+	launch_accepted.emit(spawn_position, direction)
 	return true
 
 func is_launch_available() -> bool:
+	if _racket_controller == null or _racket_controller.is_swing_active():
+		return false
 	if _aim_controller == null or _shot_origin == null:
 		return false
 	if projectile_scene == null or _base_projectile_config == null or _projectile_parent == null:

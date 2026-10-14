@@ -1,0 +1,45 @@
+READ-ONLY supplement R2 to stable art reviewR1, no tools/tests/files changed. Timeout3min. Only preview GIF timing and bookkeeping changed afterR1: native Aseprite & runtime still30/35/25/25/40/45ms exact200. Original GIF serializer produced30/30/20/20/40/40=180ms. Extractor now explicitly uses gifDurations={30,40,20,30,40,40}, exclusively while creating GIF frames, sum200. Static GIF byte read confirmed those six delays. Native .aseprite/full sheet/body sheet/contact unchanged SHA256; all runtime files unchanged. Metadata correct SpriteFrames8D05D585AEA3D7B92754DAB1490553715FB754BEE9DC35FB9D429A3FD427C269 and GIF SHA updated. Review delta correctness; return STATUS / SUMMARY / CHANGED_FILES:none / TESTS:none / RISKS / NEXT_STEP. Do not repeat resolved R1 false positives about missing unmodified methods.
+SOURCE DECLARATIONS
+-- Reproducao fiel da prancha de rebatida em Aseprite 1.3.18.6.
+-- Um unico fator nearest 6:1, flood de navy vindo das bordas e selecao de componentes do personagem.
+local REF='C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-referencia-v2/rebatida-6-poses-200ms.png'
+local ATLAS='C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais/docs/specs/2026-10-11-protagonista-dash/historico/escala-v5-current-28-frames/runtime/assets/player/player-animations.png'
+local OUT='C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/protagonista-rebatida-aseprite-v3'
+local W,H,SCALE=64,64,6
+local durations={30,35,25,25,40,45}
+local gifDurations={30,40,20,30,40,40}
+local poses={
+ {name='preparo',panel=0,clip={140,425,140,437},root_x=286,ground_y=437,paddle={388,311,33},hand={344,335},shoulder={305,310}},
+
+COMPLETE FINAL EXPORT SECTION
+local spr=Sprite(W,H);while #spr.layers>1 do spr:deleteLayer(spr.layers[#spr.layers])end
+spr.layers[1].name='FULL COMPOSITE · referencia fiel';spr.layers[1].isVisible=true
+local bodyLayer=spr:newLayer();bodyLayer.name='BODY + ARM · cabeca isolada';bodyLayer.isVisible=false
+local headLayer=spr:newLayer();headLayer.name='RACKET HEAD · circulo isolado';headLayer.isVisible=false
+local pal=Palette(#palette);for i,c in ipairs(palette)do pal:setColor(i-1,Color(c[1],c[2],c[3]))end;spr:setPalette(pal)
+for i=1,6 do local fr=(i==1)and spr.frames[1]or spr:newEmptyFrame();fr.duration=durations[i]/1000
+ local c1=spr:newCel(spr.layers[1],i);c1.image=full[i];c1.position=Point(0,0)
+ local c2=spr:newCel(bodyLayer,i);c2.image=body[i];c2.position=Point(0,0)
+ local c3=spr:newCel(headLayer,i);c3.image=head[i];c3.position=Point(0,0)
+end
+local tag=spr:newTag(1,6);tag.name='parry_body';tag.aniDir=AniDir.FORWARD;tag.repeats=1
+spr:saveAs(OUT..'/protagonista-rebatida-v3.aseprite')
+-- Sheet horizontal de seis quadros.
+local sheet=Image(W*6,H);local bodySheet=Image(W*6,H);local headSheet=Image(W*6,H);for i=1,6 do sheet:drawImage(full[i],(i-1)*W,0);bodySheet:drawImage(body[i],(i-1)*W,0);headSheet:drawImage(head[i],(i-1)*W,0)end;sheet:saveAs(OUT..'/protagonista-rebatida-v3-sheet.png');bodySheet:saveAs(OUT..'/protagonista-rebatida-v3-body-arm-sheet.png');headSheet:saveAs(OUT..'/protagonista-rebatida-v3-racket-head-sheet.png')
+-- Contact comparativo: idle0 ao lado de cada pose, nearest 4x, seis celulas em 3x2.
+local Z,GAP=4,8;local pairW,pairH=W*2,H;local cw,ch=(3*pairW+2*GAP)*Z,(2*pairH+GAP)*Z
+local contact=Image(cw,ch);local bgcol=pc.rgba(25,32,49,255)
+for y=0,ch-1 do for x=0,cw-1 do contact:drawPixel(x,y,bgcol)end end
+local function blit4(srcimg,dx,dy)
+ for y=0,H-1 do for x=0,W-1 do local raw=srcimg:getPixel(x,y);if pc.rgbaA(raw)>0 then for yy=0,Z-1 do for xx=0,Z-1 do contact:drawPixel(dx+x*Z+xx,dy+y*Z+yy,raw)end end end end end
+end
+for i=1,6 do local col=(i-1)%3;local row=math.floor((i-1)/3);local dx=(col*(pairW+GAP))*Z;local dy=(row*(pairH+GAP))*Z;blit4(idle,dx,dy);blit4(full[i],dx+W*Z,dy)end
+contact:saveAs(OUT..'/protagonista-rebatida-v3-contact-4x.png')
+-- GIF ampliado por nearest; duracoes source permanecem no total de 200 ms.
+local gif=Sprite(W*4,H*4);while #gif.layers>1 do gif:deleteLayer(gif.layers[#gif.layers])end;gif.layers[1].name='Rebatida · 200 ms · nearest 4x';gif:setPalette(pal)
+for i=1,6 do local fr=(i==1)and gif.frames[1]or gif:newEmptyFrame();fr.duration=gifDurations[i]/1000;local big=Image(W*4,H*4);for y=0,H-1 do for x=0,W-1 do local raw=full[i]:getPixel(x,y);for yy=0,3 do for xx=0,3 do big:drawPixel(x*4+xx,y*4+yy,raw)end end end end;local cel=gif:newCel(gif.layers[1],i);cel.image=big;cel.position=Point(0,0)end
+gif:saveAs(OUT..'/protagonista-rebatida-v3.gif')
+print('STATUS: primeiro contact gerado; escala 6:1, 6 poses, 200 ms, paleta 30')
+
+
+

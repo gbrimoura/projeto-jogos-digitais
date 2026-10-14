@@ -1,0 +1,27 @@
+STATUS: done
+SUMMARY: Revisão estática e independente dos scripts GERADOR, INTEGRADOR e METADATA concluída com sucesso. Nenhum bug lógico, desalinhamento de pivô, erro de índice, quebra de paleta ou alteração indevida de quadros protegidos foi detectado.
+
+CHANGED_FILES: none
+TESTS: none
+
+RISKS: none (bugs concretos: 0 severidade)
+- **Índices estáticos e integridade do atlas**:
+  - Correto isolamento dos 3 quadros de dash nos índices 0-based `14..16` (cels 1-based `15..17`).
+  - Proteção exata pixel a pixel dos 25 quadros restantes (`0..13` e `17..27`).
+  - Stride de 64px e resolução de 1792x64 preservados integralmente. Zero impacto em `.tres`, scripts, cenas ou `.import` (74 hashes inalterados).
+- **Reamostragem e ancoragem**:
+  - Reamostragem inversa por vizinho mais próximo (`scale = 0.85`) em torno do pivô `(32, 56)` implementada corretamente com arredondamento `floor(... + 0.5)`.
+  - Ancoragem vertical preservada: `floorY = y + height - 1 = 56` mantido nos 3 quadros (`impulso`, `avanco`, `recuperacao`), garantindo contato com o solo.
+  - Ausência de clipping: caixas delimitadoras pós-escala (`[13,16,44,41]`, `[13,20,43,37]`, `[14,18,39,39]`) permanecem estritamente dentro do canvas `64x64`.
+- **Paleta e canal alfa**:
+  - Restrição estrita a alfa binário `[0, 255]`.
+  - Cores limitadas à paleta original de 27 cores RGB, sem geração de cores intermediárias ou artefatos de interpolação.
+- **Temporização e tags**:
+  - Durações nativas `[40, 40, 60] ms` (total 140ms) validadas e mantidas.
+  - Preservação integral das 28 durações do arquivo original e das 8 tags de animação com seus parâmetros (`aniDir`, `repeats`, intervalos).
+- **Pré-visualizações e isolamento**:
+  - Contact sheet 4x com idle e dash antigo/novo e GIF de deslocamento horizontal (16 quadros, 880ms, 50px de translado de raiz) isolados como assets de pitch/demonstração, sem poluição da pasta de runtime.
+- **Limitação de escopo**:
+  - Nenhuma asserção visual subjetiva é feita sobre os pixels do PNG; a validação estética e a aprovação do contato pré-integração permanecem sob a responsabilidade do Agente Principal.
+
+NEXT_STEP: Prosseguir com a execução do INTEGRADOR no ambiente do Agente Principal e posterior recuperação/reimportação no editor Godot (código de saída 0), mantendo os hashes finais documentados.

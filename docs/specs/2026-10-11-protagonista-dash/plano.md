@@ -1,8 +1,34 @@
 # Animação dash do protagonista — plano
 
-**Estado:** implementado e exportado; R2 Gemini/Muse/Grok concluídas. Opus pendente por quota; conferência manual no Godot pendente.
+**Estado atual (13/10/2026):** escala V5 integrada nos quadros 14–16 do atlas
+atual de 28 quadros (1792×64) e importada pelo editor Godot 4.7.2 em recovery
+mode (exit 0). O fator uniforme 0,85 foi aprovado antes da integração. Os 25
+quadros não-dash, 28 durações e 8 tags foram preservados; nenhuma física, input,
+combate ou lógica de jogo foi alterada. Gemini/Muse/Grok estão revisando os
+arquivos congelados; Opus bloqueado por quota. Nenhum gameplay, teste ou quality
+audit foi executado. As seções v1–v4 abaixo são históricas.
 
-## Objetivo
+## Incremento V5: correção moderada de escala — 13/10/2026
+
+O principal aprovou a comparação de idle, dash anterior e candidatos 0,90/0,85/
+0,80, escolhendo 0,85 para reduzir o volume do casco/visor sem redesenhar as
+poses laterais +X. A transformação nearest-neighbor uniforme usa pivô comum
+X=32, Y=56 e mantém a postura, a orientação, a paleta e os timings 40/40/60 ms.
+
+A integração foi feita a partir do snapshot corrente de 28 quadros, que já
+incluía o pulo com escala corrigida V4 em 17–24 e o hurt V1 em 25–27. Somente os
+pixels dos quadros 14–16 mudaram; os 25 quadros não-dash permaneceram pixel a
+pixel, assim como 28/28 durações e 8/8 tags. O recurso `.tres`, `.import`, scripts
+e cenas não mudaram. Godot 4.7.2 executou apenas a importação em recovery mode
+(`--headless --editor --recovery-mode --path <repo> --import --quit`, exit 0).
+
+O diagnóstico, hashes, snapshot imutável, comparação visual, fontes e limites
+estão em [spec-escala-v5.md](spec-escala-v5.md), no registro de
+[implementação](implementacao.md#dash-escala-v5--13-10-2026) e nos previews
+`GDD_Dieselpunk_Noir/pitch-assets/protagonista-dash-escala-v5/`. As revisões
+estáticas foram concluídas e avaliadas pelo principal. Aparência em gameplay continua pendente.
+
+## Objetivo original (v1; histórico)
 
 Adicionar uma animação visual de dash em três poses, mantendo intactos o idle v2,
 a caminhada v3 e a mecânica de dash já aprovada com duração de 0,14 s.
@@ -65,3 +91,25 @@ Pedido: durante o dash, o robô deve ficar de perfil, em postura de impulso late
 ## Incremento v3: dash baixo e compacto
 
 Corrigir leitura de corrida/lunge identificada pelo usuário e análise visual. Cabeça/peito baixos, braços recolhidos, pernas compactas atrás, pose sustentada durante os140ms. Luna xhigh implementa somente Lua/README; principal exporta/integra/vê contato, Luna faz análise visual read-only, Gemini/Muse/Grok revisam fonte congelada, Opus preflight obrigatório. Estado em pareceres/pose-compacta-v3.
+
+## Incremento v4: nova referência lateral — 13/10/2026
+
+A referência final gerada (`referencia-dash-v4-v2.png`) orienta três poses
+laterais +X: impulso baixo, avanço curto e linear, e recuperação que continua
+inclinada. O principal aceitou o contact de três poses e a comparação com idle
+e dash anterior antes da integração. A fonte editável standalone, o gerador, o
+integrador, metadata e previews estão preservados em
+`GDD_Dieselpunk_Noir/pitch-assets/protagonista-dash-v4/`.
+
+Integração feita exclusivamente a partir do snapshot imutável
+`historico/pre-dash-v4/`: substituídos os frames 14–16; frames 0–13 e 17–24
+continuam pixel a pixel idênticos, assim como os 25 tempos e todas as tags.
+Cadência 40/40/60 ms, total 140 ms, não-loop. O editor Godot 4.7.2 importou o
+atlas em modo headless com exit 0 e stderr vazio. Não houve gameplay, testes ou
+quality audit. A especificação completa, limites por quadro, hashes e estado das
+revisões ficam em [spec-v4-referencia.md](spec-v4-referencia.md) e
+[implementacao.md](implementacao.md#dash-v4--13-10-2026).
+
+## Encerramento da revisão de escala V5 — 13/10/2026
+
+Gemini, Muse e Grok concluíram a revisão estática; achados avaliados pelo principal sem correção de runtime necessária. Opus bloqueado por quota, sem parecer. [Relatórios originais, decisões e hashes](pareceres/escala-v5/README.md). Integração e importação concluídas; avaliação estética do usuário em jogo pendente.

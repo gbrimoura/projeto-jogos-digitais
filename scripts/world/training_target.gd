@@ -12,6 +12,7 @@ var max_health: int = 3
 var flash_duration: float = 0.12
 
 @onready var _body_fill: Polygon2D = $Visuals/BodyFill
+@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
 @onready var _health_fill: Polygon2D = $Visuals/HealthFill
 
 var health: int
@@ -45,9 +46,14 @@ func _process(delta: float) -> void:
 	_update_visuals()
 
 func _update_visuals() -> void:
-	if not is_instance_valid(_body_fill) or not is_instance_valid(_health_fill):
+	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
 		return
 
-	_body_fill.color = Color("#fff1c7") if _flash_remaining > 0.0 else Color("#384759")
+	var desired_animation: StringName = &"impact" if _flash_remaining > 0.0 else &"idle"
+	if _body_sprite.animation != desired_animation or not _body_sprite.is_playing():
+		_body_sprite.play(desired_animation)
+	var hit_flash := _body_sprite.material as ShaderMaterial
+	if hit_flash != null:
+		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
 	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
 	_health_fill.scale.x = health_ratio

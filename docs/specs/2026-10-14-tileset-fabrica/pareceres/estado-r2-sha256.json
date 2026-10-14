@@ -1,0 +1,62 @@
+[
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1.lua",
+    "sha256": "D298F8F3E2EB72E27A4CAB692C3D5C741439A5BDC60E6AA9F2A875BB9813B1F4",
+    "unchanged_since_r1": false
+  },
+  {
+    "path": "resources/environment/factory_tileset_v1.tres",
+    "sha256": "C90CA2FAEBC3EA70C43FFCC7E967A069659BB95D68B3E1379EE4FFFFF26BD213",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "assets/environment/factory_v1/demo_editor.tscn",
+    "sha256": "38D1430E99E0EBB77FB371DB32E51190A03119AE669FB2D5F2F3B59D90F40A33",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/palette-fabrica-v1.json",
+    "sha256": "8C8484C59D695F2548E216BA521E3B91EFABF2BCD26B07DD43D45CBAE9472D3D",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-manifest.json",
+    "sha256": "9F53139694841D9F0B20D11656098F3DC97D2E66AD511D049D53D729DF5D6614",
+    "unchanged_since_r1": false
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1.aseprite",
+    "sha256": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-atlas.png",
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-demo-escala-4x.png",
+    "sha256": "1A6A9FBD1ED078F7DD1B29EEB2332E6B8C39C0F9C3B190311AAA0CF6A9DEF99E",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/referencia-fabrica-v1.png",
+    "sha256": "DD490241AE719E616B8842E38D9AFD650E3F9A19D928B318CEDF7AECF9BB938B",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png",
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1.aseprite",
+    "sha256": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8",
+    "unchanged_since_r1": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-demo-escala.png",
+    "sha256": "00F5D3B65469ECA6421E8FE1FFDC2ABF1F1F55B1F864AA933DFD2B9D6D941CF1",
+    "unchanged_since_r1": true
+  }
+]

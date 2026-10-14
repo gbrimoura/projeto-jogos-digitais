@@ -1,0 +1,168 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/training_target.tscn" id="3_training_target"]
+[ext_resource type="Script" path="res://scripts/world/combat_room.gd" id="4_combat_room"]
+[ext_resource type="PackedScene" path="res://scenes/solid_platform.tscn" id="5_solid_platform"]
+[ext_resource type="PackedScene" path="res://scenes/rivet_worker.tscn" id="6_rivet_worker"]
+[ext_resource type="Script" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_right_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+size = Vector2(1152, 32)
+
+[node name="SecondRoom" type="Node2D"]
+script = ExtResource("1_main")
+next_room_scene_path = ""
+room_title = "SALA 02"
+reward_enabled = false
+room_title_label_path = NodePath("CombatRoom/HUD/RoomLabel")
+build_status_label_path = NodePath("CombatRoom/HUD/BuildLabel")
+player_spawn_marker_path = NodePath("PlayerSpawnMarker")
+
+[node name="SandboxVisual" type="Node2D" parent="."]
+z_index = -10
+
+[node name="Background" type="Polygon2D" parent="SandboxVisual"]
+color = Color(0.055, 0.075, 0.09, 1)
+polygon = PackedVector2Array(0, 0, 1152, 0, 1152, 648, 0, 648)
+
+[node name="GridVertical" type="Line2D" parent="SandboxVisual"]
+points = PackedVector2Array(96, 0, 96, 560, 1056, 560, 1056, 0)
+width = 2.0
+default_color = Color(0.74, 0.39, 0.22, 0.18)
+
+[node name="BallContainer" type="Node2D" parent="." groups=["hostile_projectile_container"]]
+z_index = 1
+
+[node name="WorldCollision" type="StaticBody2D" parent="."]
+
+[node name="LeftWall" type="CollisionShape2D" parent="WorldCollision"]
+position = Vector2(-16, 324)
+shape = SubResource("RectangleShape2D_left_wall")
+
+[node name="RightWall" type="CollisionShape2D" parent="WorldCollision"]
+position = Vector2(1168, 324)
+shape = SubResource("RectangleShape2D_right_wall")
+
+[node name="Ceiling" type="CollisionShape2D" parent="WorldCollision"]
+position = Vector2(576, -16)
+shape = SubResource("RectangleShape2D_ceiling")
+
+[node name="Floor" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(576, 604)
+size = Vector2(1152, 88)
+fill_color = Color(0.11, 0.17, 0.19, 1)
+
+[node name="FloorDetail" type="Line2D" parent="Floor"]
+position = Vector2(0, -12)
+points = PackedVector2Array(-576, 0, 576, 0)
+width = 1.0
+default_color = Color(0.24, 0.33, 0.31, 1)
+
+[node name="WestPlatform" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(340, 430)
+size = Vector2(240, 24)
+fill_color = Color(0.14, 0.2, 0.22, 1)
+
+[node name="UpperPlatform" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(615, 385)
+size = Vector2(190, 24)
+fill_color = Color(0.14, 0.2, 0.22, 1)
+
+[node name="EastPlatform" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(950, 460)
+size = Vector2(170, 24)
+fill_color = Color(0.14, 0.2, 0.22, 1)
+
+[node name="PlayerSpawnMarker" type="Marker2D" parent="."]
+position = Vector2(128, 560)
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(128, 560)
+
+[node name="TrainingTarget" parent="." instance=ExtResource("3_training_target")]
+position = Vector2(615, 325)
+
+[node name="WorkerPatrolArea" type="Node2D" parent="."]
+position = Vector2(900, 560)
+script = ExtResource("7_enemy_patrol_area")
+
+[node name="LeftLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(-140, 0)
+
+[node name="RightLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(140, 0)
+
+[node name="PreviewLine" type="Line2D" parent="WorkerPatrolArea"]
+z_index = 0
+width = 2.0
+default_color = Color(0.83, 0.62, 0.3, 0.42)
+points = PackedVector2Array(-140, 0, 140, 0)
+
+[node name="RivetWorker" parent="." instance=ExtResource("6_rivet_worker")]
+position = Vector2(900, 560)
+patrol_speed = 90.0
+patrol_end_pause = 0.35
+patrol_area_path = NodePath("../WorkerPatrolArea")
+
+[node name="CombatRoom" type="Node" parent="."]
+script = ExtResource("4_combat_room")
+counter_label_path = NodePath("HUD/CounterLabel")
+status_label_path = NodePath("HUD/StatusLabel")
+health_label_path = NodePath("HUD/HealthLabel")
+player_path = NodePath("../Player")
+
+[node name="HUD" type="CanvasLayer" parent="CombatRoom"]
+layer = 10
+
+[node name="CounterLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 24.0
+offset_right = 360.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "INIMIGOS RESTANTES: 0"
+
+[node name="StatusLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 54.0
+offset_right = 620.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 22
+text = "ENCONTRO ATIVO"
+
+[node name="RoomLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 120.0
+offset_right = 260.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 18
+text = "SALA 02"
+
+[node name="HealthLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 88.0
+offset_right = 250.0
+offset_bottom = 116.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "VIDA: 5 / 5"
+
+[node name="BuildLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 154.0
+offset_right = 520.0
+offset_bottom = 184.0
+theme_override_colors/font_color = Color(0.509804, 0.843137, 0.741176, 1)
+theme_override_font_sizes/font_size = 18
+text = "BUILD: VAZIA"

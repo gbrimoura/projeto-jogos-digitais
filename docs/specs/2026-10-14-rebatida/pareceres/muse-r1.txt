@@ -1,0 +1,9 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Revisão incremental P1/P2 sem issues bloqueantes demonstráveis. Assinaturas swing_started(dir,duration)->start_parry e launch_accepted->start_shot compatíveis; progresso parry via get_swing_progress() físico, shot via delta render; reentrância bloqueada por not _active; launch/preview ambos guardados por is_launch_available() sem fila; término ativo+cooldown 0.55 correto e cooldown não bloqueia launch; IK clamp 26/25.999/MIN 2.001 + side-epsilon sem NaN/OOB; morte/reset cancelam via swing_cancelled->clear_transient existente.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Inline truncado impede verificação total: corpos _update_racket_visual/_update_feedback, trecho após get_catch_radius, request_stop_active_sweep, prioridade Player e interceptação setor; ordem -100 vence 0 assume semântica engine; reset mantém cooldown residual; truncamento final parry 1.0 cai em pose idêntica à idle.
+NEXT_STEP: Congelar estado e seguir frente.

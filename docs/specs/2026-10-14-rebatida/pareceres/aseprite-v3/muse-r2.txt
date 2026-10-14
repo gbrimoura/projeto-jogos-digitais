@@ -1,0 +1,13 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Static read-only review of parry-body 6-pose/200ms increment finds no new blocker. Facing/priority/progress wiring matches stated requirements; duplicated timelines identical; no runtime executed.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Low/Maintenance-only: duplicated authored timeline `30/35/25/25/40/45` in `player_visual.gd:PARRY_FRAME_DURATIONS`, `racket_visual.gd:PARRY_BODY_DURATIONS`, SpriteFrames `x1792..2112/durations`, integrator `durations={30,35,25,25,40,45}` — currently identical sum 200ms, no desync evidence. Literal `0.200` also in `player_visual.gd:PARRY_TOTAL_DURATION`, `racket_visual.gd:_parry_body_head_angle:elapsed*0.200`, `_parry_duration=0.20` — normalized use so duration-agnostic, future edits must touch all.
+- Low/Preexisting-not-new: `set_dead(true)` stops without reassigning clip, `play_hurt()` retains `_is_parrying` — intentional per brief so physical parry resumes at current `get_swing_progress()` behind `death>hurt>dash>air/land` in `_apply_animation_state()`; no cancel-on-hurt/dash requested.
+- Info/Unverified-aesthetic-not-fault: `HAND_ANCHORS[parry_body]` fractional + `PARRY_BODY_HEAD_ANGLE/G RIP_OFFSET` contact alignment — principal inspected visual contact, no runtime; not flagged without execution.
+- None: entry/exit flip, 16ms latency, GIF `30/40/20/30/40/40` claims withdrawn — `animation_changed->_apply_facing()` synchronously reapplies `native idle -X / parry+dash +X`, controller `-100` + Player `0` same physics frame before render, GIF quantization independent of native `30/35/25/25/40/45`.
+NEXT_STEP: Freeze stable; proceed to runtime validation only on explicit user request.

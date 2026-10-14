@@ -1,0 +1,561 @@
+IMPLEMENTATION AUTHOR exact gpt-6-luna xhigh. Codex Luna is quota-limited; same model here. READ-ONLY filesystem/no tools, return implementation stdout for principal integration. Timeout15min. No tests/Godot/import/Git. User: apply current factory tileset to placeholder phases main and second_room. Preserve all uncommitted work, gameplay/collisions/positions/sizes/spawns/patrols/actors/UI. Scope visual only. GDD warm factory steel/copper noir, readability foreground > decor.
+Approved TileSet res://resources/environment/factory_tileset_v1.tres source0/atlas128x128/tile32. Layout rows: topL/topMid/topR/panel; sideL/fill/sideR/pipeH; bottomL/bottomMid/bottomR/pipeV; platformL/platformMid/platformR/pipeCorner. Pixel scale2 matching player. Source caps16/17px vsmid10px intentional underside brackets, continuous top. Do not regenerate art. Resource imported Godot4.7.2.
+SolidPlatform is @tool/resizable StaticBody. Floor1152x88 at576,604 top560; platform widths220/190/240/170 and height24. Exact original geometry must stay, don't snap togrid/inflateheight. Render art to same boxes by repeating/cropping edge regions, no stretching. BOTH rooms should show metal floor/platforms; sparse lowcontrast panel/connected V-corner-H Sprite2D nodes under SandboxVisual behind action, hide old Grid lines via visible=false and optional warm backgroundcolor. Do not change any other nodes/resources/UIDs/values/order. Walls/ceiling, if visually covered, must stay within their exact collider bounds (mostly outsideview), no fake interiorwalls.
+Minimal suggested solution: NEW @tool FactorySurfaceVisual Node2D, preloads existingTileSet and draws atlas regions using draw_texture_rect_region. Child of sharedSolidPlatform. Export surface_size/style or configure from parent _sync_geometry; queues redraw, nearest1, tileworld64. ExistingSolidPlatform adds factory_skin_enabled fallback toggle, factory_surface_style int0platform/1block; sceneenabled true, bothFloor instances selectblock, platforms default. Keep all physics part of _sync_geometry exact, same rectangle duplication/resources/size behavior. Hide legacyFill/TopEdge/FloorDetail ONLY when skinenabled and restore when disabled. Robust early setters beforechildren/_ready. No perframe collision sync, draw-time physics or owner writes. In editor resizes reflect immediately. Typed GDScript4 math/loop counts avoids warning-as-error inference. Platform caps anchor exactleft/right; repeat middle clipped to widths, underside clipped to height24 preserving source2x. Floortop/fill/bottom compose exactsize, partiallast rows crop appropriately, no negative rect/out-of-atlas, safe size1..large. Optional original darkFill behind texture ifneeded, butno orangeoutline overnewskin. No placeholder/TODO/omitted methods.
+Props individual authored Sprite2D/AtlasTexture scenes underSandboxVisual, 2xnearest, dim zbehind, e.g two steelpanels and a shortconnectedV->corner->H ineachroom. Lowcontrast and no overlap HUD/action; no physics or newdanger. Existing main=firstRoom ->second_room; unused cena_inicial NOT in scope.
+RETURN BEGIN_JSON...END_JSON validJSON payload plus STATUS/SUMMARY/CHANGED_FILES(proposed)/TESTS:none/RISKS/NEXT_STEP stdout. Schema {"creates":[{"path":"...","content":"..."}],"edits":[{"path":"...","replacements":[{"old":"EXACT substring","new":"replacement","count":1}]}]}. Allowed creates ONLY scripts/world/factory_surface_visual.gd and docs/specs/2026-10-14-tileset-fases/{plano.md,spec.md,pareceres/README.md}. Docsbrief/prospective before integration, contracts+limits, not a separate fullarchitectureplan. Root writes docsbeforecode. Allowed edits ONLY scripts/world/solid_platform.gd, scenes/solid_platform.tscn, scenes/main.tscn, scenes/second_room.tscn. Targeted exact replacements, never rewrite whole originalscene or dropnodes/uncommittedchanges. GridLine nodes: exact oldheader/neighbor anchor replacement adds visible=false, notdelete. Complete NEW helper source. Scene comments semicolon; load_steps recount added ext/subresources. Don't author filesystem commands or scripts modifying files/editor state. Sourcefullcontext below:
+FULL SOURCE scripts/world/solid_platform.gd
+@tool
+class_name SolidPlatform
+extends StaticBody2D
+
+@export var size: Vector2 = Vector2(220.0, 24.0):
+	set(value):
+		size = Vector2(maxf(value.x, 1.0), maxf(value.y, 1.0))
+		_sync_geometry()
+
+@export var fill_color: Color = Color("#263545"):
+	set(value):
+		fill_color = value
+		_sync_geometry()
+
+func _ready() -> void:
+	_sync_geometry()
+
+func _sync_geometry() -> void:
+	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	var visual_fill := get_node_or_null("Visuals/Fill") as Polygon2D
+	var top_edge := get_node_or_null("Visuals/TopEdge") as Line2D
+	if collision_shape == null or visual_fill == null or top_edge == null:
+		return
+
+	var rectangle := collision_shape.shape as RectangleShape2D
+	if rectangle == null:
+		return
+	if not rectangle.resource_local_to_scene:
+		rectangle = rectangle.duplicate() as RectangleShape2D
+		rectangle.resource_local_to_scene = true
+		collision_shape.shape = rectangle
+	rectangle.size = size
+	visual_fill.color = fill_color
+
+	var half_size := size * 0.5
+	var floor_detail := get_node_or_null("FloorDetail") as Line2D
+	if floor_detail != null:
+		floor_detail.position = Vector2(0.0, -half_size.y + 32.0)
+		floor_detail.points = PackedVector2Array([
+			Vector2(-half_size.x, 0.0),
+			Vector2(half_size.x, 0.0),
+		])
+
+	visual_fill.polygon = PackedVector2Array([
+		Vector2(-half_size.x, -half_size.y),
+		Vector2(half_size.x, -half_size.y),
+		Vector2(half_size.x, half_size.y),
+		Vector2(-half_size.x, half_size.y),
+	])
+	top_edge.points = PackedVector2Array([
+		Vector2(-half_size.x, -half_size.y),
+		Vector2(half_size.x, -half_size.y),
+	])
+
+FULL SOURCE scenes/solid_platform.tscn
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/solid_platform.gd" id="1_platform"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+resource_local_to_scene = true
+size = Vector2(220.0, 24.0)
+
+[node name="SolidPlatform" type="StaticBody2D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_platform")
+fill_color = Color(0.14902, 0.207843, 0.270588, 1)
+size = Vector2(220.0, 24.0)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_platform")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="Fill" type="Polygon2D" parent="Visuals"]
+color = Color(0.14902, 0.207843, 0.270588, 1)
+polygon = PackedVector2Array(-110.0, -12.0, 110.0, -12.0, 110.0, 12.0, -110.0, 12.0)
+
+[node name="TopEdge" type="Line2D" parent="Visuals"]
+width = 3.0
+default_color = Color(0.941176, 0.701961, 0.356863, 1)
+points = PackedVector2Array(-110.0, -12.0, 110.0, -12.0)
+
+FULL SOURCE scenes/main.tscn
+[gd_scene load_steps=12 format=3 uid="uid://dlgvrryxeujdh"]
+
+[ext_resource type="Script" uid="uid://07rr2hs2ow5b" path="res://scripts/world/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/training_target.tscn" id="3_training_target"]
+[ext_resource type="Script" uid="uid://dfipmxwk2041v" path="res://scripts/world/combat_room.gd" id="4_combat_room"]
+[ext_resource type="PackedScene" path="res://scenes/solid_platform.tscn" id="5_solid_platform"]
+[ext_resource type="PackedScene" path="res://scenes/rivet_worker.tscn" id="6_rivet_worker"]
+[ext_resource type="Script" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+[ext_resource type="PackedScene" path="res://scenes/exit_door.tscn" id="8_exit_door"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_right_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+size = Vector2(1152, 32)
+
+[node name="Main" type="Node2D" unique_id=206969936]
+script = ExtResource("1_main")
+next_room_scene_path = "res://scenes/second_room.tscn"
+room_title = "SALA 01"
+reward_enabled = true
+room_title_label_path = NodePath("CombatRoom/HUD/RoomLabel")
+build_status_label_path = NodePath("CombatRoom/HUD/BuildLabel")
+player_spawn_marker_path = NodePath("PlayerSpawnMarker")
+
+[node name="SandboxVisual" type="Node2D" parent="." unique_id=562336220]
+z_index = -10
+
+[node name="Background" type="Polygon2D" parent="SandboxVisual" unique_id=596273147]
+color = Color(0.043137, 0.062745, 0.094118, 1)
+polygon = PackedVector2Array(0, 0, 1152, 0, 1152, 648, 0, 648)
+
+[node name="GridVertical0" type="Line2D" parent="SandboxVisual" unique_id=624794061]
+points = PackedVector2Array(0, 0, 0, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical64" type="Line2D" parent="SandboxVisual" unique_id=1817627730]
+points = PackedVector2Array(64, 0, 64, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical128" type="Line2D" parent="SandboxVisual" unique_id=490987020]
+points = PackedVector2Array(128, 0, 128, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical192" type="Line2D" parent="SandboxVisual" unique_id=1244672564]
+points = PackedVector2Array(192, 0, 192, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical256" type="Line2D" parent="SandboxVisual" unique_id=704320130]
+points = PackedVector2Array(256, 0, 256, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical320" type="Line2D" parent="SandboxVisual" unique_id=1499653838]
+points = PackedVector2Array(320, 0, 320, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical384" type="Line2D" parent="SandboxVisual" unique_id=268650371]
+points = PackedVector2Array(384, 0, 384, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical448" type="Line2D" parent="SandboxVisual" unique_id=493303829]
+points = PackedVector2Array(448, 0, 448, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical512" type="Line2D" parent="SandboxVisual" unique_id=125438693]
+points = PackedVector2Array(512, 0, 512, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical576" type="Line2D" parent="SandboxVisual" unique_id=2014438480]
+points = PackedVector2Array(576, 0, 576, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical640" type="Line2D" parent="SandboxVisual" unique_id=1535607719]
+points = PackedVector2Array(640, 0, 640, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical704" type="Line2D" parent="SandboxVisual" unique_id=2021444820]
+points = PackedVector2Array(704, 0, 704, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical768" type="Line2D" parent="SandboxVisual" unique_id=1137739635]
+points = PackedVector2Array(768, 0, 768, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical832" type="Line2D" parent="SandboxVisual" unique_id=793844069]
+points = PackedVector2Array(832, 0, 832, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical896" type="Line2D" parent="SandboxVisual" unique_id=1325912430]
+points = PackedVector2Array(896, 0, 896, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical960" type="Line2D" parent="SandboxVisual" unique_id=1992805949]
+points = PackedVector2Array(960, 0, 960, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical1024" type="Line2D" parent="SandboxVisual" unique_id=749041485]
+points = PackedVector2Array(1024, 0, 1024, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical1088" type="Line2D" parent="SandboxVisual" unique_id=735217856]
+points = PackedVector2Array(1088, 0, 1088, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical1152" type="Line2D" parent="SandboxVisual" unique_id=357033605]
+points = PackedVector2Array(1152, 0, 1152, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal0" type="Line2D" parent="SandboxVisual" unique_id=1682884836]
+points = PackedVector2Array(0, 80, 1152, 80)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal1" type="Line2D" parent="SandboxVisual" unique_id=300644190]
+points = PackedVector2Array(0, 144, 1152, 144)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal2" type="Line2D" parent="SandboxVisual" unique_id=1868226315]
+points = PackedVector2Array(0, 208, 1152, 208)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal3" type="Line2D" parent="SandboxVisual" unique_id=40052379]
+points = PackedVector2Array(0, 272, 1152, 272)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal4" type="Line2D" parent="SandboxVisual" unique_id=797513347]
+points = PackedVector2Array(0, 336, 1152, 336)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal5" type="Line2D" parent="SandboxVisual" unique_id=877510785]
+points = PackedVector2Array(0, 400, 1152, 400)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal6" type="Line2D" parent="SandboxVisual" unique_id=409305673]
+points = PackedVector2Array(0, 464, 1152, 464)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal7" type="Line2D" parent="SandboxVisual" unique_id=1990827547]
+points = PackedVector2Array(0, 528, 1152, 528)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="BallContainer" type="Node2D" parent="." unique_id=854280507 groups=["hostile_projectile_container"]]
+z_index = 1
+
+[node name="WorldCollision" type="StaticBody2D" parent="." unique_id=426925908]
+
+[node name="LeftWall" type="CollisionShape2D" parent="WorldCollision" unique_id=799015702]
+position = Vector2(-16, 324)
+shape = SubResource("RectangleShape2D_left_wall")
+
+[node name="RightWall" type="CollisionShape2D" parent="WorldCollision" unique_id=26278744]
+position = Vector2(1168, 324)
+shape = SubResource("RectangleShape2D_right_wall")
+
+[node name="Ceiling" type="CollisionShape2D" parent="WorldCollision" unique_id=16121606]
+position = Vector2(576, -16)
+shape = SubResource("RectangleShape2D_ceiling")
+
+[node name="Floor" parent="." unique_id=2048039212 instance=ExtResource("5_solid_platform")]
+position = Vector2(576, 604)
+size = Vector2(1152, 88)
+fill_color = Color(0.101961, 0.14902, 0.196078, 1)
+
+[node name="FloorDetail" type="Line2D" parent="Floor" unique_id=717280858]
+position = Vector2(0, -12)
+points = PackedVector2Array(-576, 0, 576, 0)
+width = 1.0
+default_color = Color(0.145098, 0.215686, 0.27451, 1)
+
+[node name="PlatformA" parent="." unique_id=1192556465 instance=ExtResource("5_solid_platform")]
+position = Vector2(290, 452)
+
+[node name="PlatformB" parent="." unique_id=1509114514 instance=ExtResource("5_solid_platform")]
+position = Vector2(615, 362)
+size = Vector2(190, 24)
+
+[node name="PlatformC" parent="." unique_id=1065536872 instance=ExtResource("5_solid_platform")]
+position = Vector2(915, 452)
+size = Vector2(190, 24)
+
+[node name="ExitDoor" parent="." instance=ExtResource("8_exit_door")]
+position = Vector2(1080, 522)
+
+[node name="PlayerSpawnMarker" type="Marker2D" parent="."]
+position = Vector2(160, 560)
+
+[node name="Player" parent="." unique_id=349601874 instance=ExtResource("2_player")]
+position = Vector2(160, 560)
+
+[node name="TrainingTarget" parent="." unique_id=2030093939 instance=ExtResource("3_training_target")]
+position = Vector2(940, 392)
+
+[node name="WorkerPatrolArea" type="Node2D" parent="."]
+position = Vector2(670, 560)
+script = ExtResource("7_enemy_patrol_area")
+
+[node name="LeftLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(-250, 0)
+
+[node name="RightLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(250, 0)
+
+[node name="PreviewLine" type="Line2D" parent="WorkerPatrolArea"]
+z_index = 0
+width = 2.0
+default_color = Color(0.83, 0.62, 0.3, 0.42)
+points = PackedVector2Array(-250, 0, 250, 0)
+
+[node name="RivetWorker" parent="." instance=ExtResource("6_rivet_worker")]
+position = Vector2(650, 560)
+patrol_speed = 90.0
+patrol_end_pause = 0.35
+patrol_area_path = NodePath("../WorkerPatrolArea")
+
+[node name="CombatRoom" type="Node" parent="." unique_id=594426197]
+script = ExtResource("4_combat_room")
+counter_label_path = NodePath("HUD/CounterLabel")
+status_label_path = NodePath("HUD/StatusLabel")
+health_label_path = NodePath("HUD/HealthLabel")
+player_path = NodePath("../Player")
+
+[node name="HUD" type="CanvasLayer" parent="CombatRoom" unique_id=1348876616]
+layer = 10
+
+[node name="CounterLabel" type="Label" parent="CombatRoom/HUD" unique_id=2134221281]
+offset_left = 32.0
+offset_top = 24.0
+offset_right = 360.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "INIMIGOS RESTANTES: 0"
+
+[node name="StatusLabel" type="Label" parent="CombatRoom/HUD" unique_id=1657364401]
+offset_left = 32.0
+offset_top = 54.0
+offset_right = 560.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 22
+text = "ENCONTRO ATIVO"
+
+[node name="RoomLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 120.0
+offset_right = 260.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 18
+text = "SALA 01"
+
+[node name="HealthLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 88.0
+offset_right = 250.0
+offset_bottom = 116.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "VIDA: 5 / 5"
+
+[node name="BuildLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 154.0
+offset_right = 520.0
+offset_bottom = 184.0
+theme_override_colors/font_color = Color(0.509804, 0.843137, 0.741176, 1)
+theme_override_font_sizes/font_size = 18
+text = "BUILD: VAZIA"
+
+FULL SOURCE scenes/second_room.tscn
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/training_target.tscn" id="3_training_target"]
+[ext_resource type="Script" path="res://scripts/world/combat_room.gd" id="4_combat_room"]
+[ext_resource type="PackedScene" path="res://scenes/solid_platform.tscn" id="5_solid_platform"]
+[ext_resource type="PackedScene" path="res://scenes/rivet_worker.tscn" id="6_rivet_worker"]
+[ext_resource type="Script" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_right_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+size = Vector2(1152, 32)
+
+[node name="SecondRoom" type="Node2D"]
+script = ExtResource("1_main")
+next_room_scene_path = ""
+room_title = "SALA 02"
+reward_enabled = false
+room_title_label_path = NodePath("CombatRoom/HUD/RoomLabel")
+build_status_label_path = NodePath("CombatRoom/HUD/BuildLabel")
+player_spawn_marker_path = NodePath("PlayerSpawnMarker")
+
+[node name="SandboxVisual" type="Node2D" parent="."]
+z_index = -10
+
+[node name="Background" type="Polygon2D" parent="SandboxVisual"]
+color = Color(0.055, 0.075, 0.09, 1)
+polygon = PackedVector2Array(0, 0, 1152, 0, 1152, 648, 0, 648)
+
+[node name="GridVertical" type="Line2D" parent="SandboxVisual"]
+points = PackedVector2Array(96, 0, 96, 560, 1056, 560, 1056, 0)
+width = 2.0
+default_color = Color(0.74, 0.39, 0.22, 0.18)
+
+[node name="BallContainer" type="Node2D" parent="." groups=["hostile_projectile_container"]]
+z_index = 1
+
+[node name="WorldCollision" type="StaticBody2D" parent="."]
+
+[node name="LeftWall" type="CollisionShape2D" parent="WorldCollision"]
+position = Vector2(-16, 324)
+shape = SubResource("RectangleShape2D_left_wall")
+
+[node name="RightWall" type="CollisionShape2D" parent="WorldCollision"]
+position = Vector2(1168, 324)
+shape = SubResource("RectangleShape2D_right_wall")
+
+[node name="Ceiling" type="CollisionShape2D" parent="WorldCollision"]
+position = Vector2(576, -16)
+shape = SubResource("RectangleShape2D_ceiling")
+
+[node name="Floor" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(576, 604)
+size = Vector2(1152, 88)
+fill_color = Color(0.11, 0.17, 0.19, 1)
+
+[node name="FloorDetail" type="Line2D" parent="Floor"]
+position = Vector2(0, -12)
+points = PackedVector2Array(-576, 0, 576, 0)
+width = 1.0
+default_color = Color(0.24, 0.33, 0.31, 1)
+
+[node name="WestPlatform" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(340, 430)
+size = Vector2(240, 24)
+fill_color = Color(0.14, 0.2, 0.22, 1)
+
+[node name="UpperPlatform" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(615, 385)
+size = Vector2(190, 24)
+fill_color = Color(0.14, 0.2, 0.22, 1)
+
+[node name="EastPlatform" parent="." instance=ExtResource("5_solid_platform")]
+position = Vector2(950, 460)
+size = Vector2(170, 24)
+fill_color = Color(0.14, 0.2, 0.22, 1)
+
+[node name="PlayerSpawnMarker" type="Marker2D" parent="."]
+position = Vector2(128, 560)
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(128, 560)
+
+[node name="TrainingTarget" parent="." instance=ExtResource("3_training_target")]
+position = Vector2(615, 325)
+
+[node name="WorkerPatrolArea" type="Node2D" parent="."]
+position = Vector2(900, 560)
+script = ExtResource("7_enemy_patrol_area")
+
+[node name="LeftLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(-140, 0)
+
+[node name="RightLimit" type="Marker2D" parent="WorkerPatrolArea"]
+position = Vector2(140, 0)
+
+[node name="PreviewLine" type="Line2D" parent="WorkerPatrolArea"]
+z_index = 0
+width = 2.0
+default_color = Color(0.83, 0.62, 0.3, 0.42)
+points = PackedVector2Array(-140, 0, 140, 0)
+
+[node name="RivetWorker" parent="." instance=ExtResource("6_rivet_worker")]
+position = Vector2(900, 560)
+patrol_speed = 90.0
+patrol_end_pause = 0.35
+patrol_area_path = NodePath("../WorkerPatrolArea")
+
+[node name="CombatRoom" type="Node" parent="."]
+script = ExtResource("4_combat_room")
+counter_label_path = NodePath("HUD/CounterLabel")
+status_label_path = NodePath("HUD/StatusLabel")
+health_label_path = NodePath("HUD/HealthLabel")
+player_path = NodePath("../Player")
+
+[node name="HUD" type="CanvasLayer" parent="CombatRoom"]
+layer = 10
+
+[node name="CounterLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 24.0
+offset_right = 360.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "INIMIGOS RESTANTES: 0"
+
+[node name="StatusLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 54.0
+offset_right = 620.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 22
+text = "ENCONTRO ATIVO"
+
+[node name="RoomLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 120.0
+offset_right = 260.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 18
+text = "SALA 02"
+
+[node name="HealthLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 88.0
+offset_right = 250.0
+offset_bottom = 116.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "VIDA: 5 / 5"
+
+[node name="BuildLabel" type="Label" parent="CombatRoom/HUD"]
+offset_left = 32.0
+offset_top = 154.0
+offset_right = 520.0
+offset_bottom = 184.0
+theme_override_colors/font_color = Color(0.509804, 0.843137, 0.741176, 1)
+theme_override_font_sizes/font_size = 18
+text = "BUILD: VAZIA"
+

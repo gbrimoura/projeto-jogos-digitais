@@ -1,0 +1,20 @@
+STATUS: done
+SUMMARY: Static review complete for the Factory Tileset v1 slice (`tileset-fabrica-v1.lua`, `factory_tileset_v1.tres`, `demo_editor.tscn`, `palette-fabrica-v1.json`, and `tileset-fabrica-v1-manifest.json`). The asset pipeline faithfully extracts 16 32x32 tiles across a 4x4 atlas (128x128 native) quantized to the provisional 20-color material-balanced palette. Godot 4 resource syntax in [factory_tileset_v1.tres](file:///resources/environment/factory_tileset_v1.tres) uses standard semicolon comments and valid `TileSetAtlasSource` coordinates without collision layers, while [demo_editor.tscn](file:///assets/environment/factory_v1/demo_editor.tscn) correctly sets `texture_filter = 1` (Nearest) on CanvasItem. No runtime-breaking bugs were found.
+
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+1. **Concrete Bugs**: None.
+   - *Evidence*: All 16 atlas cells (0:0 through 3:3) in [factory_tileset_v1.tres](file:///resources/environment/factory_tileset_v1.tres) map 1:1 to the 4x4 atlas layout in [tileset-fabrica-v1-manifest.json](file:///../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1-manifest.json). Semicolon comments follow official Godot 4.7 text format specs. [tileset-fabrica-v1.lua](file:///../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1.lua) writes solely to `OUT` (`pitch-assets`) and leaves runtime assets untouched.
+
+2. **Harmless Future Maintenance Risks**:
+   - *Low (Preview decoupling)*: [demo_editor.tscn](file:///assets/environment/factory_v1/demo_editor.tscn) previews `tileset-fabrica-v1-demo-escala.png` via `Sprite2D` rather than instantiating [factory_tileset_v1.tres](file:///resources/environment/factory_tileset_v1.tres) via `TileMapLayer`. Any future format regression in the `.tres` file will not be caught merely by opening the preview scene in the Godot editor.
+   - *Low (Metadata discrepancy in manifest generator)*: In [tileset-fabrica-v1.lua](file:///../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/tileset-fabrica-v1.lua) line 105, `pipe_corner` output bounds are hardcoded to `h=32` (`output_bounds.h: 32`), while `opaque_bounds` correctly registers `h=21` following `y-10` port alignment. This is purely descriptive JSON metadata and does not affect the generated atlas image or Godot resource.
+   - *Low (Palette & collision decoupling)*: The 20-color palette is isolated to this reproduction slice and marked provisional per GDD; addition of physics collision shapes and terrain/bitmask autotiling will require explicit integration when level gameplay layers are constructed.
+
+3. **Unverified Aesthetics**:
+   - *Informational (Platform cap asymmetry)*: Manifest records platform cap heights as `left: 16px` vs `right: 17px` (`mid: 10px`). Both share identical top alignment (`y=0`), ensuring a level walkable surface across seams, but the 1px underside asymmetry is an artifact of proportional nearest-neighbor scaling (`145 * 32 / 284 = 16.3px` vs `145 * 32 / 280 = 16.6px`).
+   - *Informational (Manual port extrusion)*: Extrusion of column 31 on `pipe_corner` and boundary columns 0 and 31 on `pipe_horizontal` enforces seamless edge-to-edge connection across 32px boundaries, which aligns with V3 connector review approval.
+
+NEXT_STEP: Await principal sign-off on the static review; proceed to level layout or collision definition stage only when explicitly authorized by the user.

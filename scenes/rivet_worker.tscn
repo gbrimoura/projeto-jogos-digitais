@@ -1,10 +1,16 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/enemy/rivet_worker.gd" id="1_rivet_worker"]
 [ext_resource type="PackedScene" path="res://scenes/hostile_rivet.tscn" id="2_hostile_rivet"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/rivet_worker_sprite_frames.tres" id="3_worker_frames"]
+[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="4_hit_flash_shader"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rivet_worker"]
 size = Vector2(46.0, 64.0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_worker_hit_flash"]
+resource_local_to_scene = true
+shader = ExtResource("4_hit_flash_shader")
 
 [node name="RivetWorker" type="CharacterBody2D" groups=["damageable", "combat_enemy"]]
 collision_layer = 8
@@ -35,36 +41,53 @@ shape = SubResource("RectangleShape2D_rivet_worker")
 
 [node name="Visuals" type="Node2D" parent="."]
 
+[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
+position = Vector2(0.0, -48.0)
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+material = SubResource("ShaderMaterial_worker_hit_flash")
+sprite_frames = ExtResource("3_worker_frames")
+animation = &"idle"
+autoplay = &"idle"
+centered = true
+
 [node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+visible = false
 color = Color(0.062745, 0.090196, 0.133333, 1)
 polygon = PackedVector2Array(-25.0, -64.0, 25.0, -64.0, 25.0, -5.0, -25.0, -5.0)
 
 [node name="BodyFill" type="Polygon2D" parent="Visuals"]
+visible = false
 color = Color(0.219608, 0.278431, 0.34902, 1)
 polygon = PackedVector2Array(-22.0, -61.0, 22.0, -61.0, 22.0, -8.0, -22.0, -8.0)
 
 [node name="Helmet" type="Polygon2D" parent="Visuals"]
+visible = false
 color = Color(0.396078, 0.466667, 0.541176, 1)
 polygon = PackedVector2Array(-19.0, -66.0, 19.0, -66.0, 16.0, -53.0, -16.0, -53.0)
 
 [node name="Visor" type="Line2D" parent="Visuals"]
+visible = false
 position = Vector2(0.0, -55.0)
 width = 4.0
 default_color = Color(0.941176, 0.321569, 0.305882, 1)
 points = PackedVector2Array(-12.0, 0.0, 12.0, 0.0)
 
 [node name="Arm" type="Line2D" parent="Visuals"]
+visible = false
 position = Vector2(0.0, -29.0)
 width = 5.0
 default_color = Color(0.568627, 0.647059, 0.721569, 1)
 points = PackedVector2Array(15.0, 0.0, 25.0, -4.0)
 
 [node name="WeaponMuzzle" type="Polygon2D" parent="Visuals"]
+visible = false
 position = Vector2(26.0, -33.0)
 color = Color(0.768627, 0.494118, 0.25098, 1)
 polygon = PackedVector2Array(-4.0, -4.0, 7.0, -4.0, 7.0, 4.0, -4.0, 4.0)
 
 [node name="BeltStripe" type="Line2D" parent="Visuals"]
+visible = false
 position = Vector2(0.0, -19.0)
 width = 4.0
 default_color = Color(0.764706, 0.494118, 0.25098, 1)

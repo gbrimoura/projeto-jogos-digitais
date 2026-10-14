@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática R2 concluída com aprovação da lógica do gerador Aseprite inline. A correção de `leftPoses` para `{1, 1, 2, 2, 3, 3, 3}` normalizou a progressão cronológica do dash à esquerda (impulso -> avanço -> recuperação), desacoplando a direção temporal do espelhamento geométrico executado por `mirror()`. A flag `gif_only == "true"` blinda com sucesso todas as gravações de `.aseprite`, `-spritesheet.png`, `-contact-3poses.png`, `-comparison-idle-dash.png` e `-metadata.json`, isolando estritamente a regravação do GIF demonstrativo. Todos os contratos foram validados: 16 quadros (1 + 7 + 1 + 7), 880 ms totais (300 + 140 + 300 + 140), duas viagens de 140 ms (7 x 20 ms), cadência das poses respeitada em 40 ms (2x20), 40 ms (2x20) e 60 ms (3x20), deslocamento horizontal de 50 px (40 a 90 px) e ausência de root motion no runtime (deslocamento contido exclusivamente na timeline demonstrativa).
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco lógico, de integridade ou de regressão identificado no gerador; a integridade dos artefatos e atlas runtime permanece garantida pelas guardas de exportação e evidências de hash informadas.
+NEXT_STEP: Prosseguir para aprovação visual do GIF regenerado e validação pelo usuário antes de qualquer integração futura ao atlas do jogo.

@@ -1,0 +1,8 @@
+{
+  "scenes/main.tscn": "c0603c539e90fdc7c60fc6485dfce53f4d6ed49ace3093523119f9cda74f00df",
+  "scenes/second_room.tscn": "3bd68efe9f3e564625a790a263417b9bd04b98b028a85fff9d91dcc575548907",
+  "scripts/world/solid_platform.gd": "048d5dbff40cbc19330b68d0cbcb2980f038d6cbb541eeba8d38062638fedce9",
+  "scripts/world/factory_surface_visual.gd": "f485e9a8e32fedfd8815702a4609f7252c2bc114e1cf834784965620ae5e87f3",
+  "resources/environment/factory_tileset_v1.tres": "c90ca2faebc3ea70c43ffcc7e967a069659bb95d68b3e1379ee4fffff26bd213",
+  "scenes/solid_platform.tscn": "7feff7f004bbfe6b69e89ba110862131628acbe9d0292bdd8d0ca889a320e241"
+}

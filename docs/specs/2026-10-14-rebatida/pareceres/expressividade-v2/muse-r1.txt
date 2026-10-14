@@ -1,0 +1,9 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Curvas parry 8 keys seguras: indexes 0..7 OK (loop max seg 6), KEY_TIME monotônico 0→1 sem div0, grip max 25.94<26/min 11.18>2.001 sem snap IK, idle final exato 24,0/head 0, SHOT e relógio físico (`get_swing_progress`) inalterados, direção 360/mirror preservada.
+CHANGED_FILES: none
+TESTS: none
+RISKS: P1 none; P2 easing C1 kink seg2→3 (2→0) e seg5→6 (0→3) amplitude pequena, sem pop posição — cosmético, não bloqueia.
+NEXT_STEP: Aceitar gesto; ajuste fino easing só se playtest apontar hesitação.

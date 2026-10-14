@@ -1,0 +1,59 @@
+{
+  "captured_at": "2026-10-13",
+  "capture_note": "Snapshot captured before hurt implementation; current uncommitted Dash V4 changes are part of this baseline and remain untouched.",
+  "atlas_png_dimensions": {
+    "width": 1600,
+    "height": 64
+  },
+  "aseprite_source_dimensions": {
+    "width": 64,
+    "frames": 25,
+    "height": 64
+  },
+  "runtime_animations": [
+    "idle 0-5",
+    "walk 6-13",
+    "dash 14-16",
+    "jump_rise 17-19",
+    "jump_apex 20",
+    "jump_fall 21",
+    "jump_land 22-24"
+  ],
+  "files": [
+    {
+      "path": "assets/player/player-animations.png",
+      "sha256": "B2D86E34B0782D9797AC3AB43D5B7144B87F033D7D32A1A7617AAFF17FDB0FD6",
+      "baseline_copy_sha256": "B2D86E34B0782D9797AC3AB43D5B7144B87F033D7D32A1A7617AAFF17FDB0FD6"
+    },
+    {
+      "path": "assets/player/source/player-animations.aseprite",
+      "sha256": "40955FD03DD782AA9188B765A83F00412761657C6788EA81736873DFE506C29A",
+      "baseline_copy_sha256": "40955FD03DD782AA9188B765A83F00412761657C6788EA81736873DFE506C29A"
+    },
+    {
+      "path": "resources/player_sprite_frames.tres",
+      "sha256": "FF45AFD4124CBFF029F564990ACD1D12DEF5945B048C9A775C970CD598DCDC30",
+      "baseline_copy_sha256": "FF45AFD4124CBFF029F564990ACD1D12DEF5945B048C9A775C970CD598DCDC30"
+    },
+    {
+      "path": "scripts/player/player_health.gd",
+      "sha256": "479B31FF7821BFBC178F73EB69DA8B128BD86801526471CC1E8112ECCF3B93BF",
+      "baseline_copy_sha256": "479B31FF7821BFBC178F73EB69DA8B128BD86801526471CC1E8112ECCF3B93BF"
+    },
+    {
+      "path": "scripts/player/player.gd",
+      "sha256": "2E86FDFC1040046B53E1D7AC3DD4F3D8BEBF5D9278B765E693662744676C7099",
+      "baseline_copy_sha256": "2E86FDFC1040046B53E1D7AC3DD4F3D8BEBF5D9278B765E693662744676C7099"
+    },
+    {
+      "path": "scripts/player/player_visual.gd",
+      "sha256": "658871CF4587A797431104B7569DA5293DAF7EE86286D267CDB1B1807B556620",
+      "baseline_copy_sha256": "658871CF4587A797431104B7569DA5293DAF7EE86286D267CDB1B1807B556620"
+    },
+    {
+      "path": "scenes/player.tscn",
+      "sha256": "E347E9580B58B51B70881312C403BD0B867746625CB89356B542568E775DFB46",
+      "baseline_copy_sha256": "E347E9580B58B51B70881312C403BD0B867746625CB89356B542568E775DFB46"
+    }
+  ]
+}

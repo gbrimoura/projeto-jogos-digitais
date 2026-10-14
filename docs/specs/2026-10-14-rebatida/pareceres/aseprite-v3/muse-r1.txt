@@ -1,0 +1,15 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Static-only review of parry_body increment (6x64x64 in 200ms, frames28..33, nonloop). Body poll-driven via `set_parry_state`, arm signal-driven via `start_parry`; base 28 frames/tags/times claimed untouched. No runtime executed, no files modified.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- HIGH new `player_visual.gd:set_parry_state`+`_apply_facing`+`_apply_animation_state`: entry calls `_apply_facing()` while `animation` still old (idle native -X), then switches to `parry_body` (native +X) without re-apply; exit calls `_apply_facing()` while still `parry_body` then switches to idle/walk without re-apply. Flip stale for whole parry if no external facing tick. Compounds `RacketVisual scale.x mirrors body flip`.
+- MEDIUM new start desync `player.gd:_physics_process` vs `racket_visual.gd:_update_pose`: body via poll `is_swing_active/get_swing_progress/get_swing_direction` (up to 1 physics tick late), arm via `swing_started->start_parry` immediate. 16ms on 30ms first frame. End is signal-immediate both (`clear_transient`+`_on_swing_cancelled->set_parry_state(false,0,ZERO)`), asymmetric.
+- MEDIUM new duplication drift: `PARRY_FRAME_DURATIONS` == `PARRY_BODY_DURATIONS` + literal `0.200` in `_parry_body_head_angle` vs `PARRY_TOTAL_DURATION`. Body `_sync_parry_frame` uses `minf(progress*TOTAL,TOTAL-eps)`, head uses `clampf(progress)*0.200`. Edit one side desyncs head/body.
+- MEDIUM unverified priority/cancel: `set_dead` clears `_is_parrying`, `play_hurt` does not; dash/air/land order above `if _is_parrying:` not in excerpt — do not infer. Depends on untouched controller (priority-100, `active_duration .200/cooldown .550`, cancel semantics on hurt/dash) + unseen `_apply_animation_state` head. Stale `_is_parrying/_parry_facing/_parry_progress` resume risk if hurt/dash wins visually but poll stays active.
+- LOW new redundant: `swing_cancelled` double-connected (`clear_transient` preexisting + `_on_swing_cancelled` new) + every-tick poll clear — benign idempotent (`if not _is_parrying: return`) but order-dependent. `_set_walk_speed_scale and not _is_parrying` dead during parry (parry `return` before walk path) — no behavior change, preexisting call sites unverified.
+- UNVERIFIED aesthetic/hypothesis (principal contact inspected, no runtime): extractor navy-flood/8-neighbor/>5000px/paddle-circle/motion-reject (panel2 lines/panel3 fx), 27-color idle +3 reds=30 palette, uniform 6:1 nearest, fractional `HAND_ANCHORS parry_body` vs integer history, native +X claim, `set_frame_and_progress` hold, SpriteFrames x1792..2112/y0/30,35,25,25,40,45ms/speed1/nonloop + base-pixel-equal asserts. Integrator overwrites `assets/player/*` directly — rerun without preserving uncommitted work clobbers root.
+NEXT_STEP: Freeze state, preserve uncommitted work, full-file read-only confirm of `_apply_animation_state` priority head and facing call sites; fix to `_apply_facing` after animation assignment (entry+exit), unify durations/total constant, confirm controller cancel on hurt/dash/air before runtime.

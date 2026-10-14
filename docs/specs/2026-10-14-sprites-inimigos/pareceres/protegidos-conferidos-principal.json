@@ -1,0 +1,38 @@
+[
+  {
+    "unchanged": true,
+    "file": "scenes/player.tscn"
+  },
+  {
+    "unchanged": true,
+    "file": "assets/player/player-animations.png"
+  },
+  {
+    "unchanged": true,
+    "file": "assets/player/source/player-animations.aseprite"
+  },
+  {
+    "unchanged": true,
+    "file": "resources/player_sprite_frames.tres"
+  },
+  {
+    "unchanged": true,
+    "file": "scenes/solid_platform.tscn"
+  },
+  {
+    "unchanged": true,
+    "file": "scripts/world/solid_platform.gd"
+  },
+  {
+    "unchanged": true,
+    "file": "scenes/main.tscn"
+  },
+  {
+    "unchanged": true,
+    "file": "scripts/world/main.gd"
+  },
+  {
+    "unchanged": true,
+    "file": "scenes/second_room.tscn"
+  }
+]
