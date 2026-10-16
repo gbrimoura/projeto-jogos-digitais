@@ -1,0 +1,33 @@
+{
+  "captured_before_runtime_edits": true,
+  "date": "2026-10-16",
+  "main_head": "4047f6a30b2cf4e489eadc53674c7ab9fea0280d",
+  "merge_head": "fc37facb527408cc85636c6c082358662412d4c2",
+  "conflict_blobs": {
+    "README.md": {
+      "base": "e05b6365464578e0b434d954775b92313bb07c6a",
+      "main": "986a7ad25a1ddd0718f03df9c4db304d8cfac29f",
+      "feature": "fe6dc607d51b80428747fc409c390666ebe66849"
+    },
+    "scenes/training_target.tscn": {
+      "base": "f59d9fe87eff00aca423b5a21bf67583333a2711",
+      "main": "a1124c6e5019cf7770a17d0ae12d7478d7a1e549",
+      "feature": "11af1d21a377fe189257405675d6b80e083c306d"
+    },
+    "scripts/player/player.gd": {
+      "base": "61179eeffb64b05928a751e4945da9907737d2e8",
+      "main": "2e28b2edb049676fa84a6fad2ed59d72ecc62bf7",
+      "feature": "66a57802db35e71568481d3c9f5c37f39cd37483"
+    },
+    "scripts/projectile/ricochet_ball.gd": {
+      "base": "0e99d6edf7c953c70a61344a877fbc4506e7f46",
+      "main": "b85c34b5bbb615538d7bc200f4d08a83bc926fc8",
+      "feature": "9abd856e339d0e94337ab740f9df84c883883209"
+    },
+    "scripts/world/training_target.gd": {
+      "base": "1c5e38ce1cbf95b0ec41de31ebc62e8b33361543",
+      "main": "86ae5e19e780a0408e88b13c6463a11280cfb41a",
+      "feature": "381c7a11573af611dfc4981a3ea1aab8c614094b"
+    }
+  }
+}

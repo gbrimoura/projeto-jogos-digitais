@@ -1,5 +1,7 @@
 extends Node2D
 
+signal run_progression_ready
+
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const RunBuild = preload("res://scripts/progression/run_build.gd")
 const UpgradeOfferScene: PackedScene = preload("res://scenes/upgrade_offer.tscn")
@@ -48,12 +50,27 @@ var _guard_active: bool = false
 var _guard_waiting_for_release: bool = false
 var _guard_quiet_remaining: float = 0.0
 var run_build: RunBuild = RunBuild.new()
+var _run_controller_managed: bool = false
+var _managed_run_build: RunBuild
+var _run_progression_notified: bool = false
 
 var _upgrade_definitions: Array[UpgradeDefinitionResource] = [
 	IMPACTO_REFORCADO_DEFINITION,
 	MOTOR_ACELERADO_DEFINITION,
 	CARGA_REATIVA_DEFINITION,
 ]
+
+func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool) -> bool:
+	if is_inside_tree() or shared_build == null:
+		return false
+	_run_controller_managed = true
+	_managed_run_build = shared_build
+	reward_enabled = offer_build_upgrade
+	var managed_exit_door := get_node_or_null("ExitDoor")
+	if managed_exit_door != null:
+		remove_child(managed_exit_door)
+		managed_exit_door.free()
+	return true
 
 func _ready() -> void:
 	set_process_input(true)
@@ -73,10 +90,15 @@ func _ready() -> void:
 	if player != null:
 		player.reset_to_spawn(_get_player_spawn_position())
 
-	# Os filhos já executaram _ready. Consuma o snapshot antes de reconfigurar
-	# controllers e antes de avaliar uma sala que comece limpa.
-	var incoming_snapshot := RoomTransition.consume_pending_snapshot(_load_current_packed_scene())
-	run_build = RunBuild.new()
+	# Os filhos já executaram _ready. O controlador mantém o estado da run
+	# entre encontros; cenas standalone continuam consumindo o snapshot one-shot.
+	var incoming_snapshot: Dictionary = {}
+	if not _run_controller_managed:
+		incoming_snapshot = RoomTransition.consume_pending_snapshot(_load_current_packed_scene())
+	if _run_controller_managed and _managed_run_build != null:
+		run_build = _managed_run_build
+	else:
+		run_build = RunBuild.new()
 	if player != null:
 		if not incoming_snapshot.is_empty() and player.health != null:
 			var restored_build := RunBuild.new()
@@ -217,7 +239,9 @@ func _resolve_after_physics_flush() -> void:
 func _open_upgrade_offer() -> void:
 	if _upgrade_offer == null or not is_instance_valid(_upgrade_offer):
 		_upgrade_flow_state = UpgradeFlowState.CANCELLED
-		push_error("Main: não foi possível criar a oferta de upgrades; a porta permanece bloqueada.")
+		push_error("Main: não foi possível criar a oferta de upgrades.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
 		return
 	_offered_upgrade_ids.clear()
 	for definition in _upgrade_definitions:
@@ -225,7 +249,9 @@ func _open_upgrade_offer() -> void:
 	if not _upgrade_offer.present_options(_upgrade_definitions):
 		_offered_upgrade_ids.clear()
 		_upgrade_flow_state = UpgradeFlowState.CANCELLED
-		push_error("Main: definições inválidas para a oferta; a porta permanece bloqueada.")
+		push_error("Main: definições inválidas para a oferta.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
 		return
 
 	_owned_offer_pause = not get_tree().paused
@@ -262,9 +288,16 @@ func _on_upgrade_selected(upgrade_id: StringName) -> void:
 func _release_exit_or_complete() -> void:
 	if exit_door == null:
 		_upgrade_flow_state = UpgradeFlowState.COMPLETED
+		_notify_run_progression_ready()
 		return
 	_upgrade_flow_state = UpgradeFlowState.EXIT_RELEASED
 	exit_door.call("set_room_cleared", true)
+
+func _notify_run_progression_ready() -> void:
+	if not _run_controller_managed or _run_progression_notified:
+		return
+	_run_progression_notified = true
+	run_progression_ready.emit()
 
 func _begin_input_guard() -> void:
 	_guard_active = true

@@ -1,0 +1,46 @@
+{
+  "captured_before_r1_corrections": true,
+  "date": "2026-10-16",
+  "merge_heads": {
+    "main": "4047f6a30b2cf4e489eadc53674c7ab9fea0280d",
+    "feature": "fc37facb527408cc85636c6c082358662412d4c2"
+  },
+  "scope_sha256": {
+    "scripts/projectile/ricochet_ball.gd": "3D05ED58105C1FAB9502A33DE0B3B3896BA9D181141EA3CE69A937E2A15F964C",
+    "scripts/player/ball_launcher.gd": "846E349C192CDDAD6CC3A3A88E66CEDED6616B25EDB9EC53B5C687F10679EBC7",
+    "scripts/player/trajectory_preview.gd": "C8F2EB9382A2707924AF888F200B5599BFF1715FFAADE0F80FFED9A8C2D9EEC8",
+    "scripts/world/run_controller.gd": "C53D93BCAE08FC040DAD8822382A5D8E1B862E7F49FD936A35BC0152CD98EAF7",
+    "run_root.tscn": "39CE1993457F458153DDD20310A2D52ADF9CD954F94228C417AC3319A249629C",
+    "docs/specs/2026-10-16-integracao-game-loop/plano.md": "AC3219D0839C21CFCF351CA415ACB938876E10CB589CED756A5D6FC0CE8F59E2",
+    "docs/specs/2026-10-16-integracao-game-loop/spec.md": "924212D29C4A87307661F33592EBA3B0B1D63A5320D8E584321CDD3BBE9F4A0E",
+    "docs/specs/2026-10-16-integracao-game-loop/pareceres/README.md": "1FD876849846E247A188E902213EF2219D177ED04CBFD4B46376844D06578CC5",
+    "docs/specs/2026-10-16-integracao-game-loop/historico/README.md": "4873BBC1E8F4018E8243DD265FFDF02968EB6486B3EC068F88D4BB11191982AF"
+  },
+  "review_round": "R1",
+  "review_stdout": "Original reviewer stdout remains with the principal and was not overwritten. This file records the baseline hashes and the principal's summarized disposition only.",
+  "accepted_findings": [
+    {
+      "severity": "P1",
+      "summary": "BallLauncher.try_launch calls RicochetBall.set_return_target, but the main-side RicochetBall had lost the branch return-target API and return behavior."
+    },
+    {
+      "severity": "P2",
+      "summary": "Spawn clearance and trajectory preview used base ProjectileConfig, so run radius and speed rewards did not match actual launches."
+    },
+    {
+      "severity": "integration",
+      "summary": "Victory overlay did not pause the tree, and the RunController restart handler needed to ignore echoed input while the controller remains active during pause."
+    },
+    {
+      "severity": "integration",
+      "summary": "RunRoot progress/status labels overlapped Main's existing HUD in the upper-left corner."
+    }
+  ],
+  "rejected_or_preserved_contracts": [
+    "Restarting the run from RunController is intentional.",
+    "Clearing RunBuild on death is acceptable because the run ends.",
+    "Damage 1 multiplied by 1.25 still rounds to 1; do not rebalance.",
+    "ImpactSpark lifespan 0.18 is visual and was not treated as a gameplay defect.",
+    "UpgradeOffer pause/input behavior was confirmed by the principal."
+  ]
+}

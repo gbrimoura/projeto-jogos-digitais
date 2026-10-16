@@ -15,7 +15,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Selenite Tower"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://run_root.tscn"
 config/features=PackedStringArray("4.7")
 
 [display]

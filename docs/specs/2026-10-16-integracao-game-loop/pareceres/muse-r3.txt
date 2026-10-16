@@ -1,0 +1,11 @@
+
+> plan · muse-spark-1.3-contributor
+
+```text
+STATUS: done
+SUMMARY: R3 coerente e delimitada. Interrompe preview exatamente no Nmax sem segmento Nth->N+1, espelhando RicochetBall que aplica dano/spark/emit no Nth e retorna sem sweep/parry/dano posterior. Preserva check pre-incremento para max0 e ramo grazing sem contagem.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Divergencia residual minima de collision_skin entre contact_center do preview e global_position+skin do retorno, pre-existente e desprezivel; dupla atribuicao de _bounce_limit_reached idempotente sem conflito; sem impacto em slide, lifetime, parry/sweep nao modelados no preview.
+NEXT_STEP: Manter R3 como ajuste final do merge, sem alteracao adicional neste recorte.
+```

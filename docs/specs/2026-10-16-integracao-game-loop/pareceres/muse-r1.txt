@@ -1,0 +1,20 @@
+
+> plan · muse-spark-1.3-contributor
+
+Revisão read-only do pacote de merge — analisando conflitos sem expandir escopo.
+→ Read docs/specs/2026-10-16-integracao-game-loop/pareceres/review-package-r1.txt
+→ Read docs/specs/2026-10-16-integracao-game-loop/pareceres/review-package-r1.txt [offset=1360]
+→ Read docs/specs/2026-10-16-integracao-game-loop/pareceres/review-package-r1.txt [offset=2771]
+STATUS: done
+SUMMARY: Merge main4047f6a+fc37fac integra RunRoot sem quebrar PlayerHealth/parry/AoE/RunBuild/standalone; progression/pause/HP/multipliers coerentes, com 1 P1 bloqueante e assimetrias P2.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1 scripts/player/ball_launcher.gd:2757 chama ball.set_return_target; scripts/projectile/ricochet_ball.gd:1349-1691 não define o método — todo try_launch erra após add_child/connect, quebra loop de combate.
+- P1/P2 scripts/world/run_controller.gd:244-295 _show_victory_screen sem paused=true nem bloqueio, vs 298-350 game-over com paused=true — física/input continuam atrás da vitória; transition_pending bloqueia reavanço mas player segue ativo.
+- P2 scripts/world/combat_room.gd:2027-2032 R faz reload_current_scene; em gerenciado current_scene é RunRoot — reinicia run inteira, não sala.
+- P2 scripts/world/main.gd:530-531 alias run_build=_managed_run_build + 646-650 run_build.clear() no death — limpa build compartilhada; inócuo pois run termina, frágil se continuar.
+- P2 scripts/player/ball_launcher.gd:2779 maxi(roundi(damage*mult),1) com base 1 — Núcleo +25% arredonda para 1, recompensa no-op (já registrado no plano).
+- P2 scripts/projectile/ricochet_ball.gd:1629-1640 spark parent=current_scene=RunRoot em gerenciado, top_level+deferred — sobrevive ao queue_free da sala (0.18s), seguro mas cruza transição.
+- GAP scripts/world/main.gd:689-692 pausa na oferta vs scripts/ui/reward_screen.gd:867 WHEN_PAUSED; scripts/ui/upgrade_offer.gd fora do pacote — não verificável se oferta trava pausada; scripts/feedback/combat_feedback.gd também ausente.
+NEXT_STEP: Prover set_return_target ou remover chamada; pausar/congelar vitória como game-over; confirmar UpgradeOffer.process_mode e CombatFeedback; depois recongelar para re-revisão.

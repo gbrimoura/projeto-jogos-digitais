@@ -1,0 +1,21 @@
+{
+  "captured_before_final_preview_correction": true,
+  "date": "2026-10-16",
+  "review_round": "R2",
+  "immutable_review_package": {
+    "path": "docs/specs/2026-10-16-integracao-game-loop/pareceres/review-package-r2.txt",
+    "sha256": "FAD879E50C8762BF20462577730CA3B85591E61E23B5FEE32FEBB0C1E161AE75"
+  },
+  "review_state_hash_manifest": {
+    "path": "docs/specs/2026-10-16-integracao-game-loop/pareceres/estado-r2-sha256.json",
+    "sha256": "00FB58BA08FB5157305C08981DC9FE3BAD9AC7CEEF5F22D04B0EE6766D850DC2"
+  },
+  "pre_correction_sha256": {
+    "scripts/player/trajectory_preview.gd": "2C1E1AAE8228D5488E069367A5304A42C0A695BC95C8DD3616BD63A2D20DFFDF",
+    "docs/specs/2026-10-16-integracao-game-loop/plano.md": "42F4EB72FDE73BF4D241293E8F8C7CE4886EB79C86D537DA12A0EE8D7458800B",
+    "docs/specs/2026-10-16-integracao-game-loop/spec.md": "3E88E3C5FE4D8BAF55686C9DBC0D04DB51DFE399CD2C1C4F62800E6EAE9F294D",
+    "docs/specs/2026-10-16-integracao-game-loop/historico/README.md": "EEDCDCAC949899692671E090BD5AADBB127DC495D9A2564E37EA13EF697783DB"
+  },
+  "finding": "TrajectoryPreview drew an extra segment after the Nth allowed bounce, while RicochetBall starts returning immediately after that bounce.",
+  "decision": "After incrementing and recording the bounce point, stop the preview when the configured bounce limit is reached, before reflection and the next segment. Keep the existing zero-bounce pre-check and grazing behavior unchanged."
+}

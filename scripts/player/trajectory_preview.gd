@@ -121,7 +121,7 @@ func _build_prediction(start_position: Vector2, initial_direction: Vector2, bloc
 		queue_redraw()
 		return
 
-	var config := _ball_launcher.projectile_config
+	var config := _ball_launcher.get_projectile_config_snapshot()
 	var full_distance := maxf(config.speed, 0.0) * maxf(config.lifetime, 0.0)
 	var remaining_distance := minf(full_distance, maxf(preview_distance, 0.0))
 	var current_position := start_position
@@ -188,6 +188,9 @@ func _build_prediction(start_position: Vector2, initial_direction: Vector2, bloc
 
 		bounce_count += 1
 		_bounce_points.append(to_local(contact_center))
+		if bounce_count >= config.max_bounces:
+			_bounce_limit_reached = true
+			break
 		velocity = BounceResolver.reflect_velocity(
 			velocity,
 			surface_normal,

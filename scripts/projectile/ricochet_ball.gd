@@ -1,6 +1,8 @@
 class_name RicochetBall
 extends CharacterBody2D
 
+const ImpactSparkEffect = preload("res://scripts/projectile/impact_spark.gd")
+
 const CombatFeedbackScript = preload("res://scripts/feedback/combat_feedback.gd")
 
 enum ChargeState { INACTIVE, CHARGED, CONSUMED }
@@ -30,6 +32,8 @@ var _damaged_targets_this_tick: Dictionary = {}
 var _racket_controller: Node
 var _last_parry_swing_id: int = -1
 var _parry_release_pending: bool = false
+var _return_target: Node2D
+var _is_returning: bool = false
 var _charge_state: ChargeState = ChargeState.INACTIVE
 var _charge_pulse_elapsed: float = 0.0
 var _charge_visual_base_color: Color = Color.WHITE
@@ -65,13 +69,46 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 	velocity = launch_direction * _config.speed
 	_lifetime_remaining = _config.lifetime
 	_has_launched = true
+	_is_returning = false
 	_stop_sweep_requested = false
 	_set_charge_state(ChargeState.INACTIVE)
 	_bounce_count = 0
 	_pending_motion = Vector2.ZERO
 	_parry_release_pending = true
+	if is_instance_valid(collision_shape):
+		collision_shape.set_deferred("disabled", false)
 	_apply_collision_radius()
 	queue_redraw()
+
+func set_return_target(target: Node2D) -> void:
+	_return_target = target
+
+
+func _start_returning() -> void:
+	if _has_finished or _is_returning:
+		return
+	_is_returning = true
+	velocity = Vector2.ZERO
+	_pending_motion = Vector2.ZERO
+	if is_instance_valid(collision_shape):
+		collision_shape.set_deferred("disabled", true)
+	queue_redraw()
+
+
+func _return_to_player(delta: float) -> void:
+	if not is_instance_valid(_return_target):
+		_finish("return_target_missing")
+		return
+
+	var destination := _return_target.global_position
+	var capture_distance := maxf(_projectile_radius() + 8.0, 14.0)
+	if global_position.distance_to(destination) <= capture_distance:
+		global_position = destination
+		_finish("returned")
+		return
+
+	var return_speed := maxf(_config.speed * 1.5, 150.0)
+	global_position = global_position.move_toward(destination, return_speed * delta)
 
 func cancel() -> void:
 	_finish("cancelled")
@@ -85,6 +122,9 @@ func _physics_process(delta: float) -> void:
 	if not _has_launched or _has_finished or _stop_sweep_requested:
 		return
 
+	if _is_returning:
+		_return_to_player(delta)
+		return
 	_damaged_targets_this_tick.clear()
 	_update_parry_release_lock()
 
@@ -163,7 +203,7 @@ func _physics_process(delta: float) -> void:
 
 		var next_bounce_index := _bounce_count + 1
 		if next_bounce_index > _config.max_bounces:
-			_finish("bounce_limit")
+			_start_returning()
 			return
 
 		_bounce_count = next_bounce_index
@@ -176,13 +216,13 @@ func _physics_process(delta: float) -> void:
 		if _has_finished or _stop_sweep_requested:
 			return
 		if not _is_damageable_collider(collider):
-			CombatFeedbackScript.enqueue(
-				impact_scene_root,
-				impact_position,
-				CombatFeedbackScript.EffectKind.WALL_RICOCHET
-			)
+			_enqueue_wall_spark(impact_scene_root, impact_position)
 		bounced.emit(_bounce_count, impact_position, surface_normal)
 		if _has_finished or _stop_sweep_requested:
+			return
+
+		if _bounce_count >= _config.max_bounces:
+			_start_returning()
 			return
 
 		var remainder := collision.get_remainder()
@@ -278,6 +318,19 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
 	CombatFeedbackScript.enqueue(feedback_scene_root, impact_position, effect_kind)
 	if was_charged and _charge_state == ChargeState.CHARGED:
 		_set_charge_state(ChargeState.CONSUMED)
+
+func _enqueue_wall_spark(scene_root: Node, impact_position: Vector2) -> void:
+	if not is_instance_valid(scene_root) or scene_root.is_queued_for_deletion():
+		return
+	var scene_tree := get_tree()
+	if scene_tree == null or scene_tree.current_scene != scene_root:
+		return
+	var spark := ImpactSparkEffect.new() as Node2D
+	if spark == null:
+		return
+	spark.top_level = true
+	spark.global_position = impact_position
+	scene_root.call_deferred("add_child", spark)
 
 func _is_damageable_collider(collider: Object) -> bool:
 	return collider is Node and (collider as Node).is_in_group("damageable")

@@ -1,0 +1,15 @@
+STATUS: done
+SUMMARY: A correção R3 é plenamente coerente e resolve com precisão o descasamento entre simulação física e previsão visual:
+1. **Coerência com `RicochetBall`**: No runtime, assim que o projétil atinge o N-ésimo ricochete (`_bounce_count >= _config.max_bounces`), `_start_returning()` é invocado imediatamente após processar o impacto, descartando `remainder` e entrando em regime de retorno sem colisões nem dano. O preview anterior continuava a refletir a velocidade e disparava uma nova iteração (`cast_motion`), desenhando um segmento "fantasma" que ia do N-ésimo impacto até a colisão N+1 (ou fim de distância).
+2. **Posicionamento de R3**: Inserir a parada imediatamente após `bounce_count += 1` e `_bounce_points.append(to_local(contact_center))` garante que:
+   - O ponto de impacto N já foi registrado em `_path_points` (`_append_global_point(contact_center)`);
+   - O marcador de ricochete N foi salvo em `_bounce_points`;
+   - O loop é interrompido antes do cálculo de `BounceResolver.reflect_velocity` e do avanço para o segmento subsequente;
+   - `_bounce_limit_reached` é marcado como `true` consistentemente (evitando que trajetórias que terminavam no ar por limite de distância após o N-ésimo ricochete ficassem falsamente com `_bounce_limit_reached = false`).
+3. **Casos de borda preservados**:
+   - `max_bounces <= 0`: O check preexistente antes do incremento continua barrando a execução antes de registrar o ponto em `_bounce_points`, espelhando `RicochetBall` (onde `next_bounce_index > _config.max_bounces` aciona retorno sem ricochete).
+   - *Grazing / Slide*: O ramo de deslizamento rasante (`should_bounce == false`) continua usando `continue` sem incrementar `bounce_count`, idêntico ao runtime onde grazing não consome ricochetes.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco ou regressão funcional detectado. A correção é puramente delimitada ao encerramento antecipado do preview no ponto exato onde o projétil cessa o trajeto de ricochete. Caso futuramente seja desejado exibir a linha de retorno do projétil ao jogador, isso constituirá nova funcionalidade e não regressão do preview de ricochete balístico.
+NEXT_STEP: Aplicar formalmente o bloco R3 em `TrajectoryPreview._build_prediction` no repositório quando autorizada a fase de edição.

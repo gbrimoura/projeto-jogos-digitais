@@ -1,0 +1,42 @@
+STATUS: done  
+SUMMARY: A correção é coerente com o contrato atual da bola: o preview deixa de simular reflexão e o segmento até a colisão N+1 depois da N-ésima ricochete. O gate pré-incremento (max 0) e o ramo grazing permanecem corretos. Sem bloqueio de lógica no recorte avaliado.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: incerteza residual baixa se `_draw` tratar `_bounce_limit_reached` como “parede extra sem bounce”; overlap visual no último ponto; `_start_returning()` da bola ainda chama `reflect_velocity` antes do retorno, mas esse vetor não deve aparecer no preview se o retorno substitui a varredura.  
+NEXT_STEP: integrar o recorte; só reabrir se `_draw`/retorno da bola mostrarem o último bounce com marcação dupla ou um frame de trajetória refletida.
+
+## Achado
+
+O desalinhamento R2 era off-by-one de **trajetória**, não de **contagem**.
+
+Na bola, a N-ésima ricochete conta, aplica impacto e em seguida encerra a varredura:
+
+- `next_bounce_index > max` **antes** do incremento cobre `max_bounces == 0` (retorno sem bounce/dano).
+- Depois de `_bounce_count = next_bounce_index`, dano/`bounced` e `if _bounce_count >= max: _start_returning(); return` descartam remainder, parry e colisão seguinte.
+
+O preview antigo só parava no gate **pré-incremento**. Com `max = N > 0` isso só dispara na colisão N+1: o N-ésimo bounce ainda refletia e o path ganhava um segmento extra até a parede seguinte. Esse segmento não existe mais no runtime da bola.
+
+## Correção
+
+O segundo gate, **depois** de `bounce_count += 1` e `_bounce_points.append(...)`, e **antes** de `reflect_velocity` / avanço de `current_position`, fecha esse buraco:
+
+1. `max_bounces == 0`: o `if bounce_count >= max` anterior continua a sair sem incrementar e sem gravar bounce. Equivale a `next_bounce_index > max` na bola.
+2. Grazing (`not should_bounce`) segue com `continue` sem contar bounce; o gate novo não é alcançado.
+3. `max = N > 0`: o N-ésimo contato ainda entra no path e em `_bounce_points`; em seguida `_bounce_limit_reached = true` e `break`. Não há reflexão nem segmento N → N+1.
+4. `bounce_points.size()` no limite continua `== max_bounces`. Só some o vértice extra de path. Menor superfície de regressão do que um ajuste na contagem.
+
+O `break` com `remaining_distance` ainda positiva é o análogo correto de descartar o remainder: o trecho pós-while só marca `_query_limit_reached` se `iterations >= MAX_QUERY_ITERATIONS`.
+
+## Não-regressões no recorte
+
+- Aim bloqueado, distância/lifetime, `cast_motion`/`get_rest_info` vazios e normal zero permanecem iguais.
+- Parry/dano não são simulados no preview; ao cortar o segmento fantasma, o preview deixa de sugerir uma janela de parry/sweep que a bola já não percorre.
+- Os dois gates não pulam a N-ésima ricochete: com `bounce_count == N-1`, o pré-incremento não dispara; o pós-incremento dispara depois de registrar o bounce.
+
+## Riscos (não bloqueantes)
+
+- Se `_draw` usa `_bounce_limit_reached` como “último ponto = parede que não ricocheteia”, esse ponto agora **é** a N-ésima ricochete. Possível marcação dupla (bounce + limite), não erro de path.
+- A bola ainda faz `reflect_velocity` no N-ésimo hit antes de `_start_returning()`. Isso só seria regressão de preview se o retorno **não** substituísse a varredura e um frame refletido fosse jogável. Pelo enunciado do root, esse segmento não deve ser desenhado.
+- Se o N-ésimo bounce cair exatamente em `iterations == MAX_QUERY_ITERATIONS` com resto de distância, `_query_limit_reached` pode coincidir com o limite de bounce. Padrão pré-existente do `break` por limite; agora o resto tende a ser maior. Risco baixo se `MAX_QUERY_ITERATIONS` for folgado.
+
+Sem defeito por ausência de teste, conforme pedido.

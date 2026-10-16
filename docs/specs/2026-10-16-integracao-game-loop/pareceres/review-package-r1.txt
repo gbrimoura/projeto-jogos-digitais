@@ -1,0 +1,2930 @@
+Pacote de revisão estática integral: merge HEAD4047f6a + MERGE_HEADfc37fac. Não executar comandos, Godot, testes ou mutações. Conteúdo atual completo por arquivo. Main mantém PlayerHealth/RunBuild/AoE/cartoon/assets/random platforms; RunRoot novo gere progressão, chefeplaceholder usa main.tscn,1floor na cena. Números locais não GDD. Único escritor congelado. Conflitos textuais resolvidos no working tree, índice UU deliberado até revisão e gitadd root. Escopo verificar integração transições/vida/sinais/pause/death/upgrades/API/GDScript, APIsdosarquivoscompletos. Não tratar ausência runtime como defeito. 
+FILE: docs/specs/2026-10-16-integracao-game-loop/plano.md
+# Plano — integração do loop de jogo
+
+**Data:** 16/10/2026  
+**Estado:** implementação integrada e congelada para revisão estática; o merge continua sem resolução do índice, commit ou push.  
+**Escopo:** integrar `origin/feature/game-loop-assets` sobre a `main` atual sem substituir contratos de sala, combate, animação ou arte que já existem.
+
+## Decisões
+
+- `RunRoot` será a cena principal e controlará a sequência de salas, o avanço de andares, as recompensas de chefe e o fim/reinício da run.
+- Cada sala atual continua sendo uma instância de `scenes/main.tscn`. O controlador configura essas instâncias em modo gerenciado, removendo a porta somente daquela instância; `Main` segue responsável por vitória, parada e limpeza de projéteis, oferta `RunBuild` e proteção de entrada.
+- `RunBuild` será estado compartilhado de `RunController` durante a run. A oferta existente aparece quando ainda está vazia e não se repete após uma escolha válida. O `RewardScreen` da branch permanece uma recompensa de chefe separada, com modificadores multiplicativos de dano, velocidade e raio do projétil.
+- O modificador de dano multiplica a configuração final depois de aplicar `RunBuild` e arredonda para inteiro. Com a base atual de 1 de dano, `round(1 × 1,25)` continua 1; esse limite de quantização será registrado, sem inventar outro valor de balanceamento.
+- A cena atual de chefe é o mesmo placeholder `main.tscn`; `run_root.tscn` configura uma run de um andar. Isso não define o GDD nem balanceamento final.
+- As APIs incompatíveis da antiga implementação de jogador são adaptadas aos contratos atuais de `PlayerHealth` e `Player.take_damage(amount, source) -> bool`. O `TrainingTarget` mantém o ataque AoE 0,65/0,14/1,4 s, raio 140, dano-flash e visual Cartoon V2; o antigo contato por cooldown da branch não é combinado com a sentinela.
+- O `ImpactSpark` da branch cobre o ricochete em parede; `CombatFeedback` atual continua responsável por parry e acertos aceitos, inclusive a carga. A inclusão de efeitos não altera dano, colisões ou ordem de callbacks.
+- A geração aleatória atual de plataformas e o posicionamento de inimigos da `main` permanecem ativos em cada nova instância de sala.
+
+## Limites
+
+Sem Godot, importação, testes ou QA nesta frente, conforme instruções do repositório e da tarefa. O principal fará a revisão estática obrigatória com o estado congelado. Arquivos preexistentes fora dos escopos autorizados não serão editados; os arquivos de runtime abrangidos são os 16 paths da branch, com `scripts/world/main.gd` autorizado apenas para a integração gerenciada.
+
+FILE: docs/specs/2026-10-16-integracao-game-loop/spec.md
+# Especificação — integração do loop de jogo
+
+**Data:** 16/10/2026  
+**Estado:** contrato prospectivo antes da edição de runtime.
+
+## Fluxo de execução
+
+1. `project.godot` inicia por `res://run_root.tscn`, sem depender de UID ainda não importado.
+2. `RunController` instancia a sala comum ou chefe dentro de `RoomContainer`, compartilha a instância da `RunBuild` atual e informa se a oferta local ainda deve aparecer.
+3. `Main` conserva seu fluxo de vitória e limpeza pós-física. Em modo gerenciado, não consome snapshot estático de transição e remove `ExitDoor` apenas da instância corrente. Após concluir o caminho de vitória e qualquer oferta local, emite `run_progression_ready` uma vez.
+4. `RunController` só avança após esse sinal. Ao trocar de encontro, preserva HP atual/máximo via `PlayerHealth.restore_health_for_room_transition`; valores de vida inválidos ou jogador morto cancelam o avanço. A instância nova aplica `RunBuild` no `_ready` e recebe os multiplicadores da run depois que os filhos terminaram de inicializar.
+5. Uma recompensa de chefe aguarda seleção ou cancelamento por morte antes de alterar multiplicadores. A morte também invalida temporizadores/continuações pendentes, mostra Game Over e permite reinício.
+6. Modificadores de projétil são aplicados ao snapshot derivado em `BallLauncher`, depois dos efeitos tipados de `RunBuild`; nunca mutam cumulativamente o Resource-base.
+
+## Contratos preservados
+
+- Player continua usando `PlayerHealth` como fonte única de HP, invulnerabilidade e morte; dano retorna booleano.
+- `Main` standalone continua usando oferta `RunBuild`, porta, snapshot one-shot e destinos atuais sem alterações de semântica.
+- A integração gerenciada mantém ataque circular da sentinela, flash de dano e animações/arte Cartoon V2, incluindo sincronização do aviso visual, physics query e LOS existentes.
+- O estado físico da bola mantém charge, parada de sweep em callbacks letais e lock de liberação do parry; o clique de disparo permanece bloqueado durante swing.
+- Efeitos de parede são visuais e deferred. Parry e hits aceitos permanecem nos estilos do `CombatFeedback` atual.
+- Plataformas continuam usando o posicionamento aleatório existente e os inimigos mantêm suas regras atuais de posição e ataque.
+- A sala de chefe atual reutiliza `main.tscn` como placeholder; `floors_per_run=1` na cena é apenas a configuração desta integração.
+
+## Arquivos da frente
+
+Além dos 16 paths em `git diff --name-only HEAD...MERGE_HEAD`, `scripts/world/main.gd` pode receber somente o método de configuração gerenciada e o sinal pós-oferta necessário para coordenar com `RunController`. Não alterar `CombatRoom`, assets, recursos, cenas de sala atuais, configurações gerais ou plugins.
+
+## Revisão e validação
+
+Não executar Godot, import, testes ou QA. A frente será congelada e entregue ao agente principal para revisão estática com os arquivos completos e riscos identificados. A validação de runtime continua pendente.
+
+FILE: scripts/world/run_controller.gd
+extends Node2D
+
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RewardScreenScript = preload("res://scripts/ui/reward_screen.gd")
+
+@export_range(1, 20) var floors_per_run: int = 8
+@export_range(1, 10) var common_rooms_per_floor: int = 3
+@export_range(0.2, 10.0, 0.1) var transition_delay: float = 1.5
+@export var common_room_scene: PackedScene
+@export var boss_room_scene: PackedScene
+
+@onready var room_container: Node2D = $RoomContainer
+@onready var progress_label: Label = $HUD/ProgressLabel
+@onready var status_label: Label = $HUD/StatusLabel
+
+var current_floor: int = 1
+var current_room: int = 1
+var current_room_instance: Node
+var transition_pending: bool = false
+var _run_ended: bool = false
+var _damage_multiplier: float = 1.0
+var _speed_multiplier: float = 1.0
+var _radius_multiplier: float = 1.0
+var _run_player_health: int = -1
+var _run_player_max_health: int = -1
+var _run_build: RunBuild = RunBuild.new()
+var _active_reward_screen: Node
+var _owned_reward_pause: bool = false
+
+
+func _ready() -> void:
+	# The run controller must handle overlays and progression while gameplay is paused.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	RoomTransition.clear_pending_snapshot()
+	if common_room_scene == null:
+		_fail_run("ERRO: cena de sala comum não definida.")
+		return
+	if boss_room_scene == null:
+		_fail_run("ERRO: cena de chefe não definida.")
+		return
+	_load_current_encounter()
+
+
+func _is_boss_room() -> bool:
+	return current_room > common_rooms_per_floor
+
+
+func _is_final_boss() -> bool:
+	return current_floor == floors_per_run and _is_boss_room()
+
+
+func _load_current_encounter() -> void:
+	if _run_ended:
+		return
+
+	var packed_scene: PackedScene = boss_room_scene if _is_boss_room() else common_room_scene
+	var next_room := packed_scene.instantiate()
+	# RunRoot processes while paused; room descendants must still stop with gameplay.
+	next_room.process_mode = Node.PROCESS_MODE_PAUSABLE
+	if not next_room.has_method("configure_run_managed"):
+		next_room.free()
+		_fail_run("ERRO: a cena de sala não oferece integração gerenciada.")
+		return
+	if not next_room.has_signal("run_progression_ready"):
+		next_room.free()
+		_fail_run("ERRO: a sala não oferece o sinal run_progression_ready.")
+		return
+	var should_offer_build_upgrade := _run_build.total_count() == 0
+	if not bool(next_room.call("configure_run_managed", _run_build, should_offer_build_upgrade)):
+		next_room.free()
+		_fail_run("ERRO: não foi possível configurar a sala para esta run.")
+		return
+
+	var progression_callback := Callable(self, "_on_room_progression_ready").bind(next_room)
+	next_room.connect("run_progression_ready", progression_callback, CONNECT_ONE_SHOT)
+	room_container.add_child(next_room)
+	current_room_instance = next_room
+
+	var player := _find_player(next_room)
+	if player == null or player.health == null:
+		_discard_current_room("ERRO: a sala não contém um jogador com PlayerHealth.")
+		return
+
+	if _run_player_health < 0:
+		_run_player_health = player.current_health
+		_run_player_max_health = player.maximum_health
+	else:
+		if _run_player_health <= 0 or _run_player_max_health <= 0:
+			_discard_current_room("ERRO: HP inválido; a run não pode continuar.")
+			return
+		if not player.health.restore_health_for_room_transition(
+			_run_player_health,
+			_run_player_max_health
+		):
+			_discard_current_room("ERRO: não foi possível restaurar o HP da run.")
+			return
+
+	if not player.health_changed.is_connected(_on_player_health_changed):
+		player.health_changed.connect(_on_player_health_changed)
+	if not player.died.is_connected(_on_player_died):
+		player.died.connect(_on_player_died)
+	_on_player_health_changed(player.current_health, player.maximum_health)
+
+	# Main._ready reapplies the shared RunBuild; branch modifiers are installed
+	# afterward and are applied to each derived projectile config at launch.
+	_apply_run_upgrades(next_room)
+	_update_hud("ENCONTRO ATIVO")
+
+
+func _on_room_progression_ready(room: Node) -> void:
+	if _run_ended or transition_pending or room != current_room_instance:
+		return
+	transition_pending = true
+	call_deferred("_advance_after_room", room)
+
+
+func _advance_after_room(completed_room: Node) -> void:
+	if _run_ended or completed_room != current_room_instance:
+		return
+
+	if _is_boss_room():
+		var reward_screen: Variant = RewardScreenScript.new()
+		if reward_screen == null:
+			_fail_run("ERRO: não foi possível abrir a recompensa do chefe.")
+			return
+		_owned_reward_pause = not get_tree().paused
+		if _owned_reward_pause:
+			get_tree().paused = true
+		add_child(reward_screen)
+		_active_reward_screen = reward_screen
+		var selected_reward: String = await reward_screen.reward_chosen
+		_active_reward_screen = null
+		if is_instance_valid(reward_screen):
+			reward_screen.queue_free()
+		_close_owned_reward_pause()
+		if _run_ended or selected_reward.is_empty():
+			return
+		_apply_reward(selected_reward)
+
+	if _is_final_boss():
+		_run_ended = true
+		_show_victory_screen()
+		return
+
+	_update_hud("SALA CONCLUÍDA. PRÓXIMA ETAPA EM %.1f s." % transition_delay)
+	await get_tree().create_timer(maxf(transition_delay, 0.0)).timeout
+	if _run_ended or completed_room != current_room_instance:
+		return
+
+	current_room_instance = null
+	if is_instance_valid(completed_room):
+		completed_room.queue_free()
+	await get_tree().process_frame
+	if _run_ended:
+		return
+
+	_advance_stage()
+	transition_pending = false
+	_load_current_encounter()
+
+
+func _advance_stage() -> void:
+	if _is_boss_room():
+		current_floor += 1
+		current_room = 1
+	else:
+		current_room += 1
+
+
+func _update_hud(status_text: String) -> void:
+	var stage_text := (
+		"CHEFE"
+		if _is_boss_room()
+		else "SALA %d/%d" % [current_room, common_rooms_per_floor]
+	)
+	if progress_label != null:
+		progress_label.text = "ANDAR %02d/%02d | %s" % [
+			current_floor,
+			floors_per_run,
+			stage_text,
+		]
+	if status_label != null:
+		status_label.text = status_text
+
+
+func _show_victory_screen() -> void:
+	var overlay := CanvasLayer.new()
+	overlay.name = "VictoryOverlay"
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.02, 0.04, 0.08, 0.94)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(720, 300)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#101c2c")
+	panel_style.border_color = Color("#f0b35b")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(14)
+	panel_style.content_margin_left = 32
+	panel_style.content_margin_right = 32
+	panel_style.content_margin_top = 28
+	panel_style.content_margin_bottom = 28
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 20)
+	panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "ENTREGA CONCLUÍDA!"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_color_override("font_color", Color("#f0b35b"))
+	content.add_child(title)
+
+	var message := Label.new()
+	message.text = "O robô chegou ao topo da torre."
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 20)
+	content.add_child(message)
+
+	var restart_button := Button.new()
+	restart_button.text = "JOGAR NOVAMENTE"
+	restart_button.custom_minimum_size = Vector2(260, 54)
+	restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	restart_button.pressed.connect(_restart_run)
+	content.add_child(restart_button)
+
+
+func _show_game_over_screen() -> void:
+	var overlay := CanvasLayer.new()
+	overlay.name = "GameOverOverlay"
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.02, 0.04, 0.08, 0.94)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(620, 280)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#101c2c")
+	panel_style.border_color = Color("#e86b69")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(14)
+	panel_style.content_margin_left = 32
+	panel_style.content_margin_right = 32
+	panel_style.content_margin_top = 28
+	panel_style.content_margin_bottom = 28
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 20)
+	panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "RUN ENCERRADA"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", Color("#e86b69"))
+	content.add_child(title)
+
+	var message := Label.new()
+	message.text = "O robô ficou sem energia."
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 20)
+	content.add_child(message)
+
+	var restart_button := Button.new()
+	restart_button.text = "TENTAR NOVAMENTE"
+	restart_button.custom_minimum_size = Vector2(260, 54)
+	restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	restart_button.pressed.connect(_restart_run)
+	content.add_child(restart_button)
+	get_tree().paused = true
+
+
+func _restart_run() -> void:
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
+func _apply_reward(reward_name: String) -> void:
+	match reward_name:
+		"Núcleo de impacto":
+			_damage_multiplier *= 1.25
+		"Propulsor":
+			_speed_multiplier *= 1.15
+		"Esfera ampliada":
+			_radius_multiplier *= 1.15
+
+
+func _apply_run_upgrades(node: Node) -> void:
+	if node is BallLauncher:
+		(node as BallLauncher).set_run_reward_multipliers(
+			_damage_multiplier,
+			_speed_multiplier,
+			_radius_multiplier
+		)
+	for child in node.get_children():
+		_apply_run_upgrades(child)
+
+
+func _find_player(node: Node) -> Player:
+	if node is Player:
+		return node as Player
+	for child in node.get_children():
+		var found := _find_player(child)
+		if found != null:
+			return found
+	return null
+
+
+func _on_player_died() -> void:
+	if _run_ended:
+		return
+	_run_ended = true
+	transition_pending = true
+	if is_instance_valid(_active_reward_screen) and _active_reward_screen.has_method("cancel_offer"):
+		_active_reward_screen.call("cancel_offer")
+	call_deferred("_present_game_over_after_physics")
+
+
+func _present_game_over_after_physics() -> void:
+	_close_owned_reward_pause()
+	if _run_ended:
+		_show_game_over_screen()
+
+
+func _close_owned_reward_pause() -> void:
+	if _owned_reward_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_reward_pause = false
+
+
+func _on_player_health_changed(current_health: int, maximum_health: int) -> void:
+	_run_player_health = current_health
+	_run_player_max_health = maximum_health
+
+
+func _discard_current_room(message: String) -> void:
+	var room_to_discard := current_room_instance
+	current_room_instance = null
+	_run_ended = true
+	transition_pending = true
+	if is_instance_valid(room_to_discard):
+		room_to_discard.queue_free()
+	_fail_run(message)
+
+
+func _fail_run(message: String) -> void:
+	_run_ended = true
+	transition_pending = true
+	push_error("RunController: " + message)
+	_update_hud(message)
+
+FILE: scripts/world/main.gd
+extends Node2D
+
+signal run_progression_ready
+
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const UpgradeOfferScene: PackedScene = preload("res://scenes/upgrade_offer.tscn")
+const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
+const MOTOR_ACELERADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/motor_acelerado.tres")
+const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
+const FALLBACK_PLAYER_SPAWN := Vector2(160.0, 560.0)
+const DISCRETE_INPUT_ACTIONS: Array[StringName] = [
+	&"launch_ball",
+	&"parry",
+	&"dash",
+	&"jump",
+	&"interact",
+]
+
+enum UpgradeFlowState {
+	INACTIVE,
+	VICTORY_PENDING,
+	OFFER_OPEN,
+	SELECTED,
+	EXIT_RELEASED,
+	CANCELLED,
+	COMPLETED,
+}
+
+@export_file("*.tscn") var next_room_scene_path: String = "res://scenes/second_room.tscn"
+@export var room_title: String = "SALA 01"
+@export var reward_enabled: bool = true
+@export_range(0.0, 2.0, 0.01) var post_upgrade_input_guard_seconds: float = 0.25
+@export var room_title_label_path: NodePath = NodePath("CombatRoom/HUD/RoomLabel")
+@export var build_status_label_path: NodePath = NodePath("CombatRoom/HUD/BuildLabel")
+@export var player_spawn_marker_path: NodePath = NodePath("PlayerSpawnMarker")
+
+@onready var player: Player = $Player
+@onready var combat_room: CombatRoom = $CombatRoom
+@onready var exit_door: Node = get_node_or_null("ExitDoor")
+
+var _transition_in_progress: bool = false
+var _upgrade_flow_state: UpgradeFlowState = UpgradeFlowState.INACTIVE
+var _death_pending: bool = false
+var _post_flush_resolution_queued: bool = false
+var _upgrade_offer: UpgradeOffer
+var _offered_upgrade_ids: Array[StringName] = []
+var _owned_offer_pause: bool = false
+var _guard_active: bool = false
+var _guard_waiting_for_release: bool = false
+var _guard_quiet_remaining: float = 0.0
+var run_build: RunBuild = RunBuild.new()
+var _run_controller_managed: bool = false
+var _managed_run_build: RunBuild
+var _run_progression_notified: bool = false
+
+var _upgrade_definitions: Array[UpgradeDefinitionResource] = [
+	IMPACTO_REFORCADO_DEFINITION,
+	MOTOR_ACELERADO_DEFINITION,
+	CARGA_REATIVA_DEFINITION,
+]
+
+func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool) -> bool:
+	if is_inside_tree() or shared_build == null:
+		return false
+	_run_controller_managed = true
+	_managed_run_build = shared_build
+	reward_enabled = offer_build_upgrade
+	var managed_exit_door := get_node_or_null("ExitDoor")
+	if managed_exit_door != null:
+		remove_child(managed_exit_door)
+		managed_exit_door.free()
+	return true
+
+func _ready() -> void:
+	set_process_input(true)
+	if not combat_room.room_cleared.is_connected(_on_room_cleared):
+		combat_room.room_cleared.connect(_on_room_cleared)
+	if player != null and not player.died.is_connected(_on_player_died):
+		player.died.connect(_on_player_died)
+	if exit_door != null:
+		var transition_callback := Callable(self, "_on_exit_door_transition_requested")
+		if not exit_door.is_connected("transition_requested", transition_callback):
+			exit_door.connect("transition_requested", transition_callback)
+
+	var title_label := get_node_or_null(room_title_label_path) as Label
+	if title_label != null:
+		title_label.text = room_title
+
+	if player != null:
+		player.reset_to_spawn(_get_player_spawn_position())
+
+	# Os filhos já executaram _ready. O controlador mantém o estado da run
+	# entre encontros; cenas standalone continuam consumindo o snapshot one-shot.
+	var incoming_snapshot: Dictionary = {}
+	if not _run_controller_managed:
+		incoming_snapshot = RoomTransition.consume_pending_snapshot(_load_current_packed_scene())
+	if _run_controller_managed and _managed_run_build != null:
+		run_build = _managed_run_build
+	else:
+		run_build = RunBuild.new()
+	if player != null:
+		if not incoming_snapshot.is_empty() and player.health != null:
+			var restored_build := RunBuild.new()
+			if restored_build.replace_state(
+				incoming_snapshot.get("upgrade_ids"),
+				incoming_snapshot.get("counts_by_id")
+			):
+				var health_restored := player.health.restore_health_for_room_transition(
+					int(incoming_snapshot["hp_current"]),
+					int(incoming_snapshot["hp_max"])
+				)
+				if health_restored:
+					run_build = restored_build
+		player.apply_run_build(run_build)
+
+	_upgrade_offer = UpgradeOfferScene.instantiate() as UpgradeOffer
+	if _upgrade_offer != null:
+		add_child(_upgrade_offer)
+		_upgrade_offer.upgrade_selected.connect(_on_upgrade_selected)
+		_upgrade_offer.hide()
+
+	_update_build_status()
+	if exit_door != null:
+		exit_door.call("set_room_cleared", false)
+	if combat_room.room_is_cleared:
+		_on_room_cleared()
+
+func _exit_tree() -> void:
+	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+		_upgrade_offer.close_offer()
+	_guard_active = false
+	_guard_waiting_for_release = false
+	_guard_quiet_remaining = 0.0
+	# Do not unpause during teardown; the new room inherits the actual tree state.
+	_owned_offer_pause = false
+
+func _input(event: InputEvent) -> void:
+	if _upgrade_flow_state == UpgradeFlowState.OFFER_OPEN and event.is_action_pressed("interact"):
+		get_viewport().set_input_as_handled()
+		return
+	if not _guard_active:
+		return
+	for action in DISCRETE_INPUT_ACTIONS:
+		if event.is_action_pressed(action):
+			_guard_waiting_for_release = true
+			_guard_quiet_remaining = 0.0
+			get_viewport().set_input_as_handled()
+			return
+
+func _process(delta: float) -> void:
+	if not _guard_active:
+		return
+	if _any_discrete_input_pressed():
+		_guard_waiting_for_release = true
+		_guard_quiet_remaining = 0.0
+		return
+	if _guard_waiting_for_release:
+		_guard_waiting_for_release = false
+		_guard_quiet_remaining = maxf(post_upgrade_input_guard_seconds, 0.0)
+		if _guard_quiet_remaining <= 0.0:
+			_end_input_guard()
+		return
+
+	_guard_quiet_remaining = maxf(_guard_quiet_remaining - delta, 0.0)
+	if _guard_quiet_remaining <= 0.0:
+		_end_input_guard()
+
+func _physics_process(_delta: float) -> void:
+	if player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	if player.global_position.y > 760.0:
+		player.reset_to_spawn(_get_player_spawn_position())
+
+func is_gameplay_action_blocked(action: StringName) -> bool:
+	if not DISCRETE_INPUT_ACTIONS.has(action):
+		return false
+	if _upgrade_flow_state in [
+		UpgradeFlowState.VICTORY_PENDING,
+		UpgradeFlowState.OFFER_OPEN,
+		UpgradeFlowState.SELECTED,
+	]:
+		return true
+	return _guard_active
+
+func _on_room_cleared() -> void:
+	if _upgrade_flow_state != UpgradeFlowState.INACTIVE:
+		return
+	_upgrade_flow_state = UpgradeFlowState.VICTORY_PENDING
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.request_stop_active_sweep()
+	_queue_post_flush_resolution()
+
+func _on_player_died() -> void:
+	_death_pending = true
+	_upgrade_flow_state = UpgradeFlowState.CANCELLED
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.request_stop_active_sweep()
+	_queue_post_flush_resolution()
+
+func _queue_post_flush_resolution() -> void:
+	if _post_flush_resolution_queued:
+		return
+	_post_flush_resolution_queued = true
+	call_deferred("_resolve_after_physics_flush")
+
+func _resolve_after_physics_flush() -> void:
+	_post_flush_resolution_queued = false
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.cleanup_active_ball_after_flush()
+	combat_room.cleanup_hostile_projectiles_after_flush()
+	combat_room.refresh_status_after_physics()
+
+	if _death_pending or player == null or not is_instance_valid(player) or player.is_dead:
+		_death_pending = true
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		_transition_in_progress = false
+		run_build.clear()
+		RoomTransition.clear_pending_snapshot()
+		_offered_upgrade_ids.clear()
+		if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+			_upgrade_offer.close_offer()
+		if exit_door != null:
+			exit_door.call("set_room_cleared", false)
+		_close_owned_offer_pause()
+		_end_input_guard()
+		_update_build_status()
+		if player != null and is_instance_valid(player):
+			player.finish_death_after_physics()
+		return
+
+	if _upgrade_flow_state != UpgradeFlowState.VICTORY_PENDING or not combat_room.room_is_cleared:
+		return
+	if reward_enabled and run_build.total_count() == 0:
+		_open_upgrade_offer()
+	else:
+		_release_exit_or_complete()
+
+func _open_upgrade_offer() -> void:
+	if _upgrade_offer == null or not is_instance_valid(_upgrade_offer):
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		push_error("Main: não foi possível criar a oferta de upgrades.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
+		return
+	_offered_upgrade_ids.clear()
+	for definition in _upgrade_definitions:
+		_offered_upgrade_ids.append(definition.upgrade_id)
+	if not _upgrade_offer.present_options(_upgrade_definitions):
+		_offered_upgrade_ids.clear()
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		push_error("Main: definições inválidas para a oferta.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
+		return
+
+	_owned_offer_pause = not get_tree().paused
+	_upgrade_flow_state = UpgradeFlowState.OFFER_OPEN
+	if _owned_offer_pause:
+		get_tree().paused = true
+
+func _on_upgrade_selected(upgrade_id: StringName) -> void:
+	if _upgrade_flow_state != UpgradeFlowState.OFFER_OPEN:
+		return
+	if player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	if not _offered_upgrade_ids.has(upgrade_id):
+		return
+	if not RunBuild.is_known_upgrade_id(upgrade_id):
+		return
+	if run_build.count_for(upgrade_id) != 0 or run_build.total_count() >= RunBuild.MAX_UPGRADES:
+		return
+
+	# State changes before the build and player configurations are mutated.
+	_upgrade_flow_state = UpgradeFlowState.SELECTED
+	if not run_build.add_upgrade(upgrade_id):
+		_upgrade_flow_state = UpgradeFlowState.OFFER_OPEN
+		return
+	player.apply_run_build(run_build)
+	_update_build_status()
+	_offered_upgrade_ids.clear()
+	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+		_upgrade_offer.close_offer()
+	_begin_input_guard()
+	_close_owned_offer_pause()
+	_release_exit_or_complete()
+
+func _release_exit_or_complete() -> void:
+	if exit_door == null:
+		_upgrade_flow_state = UpgradeFlowState.COMPLETED
+		_notify_run_progression_ready()
+		return
+	_upgrade_flow_state = UpgradeFlowState.EXIT_RELEASED
+	exit_door.call("set_room_cleared", true)
+
+func _notify_run_progression_ready() -> void:
+	if not _run_controller_managed or _run_progression_notified:
+		return
+	_run_progression_notified = true
+	run_progression_ready.emit()
+
+func _begin_input_guard() -> void:
+	_guard_active = true
+	_guard_waiting_for_release = _any_discrete_input_pressed()
+	_guard_quiet_remaining = 0.0 if _guard_waiting_for_release else maxf(post_upgrade_input_guard_seconds, 0.0)
+	if not _guard_waiting_for_release and _guard_quiet_remaining <= 0.0:
+		_end_input_guard()
+
+func _end_input_guard() -> void:
+	_guard_active = false
+	_guard_waiting_for_release = false
+	_guard_quiet_remaining = 0.0
+
+func _any_discrete_input_pressed() -> bool:
+	for action in DISCRETE_INPUT_ACTIONS:
+		if Input.is_action_pressed(action):
+			return true
+	return false
+
+func _close_owned_offer_pause() -> void:
+	if _owned_offer_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_offer_pause = false
+
+func _on_exit_door_transition_requested(requested_player: Player) -> void:
+	if _transition_in_progress or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return
+	if requested_player == null or not is_instance_valid(requested_player) or requested_player != player or requested_player.is_dead:
+		if exit_door != null:
+			exit_door.call("report_transition_failure", "JOGADOR INDISPONÍVEL")
+		return
+
+	var destination_path := next_room_scene_path.strip_edges()
+	if destination_path.is_empty():
+		if exit_door != null:
+			exit_door.call("report_transition_failure", "DESTINO INDISPONÍVEL")
+		return
+
+	_transition_in_progress = true
+	if exit_door != null:
+		exit_door.call("set_transition_busy", true)
+	call_deferred("_change_room_deferred", destination_path, requested_player)
+
+func _change_room_deferred(destination_path: String, requested_player: Player) -> void:
+	if not _transition_in_progress or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return
+	if not combat_room.room_is_cleared:
+		_cancel_transition_request(destination_path, "")
+		return
+	if requested_player == null or not is_instance_valid(requested_player) or requested_player != player or requested_player.is_dead:
+		_cancel_transition_request(destination_path, "")
+		return
+	if exit_door == null or not bool(exit_door.call("is_player_in_range", requested_player)):
+		_cancel_transition_request(destination_path, "")
+		return
+
+	var destination_scene := ResourceLoader.load(destination_path, "PackedScene") as PackedScene
+	if destination_scene == null:
+		_cancel_transition_request(destination_path, "FALHA AO CARREGAR SALA")
+		return
+	var canonical_destination_path := destination_scene.resource_path
+	if canonical_destination_path.is_empty() or not canonical_destination_path.begins_with("res://"):
+		_cancel_transition_request(destination_path, "FALHA AO CARREGAR SALA")
+		return
+
+	if not RoomTransition.prepare_run_snapshot(
+		destination_scene,
+		requested_player.current_health,
+		requested_player.maximum_health,
+		run_build
+	):
+		_cancel_transition_request(canonical_destination_path, "FALHA AO PREPARAR TRANSIÇÃO")
+		return
+	var change_result := get_tree().change_scene_to_packed(destination_scene)
+	if change_result != OK:
+		_cancel_transition_request(canonical_destination_path, "FALHA AO CARREGAR SALA")
+
+func _cancel_transition_request(_destination_path: String, message: String) -> void:
+	RoomTransition.clear_pending_snapshot()
+	_transition_in_progress = false
+	if exit_door == null:
+		return
+	if not message.is_empty():
+		exit_door.call("report_transition_failure", message)
+	elif _upgrade_flow_state == UpgradeFlowState.EXIT_RELEASED:
+		exit_door.call("set_transition_busy", false)
+	else:
+		exit_door.call("set_room_cleared", false)
+
+func _update_build_status() -> void:
+	var label := get_node_or_null(build_status_label_path) as Label
+	if label == null:
+		return
+	if run_build == null or run_build.total_count() == 0:
+		label.text = "BUILD: VAZIA"
+		return
+
+	var upgrade_id := run_build.get_upgrade_ids()[0]
+	var display_name := ""
+	for definition in _upgrade_definitions:
+		if definition.upgrade_id == upgrade_id:
+			display_name = definition.title
+			break
+	label.text = "BUILD: %s" % display_name.to_upper()
+
+func _get_player_spawn_position() -> Vector2:
+	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+	if spawn_marker != null:
+		return spawn_marker.global_position
+	return FALLBACK_PLAYER_SPAWN
+
+func _current_scene_path() -> String:
+	if not scene_file_path.is_empty():
+		return scene_file_path
+	var current_scene := get_tree().current_scene
+	if current_scene != null:
+		return current_scene.scene_file_path
+	return ""
+
+func _load_current_packed_scene() -> PackedScene:
+	var current_path := _current_scene_path()
+	if current_path.is_empty():
+		return null
+	return ResourceLoader.load(current_path, "PackedScene") as PackedScene
+
+FILE: scripts/ui/reward_screen.gd
+extends CanvasLayer
+
+signal reward_chosen(reward_name: String)
+
+var _resolved: bool = false
+
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.03, 0.05, 0.09, 0.92)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(820, 360)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#101c2c")
+	panel_style.border_color = Color("#f0b35b")
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(12)
+	panel_style.content_margin_left = 26
+	panel_style.content_margin_right = 26
+	panel_style.content_margin_top = 22
+	panel_style.content_margin_bottom = 22
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 18)
+	panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "CHEFE DERROTADO"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_color_override("font_color", Color("#f0b35b"))
+	content.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Escolha uma recompensa para continuar"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 18)
+	content.add_child(subtitle)
+
+	var cards := HBoxContainer.new()
+	cards.add_theme_constant_override("separation", 14)
+	content.add_child(cards)
+
+	var rewards := [
+		{"name": "Núcleo de impacto", "description": "Dano da bolinha +25%"},
+		{"name": "Propulsor", "description": "Velocidade da bolinha +15%"},
+		{"name": "Esfera ampliada", "description": "Raio de colisão da bolinha +15%"},
+	]
+	for reward in rewards:
+		var card := Button.new()
+		card.text = "%s\n\n%s" % [reward["name"], reward["description"]]
+		card.custom_minimum_size = Vector2(235, 170)
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		card.add_theme_font_size_override("font_size", 18)
+		card.add_theme_color_override("font_color", Color("#f3eadb"))
+
+		var normal := StyleBoxFlat.new()
+		normal.bg_color = Color("#243447")
+		normal.border_color = Color("#60758a")
+		normal.set_border_width_all(1)
+		normal.set_corner_radius_all(10)
+		normal.content_margin_left = 14
+		normal.content_margin_right = 14
+		normal.content_margin_top = 14
+		normal.content_margin_bottom = 14
+		card.add_theme_stylebox_override("normal", normal)
+
+		var hover := StyleBoxFlat.new()
+		hover.bg_color = Color("#354b60")
+		hover.border_color = Color("#f0b35b")
+		hover.set_border_width_all(2)
+		hover.set_corner_radius_all(10)
+		card.add_theme_stylebox_override("hover", hover)
+		card.pressed.connect(_choose_reward.bind(reward["name"]))
+		cards.add_child(card)
+
+
+func _choose_reward(reward_name: String) -> void:
+	if _resolved:
+		return
+	_resolved = true
+	reward_chosen.emit(reward_name)
+
+
+func cancel_offer() -> void:
+	if _resolved:
+		return
+	_resolved = true
+	reward_chosen.emit("")
+
+FILE: scripts/player/ball_launcher.gd
+class_name BallLauncher
+extends Node
+
+signal launch_accepted(spawn_position: Vector2, direction: Vector2)
+
+const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
+const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
+
+## Dispara uma única bola por vez sem assumir responsabilidade pela locomoção.
+
+@export var projectile_scene: PackedScene
+@export var projectile_config: ProjectileConfig
+
+var _player: Node2D
+var _aim_controller: AimController
+var _racket_controller: RacketController
+var _shot_origin: Node2D
+var _projectile_parent: Node
+var _active_ball: RicochetBall
+var _base_projectile_config: ProjectileConfig
+var _run_build: RunBuild
+var _run_damage_multiplier: float = 1.0
+var _run_speed_multiplier: float = 1.0
+var _run_radius_multiplier: float = 1.0
+var _spawn_shape: CircleShape2D
+var _spawn_query: PhysicsShapeQueryParameters2D
+
+func configure(
+	player: Node2D,
+	aim_controller: AimController,
+	shot_origin: Node2D,
+	projectile_parent: Node
+) -> void:
+	_player = player
+	_aim_controller = aim_controller
+	_racket_controller = player.get_node_or_null("RacketController") as RacketController if player != null else null
+	_shot_origin = shot_origin
+	_projectile_parent = projectile_parent
+	if _projectile_parent == null and _player != null:
+		_projectile_parent = _player.get_parent()
+	_base_projectile_config = projectile_config.duplicate(true) as ProjectileConfig if projectile_config != null else null
+
+func apply_run_build(build: RunBuild) -> void:
+	_run_build = build
+
+func set_run_reward_multipliers(damage: float, speed: float, radius: float) -> void:
+	_run_damage_multiplier = maxf(damage, 0.01)
+	_run_speed_multiplier = maxf(speed, 0.01)
+	_run_radius_multiplier = maxf(radius, 0.01)
+
+func try_launch(triggered: bool) -> bool:
+	if not triggered or not is_launch_available():
+		return false
+
+	var direction := _aim_controller.aim_direction.normalized()
+	if direction.is_zero_approx():
+		direction = Vector2.RIGHT
+	var spawn_position := get_spawn_position_for_direction(direction)
+	if not spawn_position.is_finite():
+		return false
+
+	var launch_config := _build_projectile_config()
+	if launch_config == null:
+		return false
+	var ball := projectile_scene.instantiate() as RicochetBall
+	if ball == null:
+		return false
+
+	ball.collision_mask = launch_config.collision_mask
+	_projectile_parent.add_child(ball)
+	_active_ball = ball
+	ball.finished.connect(_on_ball_finished.bind(ball))
+	ball.set_return_target(_shot_origin)
+	ball.global_position = spawn_position
+	ball.launch(direction, launch_config)
+	launch_accepted.emit(spawn_position, direction)
+	return true
+
+func is_launch_available() -> bool:
+	if _racket_controller == null or _racket_controller.is_swing_active():
+		return false
+	if _aim_controller == null or _shot_origin == null:
+		return false
+	if projectile_scene == null or _base_projectile_config == null or _projectile_parent == null:
+		return false
+	if _active_ball == null:
+		return true
+	if is_instance_valid(_active_ball):
+		return false
+	_active_ball = null
+	return true
+
+func reset() -> void:
+	var ball_to_cleanup := _active_ball
+	if ball_to_cleanup == null or not is_instance_valid(ball_to_cleanup):
+		_active_ball = null
+		return
+	ball_to_cleanup.request_stop_sweep()
+	call_deferred("_cleanup_ball_after_flush", ball_to_cleanup)
+
+func request_stop_active_sweep() -> void:
+	if _active_ball != null and is_instance_valid(_active_ball):
+		_active_ball.request_stop_sweep()
+
+## Call only after the current physics callback/flush has returned.
+func cleanup_active_ball_after_flush() -> void:
+	_cleanup_ball_after_flush(_active_ball)
+
+func _cleanup_ball_after_flush(ball_to_cleanup: RicochetBall) -> void:
+	if ball_to_cleanup == null or not is_instance_valid(ball_to_cleanup):
+		if _active_ball == ball_to_cleanup:
+			_active_ball = null
+		return
+	ball_to_cleanup.cancel()
+	if _active_ball == ball_to_cleanup:
+		_active_ball = null
+
+func _on_ball_finished(_reason: String, ball: RicochetBall) -> void:
+	if ball == _active_ball:
+		_active_ball = null
+
+func get_spawn_position_for_direction(direction: Vector2) -> Vector2:
+	if _shot_origin == null or projectile_config == null:
+		return Vector2.INF
+
+	var launch_direction := direction.normalized()
+	if launch_direction.is_zero_approx():
+		launch_direction = Vector2.RIGHT
+
+	var config := projectile_config
+	_ensure_spawn_query(config)
+	var space_state := _shot_origin.get_world_2d().direct_space_state
+	var origin := _shot_origin.global_position
+	if not _is_spawn_position_clear(space_state, origin):
+		return Vector2.INF
+
+	var requested_distance := maxf(config.spawn_offset, 0.0)
+	if requested_distance <= 0.0:
+		return origin
+
+	var motion := launch_direction * requested_distance
+	_spawn_query.transform = Transform2D(0.0, origin)
+	_spawn_query.motion = motion
+	var fractions := space_state.cast_motion(_spawn_query)
+	if fractions.size() < 2:
+		return Vector2.INF
+
+	var safe_fraction := clampf(fractions[0], 0.0, 1.0)
+	var spawn_distance := requested_distance * safe_fraction
+	if safe_fraction < 1.0:
+		spawn_distance = maxf(spawn_distance - maxf(config.collision_skin, 0.0), 0.0)
+
+	var candidate := origin + launch_direction * spawn_distance
+	if not _is_spawn_position_clear(space_state, candidate):
+		var low := 0.0
+		var high := spawn_distance
+		for _attempt in range(8):
+			var midpoint := (low + high) * 0.5
+			if _is_spawn_position_clear(space_state, origin + launch_direction * midpoint):
+				low = midpoint
+			else:
+				high = midpoint
+		spawn_distance = low
+		candidate = origin + launch_direction * spawn_distance
+
+	if spawn_distance <= 0.01:
+		return Vector2.INF
+	return candidate
+
+func _ensure_spawn_query(config: ProjectileConfig) -> void:
+	if _spawn_shape == null:
+		_spawn_shape = CircleShape2D.new()
+	if _spawn_query == null:
+		_spawn_query = PhysicsShapeQueryParameters2D.new()
+		_spawn_query.shape = _spawn_shape
+		_spawn_query.collide_with_bodies = true
+		_spawn_query.collide_with_areas = false
+
+	_spawn_shape.radius = config.collision_radius
+	_spawn_query.collision_mask = config.collision_mask
+	_spawn_query.margin = maxf(config.collision_safe_margin, 0.01)
+
+func _is_spawn_position_clear(space_state: PhysicsDirectSpaceState2D, position: Vector2) -> bool:
+	_spawn_query.transform = Transform2D(0.0, position)
+	_spawn_query.motion = Vector2.ZERO
+	return space_state.intersect_shape(_spawn_query, 1).is_empty()
+
+func _build_projectile_config() -> ProjectileConfig:
+	if _base_projectile_config == null:
+		return null
+	var derived_config := _base_projectile_config.duplicate(true) as ProjectileConfig
+	if _run_build != null:
+		if _run_build.has_upgrade(IMPACTO_REFORCADO_DEFINITION.upgrade_id):
+			derived_config.damage = IMPACTO_REFORCADO_DEFINITION.projectile_damage_override
+		if _run_build.has_upgrade(CARGA_REATIVA_DEFINITION.upgrade_id):
+			derived_config.reactive_charge_enabled = CARGA_REATIVA_DEFINITION.reactive_charge_enabled
+			derived_config.charged_damage_bonus = CARGA_REATIVA_DEFINITION.charged_damage_bonus
+	# Run rewards derive from the already-upgraded copy; the base Resource stays unchanged.
+	derived_config.damage = maxi(roundi(float(derived_config.damage) * _run_damage_multiplier), 1)
+	derived_config.speed *= _run_speed_multiplier
+	derived_config.collision_radius *= _run_radius_multiplier
+	return derived_config
+
+FILE: scripts/player/player.gd
+class_name Player
+extends CharacterBody2D
+
+const MOTOR_ACELERADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/motor_acelerado.tres")
+
+signal health_changed(current_health: int, maximum_health: int)
+signal died
+
+@export var movement_config: MovementConfig
+
+@onready var movement_controller: MovementController = $MovementController
+@onready var aim_controller: AimController = $AimController
+@onready var player_visual: PlayerVisual = $PlayerVisual
+@onready var reticle_visual: ReticleVisual = $ReticleVisual
+@onready var shot_origin: Node2D = $ShotOrigin
+@onready var ball_launcher: BallLauncher = $BallLauncher
+@onready var trajectory_preview: Node2D = $TrajectoryPreview
+@onready var health: PlayerHealth = $Health
+@onready var racket_controller: RacketController = $RacketController
+@onready var racket_visual: RacketVisual = $PlayerVisual/RacketVisual
+
+var is_dead: bool:
+	get:
+		return health != null and health.is_dead
+var current_health: int:
+	get:
+		return health.current_health if health != null else 0
+var maximum_health: int:
+	get:
+		return health.maximum_health if health != null else 0
+
+var aim_direction: Vector2:
+	get:
+		return aim_controller.aim_direction
+
+var aim_target_position: Vector2:
+	get:
+		return aim_controller.aim_target_position
+
+var _base_movement_config: MovementConfig
+var _death_presentation_applied: bool = false
+
+func _ready() -> void:
+	add_to_group("player")
+	if movement_config == null:
+		movement_config = MovementConfig.new()
+	_base_movement_config = movement_config.duplicate(true) as MovementConfig
+	movement_controller.configure(self, _base_movement_config.duplicate(true) as MovementConfig)
+	movement_controller.reset()
+	health.health_changed.connect(_on_health_changed)
+	health.damage_accepted.connect(_on_damage_accepted)
+	health.died.connect(_on_died)
+	_on_health_changed(health.current_health, health.maximum_health)
+	aim_controller.aim_changed.connect(reticle_visual.set_aim)
+	reticle_visual.set_aim(aim_controller.aim_direction, aim_controller.aim_target_position)
+	racket_controller.set_aim_direction(aim_controller.aim_direction)
+	ball_launcher.configure(self, aim_controller, shot_origin, _find_projectile_parent())
+	ball_launcher.launch_accepted.connect(racket_visual.start_shot)
+	racket_controller.swing_started.connect(racket_visual.start_parry)
+	racket_controller.swing_cancelled.connect(racket_visual.clear_transient)
+	racket_controller.swing_cancelled.connect(_on_swing_cancelled)
+	trajectory_preview.call("configure", aim_controller, shot_origin, ball_launcher)
+
+func apply_run_build(build: RunBuild) -> void:
+	if _base_movement_config == null:
+		return
+	var derived_config := _base_movement_config.duplicate(true) as MovementConfig
+	if build != null and build.has_upgrade(MOTOR_ACELERADO_DEFINITION.upgrade_id):
+		derived_config.dash_cooldown = MOTOR_ACELERADO_DEFINITION.dash_cooldown_override
+	movement_controller.configure(self, derived_config)
+	movement_controller.reset()
+	ball_launcher.apply_run_build(build)
+
+func _physics_process(delta: float) -> void:
+	if is_dead:
+		velocity = Vector2.ZERO
+		return
+
+	var move_axis := Input.get_axis("move_left", "move_right")
+	var jump_blocked := is_discrete_input_blocked(&"jump")
+	var dash_blocked := is_discrete_input_blocked(&"dash")
+	var launch_blocked := is_discrete_input_blocked(&"launch_ball")
+	var jump_pressed := not jump_blocked and Input.is_action_just_pressed("jump")
+	var jump_released := not jump_blocked and Input.is_action_just_released("jump")
+	var dash_pressed := not dash_blocked and Input.is_action_just_pressed("dash")
+	var dash_released := not dash_blocked and Input.is_action_just_released("dash")
+	var launch_pressed := not launch_blocked and Input.is_action_just_pressed("launch_ball")
+
+	movement_controller.physics_step(
+		move_axis,
+		jump_pressed,
+		jump_released,
+		dash_pressed,
+		dash_released,
+		delta
+	)
+	player_visual.set_facing_direction(movement_controller.facing_direction)
+	player_visual.set_dashing(movement_controller.is_dashing)
+	player_visual.set_grounded(is_on_floor(), velocity.y)
+	var is_walking := is_on_floor() \
+		and not movement_controller.is_dashing \
+		and absf(velocity.x) > 8.0
+	player_visual.set_walking(is_walking, absf(velocity.x))
+	player_visual.set_parry_state(
+		racket_controller.is_swing_active(),
+		racket_controller.get_swing_progress(),
+		racket_controller.get_swing_direction()
+	)
+	ball_launcher.try_launch(launch_pressed)
+
+func _process(_delta: float) -> void:
+	if is_dead:
+		return
+	player_visual.set_invulnerable(health.is_invulnerable)
+	racket_controller.set_aim_direction(aim_controller.aim_direction)
+
+func take_damage(amount: int, source: Node = null) -> bool:
+	return health.take_damage(amount, source)
+
+func is_discrete_input_blocked(action: StringName) -> bool:
+	var room_root := get_parent()
+	return room_root != null \
+		and room_root.has_method("is_gameplay_action_blocked") \
+		and bool(room_root.call("is_gameplay_action_blocked", action))
+
+func reset_to_spawn(spawn_position: Vector2) -> void:
+	global_position = spawn_position
+	velocity = Vector2.ZERO
+	movement_controller.reset()
+	player_visual.reset_air_state()
+	player_visual.set_facing_direction(movement_controller.facing_direction)
+	player_visual.set_dashing(false)
+	player_visual.set_walking(false)
+	racket_controller.reset()
+	racket_visual.clear_transient()
+	ball_launcher.reset()
+	if not is_dead:
+		player_visual.set_dead(false)
+		reticle_visual.show()
+		trajectory_preview.show()
+		trajectory_preview.set_physics_process(true)
+
+func get_movement_status() -> Dictionary:
+	return movement_controller.get_status()
+
+func get_aim_target_position() -> Vector2:
+	return aim_controller.aim_target_position
+
+func _on_health_changed(current: int, maximum: int) -> void:
+	health_changed.emit(current, maximum)
+
+func _on_damage_accepted(_amount: int, _current: int, _maximum: int) -> void:
+	if health.is_dead:
+		return
+	player_visual.play_hurt()
+
+func _on_swing_cancelled() -> void:
+	player_visual.set_parry_state(false, 0.0, Vector2.ZERO)
+
+func _on_died() -> void:
+	# take_damage may be called from a projectile sweep; only request a stop here.
+	racket_visual.clear_transient()
+	ball_launcher.request_stop_active_sweep()
+	died.emit()
+
+func finish_death_after_physics() -> void:
+	if _death_presentation_applied:
+		return
+	_death_presentation_applied = true
+	velocity = Vector2.ZERO
+	movement_controller.reset()
+	racket_controller.cancel()
+	trajectory_preview.hide()
+	trajectory_preview.set_physics_process(false)
+	reticle_visual.hide()
+	player_visual.set_dead(true)
+
+func _find_projectile_parent() -> Node:
+	var player_parent := get_parent()
+	if player_parent != null:
+		var ball_container := player_parent.get_node_or_null("BallContainer")
+		if ball_container != null:
+			return ball_container
+	return player_parent
+
+FILE: scripts/projectile/ricochet_ball.gd
+class_name RicochetBall
+extends CharacterBody2D
+
+const ImpactSparkEffect = preload("res://scripts/projectile/impact_spark.gd")
+
+const CombatFeedbackScript = preload("res://scripts/feedback/combat_feedback.gd")
+
+enum ChargeState { INACTIVE, CHARGED, CONSUMED }
+
+## Bola cinética com reflexão determinística. O parry redireciona o voo atual,
+## preservando velocidade, ricochetes já usados e tempo de vida restante.
+
+signal finished(reason: String)
+signal bounced(bounce_index: int, impact_position: Vector2, surface_normal: Vector2)
+
+@export var is_parryable: bool = true
+@export_range(0.25, 8.0, 0.25) var charged_pulse_frequency_hz: float = 3.0
+@export_range(0.2, 0.9, 0.05) var charged_pulse_min_alpha: float = 0.55
+@export_range(1.0, 1.8, 0.05) var charged_pulse_width_multiplier: float = 1.3
+
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var _charge_visual: Line2D = $ChargeVisual
+
+var _config: ProjectileConfig
+var _lifetime_remaining: float = 0.0
+var _has_launched: bool = false
+var _has_finished: bool = false
+var _stop_sweep_requested: bool = false
+var _bounce_count: int = 0
+var _pending_motion: Vector2 = Vector2.ZERO
+var _damaged_targets_this_tick: Dictionary = {}
+var _racket_controller: Node
+var _last_parry_swing_id: int = -1
+var _parry_release_pending: bool = false
+var _charge_state: ChargeState = ChargeState.INACTIVE
+var _charge_pulse_elapsed: float = 0.0
+var _charge_visual_base_color: Color = Color.WHITE
+var _charge_visual_base_width: float = 2.5
+
+var bounce_count: int:
+	get:
+		return _bounce_count
+
+func _ready() -> void:
+	_charge_visual_base_color = _charge_visual.default_color
+	_charge_visual_base_width = _charge_visual.width
+	_set_charge_state(_charge_state)
+
+func _process(delta: float) -> void:
+	if _charge_state != ChargeState.CHARGED or not is_instance_valid(_charge_visual):
+		return
+	_charge_pulse_elapsed += delta
+	var pulse := (sin(_charge_pulse_elapsed * TAU * charged_pulse_frequency_hz) + 1.0) * 0.5
+	var pulsed_color := _charge_visual_base_color
+	pulsed_color.a *= lerpf(charged_pulse_min_alpha, 1.0, pulse)
+	_charge_visual.default_color = pulsed_color
+	_charge_visual.width = _charge_visual_base_width * lerpf(1.0, charged_pulse_width_multiplier, pulse)
+
+func launch(direction: Vector2, config: ProjectileConfig) -> void:
+	if _has_launched or _has_finished or config == null:
+		return
+
+	_config = config
+	var launch_direction := direction.normalized()
+	if launch_direction.is_zero_approx():
+		launch_direction = Vector2.RIGHT
+	velocity = launch_direction * _config.speed
+	_lifetime_remaining = _config.lifetime
+	_has_launched = true
+	_stop_sweep_requested = false
+	_set_charge_state(ChargeState.INACTIVE)
+	_bounce_count = 0
+	_pending_motion = Vector2.ZERO
+	_parry_release_pending = true
+	_apply_collision_radius()
+	queue_redraw()
+
+func cancel() -> void:
+	_finish("cancelled")
+
+## Synchronous and callback-safe: asks the active sweep to return without
+## changing collision state or ending the node inside an external callback.
+func request_stop_sweep() -> void:
+	_stop_sweep_requested = true
+
+func _physics_process(delta: float) -> void:
+	if not _has_launched or _has_finished or _stop_sweep_requested:
+		return
+
+	_damaged_targets_this_tick.clear()
+	_update_parry_release_lock()
+
+	var motion_delta := minf(delta, maxf(_lifetime_remaining, 0.0))
+	var expires_after_motion := _lifetime_remaining <= delta
+	_lifetime_remaining = maxf(_lifetime_remaining - delta, 0.0)
+
+	var remaining_motion := _pending_motion + velocity * motion_delta
+	_pending_motion = Vector2.ZERO
+	var collisions_this_tick := 0
+	var frame_elapsed: float = 0.0
+	var collision_limit := maxi(_config.max_collisions_per_tick, 1)
+	if expires_after_motion:
+		collision_limit = maxi(collision_limit, _config.max_bounces + 4)
+	var safe_margin := maxf(_config.collision_safe_margin, 0.01)
+
+	while not _stop_sweep_requested and not remaining_motion.is_zero_approx() and collisions_this_tick < collision_limit:
+		var segment_start := global_position
+		var segment_distance := remaining_motion.length()
+		var segment_speed := maxf(velocity.length(), 0.001)
+		var segment_duration := minf(segment_distance / segment_speed, maxf(delta - frame_elapsed, 0.0))
+		var parry_hit := _get_parry_hit(remaining_motion, frame_elapsed, segment_duration)
+		var collision := move_and_collide(remaining_motion, false, safe_margin, false)
+		var world_fraction: float = 1.0
+		if collision != null and segment_distance > 0.0:
+			world_fraction = clampf(collision.get_travel().length() / segment_distance, 0.0, 1.0)
+
+		if not parry_hit.is_empty():
+			var parry_fraction := float(parry_hit.get("fraction", INF))
+			var parry_precedes_world := collision == null or parry_fraction < world_fraction - 0.00001
+			if parry_precedes_world:
+				var parry_position := segment_start + remaining_motion * parry_fraction
+				var parry_scene_root := get_tree().current_scene
+				global_position = parry_position
+				velocity = Vector2(parry_hit.get("direction", Vector2.ZERO)).normalized() * _config.speed
+				if velocity.is_zero_approx():
+					velocity = Vector2.RIGHT * _config.speed
+				_last_parry_swing_id = int(parry_hit.get("swing_id", -1))
+				_parry_release_pending = true
+				CombatFeedbackScript.enqueue(
+					parry_scene_root,
+					parry_position,
+					CombatFeedbackScript.EffectKind.PARRY
+				)
+				_arm_reactive_charge()
+				_notify_parry_success(_last_parry_swing_id)
+				if _has_finished or _stop_sweep_requested:
+					return
+				_pending_motion = Vector2.ZERO
+				frame_elapsed = minf(frame_elapsed + segment_duration * parry_fraction, delta)
+				remaining_motion = velocity.normalized() * segment_distance * (1.0 - parry_fraction)
+				continue
+
+		if collision == null:
+			if expires_after_motion:
+				_finish("lifetime")
+			return
+
+		collisions_this_tick += 1
+		frame_elapsed = minf(frame_elapsed + collision.get_travel().length() / segment_speed, delta)
+		var surface_normal := collision.get_normal().normalized()
+		if surface_normal.is_zero_approx():
+			_finish("invalid_collision")
+			return
+
+		if not BounceResolver.should_bounce(velocity, surface_normal):
+			global_position += surface_normal * _config.collision_skin
+			velocity = BounceResolver.slide_velocity(velocity, surface_normal, _config.speed)
+			var grazing_remainder := collision.get_remainder()
+			if grazing_remainder.is_zero_approx() or velocity.is_zero_approx():
+				if expires_after_motion:
+					_finish("lifetime")
+				return
+			remaining_motion = velocity.normalized() * grazing_remainder.length()
+			continue
+
+		var next_bounce_index := _bounce_count + 1
+		if next_bounce_index > _config.max_bounces:
+			_finish("bounce_limit")
+			return
+
+		_bounce_count = next_bounce_index
+		velocity = BounceResolver.reflect_velocity(velocity, surface_normal, _config.speed)
+		var impact_position := collision.get_position()
+		var impact_scene_root := get_tree().current_scene
+		var collider := collision.get_collider()
+		global_position += surface_normal * _config.collision_skin
+		_apply_impact_damage(collider, impact_position, impact_scene_root)
+		if _has_finished or _stop_sweep_requested:
+			return
+		if not _is_damageable_collider(collider):
+			_enqueue_wall_spark(impact_scene_root, impact_position)
+		bounced.emit(_bounce_count, impact_position, surface_normal)
+		if _has_finished or _stop_sweep_requested:
+			return
+
+		var remainder := collision.get_remainder()
+		if remainder.is_zero_approx() or velocity.is_zero_approx():
+			if expires_after_motion:
+				_finish("lifetime")
+			return
+		remaining_motion = velocity.normalized() * remainder.length()
+
+	if not remaining_motion.is_zero_approx():
+		if expires_after_motion:
+			_finish("lifetime")
+		else:
+			_pending_motion = remaining_motion
+	elif expires_after_motion:
+		_finish("lifetime")
+
+func _get_parry_hit(motion: Vector2, frame_elapsed: float, segment_duration: float) -> Dictionary:
+	if not is_parryable or _parry_release_pending:
+		return {}
+	var controller := _find_racket_controller()
+	if controller == null:
+		return {}
+	var radius := 0.0
+	if collision_shape.shape is CircleShape2D:
+		radius = (collision_shape.shape as CircleShape2D).radius
+	var hit: Variant = controller.call(
+		"get_sweep_hit",
+		global_position,
+		motion,
+		radius,
+		frame_elapsed,
+		segment_duration,
+		_last_parry_swing_id,
+		_parry_release_pending
+	)
+	return hit if hit is Dictionary else {}
+
+func _find_racket_controller() -> Node:
+	if is_instance_valid(_racket_controller):
+		return _racket_controller
+	for candidate in get_tree().get_nodes_in_group("racket_controller"):
+		if is_instance_valid(candidate) and candidate.has_method("get_sweep_hit"):
+			_racket_controller = candidate
+			return _racket_controller
+	return null
+
+func _update_parry_release_lock() -> void:
+	if not _parry_release_pending:
+		return
+	var controller := _find_racket_controller()
+	if controller == null:
+		return
+	var origin: Vector2 = controller.call("get_parry_origin")
+	var catch_radius: float = controller.call("get_catch_radius", _projectile_radius())
+	if global_position.distance_to(origin) > catch_radius + 0.5:
+		_parry_release_pending = false
+
+func _projectile_radius() -> float:
+	if collision_shape.shape is CircleShape2D:
+		return (collision_shape.shape as CircleShape2D).radius
+	return 0.0
+
+func _notify_parry_success(swing_id: int) -> void:
+	var controller := _find_racket_controller()
+	if controller != null and controller.has_method("register_parry_success"):
+		controller.call("register_parry_success", swing_id)
+
+func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_scene_root: Node) -> void:
+	if _config == null or _config.damage <= 0 or not collider is Node:
+		return
+
+	var target := collider as Node
+	if not target.is_in_group("damageable") or not target.has_method("take_damage"):
+		return
+	if _damaged_targets_this_tick.has(target):
+		return
+
+	_damaged_targets_this_tick[target] = true
+	var was_charged := _charge_state == ChargeState.CHARGED
+	var damage_amount := _config.damage
+	if was_charged:
+		damage_amount += maxi(_config.charged_damage_bonus, 0)
+	var damage_result: Variant = target.call("take_damage", damage_amount, self)
+	var damage_was_accepted := typeof(damage_result) == TYPE_BOOL and bool(damage_result)
+	if not damage_was_accepted:
+		return
+	var effect_kind: int = (
+		CombatFeedbackScript.EffectKind.CHARGED_HIT
+		if was_charged
+		else CombatFeedbackScript.EffectKind.ENEMY_HIT
+	)
+	CombatFeedbackScript.enqueue(feedback_scene_root, impact_position, effect_kind)
+	if was_charged and _charge_state == ChargeState.CHARGED:
+		_set_charge_state(ChargeState.CONSUMED)
+
+func _enqueue_wall_spark(scene_root: Node, impact_position: Vector2) -> void:
+	if not is_instance_valid(scene_root) or scene_root.is_queued_for_deletion():
+		return
+	var scene_tree := get_tree()
+	if scene_tree == null or scene_tree.current_scene != scene_root:
+		return
+	var spark := ImpactSparkEffect.new() as Node2D
+	if spark == null:
+		return
+	spark.top_level = true
+	spark.global_position = impact_position
+	scene_root.call_deferred("add_child", spark)
+
+func _is_damageable_collider(collider: Object) -> bool:
+	return collider is Node and (collider as Node).is_in_group("damageable")
+
+func _arm_reactive_charge() -> void:
+	if _config == null or not _config.reactive_charge_enabled or _charge_state != ChargeState.INACTIVE:
+		return
+	_set_charge_state(ChargeState.CHARGED)
+
+func _set_charge_state(next_state: ChargeState) -> void:
+	_charge_state = next_state
+	if is_instance_valid(_charge_visual):
+		_charge_visual.visible = _charge_state == ChargeState.CHARGED
+		if _charge_state == ChargeState.CHARGED:
+			_charge_pulse_elapsed = 0.0
+		else:
+			_charge_visual.default_color = _charge_visual_base_color
+			_charge_visual.width = _charge_visual_base_width
+
+func _apply_collision_radius() -> void:
+	if collision_shape.shape is not CircleShape2D:
+		return
+	var configured_shape := collision_shape.shape.duplicate() as CircleShape2D
+	configured_shape.radius = _config.collision_radius
+	collision_shape.shape = configured_shape
+
+func _finish(reason: String) -> void:
+	if _has_finished:
+		return
+	_has_finished = true
+	if _charge_state == ChargeState.CHARGED:
+		_set_charge_state(ChargeState.CONSUMED)
+	finished.emit(reason)
+	queue_free()
+
+func _draw() -> void:
+	var visual_radius := 8.0
+	if _config != null:
+		visual_radius = _config.collision_radius
+	var fill_color := Color("#f0b35b") if is_parryable else Color("#b88ce0")
+	var rim_color := Color("#ffdf9a") if is_parryable else Color("#e0c5ff")
+
+	draw_circle(Vector2.ZERO, visual_radius + 2.0, Color("#101722"))
+	draw_circle(Vector2.ZERO, visual_radius, fill_color)
+	draw_arc(Vector2.ZERO, visual_radius, 0.0, TAU, 24, rim_color, 1.5, true)
+	draw_circle(
+		Vector2(-visual_radius * 0.35, -visual_radius * 0.35),
+		maxf(visual_radius * 0.2, 1.0),
+		Color("#fff2ca")
+	)
+
+FILE: scripts/projectile/impact_spark.gd
+extends Node2D
+
+const DURATION := 0.18
+var age := 0.0
+
+
+func _process(delta: float) -> void:
+	age += delta
+	queue_redraw()
+
+	if age >= DURATION:
+		queue_free()
+
+
+func _draw() -> void:
+	var progress := clampf(age / DURATION, 0.0, 1.0)
+	var alpha := 1.0 - progress
+
+	for i in range(8):
+		var direction := Vector2.RIGHT.rotated(TAU * float(i) / 8.0)
+		var start := direction * 3.0
+		var finish := direction * lerpf(7.0, 18.0, progress)
+
+		draw_line(
+			start,
+			finish,
+			Color(1.0, 0.72, 0.34, alpha),
+			2.5,
+			true
+		)
+
+	draw_circle(
+		Vector2.ZERO,
+		lerpf(5.0, 1.0, progress),
+		Color(1.0, 0.9, 0.65, alpha)
+	)
+
+FILE: scripts/player/player_health.gd
+class_name PlayerHealth
+extends Node
+
+signal health_changed(current_health: int, maximum_health: int)
+signal damage_accepted(amount: int, current_health: int, maximum_health: int)
+signal died
+
+@export_range(1, 100, 1) var maximum_health: int = 5
+@export_range(0.0, 5.0, 0.05) var invulnerability_duration: float = 0.5
+
+var current_health: int
+var _invulnerability_remaining: float = 0.0
+var is_dead: bool:
+	get:
+		return current_health <= 0
+var is_invulnerable: bool:
+	get:
+		return _invulnerability_remaining > 0.0
+
+func _ready() -> void:
+	current_health = maxi(maximum_health, 1)
+	health_changed.emit(current_health, maximum_health)
+
+func restore_health_for_room_transition(restored_current: int, restored_maximum: int) -> bool:
+	if is_dead:
+		return false
+	maximum_health = clampi(restored_maximum, 1, 100)
+	current_health = clampi(restored_current, 1, maximum_health)
+	_invulnerability_remaining = 0.0
+	health_changed.emit(current_health, maximum_health)
+	return true
+func take_damage(amount: int, _source: Node = null) -> bool:
+	if amount <= 0 or is_dead or is_invulnerable:
+		return false
+	current_health = maxi(current_health - amount, 0)
+	_invulnerability_remaining = maxf(invulnerability_duration, 0.0)
+	health_changed.emit(current_health, maximum_health)
+	damage_accepted.emit(amount, current_health, maximum_health)
+	if is_dead:
+		died.emit()
+	return true
+
+func _process(delta: float) -> void:
+	_invulnerability_remaining = maxf(_invulnerability_remaining - delta, 0.0)
+
+
+FILE: scripts/progression/run_build.gd
+class_name RunBuild
+extends RefCounted
+
+## Estado temporário da run. Recursos de definição e configurações não são
+## armazenados aqui; snapshots são compostos apenas de Strings, ints, Arrays e
+## Dictionaries.
+
+const IMPACTO_REFORCADO: StringName = &"impacto_reforcado"
+const MOTOR_ACELERADO: StringName = &"motor_acelerado"
+const CARGA_REATIVA: StringName = &"carga_reativa"
+const MAX_UPGRADES: int = 1
+
+var _counts_by_id: Dictionary = {}
+
+func _init() -> void:
+	_clear_counts()
+
+func add_upgrade(upgrade_id: StringName) -> bool:
+	if not is_known_upgrade_id(upgrade_id) or total_count() >= MAX_UPGRADES:
+		return false
+	if int(_counts_by_id.get(upgrade_id, 0)) != 0:
+		return false
+	_counts_by_id[upgrade_id] = 1
+	return true
+
+func has_upgrade(upgrade_id: StringName) -> bool:
+	return is_known_upgrade_id(upgrade_id) and int(_counts_by_id.get(upgrade_id, 0)) == 1
+
+func count_for(upgrade_id: StringName) -> int:
+	return int(_counts_by_id.get(upgrade_id, 0)) if is_known_upgrade_id(upgrade_id) else 0
+
+func total_count() -> int:
+	var total := 0
+	for upgrade_id in known_upgrade_ids():
+		total += int(_counts_by_id.get(upgrade_id, 0))
+	return total
+
+func get_upgrade_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for upgrade_id in known_upgrade_ids():
+		if int(_counts_by_id.get(upgrade_id, 0)) == 1:
+			result.append(upgrade_id)
+	return result
+
+func replace_state(upgrade_ids: Variant, counts_by_id: Variant) -> bool:
+	if typeof(upgrade_ids) != TYPE_ARRAY or typeof(counts_by_id) != TYPE_DICTIONARY:
+		return false
+
+	var normalized_ids: Array[StringName] = []
+	for raw_id in upgrade_ids:
+		if typeof(raw_id) != TYPE_STRING and typeof(raw_id) != TYPE_STRING_NAME:
+			return false
+		var upgrade_id := StringName(raw_id)
+		if not is_known_upgrade_id(upgrade_id) or normalized_ids.has(upgrade_id):
+			return false
+		normalized_ids.append(upgrade_id)
+		if normalized_ids.size() > MAX_UPGRADES:
+			return false
+
+	var normalized_counts: Dictionary = {}
+	var seen_count_ids: Dictionary = {}
+	for upgrade_id in known_upgrade_ids():
+		normalized_counts[upgrade_id] = 0
+
+	for raw_id in counts_by_id.keys():
+		if typeof(raw_id) != TYPE_STRING and typeof(raw_id) != TYPE_STRING_NAME:
+			return false
+		var upgrade_id := StringName(raw_id)
+		if not is_known_upgrade_id(upgrade_id):
+			return false
+		if seen_count_ids.has(upgrade_id):
+			return false
+		var count: Variant = counts_by_id[raw_id]
+		if typeof(count) != TYPE_INT or int(count) < 0 or int(count) > 1:
+			return false
+		seen_count_ids[upgrade_id] = true
+		normalized_counts[upgrade_id] = int(count)
+
+	var ids_from_counts: Array[StringName] = []
+	for upgrade_id in known_upgrade_ids():
+		if int(normalized_counts[upgrade_id]) == 1:
+			ids_from_counts.append(upgrade_id)
+	if ids_from_counts.size() > MAX_UPGRADES or ids_from_counts.size() != normalized_ids.size():
+		return false
+	for upgrade_id in normalized_ids:
+		if not ids_from_counts.has(upgrade_id):
+			return false
+
+	_counts_by_id = normalized_counts
+	return true
+
+func to_snapshot_data() -> Dictionary:
+	var id_strings: Array[String] = []
+	var counts: Dictionary = {}
+	for upgrade_id in known_upgrade_ids():
+		var count := int(_counts_by_id.get(upgrade_id, 0))
+		counts[String(upgrade_id)] = count
+		if count == 1:
+			id_strings.append(String(upgrade_id))
+	return {
+		"upgrade_ids": id_strings,
+		"counts_by_id": counts,
+	}
+
+func clear() -> void:
+	_clear_counts()
+
+static func is_known_upgrade_id(upgrade_id: Variant) -> bool:
+	if typeof(upgrade_id) != TYPE_STRING and typeof(upgrade_id) != TYPE_STRING_NAME:
+		return false
+	match String(upgrade_id):
+		"impacto_reforcado", "motor_acelerado", "carga_reativa":
+			return true
+	return false
+
+static func known_upgrade_ids() -> Array[StringName]:
+	return [IMPACTO_REFORCADO, MOTOR_ACELERADO, CARGA_REATIVA]
+
+func _clear_counts() -> void:
+	_counts_by_id.clear()
+	for upgrade_id in known_upgrade_ids():
+		_counts_by_id[upgrade_id] = 0
+
+FILE: scripts/world/room_transition.gd
+extends RefCounted
+
+## Snapshot simples e one-shot que atravessa uma troca de cena. Não persiste
+## RunBuild nem qualquer Resource vivo.
+
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+
+static var _pending_snapshot: Dictionary = {}
+
+static func prepare_run_snapshot(
+	destination_scene: PackedScene,
+	current_health: Variant,
+	maximum_health: Variant,
+	build: RunBuild
+) -> bool:
+	_pending_snapshot.clear()
+	if destination_scene == null or not is_instance_valid(destination_scene) or build == null:
+		return false
+	if typeof(current_health) != TYPE_INT or typeof(maximum_health) != TYPE_INT:
+		return false
+
+	var canonical_destination := destination_scene.resource_path
+	if not _is_canonical_resource_path(canonical_destination):
+		return false
+	var build_data := build.to_snapshot_data()
+	var snapshot := {
+		"version": 1,
+		"canonical_destination": canonical_destination,
+		"hp_current": current_health,
+		"hp_max": maximum_health,
+		"upgrade_ids": build_data.get("upgrade_ids"),
+		"counts_by_id": build_data.get("counts_by_id"),
+	}
+	if not _is_valid_snapshot(snapshot, canonical_destination):
+		return false
+	_pending_snapshot = snapshot.duplicate(true)
+	return true
+
+static func consume_pending_snapshot(destination_scene: PackedScene) -> Dictionary:
+	if _pending_snapshot.is_empty():
+		return {}
+	var snapshot := _pending_snapshot.duplicate(true)
+	_pending_snapshot.clear()
+	if destination_scene == null or not is_instance_valid(destination_scene):
+		return {}
+	var canonical_destination := destination_scene.resource_path
+	if not _is_canonical_resource_path(canonical_destination):
+		return {}
+	if not _is_valid_snapshot(snapshot, canonical_destination):
+		return {}
+	return snapshot.duplicate(true)
+
+static func clear_pending_snapshot() -> void:
+	_pending_snapshot.clear()
+
+static func _is_valid_snapshot(snapshot: Variant, expected_destination: String) -> bool:
+	if typeof(snapshot) != TYPE_DICTIONARY or not _is_canonical_resource_path(expected_destination):
+		return false
+	var required_keys: Array[String] = [
+		"version",
+		"canonical_destination",
+		"hp_current",
+		"hp_max",
+		"upgrade_ids",
+		"counts_by_id",
+	]
+	if snapshot.size() != required_keys.size():
+		return false
+	for key in required_keys:
+		if not snapshot.has(key):
+			return false
+	if typeof(snapshot["version"]) != TYPE_INT or int(snapshot["version"]) != 1:
+		return false
+	if typeof(snapshot["canonical_destination"]) != TYPE_STRING:
+		return false
+	if String(snapshot["canonical_destination"]) != expected_destination:
+		return false
+	if typeof(snapshot["hp_current"]) != TYPE_INT or typeof(snapshot["hp_max"]) != TYPE_INT:
+		return false
+	var current_health := int(snapshot["hp_current"])
+	var maximum_health := int(snapshot["hp_max"])
+	# PlayerHealth.restore_health_for_room_transition aceita somente máximo 1..100.
+	if maximum_health < 1 or maximum_health > 100 or current_health < 1 or current_health > maximum_health:
+		return false
+	if typeof(snapshot["upgrade_ids"]) != TYPE_ARRAY or typeof(snapshot["counts_by_id"]) != TYPE_DICTIONARY:
+		return false
+	for upgrade_id in snapshot["upgrade_ids"]:
+		if typeof(upgrade_id) != TYPE_STRING:
+			return false
+	for upgrade_id in snapshot["counts_by_id"].keys():
+		if typeof(upgrade_id) != TYPE_STRING:
+			return false
+	var validated_build := RunBuild.new()
+	return validated_build.replace_state(snapshot["upgrade_ids"], snapshot["counts_by_id"])
+
+static func _is_canonical_resource_path(path: String) -> bool:
+	return path.begins_with("res://") and path.length() > "res://".length()
+
+FILE: scripts/world/combat_room.gd
+class_name CombatRoom
+extends Node
+
+## Controlador mínimo de encontro. O grupo e os labels são configuráveis para
+## que a sala possa ser reutilizada com outros inimigos e HUDs.
+
+signal room_cleared
+
+@export var enemy_group: StringName = &"combat_enemy"
+@export var counter_label_path: NodePath = NodePath("")
+@export var status_label_path: NodePath = NodePath("")
+@export var health_label_path: NodePath = NodePath("")
+@export var player_path: NodePath = NodePath("../Player")
+
+var _counter_label: Label
+var _status_label: Label
+var _health_label: Label
+var _player: Player
+var _remaining_enemies: Dictionary = {}
+var _room_was_cleared: bool = false
+var _player_was_defeated: bool = false
+
+var room_is_cleared: bool:
+	get:
+		return _room_was_cleared
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _player_was_defeated or not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if key_event.pressed and not key_event.echo and key_event.keycode == KEY_R:
+		get_tree().reload_current_scene()
+
+func _ready() -> void:
+	add_to_group("combat_room")
+	_counter_label = get_node_or_null(counter_label_path) as Label
+	_status_label = get_node_or_null(status_label_path) as Label
+	_health_label = get_node_or_null(health_label_path) as Label
+	_player = get_node_or_null(player_path) as Player
+	if _player != null:
+		_player.health_changed.connect(_on_player_health_changed)
+		_player.died.connect(_on_player_died)
+		_on_player_health_changed(_player.current_health, _player.maximum_health)
+	_register_enemies()
+	_update_hud()
+	if _remaining_enemies.is_empty():
+		_clear_room()
+
+func _register_enemies() -> void:
+	for enemy in get_tree().get_nodes_in_group(enemy_group):
+		if not is_instance_valid(enemy):
+			continue
+		if not enemy.has_signal("defeated"):
+			push_warning(
+				"CombatRoom: ignorando %s no grupo '%s'; o nó não possui o sinal 'defeated'."
+				% [enemy.get_path(), enemy_group]
+			)
+			continue
+
+		_remaining_enemies[enemy] = true
+		enemy.connect("defeated", _on_enemy_defeated.bind(enemy), CONNECT_ONE_SHOT)
+
+func _on_enemy_defeated(enemy: Node) -> void:
+	if _player_was_defeated or _room_was_cleared or not _remaining_enemies.has(enemy):
+		return
+
+	_remaining_enemies.erase(enemy)
+	_update_hud()
+	if _remaining_enemies.is_empty():
+		_clear_room()
+
+func _clear_room() -> void:
+	if _player_was_defeated or _room_was_cleared:
+		return
+
+	_room_was_cleared = true
+	_request_hostile_projectile_stops()
+	room_cleared.emit()
+
+func _on_player_health_changed(current: int, maximum: int) -> void:
+	if _health_label != null:
+		_health_label.text = "VIDA: %d / %d" % [current, maximum]
+
+func _on_player_died() -> void:
+	if _player_was_defeated:
+		return
+	_player_was_defeated = true
+	_request_hostile_projectile_stops()
+
+## Callback-safe request only; projectiles are removed by Main after the flush.
+func _request_hostile_projectile_stops() -> void:
+	for projectile in get_tree().get_nodes_in_group("hostile_projectile"):
+		if is_instance_valid(projectile) and projectile.has_method("request_stop_sweep"):
+			projectile.call("request_stop_sweep")
+
+## Post-flush cleanup. This includes parried rivets, which remain in the group.
+func cleanup_hostile_projectiles_after_flush() -> void:
+	for projectile in get_tree().get_nodes_in_group("hostile_projectile"):
+		if is_instance_valid(projectile) and projectile.has_method("cancel"):
+			projectile.call("cancel")
+
+func refresh_status_after_physics() -> void:
+	_update_hud()
+
+func _update_hud() -> void:
+	var remaining := _remaining_enemies.size()
+	if _counter_label != null:
+		_counter_label.text = "INIMIGOS RESTANTES: %d" % remaining
+	if _status_label == null:
+		return
+	if _player_was_defeated:
+		_status_label.text = "DERROTA — PRESSIONE R PARA REINICIAR"
+	elif _room_was_cleared:
+		_status_label.text = "ÁREA LIMPA — SALA CONCLUÍDA"
+	else:
+		_status_label.text = "ENCONTRO ATIVO"
+
+FILE: scripts/world/training_target.gd
+class_name TrainingTarget
+extends StaticBody2D
+
+## Sentinela estacionária de contenção integrada ao contrato antigo TrainingTarget.
+
+signal defeated
+
+enum AttackState { IDLE, WINDUP, ACTIVE, RECOVERY }
+
+const PLAYER_MASK: int = 2
+const WORLD_MASK: int = 1
+const MAX_QUERY_RESULTS: int = 32
+const CLAIMED_META := &"_target_claimed"
+
+@export_range(1, 100, 1) var max_health: int = 3
+@export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
+@export_range(16.0, 400.0, 1.0) var attack_radius: float = 140.0
+@export var attack_center_offset: Vector2 = Vector2.ZERO
+@export_range(0.05, 3.0, 0.01) var windup_duration: float = 0.65
+@export_range(0.05, 1.0, 0.01) var active_window: float = 0.14
+@export_range(1, 100, 1) var attack_damage: int = 1
+@export_range(0.05, 5.0, 0.01) var recovery_duration: float = 1.4
+@export_range(0.0, 0.5, 0.01) var recovery_fade_duration: float = 0.18
+
+@export_group("Spawn")
+## Posiciona o inimigo automaticamente em cima de uma plataforma da sala.
+@export var spawn_on_platform: bool = true
+## Distância mínima entre o inimigo e as bordas da plataforma.
+@export var edge_margin: float = 16.0
+
+@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
+@onready var _health_fill: Polygon2D = $Visuals/HealthFill
+@onready var _attack_visual: Node2D = $AttackAreaVisual
+
+var health: int
+var _flash_remaining: float = 0.0
+var _attack_state: AttackState = AttackState.IDLE
+var _state_remaining: float = 0.0
+var _recovery_fade_remaining: float = 0.0
+var _locked_attack_center: Vector2 = Vector2.ZERO
+var _locked_player: PhysicsBody2D
+var _damaged_player_ids: Dictionary = {}
+var _defeated_emitted: bool = false
+var _area_shape: CircleShape2D
+var _area_query: PhysicsShapeQueryParameters2D
+var _line_of_sight_query: PhysicsRayQueryParameters2D
+var _placement_pending: bool = false
+
+func _ready() -> void:
+	health = maxi(max_health, 1)
+	add_to_group("damageable")
+	add_to_group("combat_enemy")
+	_configure_physics_queries()
+	_set_attack_visual(&"hidden", 0.0)
+	_update_visuals()
+	if spawn_on_platform:
+		# Fica inativo até ser posicionado, para não detectar o jogador no lugar errado.
+		_placement_pending = true
+		# Deferido para rodar depois que todas as plataformas já se posicionaram.
+		_place_on_platform.call_deferred()
+
+func take_damage(amount: int, _source: Node = null) -> bool:
+	if _defeated_emitted or health <= 0 or amount <= 0:
+		return false
+
+	health = maxi(health - amount, 0)
+	_flash_remaining = maxf(flash_duration, 0.0)
+	_update_visuals()
+	if health == 0:
+		_defeated_emitted = true
+		_cancel_attack()
+		defeated.emit()
+		queue_free()
+	return true
+
+func _physics_process(delta: float) -> void:
+	_update_hit_flash(delta)
+	if _defeated_emitted or _placement_pending:
+		return
+	if not _is_inside_current_scene():
+		_cancel_attack()
+		return
+	if _attack_state != AttackState.IDLE and not _is_alive_player(_locked_player):
+		_cancel_attack()
+		return
+
+	var physics_step := maxf(delta, 0.0)
+	match _attack_state:
+		AttackState.IDLE:
+			var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
+			if detected_player != null:
+				_begin_windup(detected_player)
+		AttackState.WINDUP:
+			_update_windup(physics_step)
+		AttackState.ACTIVE:
+			_update_active(physics_step)
+		AttackState.RECOVERY:
+			_update_recovery(physics_step)
+
+func _configure_physics_queries() -> void:
+	_area_shape = CircleShape2D.new()
+	_area_shape.radius = _effective_attack_radius()
+	_area_query = PhysicsShapeQueryParameters2D.new()
+	_area_query.shape = _area_shape
+	_area_query.collision_mask = PLAYER_MASK
+	_area_query.collide_with_bodies = true
+	_area_query.collide_with_areas = false
+	_area_query.margin = 0.0
+	_area_query.exclude = [get_rid()]
+
+	_line_of_sight_query = PhysicsRayQueryParameters2D.new()
+	_line_of_sight_query.collision_mask = WORLD_MASK
+	_line_of_sight_query.collide_with_bodies = true
+	_line_of_sight_query.collide_with_areas = false
+	_line_of_sight_query.exclude = [get_rid()]
+
+func _effective_attack_radius() -> float:
+	return clampf(attack_radius, 16.0, 400.0)
+
+func _find_player_in_attack_area(area_center: Vector2) -> PhysicsBody2D:
+	if _area_query == null or _area_shape == null:
+		return null
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, area_center)
+	var overlaps: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		if _has_clear_line_of_sight(player_body, area_center):
+			return player_body
+	return null
+
+func _is_alive_player(candidate: PhysicsBody2D) -> bool:
+	if not is_instance_valid(candidate):
+		return false
+	if not candidate.is_in_group("player") or not candidate.has_method("take_damage"):
+		return false
+	var dead_value: Variant = candidate.get("is_dead")
+	if typeof(dead_value) != TYPE_BOOL or bool(dead_value):
+		return false
+	return _node_is_inside_current_scene(candidate)
+
+func _has_clear_line_of_sight(player_body: PhysicsBody2D, area_center: Vector2) -> bool:
+	_line_of_sight_query.from = area_center
+	_line_of_sight_query.to = _get_player_collider_center(player_body)
+	var obstruction: Dictionary = get_world_2d().direct_space_state.intersect_ray(
+		_line_of_sight_query
+	)
+	return obstruction.is_empty()
+
+func _get_player_collider_center(player_body: PhysicsBody2D) -> Vector2:
+	var player_shape := player_body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if player_shape != null and not player_shape.disabled:
+		return player_shape.global_position
+	return player_body.global_position
+
+func _begin_windup(player_body: PhysicsBody2D) -> void:
+	_locked_player = player_body
+	_locked_attack_center = global_position + attack_center_offset
+	_damaged_player_ids.clear()
+	_attack_state = AttackState.WINDUP
+	_state_remaining = maxf(windup_duration, 0.05)
+	_recovery_fade_remaining = 0.0
+	_update_attack_area_visual()
+
+func _update_windup(delta: float) -> void:
+	var before_step := _state_remaining
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		var overshoot := maxf(delta - before_step, 0.0)
+		_enter_active()
+		_apply_attack_area()
+		if overshoot >= maxf(active_window, 0.05):
+			_enter_recovery()
+		else:
+			_state_remaining = maxf(active_window, 0.05) - overshoot
+		return
+	_update_attack_area_visual()
+
+func _enter_active() -> void:
+	_attack_state = AttackState.ACTIVE
+	_state_remaining = maxf(active_window, 0.05)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_active(delta: float) -> void:
+	_apply_attack_area()
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		_enter_recovery()
+
+func _apply_attack_area() -> void:
+	if _defeated_emitted or _attack_state != AttackState.ACTIVE:
+		return
+	var overlaps: Array[Dictionary] = _find_overlaps_at_locked_center()
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		var player_id := player_body.get_instance_id()
+		if _damaged_player_ids.has(player_id):
+			continue
+		if not _has_clear_line_of_sight(player_body, _locked_attack_center):
+			continue
+		_damaged_player_ids[player_id] = true
+		var damage_result: Variant = player_body.call(
+			"take_damage",
+			maxi(attack_damage, 1),
+			self
+		)
+		if typeof(damage_result) == TYPE_BOOL and bool(damage_result):
+			_set_attack_visual(&"impact", 1.0)
+
+func _find_overlaps_at_locked_center() -> Array[Dictionary]:
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, _locked_attack_center)
+	return get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+
+func _enter_recovery() -> void:
+	_attack_state = AttackState.RECOVERY
+	_state_remaining = maxf(recovery_duration, 0.05)
+	_recovery_fade_remaining = maxf(recovery_fade_duration, 0.0)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_recovery(delta: float) -> void:
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	_recovery_fade_remaining = maxf(_recovery_fade_remaining - delta, 0.0)
+	_update_attack_area_visual()
+	if _state_remaining <= 0.0:
+		_attack_state = AttackState.IDLE
+		_state_remaining = 0.0
+		_recovery_fade_remaining = 0.0
+		_locked_player = null
+		_damaged_player_ids.clear()
+		_set_attack_visual(&"hidden", 0.0)
+		_update_visuals()
+
+func _update_attack_area_visual() -> void:
+	match _attack_state:
+		AttackState.WINDUP:
+			var windup_progress := 1.0 - clampf(
+				_state_remaining / maxf(windup_duration, 0.05),
+				0.0,
+				1.0
+			)
+			_set_attack_visual(&"windup", 0.58 + windup_progress * 0.34)
+		AttackState.ACTIVE:
+			_set_attack_visual(&"active", 1.0)
+		AttackState.RECOVERY:
+			var fade_alpha := 0.0
+			if recovery_fade_duration > 0.0:
+				fade_alpha = _recovery_fade_remaining / recovery_fade_duration
+			_set_attack_visual(&"recovery", clampf(fade_alpha, 0.0, 1.0))
+		_:
+			_set_attack_visual(&"hidden", 0.0)
+
+func _set_attack_visual(phase: StringName, alpha: float) -> void:
+	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_area_state"):
+		return
+	_attack_visual.call(
+		"set_area_state",
+		_effective_attack_radius(),
+		attack_center_offset if _attack_state == AttackState.IDLE else _locked_attack_center - global_position,
+		phase,
+		alpha
+	)
+
+func _update_hit_flash(delta: float) -> void:
+	if _flash_remaining <= 0.0:
+		return
+	_flash_remaining = maxf(_flash_remaining - maxf(delta, 0.0), 0.0)
+	_update_visuals()
+
+func _update_visuals() -> void:
+	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
+		return
+	var desired_animation: StringName = &"impact" if _flash_remaining > 0.0 or _attack_state == AttackState.ACTIVE else &"idle"
+	if _body_sprite.animation != desired_animation or not _body_sprite.is_playing():
+		_body_sprite.play(desired_animation)
+	var hit_flash := _body_sprite.material as ShaderMaterial
+	if hit_flash != null:
+		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
+	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
+	_health_fill.scale.x = health_ratio
+
+func _cancel_attack() -> void:
+	_attack_state = AttackState.IDLE
+	_state_remaining = 0.0
+	_recovery_fade_remaining = 0.0
+	_locked_player = null
+	_damaged_player_ids.clear()
+	_set_attack_visual(&"hidden", 0.0)
+	_update_visuals()
+
+func _is_inside_current_scene() -> bool:
+	return _node_is_inside_current_scene(self)
+
+func _node_is_inside_current_scene(node: Node) -> bool:
+	if not is_instance_valid(node):
+		return false
+	var scene_root := get_tree().current_scene
+	return is_instance_valid(scene_root) and (scene_root == node or scene_root.is_ancestor_of(node))
+
+## Retângulo da colisão em coordenadas locais (relativo à origem do inimigo).
+func _get_collision_rect() -> Rect2:
+	for child in get_children():
+		var collision := child as CollisionShape2D
+		if collision != null and collision.shape != null:
+			var rect := collision.shape.get_rect()
+			rect.position += collision.position
+			return rect
+	# Sem CollisionShape2D: assume que a origem está no centro da base.
+	return Rect2(-16.0, -32.0, 32.0, 32.0)
+
+func _place_on_platform() -> void:
+	_placement_pending = false
+	var body := _get_collision_rect()
+	var needed_width := body.size.x + edge_margin * 2.0
+
+	# Prefere plataformas livres; o Floor só entra se não sobrar nenhuma,
+	# e plataformas já ocupadas por outro inimigo ficam por último.
+	var free: Array[SolidPlatform] = []
+	var floors: Array[SolidPlatform] = []
+	var taken: Array[SolidPlatform] = []
+	for node in get_tree().get_nodes_in_group(&"solid_platform"):
+		var candidate := node as SolidPlatform
+		if candidate == null or candidate.size.x < needed_width:
+			continue
+		if candidate.name == &"Floor":
+			floors.append(candidate)
+		elif candidate.has_meta(CLAIMED_META):
+			taken.append(candidate)
+		else:
+			free.append(candidate)
+
+	var pool: Array[SolidPlatform] = free
+	if pool.is_empty():
+		pool = floors
+	if pool.is_empty():
+		pool = taken
+	if pool.is_empty():
+		push_warning("%s: nenhuma plataforma larga o bastante; mantendo a posição original." % name)
+		return
+
+	var rng := RandomNumberGenerator.new()
+	if SolidPlatform.room_seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = hash([SolidPlatform.room_seed, get_index(), "training_target"])
+
+	var platform := pool[rng.randi_range(0, pool.size() - 1)]
+	platform.set_meta(CLAIMED_META, true)
+
+	var platform_left := platform.global_position.x - platform.size.x * 0.5
+	var platform_right := platform.global_position.x + platform.size.x * 0.5
+	var platform_top := platform.global_position.y - platform.size.y * 0.5
+
+	# Mantém a colisão do inimigo inteira sobre a plataforma, com a base tocando o topo.
+	var min_x := platform_left + edge_margin - body.position.x
+	var max_x := platform_right - edge_margin - body.end.x
+	global_position = Vector2(rng.randf_range(min_x, max_x), platform_top - body.end.y)
+
+FILE: run_root.tscn
+[gd_scene format=3 uid="uid://bgflx5722meon"]
+
+[ext_resource type="Script" uid="uid://c0iyae0gy1p7m" path="res://scripts/world/run_controller.gd" id="1_15b2t"]
+[ext_resource type="PackedScene" uid="uid://dlgvrryxeujdh" path="res://scenes/main.tscn" id="2_aqf68"]
+
+[node name="RunRoot" type="Node2D" unique_id=367920003]
+script = ExtResource("1_15b2t")
+floors_per_run = 1
+common_rooms_per_floor = 3
+common_room_scene = ExtResource("2_aqf68")
+boss_room_scene = ExtResource("2_aqf68")
+
+[node name="RoomContainer" type="Node2D" parent="." unique_id=1516175426]
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=283979848]
+
+[node name="ProgressLabel" type="Label" parent="HUD" unique_id=1603542726]
+anchors_preset = 0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = 540.0
+offset_bottom = 44.0
+theme_override_colors/font_color = Color(0.94, 0.85, 0.7, 1)
+theme_override_font_sizes/font_size = 18
+text = "ANDAR 01/01 | SALA 1/3"
+
+[node name="StatusLabel" type="Label" parent="HUD" unique_id=1635771128]
+anchors_preset = 0
+offset_left = 24.0
+offset_top = 48.0
+offset_right = 800.0
+offset_bottom = 72.0
+theme_override_colors/font_color = Color(0.85, 0.9, 0.94, 1)
+theme_override_font_sizes/font_size = 16
+text = "PREPARANDO ENCONTRO"
+
+FILE: project.godot
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
+[application]
+
+config/name="Selenite Tower"
+run/main_scene="res://run_root.tscn"
+config/features=PackedStringArray("4.7")
+
+[display]
+
+window/size/window_width_override=1152
+window/size/window_height_override=648
+window/stretch/mode="canvas_items"
+
+[input]
+
+move_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":65,"key_label":0,"unicode":97,"location":0,"echo":false,"script":null)
+, Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194319,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+move_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":68,"key_label":0,"unicode":100,"location":0,"echo":false,"script":null)
+, Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194321,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+jump={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":32,"physical_keycode":32,"key_label":32,"unicode":32,"location":0,"echo":false,"script":null)
+, Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":87,"key_label":0,"unicode":119,"location":0,"echo":false,"script":null)
+, Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194320,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+dash={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194325,"physical_keycode":4194325,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+launch_ball={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":0,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":1,"canceled":false,"pressed":false,"double_click":false,"script":null)
+]
+}
+parry={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":0,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":2,"canceled":false,"pressed":false,"double_click":false,"script":null)
+]
+}
+interact={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":69,"key_label":0,"unicode":101,"location":0,"echo":false,"script":null)
+]
+}
+
+[layer_names]
+
+2d_physics/layer_1="World"
+2d_physics/layer_2="Player"
+2d_physics/layer_3="Projectile"
+2d_physics/layer_4="Damageable"
+2d_physics/layer_5="HostileProjectile"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.0431373, 0.0627451, 0.0901961, 1)
+
+FILE: scenes/ricochet_ball.tscn
+[gd_scene format=3 uid="uid://vykalknjicpt"]
+
+[ext_resource type="Script" uid="uid://rggvu5rmpcbx" path="res://scripts/projectile/ricochet_ball.gd" id="1_ricochet_ball"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_ricochet_ball"]
+radius = 8.0
+
+[node name="RicochetBall" type="CharacterBody2D" unique_id=1422592487]
+z_index = 2
+collision_layer = 4
+collision_mask = 9
+motion_mode = 1
+script = ExtResource("1_ricochet_ball")
+is_parryable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=655038491]
+shape = SubResource("CircleShape2D_ricochet_ball")
+
+[node name="ChargeVisual" type="Line2D" parent="."]
+visible = false
+z_index = 1
+points = PackedVector2Array(0, -13, 9.19239, -9.19239, 13, 0, 9.19239, 9.19239, 0, 13, -9.19239, 9.19239, -13, 0, -9.19239, -9.19239, 0, -13)
+width = 2.5
+default_color = Color(0.4, 0.91, 0.81, 0.95)
+closed = true
+
+FILE: scenes/training_target.tscn
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
+[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+[ext_resource type="Script" path="res://scripts/enemy/containment_attack_visual.gd" id="4_attack_visual"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+size = Vector2(72.0, 96.0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_target_hit_flash"]
+resource_local_to_scene = true
+shader = ExtResource("3_hit_flash_shader")
+
+[node name="TrainingTarget" type="StaticBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 0
+z_index = 1
+script = ExtResource("1_training_target")
+max_health = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_training_target")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+material = SubResource("ShaderMaterial_target_hit_flash")
+sprite_frames = ExtResource("2_target_frames")
+animation = &"idle"
+autoplay = &"idle"
+centered = true
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+
+[node name="Visor" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+
+[node name="UpperStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+
+[node name="LowerStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+
+[node name="FootLine" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-38.0, -60.0)
+color = Color(0.894118, 0.435294, 0.345098, 1)
+polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)
+
+[node name="AttackAreaVisual" type="Node2D" parent="."]
+visible = false
+z_index = 1
+script = ExtResource("4_attack_visual")
+
+
+DIFF main.gd/launcher/ricochet_ball vs main before merge:
+diff --git a/scripts/player/ball_launcher.gd b/scripts/player/ball_launcher.gd
+index 2e01a3a..df85dd2 100644
+--- a/scripts/player/ball_launcher.gd
++++ b/scripts/player/ball_launcher.gd
+@@ -19,6 +19,9 @@ var _projectile_parent: Node
+ var _active_ball: RicochetBall
+ var _base_projectile_config: ProjectileConfig
+ var _run_build: RunBuild
++var _run_damage_multiplier: float = 1.0
++var _run_speed_multiplier: float = 1.0
++var _run_radius_multiplier: float = 1.0
+ var _spawn_shape: CircleShape2D
+ var _spawn_query: PhysicsShapeQueryParameters2D
+ 
+@@ -40,6 +43,11 @@ func configure(
+ func apply_run_build(build: RunBuild) -> void:
+ 	_run_build = build
+ 
++func set_run_reward_multipliers(damage: float, speed: float, radius: float) -> void:
++	_run_damage_multiplier = maxf(damage, 0.01)
++	_run_speed_multiplier = maxf(speed, 0.01)
++	_run_radius_multiplier = maxf(radius, 0.01)
++
+ func try_launch(triggered: bool) -> bool:
+ 	if not triggered or not is_launch_available():
+ 		return false
+@@ -62,6 +70,7 @@ func try_launch(triggered: bool) -> bool:
+ 	_projectile_parent.add_child(ball)
+ 	_active_ball = ball
+ 	ball.finished.connect(_on_ball_finished.bind(ball))
++	ball.set_return_target(_shot_origin)
+ 	ball.global_position = spawn_position
+ 	ball.launch(direction, launch_config)
+ 	launch_accepted.emit(spawn_position, direction)
+@@ -180,11 +189,14 @@ func _build_projectile_config() -> ProjectileConfig:
+ 	if _base_projectile_config == null:
+ 		return null
+ 	var derived_config := _base_projectile_config.duplicate(true) as ProjectileConfig
+-	if _run_build == null:
+-		return derived_config
+-	if _run_build.has_upgrade(IMPACTO_REFORCADO_DEFINITION.upgrade_id):
+-		derived_config.damage = IMPACTO_REFORCADO_DEFINITION.projectile_damage_override
+-	if _run_build.has_upgrade(CARGA_REATIVA_DEFINITION.upgrade_id):
+-		derived_config.reactive_charge_enabled = CARGA_REATIVA_DEFINITION.reactive_charge_enabled
+-		derived_config.charged_damage_bonus = CARGA_REATIVA_DEFINITION.charged_damage_bonus
++	if _run_build != null:
++		if _run_build.has_upgrade(IMPACTO_REFORCADO_DEFINITION.upgrade_id):
++			derived_config.damage = IMPACTO_REFORCADO_DEFINITION.projectile_damage_override
++		if _run_build.has_upgrade(CARGA_REATIVA_DEFINITION.upgrade_id):
++			derived_config.reactive_charge_enabled = CARGA_REATIVA_DEFINITION.reactive_charge_enabled
++			derived_config.charged_damage_bonus = CARGA_REATIVA_DEFINITION.charged_damage_bonus
++	# Run rewards derive from the already-upgraded copy; the base Resource stays unchanged.
++	derived_config.damage = maxi(roundi(float(derived_config.damage) * _run_damage_multiplier), 1)
++	derived_config.speed *= _run_speed_multiplier
++	derived_config.collision_radius *= _run_radius_multiplier
+ 	return derived_config
+diff --git a/scripts/projectile/ricochet_ball.gd b/scripts/projectile/ricochet_ball.gd
+index b85c34b..164289b 100644
+--- a/scripts/projectile/ricochet_ball.gd
++++ b/scripts/projectile/ricochet_ball.gd
+@@ -1,6 +1,8 @@
+ class_name RicochetBall
+ extends CharacterBody2D
+ 
++const ImpactSparkEffect = preload("res://scripts/projectile/impact_spark.gd")
++
+ const CombatFeedbackScript = preload("res://scripts/feedback/combat_feedback.gd")
+ 
+ enum ChargeState { INACTIVE, CHARGED, CONSUMED }
+@@ -176,11 +178,7 @@ func _physics_process(delta: float) -> void:
+ 		if _has_finished or _stop_sweep_requested:
+ 			return
+ 		if not _is_damageable_collider(collider):
+-			CombatFeedbackScript.enqueue(
+-				impact_scene_root,
+-				impact_position,
+-				CombatFeedbackScript.EffectKind.WALL_RICOCHET
+-			)
++			_enqueue_wall_spark(impact_scene_root, impact_position)
+ 		bounced.emit(_bounce_count, impact_position, surface_normal)
+ 		if _has_finished or _stop_sweep_requested:
+ 			return
+@@ -279,6 +277,19 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
+ 	if was_charged and _charge_state == ChargeState.CHARGED:
+ 		_set_charge_state(ChargeState.CONSUMED)
+ 
++func _enqueue_wall_spark(scene_root: Node, impact_position: Vector2) -> void:
++	if not is_instance_valid(scene_root) or scene_root.is_queued_for_deletion():
++		return
++	var scene_tree := get_tree()
++	if scene_tree == null or scene_tree.current_scene != scene_root:
++		return
++	var spark := ImpactSparkEffect.new() as Node2D
++	if spark == null:
++		return
++	spark.top_level = true
++	spark.global_position = impact_position
++	scene_root.call_deferred("add_child", spark)
++
+ func _is_damageable_collider(collider: Object) -> bool:
+ 	return collider is Node and (collider as Node).is_in_group("damageable")
+ 
+diff --git a/scripts/world/main.gd b/scripts/world/main.gd
+index bd0a33e..dc7caf1 100644
+--- a/scripts/world/main.gd
++++ b/scripts/world/main.gd
+@@ -1,5 +1,7 @@
+ extends Node2D
+ 
++signal run_progression_ready
++
+ const RoomTransition = preload("res://scripts/world/room_transition.gd")
+ const RunBuild = preload("res://scripts/progression/run_build.gd")
+ const UpgradeOfferScene: PackedScene = preload("res://scenes/upgrade_offer.tscn")
+@@ -48,6 +50,9 @@ var _guard_active: bool = false
+ var _guard_waiting_for_release: bool = false
+ var _guard_quiet_remaining: float = 0.0
+ var run_build: RunBuild = RunBuild.new()
++var _run_controller_managed: bool = false
++var _managed_run_build: RunBuild
++var _run_progression_notified: bool = false
+ 
+ var _upgrade_definitions: Array[UpgradeDefinitionResource] = [
+ 	IMPACTO_REFORCADO_DEFINITION,
+@@ -55,6 +60,18 @@ var _upgrade_definitions: Array[UpgradeDefinitionResource] = [
+ 	CARGA_REATIVA_DEFINITION,
+ ]
+ 
++func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool) -> bool:
++	if is_inside_tree() or shared_build == null:
++		return false
++	_run_controller_managed = true
++	_managed_run_build = shared_build
++	reward_enabled = offer_build_upgrade
++	var managed_exit_door := get_node_or_null("ExitDoor")
++	if managed_exit_door != null:
++		remove_child(managed_exit_door)
++		managed_exit_door.free()
++	return true
++
+ func _ready() -> void:
+ 	set_process_input(true)
+ 	if not combat_room.room_cleared.is_connected(_on_room_cleared):
+@@ -73,10 +90,15 @@ func _ready() -> void:
+ 	if player != null:
+ 		player.reset_to_spawn(_get_player_spawn_position())
+ 
+-	# Os filhos já executaram _ready. Consuma o snapshot antes de reconfigurar
+-	# controllers e antes de avaliar uma sala que comece limpa.
+-	var incoming_snapshot := RoomTransition.consume_pending_snapshot(_load_current_packed_scene())
+-	run_build = RunBuild.new()
++	# Os filhos já executaram _ready. O controlador mantém o estado da run
++	# entre encontros; cenas standalone continuam consumindo o snapshot one-shot.
++	var incoming_snapshot: Dictionary = {}
++	if not _run_controller_managed:
++		incoming_snapshot = RoomTransition.consume_pending_snapshot(_load_current_packed_scene())
++	if _run_controller_managed and _managed_run_build != null:
++		run_build = _managed_run_build
++	else:
++		run_build = RunBuild.new()
+ 	if player != null:
+ 		if not incoming_snapshot.is_empty() and player.health != null:
+ 			var restored_build := RunBuild.new()
+@@ -217,7 +239,9 @@ func _resolve_after_physics_flush() -> void:
+ func _open_upgrade_offer() -> void:
+ 	if _upgrade_offer == null or not is_instance_valid(_upgrade_offer):
+ 		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+-		push_error("Main: não foi possível criar a oferta de upgrades; a porta permanece bloqueada.")
++		push_error("Main: não foi possível criar a oferta de upgrades.")
++		if _run_controller_managed:
++			_release_exit_or_complete()
+ 		return
+ 	_offered_upgrade_ids.clear()
+ 	for definition in _upgrade_definitions:
+@@ -225,7 +249,9 @@ func _open_upgrade_offer() -> void:
+ 	if not _upgrade_offer.present_options(_upgrade_definitions):
+ 		_offered_upgrade_ids.clear()
+ 		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+-		push_error("Main: definições inválidas para a oferta; a porta permanece bloqueada.")
++		push_error("Main: definições inválidas para a oferta.")
++		if _run_controller_managed:
++			_release_exit_or_complete()
+ 		return
+ 
+ 	_owned_offer_pause = not get_tree().paused
+@@ -262,10 +288,17 @@ func _on_upgrade_selected(upgrade_id: StringName) -> void:
+ func _release_exit_or_complete() -> void:
+ 	if exit_door == null:
+ 		_upgrade_flow_state = UpgradeFlowState.COMPLETED
++		_notify_run_progression_ready()
+ 		return
+ 	_upgrade_flow_state = UpgradeFlowState.EXIT_RELEASED
+ 	exit_door.call("set_room_cleared", true)
+ 
++func _notify_run_progression_ready() -> void:
++	if not _run_controller_managed or _run_progression_notified:
++		return
++	_run_progression_notified = true
++	run_progression_ready.emit()
++
+ func _begin_input_guard() -> void:
+ 	_guard_active = true
+ 	_guard_waiting_for_release = _any_discrete_input_pressed()
+

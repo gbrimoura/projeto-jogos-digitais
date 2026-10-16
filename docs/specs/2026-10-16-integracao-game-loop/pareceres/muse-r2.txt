@@ -1,0 +1,14 @@
+
+> plan · muse-spark-1.3-contributor
+
+Revisão R2 somente leitura — lendo pacote final e conferindo métodos, guards e HUD.
+→ Read docs/specs/2026-10-16-integracao-game-loop/pareceres/review-package-r2.txt
+STATUS: done
+SUMMARY: R2 verificado integralmente (1340 linhas). P1 set_return_target presente e chamado; P2 spawn/preview com snapshot derivado+raio e victory pause corrigidos. Retorno preservado com API real, sem sweep/parry/dano em retorno, collider deferred, guards/morte/cancel/charge/parry/HUD/R ok. Sem defeito bloqueante.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Nenhum bloqueante. Validacao runtime pendente por escopo (nao requisito).
+- Observado sem defeito: ricochet_ball.gd:112 return_speed usa _config.speed (so alcancavel pos-launch); 123 stop flag pausa retorno ate cancel deferred (by-design); run_controller.gd:995 owned pause preserva pausa externa; 1015 timer pos-unpause; 1169 R so pressed non-echo pos-fim.
+- Contratos R1/Main/HP/RunBuild/CombatRoom/RoomTransition inalterados por declaracao R2+spec.md:1310-1339; sem divergencia concreta nos trechos R2.
+NEXT_STEP: Congelar frente e seguir para integracao/merge Godot sem nova revisao R2.

@@ -19,6 +19,9 @@ var _projectile_parent: Node
 var _active_ball: RicochetBall
 var _base_projectile_config: ProjectileConfig
 var _run_build: RunBuild
+var _run_damage_multiplier: float = 1.0
+var _run_speed_multiplier: float = 1.0
+var _run_radius_multiplier: float = 1.0
 var _spawn_shape: CircleShape2D
 var _spawn_query: PhysicsShapeQueryParameters2D
 
@@ -40,6 +43,11 @@ func configure(
 func apply_run_build(build: RunBuild) -> void:
 	_run_build = build
 
+func set_run_reward_multipliers(damage: float, speed: float, radius: float) -> void:
+	_run_damage_multiplier = maxf(damage, 0.01)
+	_run_speed_multiplier = maxf(speed, 0.01)
+	_run_radius_multiplier = maxf(radius, 0.01)
+
 func try_launch(triggered: bool) -> bool:
 	if not triggered or not is_launch_available():
 		return false
@@ -51,7 +59,7 @@ func try_launch(triggered: bool) -> bool:
 	if not spawn_position.is_finite():
 		return false
 
-	var launch_config := _build_projectile_config()
+	var launch_config := get_projectile_config_snapshot()
 	if launch_config == null:
 		return false
 	var ball := projectile_scene.instantiate() as RicochetBall
@@ -62,6 +70,7 @@ func try_launch(triggered: bool) -> bool:
 	_projectile_parent.add_child(ball)
 	_active_ball = ball
 	ball.finished.connect(_on_ball_finished.bind(ball))
+	ball.set_return_target(_shot_origin)
 	ball.global_position = spawn_position
 	ball.launch(direction, launch_config)
 	launch_accepted.emit(spawn_position, direction)
@@ -111,14 +120,14 @@ func _on_ball_finished(_reason: String, ball: RicochetBall) -> void:
 		_active_ball = null
 
 func get_spawn_position_for_direction(direction: Vector2) -> Vector2:
-	if _shot_origin == null or projectile_config == null:
+	var config := get_projectile_config_snapshot()
+	if _shot_origin == null or config == null:
 		return Vector2.INF
 
 	var launch_direction := direction.normalized()
 	if launch_direction.is_zero_approx():
 		launch_direction = Vector2.RIGHT
 
-	var config := projectile_config
 	_ensure_spawn_query(config)
 	var space_state := _shot_origin.get_world_2d().direct_space_state
 	var origin := _shot_origin.global_position
@@ -176,15 +185,18 @@ func _is_spawn_position_clear(space_state: PhysicsDirectSpaceState2D, position: 
 	_spawn_query.motion = Vector2.ZERO
 	return space_state.intersect_shape(_spawn_query, 1).is_empty()
 
-func _build_projectile_config() -> ProjectileConfig:
+func get_projectile_config_snapshot() -> ProjectileConfig:
 	if _base_projectile_config == null:
 		return null
 	var derived_config := _base_projectile_config.duplicate(true) as ProjectileConfig
-	if _run_build == null:
-		return derived_config
-	if _run_build.has_upgrade(IMPACTO_REFORCADO_DEFINITION.upgrade_id):
-		derived_config.damage = IMPACTO_REFORCADO_DEFINITION.projectile_damage_override
-	if _run_build.has_upgrade(CARGA_REATIVA_DEFINITION.upgrade_id):
-		derived_config.reactive_charge_enabled = CARGA_REATIVA_DEFINITION.reactive_charge_enabled
-		derived_config.charged_damage_bonus = CARGA_REATIVA_DEFINITION.charged_damage_bonus
+	if _run_build != null:
+		if _run_build.has_upgrade(IMPACTO_REFORCADO_DEFINITION.upgrade_id):
+			derived_config.damage = IMPACTO_REFORCADO_DEFINITION.projectile_damage_override
+		if _run_build.has_upgrade(CARGA_REATIVA_DEFINITION.upgrade_id):
+			derived_config.reactive_charge_enabled = CARGA_REATIVA_DEFINITION.reactive_charge_enabled
+			derived_config.charged_damage_bonus = CARGA_REATIVA_DEFINITION.charged_damage_bonus
+	# Run rewards derive from the already-upgraded copy; the base Resource stays unchanged.
+	derived_config.damage = maxi(roundi(float(derived_config.damage) * _run_damage_multiplier), 1)
+	derived_config.speed *= _run_speed_multiplier
+	derived_config.collision_radius *= _run_radius_multiplier
 	return derived_config

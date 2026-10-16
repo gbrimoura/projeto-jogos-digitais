@@ -101,3 +101,11 @@ A transição mantém HP atual e máximo, sem cura. A sala nova cria jogador/est
 A revisão estática final do código e das cenas não encontrou achados P1/P2. A revisão inicial identificou uma divergência entre um destino salvo como UID `uid://` e o `res://` reportado pela cena carregada; `Main` agora usa `PackedScene.resource_path` canônico para o payload e a troca, e descarta payload de caminho divergente. Os ajustes de posição e legibilidade da porta, brilho e consistência do HUD também foram aplicados.
 
 Sem execução ou validação no Godot; nenhum teste foi executado. A revisão documental estática final do Claude Opus 5.5 High confirmou as divergências corrigidas e não encontrou P1/P2 remanescentes.
+
+## Loop de jogo — integração 16/10/2026
+
+F5 inicia res://run_root.tscn, que controla uma sequência configurável de três salas comuns e um chefe por andar. O cenário comum e o chefe ainda usam scenes/main.tscn como placeholder; a cena atual da run configura um andar. RunRoot avança após o fluxo de vitória/limpeza e a oferta de RunBuild já existentes em Main. A escolha de RunBuild é compartilhada entre salas e aparece uma vez por run; a tela da branch mantém recompensas distintas após chefes. Main iniciado diretamente continua com porta, snapshot de transição e comportamento standalone.
+
+A integração conserva PlayerHealth, o dano booleano, a sentinela de área, o flash de dano e os assets/animações atuais. O efeito ImpactSpark é usado em ricochetes de parede; parry e acertos aceitos seguem o CombatFeedback já instalado. A geração aleatória das plataformas continua por sala. O README não transforma o placeholder de chefe, o limite de um andar da cena inicial ou os modificadores provisórios em regras finais do GDD.
+
+Especificação da integração: docs/specs/2026-10-16-integracao-game-loop/. Nenhum teste, importação ou execução do Godot foi feito nesta frente; a validação runtime permanece pendente.

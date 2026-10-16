@@ -1,0 +1,223 @@
+READONLY R3 correção delimitada do merge Godot. Não usar ferramentas, não executar comandos/testes/Godot, não editar. Timeout10min. R2 Gemini/Muse sem bloqueios, Grokstdoutvazio, Opusquota; fontesrestantesintactas. Rootachado: RicochetBall agora começa retorno semdano/sweep/parry logo após atingir Nmaxbounces, preview antigo ainda mostrava segmento depoisNth atéN+1collision. R3 adiciona após bounce_count+=1 e _bounce_points.append(to_local(contact_center)): if bounce_count >= config.max_bounces: _bounce_limit_reached=true; break. Antesreflection/seguintesegment. Mantém checkpreexistente antesincremento para max0 e ramo grazing que não contabounce. Avalie apenas coerência desta correção e possíveisregressões. A seguir funções completas relevantes e diffs da últimaalteração. stdout STATUS/SUMMARY/CHANGED_FILESnone/TESTSnone/RISKS/NEXT_STEP. Sem avaliar ausência detestecomo defeito.
+TrajectoryPreview._build_prediction COMPLETA:
+func _build_prediction(start_position: Vector2, initial_direction: Vector2, blocked: bool) -> void:
+	_path_points.clear()
+	_bounce_points.clear()
+	_blocked = blocked
+	_bounce_limit_reached = false
+	_query_limit_reached = false
+	_append_global_point(start_position)
+	if blocked:
+		queue_redraw()
+		return
+
+	var config := _ball_launcher.get_projectile_config_snapshot()
+	var full_distance := maxf(config.speed, 0.0) * maxf(config.lifetime, 0.0)
+	var remaining_distance := minf(full_distance, maxf(preview_distance, 0.0))
+	var current_position := start_position
+	var direction := initial_direction
+	var bounce_count := 0
+	var iterations := 0
+	_ensure_prediction_query(config)
+
+	var space_state := get_world_2d().direct_space_state
+	while remaining_distance > 0.01 and iterations < MAX_QUERY_ITERATIONS:
+		iterations += 1
+		var motion := direction * remaining_distance
+		_prediction_query.transform = Transform2D(0.0, current_position)
+		_prediction_query.motion = motion
+		var fractions := space_state.cast_motion(_prediction_query)
+		if fractions.size() < 2:
+			_query_limit_reached = true
+			break
+
+		var safe_fraction := clampf(fractions[0], 0.0, 1.0)
+		var unsafe_fraction := clampf(fractions[1], 0.0, 1.0)
+		if safe_fraction >= 1.0:
+			_append_global_point(current_position + motion)
+			remaining_distance = 0.0
+			break
+
+		var contact_center := current_position + motion * safe_fraction
+		_append_global_point(contact_center)
+		remaining_distance *= 1.0 - safe_fraction
+
+		_prediction_query.transform = Transform2D(
+			0.0,
+			current_position + motion * unsafe_fraction
+		)
+		_prediction_query.motion = Vector2.ZERO
+		var contact_info := space_state.get_rest_info(_prediction_query)
+		if contact_info.is_empty():
+			_query_limit_reached = true
+			break
+
+		var surface_normal: Vector2 = contact_info.get("normal", Vector2.ZERO)
+		surface_normal = surface_normal.normalized()
+		if surface_normal.is_zero_approx():
+			_query_limit_reached = true
+			break
+
+		var velocity := direction * config.speed
+		if not BounceResolver.should_bounce(velocity, surface_normal):
+			velocity = BounceResolver.slide_velocity(
+				velocity,
+				surface_normal,
+				config.speed
+			)
+			if velocity.is_zero_approx():
+				remaining_distance = 0.0
+				break
+			direction = velocity.normalized()
+			current_position = contact_center + surface_normal * config.collision_skin
+			continue
+
+		if bounce_count >= config.max_bounces:
+			_bounce_limit_reached = true
+			break
+
+		bounce_count += 1
+		_bounce_points.append(to_local(contact_center))
+		if bounce_count >= config.max_bounces:
+			_bounce_limit_reached = true
+			break
+		velocity = BounceResolver.reflect_velocity(
+			velocity,
+			surface_normal,
+			config.speed
+		)
+		if velocity.is_zero_approx():
+			_query_limit_reached = true
+			break
+		direction = velocity.normalized()
+		current_position = contact_center + surface_normal * config.collision_skin
+
+	if iterations >= MAX_QUERY_ITERATIONS and remaining_distance > 0.01:
+		_query_limit_reached = true
+	queue_redraw()
+
+
+RicochetBall._physics_process COMPLETA:
+func _physics_process(delta: float) -> void:
+	if not _has_launched or _has_finished or _stop_sweep_requested:
+		return
+
+	if _is_returning:
+		_return_to_player(delta)
+		return
+	_damaged_targets_this_tick.clear()
+	_update_parry_release_lock()
+
+	var motion_delta := minf(delta, maxf(_lifetime_remaining, 0.0))
+	var expires_after_motion := _lifetime_remaining <= delta
+	_lifetime_remaining = maxf(_lifetime_remaining - delta, 0.0)
+
+	var remaining_motion := _pending_motion + velocity * motion_delta
+	_pending_motion = Vector2.ZERO
+	var collisions_this_tick := 0
+	var frame_elapsed: float = 0.0
+	var collision_limit := maxi(_config.max_collisions_per_tick, 1)
+	if expires_after_motion:
+		collision_limit = maxi(collision_limit, _config.max_bounces + 4)
+	var safe_margin := maxf(_config.collision_safe_margin, 0.01)
+
+	while not _stop_sweep_requested and not remaining_motion.is_zero_approx() and collisions_this_tick < collision_limit:
+		var segment_start := global_position
+		var segment_distance := remaining_motion.length()
+		var segment_speed := maxf(velocity.length(), 0.001)
+		var segment_duration := minf(segment_distance / segment_speed, maxf(delta - frame_elapsed, 0.0))
+		var parry_hit := _get_parry_hit(remaining_motion, frame_elapsed, segment_duration)
+		var collision := move_and_collide(remaining_motion, false, safe_margin, false)
+		var world_fraction: float = 1.0
+		if collision != null and segment_distance > 0.0:
+			world_fraction = clampf(collision.get_travel().length() / segment_distance, 0.0, 1.0)
+
+		if not parry_hit.is_empty():
+			var parry_fraction := float(parry_hit.get("fraction", INF))
+			var parry_precedes_world := collision == null or parry_fraction < world_fraction - 0.00001
+			if parry_precedes_world:
+				var parry_position := segment_start + remaining_motion * parry_fraction
+				var parry_scene_root := get_tree().current_scene
+				global_position = parry_position
+				velocity = Vector2(parry_hit.get("direction", Vector2.ZERO)).normalized() * _config.speed
+				if velocity.is_zero_approx():
+					velocity = Vector2.RIGHT * _config.speed
+				_last_parry_swing_id = int(parry_hit.get("swing_id", -1))
+				_parry_release_pending = true
+				CombatFeedbackScript.enqueue(
+					parry_scene_root,
+					parry_position,
+					CombatFeedbackScript.EffectKind.PARRY
+				)
+				_arm_reactive_charge()
+				_notify_parry_success(_last_parry_swing_id)
+				if _has_finished or _stop_sweep_requested:
+					return
+				_pending_motion = Vector2.ZERO
+				frame_elapsed = minf(frame_elapsed + segment_duration * parry_fraction, delta)
+				remaining_motion = velocity.normalized() * segment_distance * (1.0 - parry_fraction)
+				continue
+
+		if collision == null:
+			if expires_after_motion:
+				_finish("lifetime")
+			return
+
+		collisions_this_tick += 1
+		frame_elapsed = minf(frame_elapsed + collision.get_travel().length() / segment_speed, delta)
+		var surface_normal := collision.get_normal().normalized()
+		if surface_normal.is_zero_approx():
+			_finish("invalid_collision")
+			return
+
+		if not BounceResolver.should_bounce(velocity, surface_normal):
+			global_position += surface_normal * _config.collision_skin
+			velocity = BounceResolver.slide_velocity(velocity, surface_normal, _config.speed)
+			var grazing_remainder := collision.get_remainder()
+			if grazing_remainder.is_zero_approx() or velocity.is_zero_approx():
+				if expires_after_motion:
+					_finish("lifetime")
+				return
+			remaining_motion = velocity.normalized() * grazing_remainder.length()
+			continue
+
+		var next_bounce_index := _bounce_count + 1
+		if next_bounce_index > _config.max_bounces:
+			_start_returning()
+			return
+
+		_bounce_count = next_bounce_index
+		velocity = BounceResolver.reflect_velocity(velocity, surface_normal, _config.speed)
+		var impact_position := collision.get_position()
+		var impact_scene_root := get_tree().current_scene
+		var collider := collision.get_collider()
+		global_position += surface_normal * _config.collision_skin
+		_apply_impact_damage(collider, impact_position, impact_scene_root)
+		if _has_finished or _stop_sweep_requested:
+			return
+		if not _is_damageable_collider(collider):
+			_enqueue_wall_spark(impact_scene_root, impact_position)
+		bounced.emit(_bounce_count, impact_position, surface_normal)
+		if _has_finished or _stop_sweep_requested:
+			return
+
+		if _bounce_count >= _config.max_bounces:
+			_start_returning()
+			return
+
+		var remainder := collision.get_remainder()
+		if remainder.is_zero_approx() or velocity.is_zero_approx():
+			if expires_after_motion:
+				_finish("lifetime")
+			return
+		remaining_motion = velocity.normalized() * remainder.length()
+
+	if not remaining_motion.is_zero_approx():
+		if expires_after_motion:
+			_finish("lifetime")
+		else:
+			_pending_motion = remaining_motion
+	elif expires_after_motion:
+		_finish("lifetime")
+
+
