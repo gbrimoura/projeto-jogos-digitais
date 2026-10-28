@@ -1,0 +1,1 @@
+timeout: Grok R2 encerrado após limite10min, stdout vazio e stderr preservados.

@@ -1,0 +1,9 @@
+# Incremento — poeira no ataque do Tranca-Lata
+
+Data:20/10/2026. Solicitação pequena e delimitada; implementação obrigatória delegada a GPT-6 Luna xhigh. Fast/priority não confirmável. Base local congelada antes de qualquer implementação.
+
+Adicionar um efeito cosmético curto de poeira ao entrar em ACTIVE, uma vez por golpe e independente de dano aceito. Efeito em torno da base dos pés, emitido para os lados e para cima, duração máxima450ms, dissipação por redução discreta do tamanho. Blocos com arestas duras, sem textura/atlas novos, sem suavização e com cores opacas da paleta atual: #373F4D, #70432C, #925A36 e #CFC3B7. Node2D dedicado com desenho de partículas em grade2px e RNG privado; sem consumir o RNG global da geração das salas. Conjunto limitado a16partículas, processamento somente enquanto há poeira. Posição global definida na emissão, sem acompanhar deslocamentos do emissor; filho top_level com processamento herdado para pausar junto com a sala. Ao cancelar ataque, limpar efeito; na morte ou troca de cena, o filho é removido com o alvo.
+
+Preservar todas as mudanças locais e os valores/mecanismos de combate, colisão, patrulha, animações e salas. Não alterar atlas, Aseprite, shader, visual do círculo, Main, Player, Worker, sidecars import/UID ou Git. Não executar Godot, importação, testes, parser, gdlint ou QA. Skill pixel-art orienta paleta e grade; não há exportação bitmap nem auditoria de PNG nesta frente.
+
+Arquivos permitidos: scripts/world/training_target.gd; scenes/training_target.tscn; novo scripts/enemy/tranca_lata_dust.gd; documentos/snapshots desta pasta. Um único escritor. Congelar resultado e solicitar os quatro revisores obrigatórios em leitura. Sem aprovação presumida por exit0 ou por revisão anterior. Conferência estática de fonte, diff e hashes pelo principal.

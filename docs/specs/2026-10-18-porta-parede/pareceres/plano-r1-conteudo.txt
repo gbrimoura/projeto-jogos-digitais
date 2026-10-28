@@ -1,0 +1,79 @@
+# Plano — Porta horizontal embutida na parede
+
+**Data:** 18/10/2026  
+**Estado:** implementação visual autorizada; aguardar a nova referência horizontal ImageGen antes da arte final. Revisão estática final a cargo do principal após freeze.  
+**Branch/base:** `corrigir-sprites-salas-plataformas`, HEAD `90b2e592bd70e1b2ff3e5828af8a9029031e1c66`, com o working tree local preservado.
+
+## Objetivo confirmado
+
+Substituir o prop vetorial solto no chão por um asset pixel art de porta integrado a um painel de parede ao fundo junto às extremidades laterais. O usuário confirmou a orientação landscape: “Desenho deitado, mais largo que alto” e “tem que ser na parede”. Não é somente uma folha que se move para o lado.
+
+A versão anterior em retrato 32×64 está preservada como proposta descartada, em `historico/proposta-orientacao-anterior/`. O prompt vertical em `imagegen-prompt.txt` também fica imutável como histórico. O principal está gerando uma nova referência horizontal e salvará o prompt v2 separadamente.
+
+## Arte e geometria
+
+- Usar Aseprite real com Lua editável para desenhar a arte final; a referência ImageGen é guia visual, não asset final.
+- Usar exclusivamente a paleta existente de 20 cores em `../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/palette-fabrica-v1.json` e a linguagem do atlas da fábrica. Alpha somente 0 ou 255; módulo opaco para formar um painel de parede é esperado. `Sprite2D.texture_filter=1` (nearest); não alterar `.import` nem executar import.
+- Cada estado mede 160×80 px nativos e é um painel texturizado de parede. A porta integrada ocupa o retângulo nativo `(16,8,128,64)`. Folha horizontal única de dois frames, 320×80 px, `hframes=2`; escala runtime 2×, logo cada módulo ocupa 320×160 px de mundo.
+- `Closed` cobre o vão. `Open` recolhe a folha para o lado conforme a referência horizontal, preserva o caixilho e mostra abertura escura com ao menos 48 px nativos de altura (96 px em jogo), maior que o corpo de 88 px do protagonista. A moldura mantém canvas e registro iguais nos dois estados.
+- Entregáveis: `.aseprite`, `.lua`, PNG runtime 320×80, preview em 4× e montagem estática do painel no ambiente com parede/atlas, piso e personagem atual. Preservar a nova referência horizontal recebida do principal e documentar seu prompt v2 separado.
+
+## Encaixe e estados
+
+- `ExitDoor` conserva Area2D em (1040,522), alcance/interação E, sinais, guards, unlock, destino e terminal. `EntranceDoor` conserva Area2D em (112,522), bloqueada e sem sensor ativo.
+- Saída: Sprite2D central local `(-80,-26)` em relação à raiz, centro global `(960,496)`, escala 2, módulo em x=800..1120/y=416..576, abertura da porta em x=832..1088/y=432..560.
+- Entrada: Sprite2D central local `(+80,-26)`, centro global `(192,496)`, mesma escala, módulo em x=32..352/y=416..576, abertura em x=64..320/y=432..560.
+- Sprite2D usa `z_index=-2`, atrás do piso (`z=0`), visuais das paredes (`z=-1`) e atores (`z=1`). A textura do painel faz conexão visual com o fundo da sala. A parede física, o sensor, piso, spawns, plataformas e câmera ficam intactos; a porta aberta comunica a transição E sem formar uma passagem física nova.
+- A região visual pode ficar parcialmente coberta pelas paredes laterais e piso, mas o retângulo completo da porta integrada termina exatamente na face x=64 (esquerda) ou x=1088 (direita) e na soleira y=560, sem clipping da porta.
+- Entrada sempre mostra Closed. Saída mostra Closed enquanto bloqueada/ocupada e Open depois de liberada; terminal pode mostrar Open após concluir. O label permanece separado do PNG e compacto no lado jogável.
+
+## Sequência
+
+1. Preservar baseline local e as propostas retrato anteriores.
+2. Receber/inspecionar a nova referência horizontal ImageGen e ler o prompt v2 guardado pelo principal.
+3. Reproduzir duas versões em Aseprite, inspecionar PNG, checar paleta/alpha/dimensões e preparar preview 4× e montagem estática.
+4. Atualizar somente a apresentação visual da cena/script reutilizável e os overrides visuais de entrada/saída nas duas salas.
+5. Congelar arquivos para revisão somente leitura do principal/revisores disponíveis.
+
+## Limites
+
+Sem Godot, import, testes, quality audit, QA automatizado, alteração de colisões/física, atlas existente, regras de gameplay, índice global, commit ou push. O snapshot local anterior e seus SHA-256 estão em `historico/baseline-local/`; a decisão horizontal está em `historico/steering-horizontal-v2.txt`.
+# Especificação — Porta horizontal embutida na parede
+
+**Estado:** implementação visual autorizada em 18/10/2026; arte final aguarda referência ImageGen horizontal; runtime não verificado.  
+**Referências lidas:** `docs/README.md`, `docs/specs/2026-10-18-geracao-salas/plano.md`, `spec.md`, `pareceres/README.md`, e `../GDD_Dieselpunk_Noir/04-combate-e-builds.md` §§3.4 e 9.
+
+## Contrato do asset
+
+- A porta é um asset pixel art horizontal, mais largo que alto, integrado em painel de parede ao fundo junto à extremidade lateral. O usuário confirmou: “Desenho deitado, mais largo que alto” e “tem que ser na parede”. Isso determina a orientação do desenho; não significa apenas movimento horizontal da folha.
+- Um módulo por estado mede 160×80 px nativos e reproduz a placa/parede fabril, com uma porta integrada de 128×64 px em `(16,8)`. Sheet contém Closed à esquerda e Open à direita em PNG de 320×80 px (`hframes=2`). Escala runtime 2×; cada módulo é 320×160 px de mundo.
+- O estado Open mantém o mesmo caixilho, espessura e registro e move a folha horizontalmente, deixando vão escuro de altura útil mínima 48 px nativos (96 px em jogo) para o protagonista de 88 px. Fechado e aberto têm a mesma silhueta externa e a mesma placa de parede; nenhum texto está embutido.
+- Paleta limitada às 20 cores em `../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/palette-fabrica-v1.json`: #0E0D0E, #1D1B1A, #302D2A, #433E39, #5B5249, #756957, #90816A, #BAAA8B, #D3C3A7, #E7CFAD, #4A2D21, #563829, #70432C, #925A36, #B37949, #C68D58, #8F7059, #A68266, #B78342, #D2A75C. Transparência apenas alpha 0/255; o painel final deve ser opaco para conectar à textura da parede. `Sprite2D.texture_filter=1` (nearest); `.import` preexistentes não são editados.
+- A arte final é reproduzida manualmente no Aseprite real por Lua editável. ImageGen é referência a simplificar para a grade nativa, nunca PNG runtime.
+
+## Posicionamento
+
+- Saída: Area2D permanece em `(1040,522)`. `Sprite2D` central fica no offset local `(-80,-26)`, centro global `(960,496)`, escala `(2,2)`, `z_index=-2`. Bounds do módulo: x=800..1120, y=416..576. Porta integrada no módulo: x=832..1088, y=432..560.
+- Entrada: Area2D permanece em `(112,522)`, `Sprite2D` central em `(+80,-26)`, centro global `(192,496)`, mesma escala/z. Bounds do módulo: x=32..352, y=416..576. Porta integrada: x=64..320, y=432..560.
+- Desenho integra a parede de fundo junto à parede lateral e fica atrás do jogador. A faixa lateral existente cobre apenas borda do painel: na esquerda, x=32..64; na direita, x=1088..1120. O vão interno da porta termina exatamente na face interna x=64 ou x=1088 e não é cortado. Piso em y=560 cobre a base do painel; a soleira do vão termina em y=560.
+- Ordem de desenho: painel `z=-2`, paredes visuais `z=-1`, piso `z=0`, atores `z=1`. O painel pode ficar parcialmente coberto nos limites, preservando toda a abertura da porta.
+
+## Contrato de integração
+
+- `ExitDoor` mantém a interação E, sinais, guards, unlock, estado terminal, alcance e transição já existentes. Somente a apresentação escolhe Closed/Open: entrada sempre Closed; saída fechada enquanto bloqueada/ocupada e aberta depois de liberada; saída terminal Open após conclusão.
+- Sensor da saída permanece 96×108 e em x=992..1088 relativo ao mundo da sala; entrada continua sem sensor ativo.
+- Nenhuma passagem física nova é criada. Parede, colliders, piso, triggers, spawns, plataformas, câmera, controles e fluxos de HP/build/recompensas permanecem iguais.
+- `DoorLabel` continua separado do asset e usa a região jogável próxima da porta. Polígonos e linhas vetoriais antigos deixam de representar a porta.
+
+## Critérios de aceite estático
+
+1. Folha de 320×80 px, dois frames iguais em dimensões/encaixe de 160×80, arte da porta interna de 128×64 por frame.
+2. Estado aberto mantém um vão de ao menos 48 px nativos de altura e permanece reconhecível como porta aberta na escala 2×.
+3. Paleta exata de 20 cores; pixels transparentes usam alpha 0, opacos alpha 255.
+4. Preview 4× e montagem estática usam atlas real por coordenadas, mostram o painel na parede, piso e personagem atual; sem screenshot do Godot.
+5. Cena/script reutilizável removem os polígonos e linhas antigos e atualizam somente o frame visual. Cenas Main/SecondRoom mudam apenas offsets/flip/z/estados visuais do sprite e label.
+6. Sensores, posição das raízes das portas, parede física, floor, spawns e demais objetos de gameplay mantêm o estado baseline.
+
+## Validação autorizada
+
+Inspeção simples dos PNGs e montagem estática, mais leitura textual de cenas/scripts. Não executar Godot, import, testes, quality audit ou QA automatizado. Revisão final pelo principal após freeze; leitura e progressão reais em runtime permanecem pendentes.

@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Static review of Runtime R1 shockwave integration for Tranca-Lata across the 3 authorized files ([`training_target.gd`](file:///scripts/world/training_target.gd), [`containment_attack_visual.gd`](file:///scripts/enemy/containment_attack_visual.gd), and [`training_target.tscn`](file:///scenes/training_target.tscn)) is complete. The implementation conforms strictly to all constraints: manual animation driven by target `ACTIVE` state progress with overshoot compensation, no standalone clock/autoplay/damage/queries, preservation of the 4-argument `set_area_state` signature, preservation of `&"impact"` hit color during active ticks, exact frame weight distribution over 6 cels (0.14s total weight), Z-ordering (`z_index = 0`, `z_as_relative = false` rendering above floor by tree order and behind body at global Z=1 / circle at global Z=2), and clean hide/pause/reset guards upon cancel, recovery, and defeat. No concrete P1 or P2 bugs identified.
+CHANGED_FILES: none
+TESTS: none (static document review only; no engine validation claimed per protocol)
+RISKS: No findings (concrete P1/P2 defects absent; dirty working copy and immutable resources preserved intact)
+NEXT_STEP: Proceed with review handoff / integration approval to allow authorized downstream verification on the target branch.

@@ -1,0 +1,491 @@
+-- Tranca-Lata impact wave authoring for Aseprite 1.3.x.
+-- Reproduces the approved ImageGen direction with discrete pixel shapes; the reference image is never sampled.
+local ROOT = "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-onda-impacto-v1/"
+local W, H, CX, CY = 160, 160, 80, 80
+local MAX_R = 70
+local pc = app.pixelColor
+
+local C = {
+  navy = Color{r=25,g=32,b=49,a=255},
+  steel = Color{r=55,g=63,b=77,a=255},
+  shadow = Color{r=112,g=67,b=44,a=255},
+  copper = Color{r=146,g=90,b=54,a=255},
+  lightCopper = Color{r=179,g=121,b=73,a=255},
+  dustLight = Color{r=207,g=195,b=183,a=255},
+  ember = Color{r=245,g=168,b=79,a=255},
+  cream = Color{r=245,g=233,b=216,a=255},
+  clear = Color{r=0,g=0,b=0,a=0},
+}
+local HEX = {
+  ["#192031"] = C.navy, ["#373F4D"] = C.steel, ["#70432C"] = C.shadow,
+  ["#925A36"] = C.copper, ["#B37949"] = C.lightCopper, ["#CFC3B7"] = C.dustLight,
+  ["#F5A84F"] = C.ember, ["#F5E9D8"] = C.cream,
+}
+local DUR = {20,20,20,20,30,30}
+local PHASE = {"compact", "expansion_1", "expansion_2", "peak", "rupture", "fragments"}
+local RAD = {20,35,52,64,64,62}
+local FRAME_MAX_R = {24,40,58,70,70,70}
+local THICK = {5.5,7.2,9.4,11.0,11.0,9.0}
+local WAVE = {1.55,2.05,2.38,2.75,2.75,2.25}
+local RAYS = {
+  -2.64,-2.12,-1.48,-0.74,-0.17,0.49,1.17,1.91,2.47,2.96
+}
+local RAYLEN = {2.8,4.0,5.3,7.0,5.0,2.3}
+local RAYWEIGHT = {1.05,0.82,1.12,0.74,0.94,1.20,0.78,1.06,0.86,0.98}
+local PUFFS = {
+  {-2.48,1.05},{-1.47,0.92},{-0.30,0.86},
+  {0.72,1.10},{1.83,0.96},{2.82,1.08}
+}
+local CHIP_ANGLES = {-2.76,-2.02,-1.31,-0.42,0.58,1.38,2.16,2.83}
+local CHIP_OFFSETS = {2.4,3.4,1.8,3.0,2.8,1.7,3.3,2.2}
+local PUFF_MAIN={[-3]=1,[-2]=3,[-1]=4,[0]=5,[1]=5,[2]=3,[3]=1}
+local PUFF_LEFT={[-2]=1,[-1]=2,[0]=2,[1]=1}
+local PUFF_RIGHT={[-1]=1,[0]=2,[1]=2,[2]=1}
+local F6_ARCS = {
+  {-2.54,0.14},{0.78,0.14},{2.42,0.13}
+}
+local GAPS = {
+  {},
+  {{1.10,0.055}},
+  {{-0.84,0.075},{2.32,0.055}},
+  {{-2.27,0.105},{-0.10,0.090},{1.38,0.090}},
+  {{-2.45,0.135},{-1.53,0.125},{-0.55,0.120},{0.48,0.135},{1.52,0.145},{2.50,0.125}},
+  {{-2.73,0.24},{-2.07,0.24},{-1.37,0.24},{-0.44,0.24},{0.48,0.24},{1.33,0.26},{2.10,0.24},{2.79,0.24}}
+}
+
+local function newImage(w,h)
+  return Image(ImageSpec{width=w,height=h,colorMode=ColorMode.RGB})
+end
+local function px(img,x,y,color)
+  if x>=0 and x<W and y>=0 and y<H then img:drawPixel(x,y,color) end
+end
+local function angleOf(y,x)
+  return math.atan(y,x)
+end
+local function angleDelta(a,b)
+  local d = a-b
+  while d > math.pi do d=d-2*math.pi end
+  while d < -math.pi do d=d+2*math.pi end
+  return d
+end
+local function clamp(v,a,b) return math.max(a,math.min(b,v)) end
+local function hash01(n)
+  local v = math.sin(n*127.1+311.7)*43758.5453123
+  return v-math.floor(v)
+end
+local function waveAt(a,frame)
+  local mix = 0.80*math.sin(3*a+0.43) + 0.50*math.sin(5*a-1.17)
+            + 0.38*math.sin(9*a+2.06) + 0.20*math.sin(15*a-0.61)
+            + 0.12*math.sin(21*a+1.74)
+  local sector = math.floor((a+math.pi)*10.0)
+  local nib = (hash01(sector+frame*0.31)-0.5)*0.38
+  return (mix+nib)*WAVE[frame]
+end
+local function outerAt(a,frame) return RAD[frame]+waveAt(a,frame) end
+local function thicknessAt(a,frame)
+  return THICK[frame]+0.66*math.sin(4*a+0.66)+0.40*math.sin(7*a-0.38)
+end
+local function ringGap(a,frame)
+  if frame==6 then
+    for _,seg in ipairs(F6_ARCS) do if math.abs(angleDelta(a,seg[1]))<=seg[2] then return false end end
+    return true
+  end
+  for _,gap in ipairs(GAPS[frame]) do
+    if math.abs(angleDelta(a,gap[1]))<=gap[2] then return true end
+  end
+  return false
+end
+local function bandAt(r,a,frame,margin)
+  if r>MAX_R then return false end
+  local outer=outerAt(a,frame)
+  local inner=outer-thicknessAt(a,frame)
+  return r<=outer+margin and r>=inner-margin and not ringGap(a,frame), inner, outer
+end
+local function localCoords(x,y,a)
+  local dx,dy=x-CX,y-CY
+  local u=dx*math.cos(a)+dy*math.sin(a)
+  local v=-dx*math.sin(a)+dy*math.cos(a)
+  return u,v,math.sqrt(dx*dx+dy*dy)
+end
+
+local function putOutline(img,x,y,frame)
+  local dx,dy=x-CX,y-CY
+  local r=math.sqrt(dx*dx+dy*dy)
+  if r<=MAX_R then
+    local a=angleOf(dy,dx)
+    if bandAt(r,a,frame,1.0) then px(img,x,y,C.navy) end
+  end
+end
+
+local function ringColor(q,a,frame)
+  local sector=math.floor((a+math.pi)*8.0)
+  local noise=hash01(sector+31.7)
+  if q<0.20 then return C.shadow end
+  if q>0.74 and (noise>0.17 or math.sin(a*2.0+0.7)>0.56) then return C.lightCopper end
+  if q>0.48 and noise>0.82 then return C.lightCopper end
+  if q<0.36 and math.sin(a*3.0-0.4)>0.52 then return C.shadow end
+  return C.copper
+end
+local function drawCopperRing(img,x,y,frame)
+  local dx,dy=x-CX,y-CY
+  local r=math.sqrt(dx*dx+dy*dy)
+  if r>MAX_R then return end
+  local a=angleOf(dy,dx)
+  local ok,inner,outer=bandAt(r,a,frame,0.0)
+  if not ok then return end
+  local q=(r-inner)/math.max(1,outer-inner)
+  px(img,x,y,ringColor(q,a,frame))
+end
+local function drawCreamRail(img,x,y,frame)
+  local dx,dy=x-CX,y-CY
+  local r=math.sqrt(dx*dx+dy*dy)
+  if r>MAX_R then return end
+  local a=angleOf(dy,dx)
+  local ok,inner,outer=bandAt(r,a,frame,0.0)
+  if not ok then return end
+  local q=(r-inner)/math.max(1,outer-inner)
+  if q>0.02 and q<0.40 then
+    local best=math.pi
+    local bestIndex=1
+    for i,ray in ipairs(RAYS) do
+      local d=math.abs(angleDelta(a,ray))
+      if d<best then best=d; bestIndex=i end
+    end
+    local span=(frame<=2 and 0.30 or (frame<=4 and 0.25 or 0.16))*RAYWEIGHT[bestIndex]
+    if best<span then
+      local innerBand=r-inner
+      if best<span*0.69 and innerBand<2.35 and (math.floor(r+bestIndex)%5~=0) then px(img,x,y,C.cream)
+      elseif best<span*0.96 and innerBand<4.1 then px(img,x,y,C.ember)
+      elseif best<span*0.61 and innerBand<4.7 then px(img,x,y,C.dustLight) end
+    end
+  end
+end
+
+local function puffCell(row,col,rows,shiftU,shiftV)
+  local half=rows[row-shiftU]
+  return half and math.abs(col-shiftV)<=half
+end
+local function puffContains(ru,rv)
+  return puffCell(ru,rv,PUFF_MAIN,0,0)
+      or puffCell(ru,rv,PUFF_LEFT,-1,-2)
+      or puffCell(ru,rv,PUFF_RIGHT,1,2)
+end
+local function puffMaskAt(x,y,cx,cy,a,scale)
+  local dx,dy=x-cx,y-cy
+  local ux,uy=math.cos(a),math.sin(a)
+  local tx,ty=-uy,ux
+  local u=dx*ux+dy*uy
+  local v=dx*tx+dy*ty
+  local ru=math.floor(u/scale+0.5)
+  local rv=math.floor(v/scale+0.5)
+  local inside=puffContains(ru,rv)
+  local outline=not inside and (puffContains(ru-1,rv) or puffContains(ru+1,rv)
+      or puffContains(ru,rv-1) or puffContains(ru,rv+1))
+  return inside,outline,ru,rv
+end
+local function drawPuffs(img,x,y,frame,outlineOnly)
+  local list=PUFFS
+  local scaleByFrame={0.62,0.82,0.96,1.00,0.82,0.54}
+  local frameScale=scaleByFrame[frame]
+  for i,p in ipairs(list) do
+    if (frame==1 and i%2==1) or (frame>=2 and frame<=4)
+      or (frame==5 and i%2==1) or (frame==6 and (i==2 or i==5)) then
+      local a=p[1]
+      local size=frameScale*p[2]
+      local outer=outerAt(a,frame)
+      local rCenter=math.min(outer-(frame<=4 and 1.5 or 0.5),FRAME_MAX_R[frame]-4.0*size)
+      if frame==5 then rCenter=math.min(outer+0.6,MAX_R-4.0*size) end
+      if frame==6 then rCenter=math.min(outer+0.8,MAX_R-3.0*size) end
+      local cx=CX+math.cos(a)*rCenter
+      local cy=CY+math.sin(a)*rCenter
+      local inside,outline,u,v=puffMaskAt(x,y,cx,cy,a,size)
+      if outlineOnly then
+        if outline then px(img,x,y,C.navy) end
+      elseif inside then
+        local color=C.steel
+        if u<=0 and v<=0 then color=C.dustLight end
+        if u>=1 and v>=1 then color=C.shadow end
+        if u<=-2 and v>=2 then color=C.lightCopper end
+        px(img,x,y,color)
+      end
+    end
+  end
+end
+
+local function chipAt(img,x,y,frame,index,outlineOnly)
+  local a=CHIP_ANGLES[index]
+  local offset=CHIP_OFFSETS[index]
+  local radialCenter=RAD[frame]+offset
+  if frame==6 then radialCenter=60.0+((index*7)%9)*0.84 end
+  local cx=CX+math.cos(a)*radialCenter
+  local cy=CY+math.sin(a)*radialCenter
+  local dx,dy=x-cx,y-cy
+  local ux,uy=math.cos(a),math.sin(a)
+  local tx,ty=-uy,ux
+  local u=dx*ux+dy*uy
+  local v=dx*tx+dy*ty
+  local size=frame==5 and (1.75+(index%3)*0.40) or (1.15+(index%3)*0.28)
+  local depth=frame==5 and 1.55 or 1.12
+  local wobble=0.30*math.sin(v*1.7+index)
+  local edge=math.max(0.22,size*(1-math.abs(u)/depth)+wobble)
+  local inside=math.abs(u)<=depth and math.abs(v)<=edge
+  local border=math.abs(u)<=depth+0.85 and math.abs(v)<=edge+0.85
+  if x>=0 and x<W and y>=0 and y<H and math.sqrt((x-CX)^2+(y-CY)^2)<=MAX_R then
+    if outlineOnly and border then px(img,x,y,C.navy)
+    elseif inside then
+      local color=C.copper
+      if math.abs(v)>size*0.45 then color=C.lightCopper end
+      if u< -0.45 and index%2==0 then color=C.ember end
+      px(img,x,y,color)
+    end
+  end
+end
+
+local function freeFleck(img,x,y,frame,index,outlineOnly)
+  local a=CHIP_ANGLES[((index+2)%#CHIP_ANGLES)+1]
+  local r=frame==5 and (67.2+(index%3)*0.55) or (65.2+(index%4)*0.78)
+  local offset=(index%2==0 and 0.45 or -0.35)
+  local cx=CX+math.cos(a)*(r+offset)
+  local cy=CY+math.sin(a)*(r+offset)
+  local dx,dy=x-cx,y-cy
+  local u=dx*math.cos(a)+dy*math.sin(a)
+  local v=-dx*math.sin(a)+dy*math.cos(a)
+  local radius=(frame==5 and 1.15 or 0.92)+(index%3)*0.22
+  local inside=math.abs(u)<radius and math.abs(v)<radius*(index%2==0 and 0.75 or 1.15)
+  local border=math.abs(u)<radius+0.75 and math.abs(v)<radius*(index%2==0 and 0.75 or 1.15)+0.75
+  if x>=0 and x<W and y>=0 and y<H and math.sqrt((x-CX)^2+(y-CY)^2)<=MAX_R then
+    if outlineOnly and border then px(img,x,y,C.navy)
+    elseif inside then px(img,x,y,(index%3==0) and C.steel or C.shadow) end
+  end
+end
+
+local function drawRay(img,x,y,frame,index)
+  if frame==6 and index%2==1 then return end
+  local a=RAYS[index]
+  local ux,uy=math.cos(a),math.sin(a)
+  local tx,ty=-uy,ux
+  local dx,dy=x-CX,y-CY
+  local u=dx*ux+dy*uy
+  local v=dx*tx+dy*ty
+  local len=RAYLEN[frame]*(0.76+0.25*RAYWEIGHT[index])
+  local start=RAD[frame]-1.1
+  if frame==5 then start=RAD[frame]+1.0 end
+  if frame==6 then start=57.0+((index*5)%7)*1.0; len=2.0+RAYWEIGHT[index]*0.55 end
+  local t=(u-start)/len
+  if t>=0 and t<=1.0 and math.sqrt(dx*dx+dy*dy)<=MAX_R then
+  local width=(1.78*RAYWEIGHT[index])*(1-t)+0.34
+    local absV=math.abs(v)
+    if absV<=width+0.82 then
+      if absV>width then px(img,x,y,C.navy)
+      elseif t<0.52 and absV<0.74 then px(img,x,y,C.cream)
+      elseif t>0.72 and absV<0.80 then px(img,x,y,C.cream)
+      elseif t>0.46 and absV<0.68 and (index%3~=0) then px(img,x,y,C.cream)
+      else px(img,x,y,C.ember) end
+    end
+  end
+end
+
+local function frameLayers(frame)
+  local contour,dust,copper,cream,pressure=newImage(W,H),newImage(W,H),newImage(W,H),newImage(W,H),newImage(W,H)
+  for y=CY-MAX_R,CY+MAX_R do
+    for x=CX-MAX_R,CX+MAX_R do
+      local dx,dy=x-CX,y-CY
+      if dx*dx+dy*dy<=FRAME_MAX_R[frame]*FRAME_MAX_R[frame] then
+        putOutline(contour,x,y,frame)
+        if frame>=5 then
+          if frame==5 then
+            for i=1,8 do chipAt(contour,x,y,frame,i,true) end
+            for i=1,7 do freeFleck(contour,x,y,frame,i,true) end
+          else
+            for _,i in ipairs({3,7}) do chipAt(contour,x,y,frame,i,true) end
+            for i=1,2 do freeFleck(contour,x,y,frame,i,true) end
+          end
+        end
+        drawCopperRing(copper,x,y,frame)
+        drawCreamRail(cream,x,y,frame)
+        drawPuffs(dust,x,y,frame,true)
+        drawPuffs(dust,x,y,frame,false)
+        if frame>=5 then
+          if frame==5 then
+            for i=1,8 do chipAt(copper,x,y,frame,i,false) end
+            for i=1,7 do freeFleck(dust,x,y,frame,i,false) end
+          else
+            for _,i in ipairs({3,7}) do chipAt(copper,x,y,frame,i,false) end
+            for i=1,2 do freeFleck(dust,x,y,frame,i,false) end
+          end
+        end
+        for i=1,#RAYS do drawRay(pressure,x,y,frame,i) end
+      end
+    end
+  end
+  return {contour,copper,dust,cream,pressure}
+end
+
+local function flatComposite(layers)
+  local img=newImage(W,H)
+  for _,layerImg in ipairs(layers) do img:drawImage(layerImg,0,0) end
+  return img
+end
+local function colorHex(value)
+  return string.format("#%02X%02X%02X",pc.rgbaR(value),pc.rgbaG(value),pc.rgbaB(value))
+end
+local function jsonEscape(s) return '"'..s:gsub('\\','\\\\'):gsub('"','\\"')..'"' end
+local function rgbaCount(img)
+  local counts={}
+  local minx,miny,maxx,maxy=999,999,-1,-1
+  local maxRadius=0
+  local opaque=0
+  for y=0,H-1 do for x=0,W-1 do
+    local value=img:getPixel(x,y)
+    local alpha=pc.rgbaA(value)
+    assert(alpha==0 or alpha==255,"Unexpected partial alpha")
+    if alpha==255 then
+      opaque=opaque+1
+      local hex=colorHex(value)
+      assert(HEX[hex],"Color outside the approved palette: "..hex)
+      counts[hex]=(counts[hex] or 0)+1
+      minx=math.min(minx,x); miny=math.min(miny,y); maxx=math.max(maxx,x); maxy=math.max(maxy,y)
+      local radius=math.sqrt((x-CX)^2+(y-CY)^2)
+      maxRadius=math.max(maxRadius,radius)
+    end
+  end end
+  if maxx<0 then return counts,0,{0,0,0,0},0 end
+  return counts,opaque,{minx,miny,maxx+1,maxy+1},maxRadius
+end
+
+-- Build five editable layers in contour -> copper -> dust -> rail -> pressure order.
+local sprite=Sprite(ImageSpec{width=W,height=H,colorMode=ColorMode.RGB})
+local layer={}
+layer.contour=sprite.layers[1]; layer.contour.name="01 Navy contour"
+layer.copper=sprite:newLayer(); layer.copper.name="02 Copper pressure annulus"
+layer.dust=sprite:newLayer(); layer.dust.name="03 Dust lobes + fragments"
+layer.cream=sprite:newLayer(); layer.cream.name="04 Cream inner wake"
+layer.pressure=sprite:newLayer(); layer.pressure.name="05 Pressure rays"
+local ordered={layer.contour,layer.copper,layer.dust,layer.cream,layer.pressure}
+local frames={}
+local frameMeta={}
+local allColorCounts={}
+for fi=1,6 do
+  if fi>1 then sprite:newFrame() end
+  sprite.frames[fi].duration=DUR[fi]/1000
+  local images=frameLayers(fi)
+  local flat=flatComposite(images)
+  frames[fi]=flat
+  for li=1,#ordered do
+    local cel=sprite:newCel(ordered[li],fi)
+    cel.image=images[li]
+    cel.position=Point(0,0)
+  end
+  local counts,opaque,bounds,maxRadius=rgbaCount(flat)
+  for hex,n in pairs(counts) do allColorCounts[hex]=(allColorCounts[hex] or 0)+n end
+  frameMeta[#frameMeta+1]=string.format(
+    '{"index":%d,"name":%s,"duration_ms":%d,"bounds":[%d,%d,%d,%d],"max_radius_px":%.2f,"opaque_pixels":%d,"center_transparent":%s}',
+    fi-1,jsonEscape(PHASE[fi]),DUR[fi],bounds[1],bounds[2],bounds[3],bounds[4],maxRadius,opaque,tostring(pc.rgbaA(flat:getPixel(CX,CY))==0))
+end
+local tag=sprite:newTag(1,6)
+tag.name="shockwave"
+tag.aniDir=AniDir.FORWARD
+
+-- The PNG atlas is explicitly composed in the intended layer order; each cel remains 160x160.
+local atlas=newImage(W*6,H)
+for fi=1,6 do atlas:drawImage(frames[fi],(fi-1)*W,0) end
+atlas:saveAs(ROOT.."tranca-lata-shockwave-atlas.png")
+sprite:saveAs(ROOT.."tranca-lata-shockwave.aseprite")
+
+-- 3x2 nearest-neighbor contact sheet, shown at the intended 2x display scale.
+local bg=Color{r=37,g=38,b=42,a=255}
+local grid=Color{r=71,g=73,b=78,a=255}
+local contact=newImage(1040,748)
+for y=0,747 do for x=0,1039 do contact:drawPixel(x,y,bg) end end
+local digits={
+ ["0"]={"111","101","101","101","111"},["1"]={"010","110","010","010","111"},
+ ["2"]={"111","001","111","100","111"},["3"]={"111","001","111","001","111"},
+ ["4"]={"101","101","111","001","001"},["5"]={"111","100","111","001","111"},
+ ["6"]={"111","100","111","101","111"},["7"]={"111","001","010","010","010"},
+ ["8"]={"111","101","111","101","111"},["9"]={"111","101","111","001","111"},
+ ["m"]={"000","110","101","101","101"},["s"]={"011","100","010","001","110"}
+}
+local function glyph(img,ch,x,y,scale,color)
+  local rows=digits[ch]
+  if not rows then return end
+  for gy=1,5 do for gx=1,3 do
+    if rows[gy]:sub(gx,gx)=="1" then
+      for sy=0,scale-1 do for sx=0,scale-1 do img:drawPixel(x+(gx-1)*scale+sx,y+(gy-1)*scale+sy,color) end end
+    end
+  end end
+end
+local function text(img,str,x,y,scale,color)
+  for i=1,#str do glyph(img,str:sub(i,i),x+(i-1)*4*scale,y,scale,color) end
+end
+local function blitScaled(target,src,dx,dy,scale)
+  for y=0,H-1 do for x=0,W-1 do
+    local v=src:getPixel(x,y)
+    if pc.rgbaA(v)>0 then
+      local c=Color{r=pc.rgbaR(v),g=pc.rgbaG(v),b=pc.rgbaB(v),a=255}
+      for sy=0,scale-1 do for sx=0,scale-1 do target:drawPixel(dx+x*scale+sx,dy+y*scale+sy,c) end end
+    end
+  end end
+end
+for fi=1,6 do
+  local col=(fi-1)%3; local row=math.floor((fi-1)/3)
+  local cellX=20+col*340; local labelY=8+row*360; local artY=28+row*360
+  for yy=artY-3,artY+320+2 do
+    contact:drawPixel(cellX-2,yy,grid); contact:drawPixel(cellX+320+1,yy,grid)
+  end
+  for xx=cellX-2,cellX+321 do
+    contact:drawPixel(xx,artY-2,grid); contact:drawPixel(xx,artY+320+1,grid)
+  end
+  blitScaled(contact,frames[fi],cellX,artY,2)
+  text(contact,tostring(fi),cellX,labelY,2,C.cream)
+  local duration=string.format("%02d",DUR[fi])
+  text(contact,duration.."ms",cellX+20,labelY,2,C.dustLight)
+end
+contact:saveAs(ROOT.."contact-3x2-2x.png")
+
+-- GIF previews are exported separately. The presentation pause exists only here;
+-- the editable source and runtime atlas remain six frames / 140 ms.
+local function makePreviewSprite(slow)
+  local preview=Sprite(ImageSpec{width=W,height=H,colorMode=ColorMode.RGB})
+  preview.layers[1].name="Shockwave preview"
+  for fi=1,6 do
+    if fi>1 then preview:newFrame() end
+    local d=DUR[fi]*(slow and 4 or 1)
+    preview.frames[fi].duration=d/1000
+    local cel=preview:newCel(preview.layers[1],fi)
+    cel.image=frames[fi]
+    cel.position=Point(0,0)
+  end
+  preview:newFrame()
+  preview.frames[7].duration=0.70
+  local empty=newImage(W,H)
+  local cel=preview:newCel(preview.layers[1],7)
+  cel.image=empty
+  cel.position=Point(0,0)
+  return preview
+end
+local normalPreview=makePreviewSprite(false)
+normalPreview:saveCopyAs(ROOT.."shockwave-preview-real-2x.gif")
+local slowPreview=makePreviewSprite(true)
+slowPreview:saveCopyAs(ROOT.."shockwave-preview-slow-4x.gif")
+
+-- JSON metadata records exact palette counts, native bounds, pivot, timing and layer names.
+local paletteJson={}
+local orderedHex={"#192031","#373F4D","#70432C","#925A36","#B37949","#CFC3B7","#F5A84F","#F5E9D8"}
+for _,hex in ipairs(orderedHex) do
+  paletteJson[#paletteJson+1]=string.format('{"hex":"%s","opaque_pixels":%d}',hex,allColorCounts[hex] or 0)
+end
+local json='{'..
+  '\n  "asset":"Tranca-Lata shockwave",'..
+  '\n  "canvas_px":[160,160],"atlas_px":[960,160],"frame_count":6,"display_scale":2,'..
+  '\n  "pivot":{"x":80,"y":80},"center_fixed":true,"center_transparent":true,'..
+  '\n  "max_radius_px":70,"alpha_values":[0,255],"animation":{"tag":"shockwave","loop":false,"speed":1.0,"duration_ms":140},'..
+  '\n  "palette":['..table.concat(paletteJson,',')..'],'..
+  '\n  "layers":["01 Navy contour","02 Copper pressure annulus","03 Dust lobes + fragments","04 Cream inner wake","05 Pressure rays"],'..
+  '\n  "frames":['..table.concat(frameMeta,',')..'],'..
+  '\n  "preview_pause_ms":700,"previews":{"contact":"contact-3x2-2x.png","normal":"shockwave-preview-real-2x.gif","slow":"shockwave-preview-slow-4x.gif"}'..
+  '\n}\n'
+local mf=assert(io.open(ROOT.."metadata.json","w")); mf:write(json); mf:close()
+print("ARTIFACTS_SAVED",ROOT)
+print("SOURCE", "tranca-lata-shockwave.aseprite", "FRAMES", #sprite.frames, "LAYERS", #sprite.layers)
+print("ATLAS", "960x160", "TIMING_MS", table.concat(DUR, "/"), "TOTAL", 140)
+print("PALETTE_COLORS", #orderedHex, "MAX_RADIUS", MAX_R)

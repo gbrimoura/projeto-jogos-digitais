@@ -1,0 +1,13 @@
+Revisão complementar R1 — avaliando P1/P2 à luz do contexto sem alterar arquivos.
+Contexto lido. Buscando input completo R1 para reavaliar achados.
+STATUS: done
+SUMMARY: Reavaliação estática R1 imutável à luz de runtime-r1-muse-context.txt. P1 histerese e P1 alcance/descida não se sustentam como defeito concreto nas fontes citadas; cena 72x96, pivot 20,8→0,0 e tolerâncias herdadas confirmados estaticamente.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1 histerese DOWNGRADED — choose_player_support tranca_lata_pursuit.gd:2114-2117 retorna best_ground grounded antes de previous_support; previous só vale em voo/sem match. Sem caminho estático de Player grounded no Floor com apoio válido recusado.
+- P1 alcance/descida DOWNGRADED — can_reach_support tranca_lata_jump.gd:1638-1652 é só filtro geométrico gap/rise/MIN_SUPPORT_WIDTH104; autoridade é _build_route/_trajectory_is_clear. _source_clear_landing_xs:1713-1743 preserva candidatos-base de _candidate_landing_xs antes dos offsets e só remove overlap com origem, logo destino livre 104px não é excluído por offsets; destino contido na projeção recusado por segurança/contrato sem reassento na origem. Sem geometria concreta refutadora.
+- P2 colisor 32x32 INVALIDADO — training_target.tscn:18-19 Rectangle72x96 presente; fallback Rect2(-16,-32,32,32) em training_target.gd:1423 só sem CollisionShape2D, inalcançável nesta cena.
+- P2 pivot INVALIDADO — hostile_rivet.tscn 32x16 centered+offset(-4,0) => canto(-20,-8); pivot(20,8) cai em 0,0 de CircleR6. Transformação estática, preview 8x já aprovado pelo principal.
+- Limite, não defeito: tolerância pouso 1.0px, landing -0.5px, margin 0.08/0.01, substeps 8px herdados sem alteração; sem execução não há prova de novo túnel/arrasto.
+NEXT_STEP: Principal mantém parecer anterior fiel e decide integração; sem nova rodada sobre mesmo R1 salvo geometria concreta ou mudança substantiva.

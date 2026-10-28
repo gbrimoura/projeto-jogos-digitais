@@ -103,11 +103,22 @@ position = Vector2(-19.0, -78.0)
 color = Color(0.894118, 0.294118, 0.278431, 1)
 polygon = PackedVector2Array(0.0, -1.5, 38.0, -1.5, 38.0, 1.5, 0.0, 1.5)
 
+[node name="NameLabel" type="Label" parent="."]
+position = Vector2(-80.0, -140.0)
+size = Vector2(160.0, 20.0)
+z_index = 4
+theme_override_colors/font_color = Color(0.82, 0.91, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.07, 0.11, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
+text = "Cospe-Rebite"
+horizontal_alignment = 1
+vertical_alignment = 1
 [node name="WarningLine" type="Line2D" parent="."]
 visible = false
 z_index = 2
 width = 12.0
-default_color = Color(1.0, 0.27451, 0.247059, 0.82)
+default_color = Color(0.0980392, 0.12549, 0.192157, 0.44)
 points = PackedVector2Array(0.0, 0.0, 100.0, 0.0)
 
 [node name="WarningMark" type="Node2D" parent="."]

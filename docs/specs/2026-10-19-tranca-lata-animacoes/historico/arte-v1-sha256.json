@@ -1,0 +1,17 @@
+{
+  "created_at": "2026-10-19",
+  "tool": "Aseprite 1.3.18.6-x64",
+  "files": {
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/generate_tranca_lata.lua": "F9389F48EAC22104A1D262AF84C67456581FC388B217D78E7E440CF1161D36F8",
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/tranca-lata-animacoes-v1.aseprite": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/tranca-lata-atlas-v1.png": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/contact-15-cels-4x.png": "9023A8B52671B71C2927E6F13E571F48F4CD48B4F0AEA1A953CBDC34BC570E7B",
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/comparison-old-idle-new-neutral-player-frame1-4x.png": "6046583CA6B77782B135869819313C2EA7969E5AB97431188D044BD91C6BEAAE",
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/walk-4x.gif": "89E5E383F393919797E38791BAE8FA4071891BC5BB6FE0B948374E2EDD91B4A5",
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/attack-4x.gif": "A6C97F4F5F83EE971A7A50C8B45C37758AB14730FB1927CAA53D841503E8F0B5",
+    "GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/metadata.json": "21632C93EAF423E77D1C59A03370DA9A631AB15609CE088FDCB1C03C67943089",
+    "docs/specs/2026-10-19-tranca-lata-animacoes/plano.md": "AA5C6DD8DEC958A183B8360C00EFC3087E223FC4D021DE00FAFECAD14340CA24",
+    "docs/specs/2026-10-19-tranca-lata-animacoes/spec.md": "4BD3EF6CD2513BE7FAFBEF69160AD90E51FA3DAE2A983686B39D16FA93704308",
+    "docs/specs/2026-10-19-tranca-lata-animacoes/registro.md": "08C1F4C75CA23B184D7CB5B68B9DA9809FB954B890F20A2495F9E9B276A90F95"
+  }
+}

@@ -1,0 +1,53 @@
+STATUS: done
+
+SUMMARY: Revisei somente a proposta inline. Não encontrei contradição de escopo nem invenção de regras do GDD. Há um bloqueio de ordem de execução no modo standalone e algumas incoerências pontuais entre plano e spec que convém fechar antes de integrar.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- **P1 — ordem de preparo no standalone.**
+  - Trecho da spec: "Main aplica posição, tamanho e `RectangleShape2D` local antes de `add_child`/`_ready`, desligando `randomize_position` e `randomize_width`".
+  - Trecho do plano: "antes de os filhos entrarem em `_ready`".
+  - O problema: quando `main.tscn` ou `second_room.tscn` roda como cena principal, as plataformas já vêm instanciadas como filhas. O `_ready` delas executa antes do `_ready` de Main, e não existe `add_child` controlado pela sala.
+  - A spec só cobre o caminho managed, em que o RunController instancia a sala. Falta dizer em que ponto de Main o preparo roda no standalone, por exemplo `_enter_tree` ou `NOTIFICATION_SCENE_INSTANTIATED`. Sem isso, os flags de randomização e a geometria podem ser aplicados tarde demais.
+  - Há também uma dependência implícita do script `SolidPlatform`, que não está na lista de arquivos permitidos. Se ele reconstrói visual ou shape a partir da largura exportada no próprio `_ready`, uma `RectangleShape2D` aplicada depois deixa visual e colisão divergentes. A spec deve exigir que a largura seja aplicada pela propriedade exportada, antes do `_ready` da plataforma.
+- **P2 — limite de subida ambíguo.**
+  - Trecho da spec: "podem subir em passos de 8 até 64 px, nunca excedendo 80 px por etapa".
+  - Trecho do plano: "subidas de até 80".
+  - O teto efetivo fica indefinido (64 ou 80). Na prática, a faixa 440→376 já limita a subida total a 64 px.
+- **P2 — "rota crescente" contra "não descem".**
+  - Trecho do plano: "ao menos uma rota crescente". Trecho da spec: "As seguintes não descem em relação à anterior".
+  - A spec permite todas as plataformas na mesma altura, o que contradiz "crescente".
+  - Nesse empate, "O suporte primário usa a plataforma mais alta da rota" fica sem critério de desempate.
+- **P2 — porta presa se a revalidação falhar.**
+  - Trechos: "Main marca a porta ocupada e emite `run_progression_ready` no máximo uma vez" e "Uma requisição é consumida uma vez".
+  - Não está definido o que acontece se a revalidação deferred falhar, por exemplo se o jogador saiu do sensor ou morreu. Se a porta continuar ocupada e a requisição consumida, a progressão trava.
+  - A spec deve dizer que a falha libera a porta para um novo E, sem emitir o sinal.
+- **P2 — snapshot do standalone some na spec.**
+  - Trecho do plano: "Main standalone preserva o snapshot de HP/build ao ir para SecondRoom".
+  - A spec diz apenas "manter `RoomTransition` e o caminho para SecondRoom" e atribui a preservação de HP/build ao RunController (managed). A obrigação do standalone desaparece na spec.
+- **P2 — preenchimento do teto.**
+  - Trecho da spec: "faixa visual x=0..1152, y=0..64, usando o tile repetível `terrain_top_mid` … espelhado verticalmente".
+  - Se o tile tiver menos de 64 px de altura, repetir o mesmo tile de borda em várias linhas cria uma emenda ou borda falsa no meio da faixa. A spec não define o tile de preenchimento das linhas internas.
+  - Também falta a ordem de desenho nos cantos x=0..64 e x=1088..1152, onde o teto cobre as paredes. Isso é relevante porque a spec pede para preservar "junções atuais".
+- **P2 — falha do fallback sem comportamento definido.**
+  - Trecho: "Se o fallback falhar, a sala é inválida antes do combate."
+  - Não está dito o que a sala faz: erro e pausa, não liberar a porta, ou abortar a run.
+  - O fallback também só cobre a contagem atual. Uma fixture com outra quantidade de plataformas é rejeitada, o que é coerente com o texto, mas fica restrito na prática a 3.
+- **P2 — validação depende da altura dos agentes.**
+  - Trechos: o corredor tem "folga até o piso … pelo menos 96 px", e a validação rejeita "obstrução dos spawns/patrulha".
+  - Se a cápsula do RivetWorker ou do Player tiver mais de 96 px de altura, toda geração e o próprio fallback são rejeitados.
+  - Sem runtime, isso precisa ser verificado estaticamente contra os colisores reais antes de congelar os números.
+
+NEXT_STEP: Ajustar o texto do plano e da spec:
+- definir o ponto de preparo no standalone (`_enter_tree` ou `NOTIFICATION_SCENE_INSTANTIATED`) e a dependência da propriedade de largura do `SolidPlatform`;
+- unificar o limite de subida;
+- resolver "crescente" contra "não descem", com desempate do suporte do alvo;
+- definir a liberação da porta quando a revalidação falha;
+- repor na spec o snapshot do standalone;
+- especificar o preenchimento e a ordem de desenho do teto;
+- definir o comportamento quando o fallback falha.
+
+Depois disso, pedir uma nova rodada curta somente sobre os trechos alterados.

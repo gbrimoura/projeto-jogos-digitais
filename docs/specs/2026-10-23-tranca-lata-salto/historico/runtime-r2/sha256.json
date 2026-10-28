@@ -1,0 +1,26 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "C230AF166B5724A1DF822DB7C824B13561DCB6C49FD82A2C2CC0D31CB22F00B0"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "sha256": "DF9F643F2A4A645873489F0CE0C454CB61DD30EDD0B596E6D2F35537A452C7B3"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "sha256": "4D5A836FD2EE66838CFC9805392AC1C9B952F2776D9CFFF473C46439AC77B92A"
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "sha256": "5086D7AEC4D667468DCF842E821069C93A433484E4AFA8760121D950EAE50660"
+  },
+  {
+    "path": "assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png",
+    "sha256": "5400F8E39359CC069139EB5D94C4F969B1A2F56C2328F5149AEE07C6A4DDF001"
+  },
+  {
+    "path": "assets/enemy/training_target/jump/tranca-lata-jump-v1.aseprite",
+    "sha256": "2AB56588F198F8AB922A93D88BAF36ACB3231C400FB5A6DD06D65EBC7FC64A62"
+  }
+]

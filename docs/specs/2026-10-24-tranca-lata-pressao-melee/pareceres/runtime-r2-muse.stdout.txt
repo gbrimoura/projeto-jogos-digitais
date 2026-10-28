@@ -1,0 +1,8 @@
+```text
+STATUS: done
+SUMMARY: P2 baixo resolvido — fallback stuck agora consulta com centro pos-movimento `global_position + attack_center_offset`, identico ao `_locked_attack_center` travado em `_begin_windup`; diff de 1 linha mantem gates, helper(true), area, LOS, dano/tempos/locks. Nenhum defeito concreto introduzido em analise estatica.
+CHANGED_FILES: none
+TESTS: static review only — sem execucao de comandos/testes/Godot/parser/linter/QA por proibicao do escopo
+RISKS: Nenhum risco funcional novo; pendencia apenas estilistica futura de duplicar expressao de `attack_center` em vez de reatribuir variavel — sem divergencia atual.
+NEXT_STEP: Aceitar delta R2 como refinamento de precisao (<0.1px) e encerrar frente sem nova correcao.
+```

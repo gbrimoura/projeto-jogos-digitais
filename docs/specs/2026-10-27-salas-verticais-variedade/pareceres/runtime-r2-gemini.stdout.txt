@@ -1,0 +1,58 @@
+STATUS: done
+SUMMARY: Revisão estática documental R2 concluída exclusivamente sobre o pacote fornecido. Os achados de R1 (rejeição de largura 104 em grid de centro, offset 1040 vs 1120 no gate legado, early false em arcos de pulo e mutação global de `SolidPlatform.room_seed`) foram devidamente saneados. Contudo, detectou-se um defeito crítico P1 decorrente de substituição textual inconsistente em [`managed_room_topology.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/managed_room_topology.gd) que quebra a execução em salas com saída vertical (UP e DOWN).
+CHANGED_FILES: none
+TESTS: none
+RISKS: Qualquer andar da run que gere salas com saída vertical (`UP` ou `DOWN`) sofrerá parada imediata com erro de parser/runtime do GDScript durante a chamada de `_managed_topology.configure(...)`, abortando a progressão.
+NEXT_STEP: Corrigir as variáveis locais não declaradas em [`managed_room_topology.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/managed_room_topology.gd) antes de qualquer validação em engine ou merge.
+
+---
+
+### Achados da Revisão R2
+
+#### [P1] Variáveis locais não declaradas em [`managed_room_topology.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/managed_room_topology.gd) nos ramos `UP` e `DOWN`
+- **Função**: `configure(room: Node2D, descriptor: Dictionary) -> Dictionary` (linhas 57–76 do delta / linhas 4570–4589 do fonte).
+- **Impacto**:
+  1. No ramo `elif _exit_dir == UP`: o método declara `var left_edge := ...` e `var right_edge := ...`, mas as chamadas `_add_shape` subsequentes utilizam `ceiling_left_edge` (linhas 4574–4575) e `ceiling_right_edge` (linhas 4577–4579), que **não foram declaradas**.
+  2. No ramo `elif _exit_dir == DOWN`: a declaração de largura da direita foi substituída acidentalmente por `var ceiling_right_width := 1152.0 - ceiling_right_edge` (linha 4587), referenciando `ceiling_right_edge` inexistente no escopo. Em seguida, a criação de `right_shape` (linha 4588) tenta consumir `right_width`, que **deixou de existir**.
+  3. No Godot / GDScript, referenciar identificadores não declarados no escopo local dispara erro fatal de compilação/runtime (`Identifier not declared in the current scope`), quebrando instantaneamente `prepare_authored_layout()` e `configure_run_managed(...)` sempre que a sala possuir saída `UP` ou `DOWN`.
+- **Correção**:
+  Em [`managed_room_topology.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/managed_room_topology.gd), alinhar os nomes das variáveis declaradas aos seus usos:
+  ```gdscript
+  	elif _exit_dir == UP:
+  		for node_name in [&"Ceiling", &"CeilingBand"]:
+  			var full_band := _world.get_node_or_null(NodePath(String(node_name))) as CollisionShape2D
+  			if full_band == null:
+  				return {"valid": false, "error": "limite superior ausente: %s" % String(node_name)}
+  			full_band.disabled = true
+  		var ceiling_left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+  		var ceiling_right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+  		if ceiling_left_edge > 0.0:
+  			_add_shape("ManagedCeilingUpperLeft", Vector2(ceiling_left_edge * 0.5, -16.0), Vector2(ceiling_left_edge, 32.0))
+  			_add_shape("ManagedCeilingBandLeft", Vector2(ceiling_left_edge * 0.5, 32.0), Vector2(ceiling_left_edge, 64.0))
+  		if ceiling_right_edge < 1152.0:
+  			var ceiling_right_width := 1152.0 - ceiling_right_edge
+  			_add_shape("ManagedCeilingUpperRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, -16.0), Vector2(ceiling_right_width, 32.0))
+  			_add_shape("ManagedCeilingBandRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, 32.0), Vector2(ceiling_right_width, 64.0))
+  		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 16.0), Vector2(PORTAL_WIDTH, 96.0))
+  		_add_shape("ManagedTopOuterGuard", Vector2(576.0, -52.0), Vector2(1152.0, 8.0))
+  		gate_name = &"ManagedExitGate"
+  	elif _exit_dir == DOWN:
+  		var floor_left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+  		var floor_right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+  		var left_shape := _add_shape("ManagedFloorLeft", Vector2(floor_left_edge * 0.5, 604.0), Vector2(floor_left_edge, 88.0), true)
+  		var floor_right_width := 1152.0 - floor_right_edge
+  		var right_shape := _add_shape("ManagedFloorRight", Vector2(floor_right_edge + floor_right_width * 0.5, 604.0), Vector2(floor_right_width, 88.0), true)
+  		_floor_segments = [left_shape, right_shape]
+  		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 604.0), Vector2(PORTAL_WIDTH, 88.0))
+  		_add_shape("ManagedBottomCatch", Vector2(_exit_offset, 664.0), Vector2(PORTAL_WIDTH, 8.0))
+  		gate_name = &"ManagedExitGate"
+  ```
+
+---
+
+### Verificação dos Itens de R1 Saneados em R2
+- **Centro em grid 8 para largura 104 (`roof_five`)**: Validado. `_managed_entries_are_safe` agora avalia `fposmod(rect.get_center().x, 8.0) > 0.01` em vez da borda esquerda, acomodando perfeitamente a meia-largura de 52 px sobre os centros canônicos múltiplos de 8.
+- **Porta standalone (1040 vs 1120)**: Validado. `_line_point_in_room()` em `exit_door.gd` agora extrai o centro global do `_gate` físico quando não gerenciada, eliminando o descasamento de 80 px.
+- **Validador de trajetória e obstáculos**: Validado. O loop de simulação descarta apenas o lançamento corrente via `candidate_blocked = true; break` seguido de `continue`, testando os demais candidatos até o limite de 12 pontos e velocidades admissíveis pela física (`MovementConfig` completo, incluindo `max_fall_speed`). O collider do alvo é validado no pouso descendente sem ser tratado prematuramente como obstáculo impeditivo.
+- **Variação procedural interna sem mutação estática**: Validado. `SolidPlatform.room_seed` não é mais alterado por `Main`; a geração usa instâncias locais de `RandomNumberGenerator` com variações balanceadas de vão e largura e fallback canônico.
+- **Topologia de grid**: Confirmado que a geração por andar fixa uma única direção horizontal (`RIGHT` ou `LEFT`), inviabilizando ciclos e revisitas do tipo `RIGHT -> DOWN -> LEFT -> UP`.

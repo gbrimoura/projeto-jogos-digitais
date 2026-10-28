@@ -1,0 +1,7 @@
+# Aviso de disparo do Cospe-Rebite
+Pedido confirmado: melhorar aviso antes de atirar, não sprite do projétil. Incremento visual complexo restrito ao telegraph, sobre lógica de combate existente. Escritor único gpt-6-luna xhigh; Fast/priority não confirmável. Fonte/scene atuais preservadas em histórico antes da implementação.
+
+1. Preservar geometria e regras: locked_direction/locked_muzzle, cast_motionR6/clip nos obstáculos, alcance, trajetória completa desde o começo, windup0.65s, cooldown, spawn, velocidade/dano/parry e AI. Nenhuma lógica nova de mira ou timing.
+2. Melhorar visual com núcleo segmentado âmbar, contraste escuro fino e faixa de largura física discreta, mantendo trajeto completo. Aumentar percepção de carga por progresso real do windup; no trecho final usar laranja/vermelho e sinal de alerta mais firme. Sem estrobo rápido, relógio global, Tween, desenho até o alvo atual ou linha que cresça falsamente até alcance. Ícone/charge deve acompanhar ciclo e cancelar junto aos caminhos existentes de ocultação.
+3. Preferir helper code-native anônimo, preload explícito, com atualização chamada pelo Worker (sem novo _process independente ou gameplay). Não é pedido de novo bitmap; reaproveitar polígonos/linhas existentes. Sem ImageGen/Aseprite/PNG novo necessário neste recorte.
+4. Congelar; revisão estática do principal e Gemini/Grok/Muse/Opus read-only, timeout10min; preservar entradas/stdout/hashes. Sem Godot/import/parser/linter/testes/QA conforme AGENTS; não declarar validação de gameplay. Sem commit/push/troca de branch.

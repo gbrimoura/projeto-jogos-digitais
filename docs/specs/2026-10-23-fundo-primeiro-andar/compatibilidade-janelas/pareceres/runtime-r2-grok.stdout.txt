@@ -1,0 +1,27 @@
+Leitura do arquivo estável **concluída**. SHA256 `0B8CAD25…F9C4` **não conferido** (execução proibida). Payload RGBA do atlas omitido; sobreposição inferida pela geometria do Lua, âncoras e descritores.
+
+## P1
+Nenhum defeito P1 novo e concreto no recorte (vão compartilhado, Lua de produção `bases-only`, atlas-base nativo, metadata). Pelos primitivos e âncoras, os quatro módulos congelados **não pintam** `Rect2(344,56,38,78)` nem o disco de tinta em x382: boiler ≤ x311, armários ≤ ~x193, serviço coluna x313–341 / tubo y≈25–32 / lâmpada ≥ x384, prensa tubo ≥ x393 e manômetro ≥ x389, treliça y≤51.
+
+## P2
+1. **Reserva serializada mais estreita que o contorno.** `shared_window_aperture_native_px=[344,56,38,78]` cobre x344–381; `steppedWindow` com r=19 centra em (363,75) e pinta x382. O plano admite esse pixel; o JSON não. Módulo futuro que honrar só o retângulo pode cobrir a moldura.
+2. **`bases-only` não grava a abertura.** O campo só sai de `saveMetadataAndTres` na rota `full`, que também reescreve módulos/TRES/atlas modular proibidos. A metadata congelada não é emitida pela invocação de produção; só sobrevive porque `generateWindowRevisionBases` não toca no JSON.
+3. **Coluna boiler x354→420 ∩ montante da prensa.** Coluna x≈417–427, y24–153; poste da prensa x407–423, y70–217. Em **001** e **011** o fuste fica atrás do poste e o trecho y52–69 aparece entre treliça e máquina. Não é vidro tapado; é efeito colateral novo da muda da coluna.
+
+## Sugestões (não P1/P2)
+- Default `MODE="full"` + params depois de `--script` voltam a regenerar estudos V2 com janelas antigas e os quatro módulos; o README já avisa a ordem, o default continua armadilha.
+- `drawBoilerRoom` / `drawMaintenanceRoom` ainda chamam `distantBuilding` sem `sharedWindowBay`; estudos na pasta de produção repetem o problema original — tratar como histórico, não como prova.
+- Âncoras copiadas em Lua, JSON e `factory_floor1_background.gd`; `generateModularAssets` ainda monta contato 2×2/4 seeds antes do overwrite das 8.
+- Lua sem newline no EOF; `ROOT` absoluto hardcoded.
+- Folha de contato em ordem de seed 0–7; ficheiros `context-seed-001` = seed 4, não seed 1.
+
+Runtime, cenas, wrappers, atlas modular e hashes `before==after` em `protected-r2.json` estão coerentes com o recorte. Wrappers do atlas-base intactos; `factory_floor1_base_atlas_texture.tres` é o TRES novo (576×648). Logs: `correct-order` Exit 0 / stdout 147 / stderr 0; `failed-01` é erro histórico L621; `bases-only`/`full-mode`/`args-after-script` repetem o stdout antigo de 185 B (full acidental).
+
+```text
+STATUS: done
+SUMMARY: Revisão estática do input R2: sem P1 de vidro tapado nas 8 combinações pela geometria Lua/âncoras. Três P2: JSON w=38 omite x382 do disco; bases-only não serializa a abertura; coluna boiler em x420 cruza o poste da prensa em 001/011. SHA do input e pixels do atlas não verificáveis neste modo.
+CHANGED_FILES: none
+TESTS: static review only
+RISKS: SHA256 0B8CAD25B7BD7092B5A37FCB81F4AD915C16095D58E65FA6BF81B34C4DEEF9C4 não calculado (comando proibido). Payload RGBA omitido; inspeção de contacto/PNG não repetida. manifest.json só com hash/tamanho. Estudos V2 e rota full ainda geram sobreposição antiga. Lua congelada inclui ajuste source-only posterior à arte, sem reexport.
+NEXT_STEP: Principal avalia os três P2 (alargar reserva a x382, persistir abertura em bases-only sem tocar módulos, ou aceitar coluna×prensa). Sem Godot/Aseprite/QA nesta frente.
+```

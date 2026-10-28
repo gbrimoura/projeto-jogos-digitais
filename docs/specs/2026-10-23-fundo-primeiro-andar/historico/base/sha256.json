@@ -1,0 +1,58 @@
+[
+  {
+    "sha256": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7",
+    "path": "scenes/main.tscn"
+  },
+  {
+    "sha256": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D",
+    "path": "scenes/second_room.tscn"
+  },
+  {
+    "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+    "path": "scripts/world/main.gd"
+  },
+  {
+    "sha256": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D",
+    "path": "scripts/world/room_layout_generator.gd"
+  },
+  {
+    "sha256": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A",
+    "path": "scripts/world/run_controller.gd"
+  },
+  {
+    "sha256": "40EF7CB932182820E674E57B90D8FCBB5C0EAD0DC280AA4FCD1CBCD51458356C",
+    "path": "scripts/world/training_target.gd"
+  },
+  {
+    "sha256": "DD15D923CC0663F400405710085890A5A68B841DBBFE8804235883B1D8EA252F",
+    "path": "scripts/enemy/tranca_lata_jump.gd"
+  },
+  {
+    "sha256": "FA03F262AC5F92AD4537D5A1468C0758DE5C66031CA397F4854BB3908FCEC755",
+    "path": "scripts/enemy/containment_attack_visual.gd"
+  },
+  {
+    "sha256": "4E537D042A713944EDB6C31721AAA402D36D143812B1041EFCC580CB33F1C41C",
+    "path": "scenes/hostile_rivet.tscn"
+  },
+  {
+    "sha256": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+    "path": "project.godot"
+  },
+  {
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"
+  },
+  {
+    "sha256": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8",
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1.aseprite"
+  },
+  {
+    "sha256": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC",
+    "path": "assets/player/player-animations.png"
+  },
+  {
+    "sha256": "9028C991C29F072E4AA41C85FCFD7648F0650BB80AE4C41658BC056E26E75DD1",
+    "path": "assets/enemy/rivet_worker/rivet_worker-atlas.png"
+  }
+]

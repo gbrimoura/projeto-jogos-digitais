@@ -1,0 +1,58 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "40EF7CB932182820E674E57B90D8FCBB5C0EAD0DC280AA4FCD1CBCD51458356C"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "sha256": "DD15D923CC0663F400405710085890A5A68B841DBBFE8804235883B1D8EA252F"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "sha256": "FA03F262AC5F92AD4537D5A1468C0758DE5C66031CA397F4854BB3908FCEC755"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+    "sha256": "4E1AF25074EA5CA173D4D87A2A533342C9FBA0DD0CB72FC66E2F366F3ACC866B"
+  },
+  {
+    "path": "scenes/hostile_rivet.tscn",
+    "sha256": "4E537D042A713944EDB6C31721AAA402D36D143812B1041EFCC580CB33F1C41C"
+  },
+  {
+    "path": "resources/enemy/cospe_rebite_projectile_texture.tres",
+    "sha256": "FE2E12D21803159CED82174531F32740A76469378EA61A1265B10EB8462590A7"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/cospe_rebite-contact-preview.png",
+    "sha256": "CA9C1581F03514B7A676DA5ADD5BF9147596E11EA4CB2DFD7E78B922838FB90E"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/cospe_rebite-preview-8x.png",
+    "sha256": "2C10A40F20EE32B6D7B6342C0C15618E35370CC46F7CC0EFF28CA195E2817841"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/cospe_rebite.aseprite",
+    "sha256": "45CC569597702C219F25A0AD0E0E559340F7C4CE7FBCDEEE27C27C194CF20B00"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/cospe_rebite.png",
+    "sha256": "5C59886A864E6658AA4698D3100E1DA702048A652170E57ABD6EF8F9B10B21C7"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/generate_cospe_rebite.lua",
+    "sha256": "36BA35C311F79BAB779B576EC677AAE78F4E849501F6EA77D80A30B9015BAE64"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/metadata.json",
+    "sha256": "771F9B56F1784F0E368305B90A4AA532C7FFD7295097F83209D8C74FAA62DBEC"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/README.md",
+    "sha256": "12A3EF64A2BF929C4939441B0395912B0F7439C803C0C8D28D2710A5B9EF2301"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/reference-imagegen.png",
+    "sha256": "1F71E628F071972EC6486E1E3B435A9E9CBB171BFF645ADC9080C65AD2DF7A61"
+  }
+]

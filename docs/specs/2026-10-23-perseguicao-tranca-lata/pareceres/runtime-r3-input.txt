@@ -1,0 +1,387 @@
+REVISÃO DELTA R3 SOMENTE LEITURA, timeout10min. Não alterar arquivos ou executar comandos/Godot/import/testes/parser/linter/QA. Retorne stdout STATUS/SUMMARY/CHANGED_FILESnone/TESTSnone/RISKS com P1/P2 concretos/NEXT_STEP. Estado congelado; 2 correções pontuais sobre R2 já revisada por Gemini/Grok/Muse. Apenas training_target.gd mudou, todo restante mantém R2. Review limitado a duas guardas abaixo e suas funções completas no contexto: (1) bloqueio sem LOS dentro de stop_distance agora acumula stuck se needs_horizontal_approach e sem progresso; allow_detourfalse desativa recursão/acúmulo no fallback. (2) pathdetour com primeiro suporte diferente do_bound_support é descartado antescooldown/replanejamento, evitando rotaobsoleta. Sem alterações no grafo/helper/física/ataque/arte/carregamento. Ataques com Player vivo emalcance+LOS têm prioridade em _physics_process, PREPARE/FLIGHT/LANDING bloqueiam perseguição. Perseguição somente no suporte válido, bounds+move_and_collide. Corpo72x96, velocidade48, deadzone5, intervalo.45, timeoutstuck.65. Está autorizado ler SOMENTE esta entrada, não precisa reler outros arquivos/revisões. Demaisfontes járevisadas, semnovosdeltas. Julgue as guardas/caminhos atuais, não especulações ou redesign. Revisãoestáticanãoconfirmaexecução.
+===== DIFF R2 R3 =====
+diff --git a/docs/specs/2026-10-23-perseguicao-tranca-lata/historico/runtime-r2/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index a008857..990308c 100644
+--- a/docs/specs/2026-10-23-perseguicao-tranca-lata/historico/runtime-r2/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -342,7 +342,9 @@ func _pursue_player(player: PhysicsBody2D, delta: float) -> void:
+ 		_pursuit_replan_remaining = 0.0
+ 		_pursuit_detour_active = false
+ 	if selected_support == _bound_support and _pursuit_detour_active:
+-		if _pursuit_path.size() < 2 or _pursuit_path[0] != _bound_support:
++		if not _pursuit_path.is_empty() and _pursuit_path[0] != _bound_support:
++			_pursuit_path.clear()
++		if _pursuit_path.size() < 2:
+ 			if _pursuit_replan_remaining <= 0.0 \
+ 				and not _try_begin_pursuit_detour(selected_support, player, supports):
+ 				_pursuit_detour_active = false
+@@ -421,7 +423,7 @@ func _pursue_on_current_support(
+ 		_pursuit_stuck_remaining = 0.0
+ 	elif absf(moved_x) >= 0.1:
+ 		_pursuit_stuck_remaining = 0.0
+-	elif absf(delta_x) > stop_distance + PURSUIT_DIRECTION_DEADZONE:
++	elif needs_horizontal_approach:
+ 		_pursuit_stuck_remaining += delta
+ 	else:
+ 		_pursuit_stuck_remaining = 0.0
+===== FUNCOES COMPLETAS DE PERSEGUICAO R3 =====
+func _pursue_player(player: PhysicsBody2D, delta: float) -> void:
+	if not _ground_support_is_current():
+		_stop_patrol()
+		return
+	var supports: Array[SolidPlatform] = _collect_pursuit_supports()
+	if _jump_helper == null or _pursuit_helper == null:
+		_pursue_fallback(player, delta, supports)
+		return
+	var selected_support: SolidPlatform = _pursuit_helper.call(
+		"choose_player_support",
+		player,
+		supports,
+		_jump_helper,
+		_pursuit_player_support
+	)
+	if selected_support != _pursuit_player_support:
+		_pursuit_player_support = selected_support
+		_pursuit_path.clear()
+		_pursuit_goal_support = selected_support
+		_pursuit_replan_remaining = 0.0
+		_pursuit_stuck_remaining = 0.0
+		_pursuit_detour_active = false
+	_pursuit_replan_remaining = maxf(_pursuit_replan_remaining - delta, 0.0)
+	if selected_support == null:
+		_pursuit_goal_support = null
+		_pursuit_path.clear()
+		_pursuit_detour_active = false
+		_pursue_fallback(player, delta, supports)
+		return
+	if selected_support == _bound_support and not _pursuit_detour_active:
+		_pursuit_goal_support = selected_support
+		_pursuit_path.clear()
+		_pursue_on_current_support(player, delta, supports)
+		return
+	if selected_support != _pursuit_goal_support:
+		_pursuit_goal_support = selected_support
+		_pursuit_path.clear()
+		_pursuit_replan_remaining = 0.0
+		_pursuit_detour_active = false
+	if selected_support == _bound_support and _pursuit_detour_active:
+		if not _pursuit_path.is_empty() and _pursuit_path[0] != _bound_support:
+			_pursuit_path.clear()
+		if _pursuit_path.size() < 2:
+			if _pursuit_replan_remaining <= 0.0 \
+				and not _try_begin_pursuit_detour(selected_support, player, supports):
+				_pursuit_detour_active = false
+				_pursuit_path.clear()
+				_pursuit_goal_support = selected_support
+				_pursue_fallback(player, delta, supports)
+				return
+		if _pursuit_path.size() < 2:
+			_pursuit_detour_active = false
+			_pursuit_goal_support = selected_support
+			_pursue_fallback(player, delta, supports)
+			return
+		_pursue_via_route(player, delta, supports)
+		return
+	if _pursuit_path.size() < 2 or _pursuit_path[0] != _bound_support:
+		if _pursuit_replan_remaining <= 0.0:
+			var route: Array[SolidPlatform] = _pursuit_helper.call(
+				"find_path",
+				_bound_support,
+				selected_support,
+				supports,
+				_jump_helper,
+				_pursuit_blocked_edges
+			)
+			if route.size() >= 2:
+				_pursuit_path = route
+			else:
+				_pursuit_path.clear()
+				_pursuit_detour_active = false
+				_pursuit_replan_remaining = PURSUIT_REPLAN_INTERVAL
+	if _pursuit_path.size() < 2:
+		_pursuit_detour_active = false
+		_pursue_fallback(player, delta, supports)
+		return
+	_pursue_via_route(player, delta, supports)
+
+func _pursue_fallback(
+	player: PhysicsBody2D,
+	delta: float,
+	supports: Array[SolidPlatform]
+) -> void:
+	if not _is_alive_player(player) or not _ground_support_is_current():
+		_stop_patrol()
+		return
+	_pursuit_path.clear()
+	_pursuit_detour_active = false
+	_pursue_on_current_support(player, delta, supports, false)
+
+func _pursue_on_current_support(
+	player: PhysicsBody2D,
+	delta: float,
+	supports: Array[SolidPlatform],
+	allow_detour: bool = true
+) -> void:
+	var player_center := _get_player_collider_center(player)
+	var attack_center := global_position + attack_center_offset
+	var delta_x := player_center.x - attack_center.x
+	var delta_y := player_center.y - attack_center.y
+	if absf(delta_x) > PURSUIT_DIRECTION_DEADZONE:
+		_patrol_direction = 1 if delta_x > 0.0 else -1
+	var radius := _effective_attack_radius()
+	var horizontal_attack_reach := sqrt(maxf(radius * radius - delta_y * delta_y, 0.0))
+	var stop_distance := maxf(horizontal_attack_reach - PURSUIT_STOP_PADDING, PURSUIT_DIRECTION_DEADZONE)
+	var desired_x := global_position.x
+	var clear_shot := _has_clear_line_of_sight(player, attack_center)
+	var needs_horizontal_approach := absf(delta_x) > stop_distance \
+		or (not clear_shot and absf(delta_x) > PURSUIT_DIRECTION_DEADZONE)
+	if needs_horizontal_approach:
+		var direction := signf(delta_x)
+		if absf(delta_x) <= PURSUIT_DIRECTION_DEADZONE or is_zero_approx(direction):
+			direction = float(_patrol_direction)
+		var stop_reach := horizontal_attack_reach - PURSUIT_STOP_PADDING if clear_shot else 0.0
+		desired_x = player_center.x - direction * maxf(stop_reach, 0.0) - attack_center_offset.x
+	var moved_x := _move_toward_pursuit_x(desired_x, delta, _bound_support)
+	if not allow_detour:
+		_pursuit_stuck_remaining = 0.0
+	elif absf(moved_x) >= 0.1:
+		_pursuit_stuck_remaining = 0.0
+	elif needs_horizontal_approach:
+		_pursuit_stuck_remaining += delta
+	else:
+		_pursuit_stuck_remaining = 0.0
+	if allow_detour and _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT \
+		and _pursuit_replan_remaining <= 0.0:
+		_try_begin_pursuit_detour(_bound_support, player, supports)
+	if _attack_state == AttackState.IDLE:
+		_update_visuals()
+
+func _try_begin_pursuit_detour(
+	goal_support: SolidPlatform,
+	player: PhysicsBody2D,
+	supports: Array[SolidPlatform]
+) -> bool:
+	var toward_player := signf(_get_player_collider_center(player).x - global_position.x)
+	if is_zero_approx(toward_player):
+		toward_player = float(_patrol_direction)
+	var best_score: float = INF
+	var best_route: Array[SolidPlatform] = []
+	for candidate in supports:
+		if candidate == _bound_support or candidate == goal_support or candidate.name == &"Floor":
+			continue
+		if not bool(_jump_helper.call("can_reach_support", candidate, goal_support)):
+			continue
+		var data := _get_support_rect(candidate)
+		if not bool(data.get("valid", false)):
+			continue
+		var rect: Rect2 = data.get("rect", Rect2())
+		var progress := (rect.get_center().x - global_position.x) * toward_player
+		if progress <= 16.0:
+			continue
+		var approach: Array[SolidPlatform] = _pursuit_helper.call(
+			"find_path",
+			_bound_support,
+			candidate,
+			supports,
+			_jump_helper,
+			_pursuit_blocked_edges
+		)
+		if approach.size() < 2:
+			continue
+		var score := absf(_get_player_collider_center(player).x - rect.get_center().x) + float(approach.size()) * 80.0
+		if score < best_score:
+			best_score = score
+			approach.append(goal_support)
+			best_route = approach
+	if best_route.is_empty():
+		_pursuit_replan_remaining = PURSUIT_REPLAN_INTERVAL
+		return false
+	_pursuit_path = best_route
+	_pursuit_goal_support = goal_support
+	_pursuit_detour_active = true
+	_pursuit_stuck_remaining = 0.0
+	_pursuit_replan_remaining = 0.0
+	return true
+
+func _pursue_via_route(
+	player: PhysicsBody2D,
+	delta: float,
+	_supports: Array[SolidPlatform]
+) -> void:
+	var source := _bound_support
+	var destination := _pursuit_path[1]
+	if source == null or destination == null or not is_instance_valid(destination):
+		_pursuit_path.clear()
+		_pursuit_detour_active = false
+		_pursuit_replan_remaining = 0.0
+		_stop_patrol()
+		return
+	var target_x := _get_player_collider_center(player).x
+	if _pursuit_path.size() > 2:
+		var next_rect: Rect2 = _jump_helper.call("support_rect", _pursuit_path[2])
+		target_x = next_rect.get_center().x
+	var launch_x := _pursuit_launch_x(source, destination, target_x)
+	var moved_x := _move_toward_pursuit_x(launch_x, delta, source)
+	var launch_distance := absf(global_position.x - launch_x)
+	if launch_distance > 2.0:
+		if absf(moved_x) >= 0.1:
+			_pursuit_stuck_remaining = 0.0
+		else:
+			_pursuit_stuck_remaining += delta
+		if _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT:
+			var blocked_edge: String = _pursuit_helper.call("edge_key", source, destination)
+			_pursuit_blocked_edges[blocked_edge] = PURSUIT_EDGE_BLOCK_TIME
+			_pursuit_path.clear()
+			_pursuit_detour_active = false
+			_pursuit_replan_remaining = 0.0
+			_pursuit_stuck_remaining = 0.0
+			_stop_patrol()
+		return
+	_pursuit_stuck_remaining = 0.0
+	if _jump_cooldown_remaining > 0.0:
+		return
+	if _pursuit_replan_remaining > 0.0:
+		return
+	var landing_target_x := _get_player_collider_center(player).x
+	if _pursuit_path.size() > 2:
+		var landing_next_rect: Rect2 = _jump_helper.call("support_rect", _pursuit_path[2])
+		landing_target_x = landing_next_rect.get_center().x
+	var plan: Dictionary = _jump_helper.call("plan_jump_to", source, destination, landing_target_x)
+	_pursuit_replan_remaining = PURSUIT_REPLAN_INTERVAL
+	if plan.is_empty():
+		var edge: String = _pursuit_helper.call("edge_key", source, destination)
+		_pursuit_blocked_edges[edge] = PURSUIT_EDGE_BLOCK_TIME
+		_pursuit_path.clear()
+		_pursuit_detour_active = false
+		_pursuit_replan_remaining = 0.0
+		_stop_patrol()
+		return
+	_start_jump_prepare(plan)
+
+func _pursuit_launch_x(source: SolidPlatform, destination: SolidPlatform, target_x: float) -> float:
+	var source_data := _get_support_rect(source)
+	var destination_data := _get_support_rect(destination)
+	if not bool(source_data.get("valid", false)) or not bool(destination_data.get("valid", false)):
+		return global_position.x
+	var source_rect: Rect2 = source_data.get("rect", Rect2())
+	var destination_rect: Rect2 = destination_data.get("rect", Rect2())
+	var bounds := _pursuit_bounds_for_support(source)
+	if destination.name == &"Floor":
+		var direction := signf(target_x - source_rect.get_center().x)
+		if is_zero_approx(direction):
+			var left_distance := absf(global_position.x - bounds.x) + absf(target_x - source_rect.position.x)
+			var right_distance := absf(global_position.x - bounds.y) + absf(target_x - source_rect.end.x)
+			direction = -1.0 if left_distance <= right_distance else 1.0
+		return bounds.y if direction > 0.0 else bounds.x
+	if destination_rect.position.y < source_rect.position.y - 1.0:
+		var body := _get_collision_rect()
+		var left_standoff := destination_rect.position.x - body.end.x - PURSUIT_EDGE_CLEARANCE
+		var right_standoff := destination_rect.end.x - body.position.x + PURSUIT_EDGE_CLEARANCE
+		var left_valid := left_standoff >= bounds.x and left_standoff <= bounds.y
+		var right_valid := right_standoff >= bounds.x and right_standoff <= bounds.y
+		if left_valid and right_valid:
+			var left_distance := absf(global_position.x - left_standoff)
+			var right_distance := absf(global_position.x - right_standoff)
+			if absf(left_distance - right_distance) > 1.0:
+				return left_standoff if left_distance < right_distance else right_standoff
+			var toward_goal := signf(target_x - global_position.x)
+			if is_zero_approx(toward_goal):
+				toward_goal = signf(target_x - destination_rect.get_center().x)
+			if is_zero_approx(toward_goal):
+				toward_goal = float(_patrol_direction)
+			return right_standoff if toward_goal > 0.0 else left_standoff
+		if left_valid:
+			return left_standoff
+		if right_valid:
+			return right_standoff
+	var direction := signf(destination_rect.get_center().x - global_position.x)
+	if is_zero_approx(direction):
+		direction = signf(target_x - global_position.x)
+	if is_zero_approx(direction):
+		direction = float(_patrol_direction)
+	return bounds.y if direction > 0.0 else bounds.x
+
+func _pursuit_bounds_for_support(support: SolidPlatform) -> Vector2:
+	var data := _get_support_rect(support)
+	if not bool(data.get("valid", false)):
+		return Vector2(global_position.x, global_position.x)
+	var rect: Rect2 = data.get("rect", Rect2())
+	var body := _get_collision_rect()
+	var minimum_x := rect.position.x + edge_margin - body.position.x
+	var maximum_x := rect.end.x - edge_margin - body.end.x
+	if maximum_x < minimum_x:
+		return Vector2(global_position.x, global_position.x)
+	return Vector2(minimum_x, maximum_x)
+
+func _move_toward_pursuit_x(target_x: float, delta: float, support: SolidPlatform) -> float:
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	if delta <= 0.0 or not is_instance_valid(support):
+		return 0.0
+	var bounds := _pursuit_bounds_for_support(support)
+	var destination_x := clampf(target_x, bounds.x, bounds.y)
+	var dx := destination_x - global_position.x
+	if absf(dx) <= MOVEMENT_EPSILON:
+		_update_visuals()
+		return 0.0
+	var direction := signf(dx)
+	if absf(dx) > PURSUIT_DIRECTION_DEADZONE:
+		_patrol_direction = int(direction)
+	var requested_dx := direction * minf(absf(dx), PATROL_SPEED * delta)
+	var collision: KinematicCollision2D = move_and_collide(Vector2(requested_dx, 0.0), true, 0.0)
+	var safe_dx := requested_dx
+	if collision != null:
+		safe_dx = collision.get_travel().x
+	if signf(safe_dx) != signf(requested_dx):
+		safe_dx = 0.0
+	safe_dx = signf(requested_dx) * minf(absf(safe_dx), absf(requested_dx))
+	if absf(safe_dx) >= MOVEMENT_EPSILON:
+		global_position.x += safe_dx
+		_patrol_moving = true
+		velocity.x = safe_dx / delta
+	_update_visuals()
+	return safe_dx
+
+===== MANIFEST =====
+[
+  {
+    "sha256": "EBBDC2443C71DEB91100793D50FE5D37882A16068E91DC45A0EB68769BE1C6BE",
+    "path": "scripts/world/training_target.gd"
+  },
+  {
+    "sha256": "21405FA654E6EA2278172AD04B2C54D9C214B5FC3A35C8624315F46114BEC629",
+    "path": "scripts/enemy/tranca_lata_jump.gd"
+  },
+  {
+    "sha256": "6C652B9AD17927BCC4A416F927087985C11F144723DE1109D94FC84DF9B300E5",
+    "path": "scripts/enemy/tranca_lata_pursuit.gd"
+  },
+  {
+    "sha256": "C84D99DAD9B7FE5F467FBEBFF56B3F747061834B289AFA2DB6F4796E68C428A9",
+    "path": "scripts/enemy/rivet_worker.gd"
+  },
+  {
+    "sha256": "CA6EEC52AECB9E9FC7F376814EB17660DFED28F0D317B9A53570C3468AD44687",
+    "path": "scenes/rivet_worker.tscn"
+  },
+  {
+    "sha256": "946257D18D056CB9CC091604003E916091375D321AE85C5B099D2ADC91E38D6E",
+    "path": "resources/enemy/training_target_sprite_frames.tres"
+  },
+  {
+    "sha256": "CBE1903D51B687DA009861A7C0B71C3966EB727905ADF5DDFA70EF2E78D8AC04",
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres"
+  },
+  {
+    "sha256": "DED0F36ECAC8DF2497B8CE238F83A4CC1064027888732D8808083E02AC2E644E",
+    "path": "resources/enemy/tranca_lata_jump_texture.tres"
+  },
+  {
+    "sha256": "BE297310EAE92AE9BC20D5D5AB76345A1FA785A53EAE2EFC5F86075F0F2D5D7C",
+    "path": "resources/enemy/tranca_lata_shockwave_texture.tres"
+  },
+  {
+    "sha256": "D367000D715BF6BFF5BD6FADD00B7EBF2EDF4EF90E82171ACDD7453FB169268B",
+    "path": "docs/specs/2026-10-23-perseguicao-tranca-lata/empacotar_atlas_tranca_lata.lua"
+  }
+]

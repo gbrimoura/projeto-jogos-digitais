@@ -1,0 +1,27 @@
+[
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "9864e8c4ac7d2101e26b64f2bd9af3cf12c5d485330da895edf53ec555a025ca",
+    "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r1-precorrecao/scenes/main.tscn"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "afe2fb27cc64007ac4e87d0bcd0a11f479c690c8438d7a4dd4360a69c892cba2",
+    "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r1-precorrecao/scenes/second_room.tscn"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "dd860088b3c6986383d510da572d83a072782ea90ea5f383bd4ca3b9ed30b7de",
+    "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r1-precorrecao/scripts/world/main.gd"
+  },
+  {
+    "path": "scripts/world/factory_wall_visual.gd",
+    "sha256": "2f75674e748a8ada76d9a2eec5d422466961d8dd5566eee1684c2c388dd4edeb",
+    "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r1-precorrecao/scripts/world/factory_wall_visual.gd"
+  },
+  {
+    "path": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/registro.md",
+    "sha256": "c514f20308942efdba5c5e6ec3fbbdbe33903ffe3fd4681348d6451d14d7ddcd",
+    "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r1-precorrecao/docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/registro.md"
+  }
+]

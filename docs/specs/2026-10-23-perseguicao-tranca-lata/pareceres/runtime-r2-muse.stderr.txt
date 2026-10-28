@@ -1,0 +1,5 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres/runtime-r2-input.txt
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres/runtime-r2-input.txt [offset=1248]

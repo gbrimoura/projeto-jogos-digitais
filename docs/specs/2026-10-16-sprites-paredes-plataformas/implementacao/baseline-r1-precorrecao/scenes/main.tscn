@@ -1,0 +1,398 @@
+[gd_scene format=3 uid="uid://dlgvrryxeujdh"]
+
+[ext_resource type="Script" uid="uid://07rr2hs2ow5b" path="res://scripts/world/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+[ext_resource type="PackedScene" path="res://scenes/training_target.tscn" id="3_training_target"]
+[ext_resource type="Script" uid="uid://dfipmxwk2041v" path="res://scripts/world/combat_room.gd" id="4_combat_room"]
+[ext_resource type="PackedScene" path="res://scenes/solid_platform.tscn" id="5_solid_platform"]
+[ext_resource type="PackedScene" path="res://scenes/rivet_worker.tscn" id="6_rivet_worker"]
+[ext_resource type="Script" uid="uid://b117rfp65cpip" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+[ext_resource type="PackedScene" path="res://scenes/exit_door.tscn" id="8_exit_door"]
+[ext_resource type="Texture2D" uid="uid://7opqxpeloevh" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="9_factory_atlas"]
+[ext_resource type="Script" path="res://scripts/world/factory_wall_visual.gd" id="10_factory_wall_visual"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
+size = Vector2(64, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_right_wall"]
+size = Vector2(64, 648)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ceiling"]
+size = Vector2(1152, 32)
+
+[node name="Main" type="Node2D" unique_id=206969936]
+script = ExtResource("1_main")
+authored_layout_enabled = true
+
+[node name="SandboxVisual" type="Node2D" parent="." unique_id=562336220]
+z_index = -10
+
+[node name="WallVisuals" type="Node2D" parent="."]
+z_index = -1
+
+[node name="LeftWallVisual" type="Node2D" parent="WallVisuals"]
+script = ExtResource("10_factory_wall_visual")
+atlas_texture = ExtResource("9_factory_atlas")
+atlas_source_id = 0
+atlas_coordinates = Vector2i(0, 1)
+
+[node name="RightWallVisual" type="Node2D" parent="WallVisuals"]
+position = Vector2(1088, 0)
+script = ExtResource("10_factory_wall_visual")
+atlas_texture = ExtResource("9_factory_atlas")
+atlas_source_id = 0
+atlas_coordinates = Vector2i(2, 1)
+
+[node name="Background" type="Polygon2D" parent="SandboxVisual" unique_id=596273147]
+color = Color(0.082, 0.067, 0.055, 1)
+polygon = PackedVector2Array(0, 0, 1152, 0, 1152, 648, 0, 648)
+
+[node name="GridVertical0" type="Line2D" parent="SandboxVisual" unique_id=624794061]
+visible = false
+points = PackedVector2Array(0, 0, 0, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical64" type="Line2D" parent="SandboxVisual" unique_id=1817627730]
+visible = false
+points = PackedVector2Array(64, 0, 64, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical128" type="Line2D" parent="SandboxVisual" unique_id=490987020]
+visible = false
+points = PackedVector2Array(128, 0, 128, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical192" type="Line2D" parent="SandboxVisual" unique_id=1244672564]
+visible = false
+points = PackedVector2Array(192, 0, 192, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical256" type="Line2D" parent="SandboxVisual" unique_id=704320130]
+visible = false
+points = PackedVector2Array(256, 0, 256, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical320" type="Line2D" parent="SandboxVisual" unique_id=1499653838]
+visible = false
+points = PackedVector2Array(320, 0, 320, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical384" type="Line2D" parent="SandboxVisual" unique_id=268650371]
+visible = false
+points = PackedVector2Array(384, 0, 384, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical448" type="Line2D" parent="SandboxVisual" unique_id=493303829]
+visible = false
+points = PackedVector2Array(448, 0, 448, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical512" type="Line2D" parent="SandboxVisual" unique_id=125438693]
+visible = false
+points = PackedVector2Array(512, 0, 512, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical576" type="Line2D" parent="SandboxVisual" unique_id=2014438480]
+visible = false
+points = PackedVector2Array(576, 0, 576, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical640" type="Line2D" parent="SandboxVisual" unique_id=1535607719]
+visible = false
+points = PackedVector2Array(640, 0, 640, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical704" type="Line2D" parent="SandboxVisual" unique_id=2021444820]
+visible = false
+points = PackedVector2Array(704, 0, 704, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical768" type="Line2D" parent="SandboxVisual" unique_id=1137739635]
+visible = false
+points = PackedVector2Array(768, 0, 768, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical832" type="Line2D" parent="SandboxVisual" unique_id=793844069]
+visible = false
+points = PackedVector2Array(832, 0, 832, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical896" type="Line2D" parent="SandboxVisual" unique_id=1325912430]
+visible = false
+points = PackedVector2Array(896, 0, 896, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical960" type="Line2D" parent="SandboxVisual" unique_id=1992805949]
+visible = false
+points = PackedVector2Array(960, 0, 960, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical1024" type="Line2D" parent="SandboxVisual" unique_id=749041485]
+visible = false
+points = PackedVector2Array(1024, 0, 1024, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical1088" type="Line2D" parent="SandboxVisual" unique_id=735217856]
+visible = false
+points = PackedVector2Array(1088, 0, 1088, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridVertical1152" type="Line2D" parent="SandboxVisual" unique_id=357033605]
+visible = false
+points = PackedVector2Array(1152, 0, 1152, 560)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal0" type="Line2D" parent="SandboxVisual" unique_id=1682884836]
+visible = false
+points = PackedVector2Array(0, 80, 1152, 80)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal1" type="Line2D" parent="SandboxVisual" unique_id=300644190]
+visible = false
+points = PackedVector2Array(0, 144, 1152, 144)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal2" type="Line2D" parent="SandboxVisual" unique_id=1868226315]
+visible = false
+points = PackedVector2Array(0, 208, 1152, 208)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal3" type="Line2D" parent="SandboxVisual" unique_id=40052379]
+visible = false
+points = PackedVector2Array(0, 272, 1152, 272)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal4" type="Line2D" parent="SandboxVisual" unique_id=797513347]
+visible = false
+points = PackedVector2Array(0, 336, 1152, 336)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal5" type="Line2D" parent="SandboxVisual" unique_id=877510785]
+visible = false
+points = PackedVector2Array(0, 400, 1152, 400)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal6" type="Line2D" parent="SandboxVisual" unique_id=409305673]
+visible = false
+points = PackedVector2Array(0, 464, 1152, 464)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="GridHorizontal7" type="Line2D" parent="SandboxVisual" unique_id=1990827547]
+visible = false
+points = PackedVector2Array(0, 528, 1152, 528)
+width = 1.0
+default_color = Color(0.17, 0.22, 0.29, 0.35)
+
+[node name="FactoryPanelUpper" type="Sprite2D" parent="SandboxVisual" unique_id=1543758630]
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(704, 150)
+scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
+region_enabled = true
+region_rect = Rect2(96, 0, 32, 32)
+
+[node name="FactoryPanelEast" type="Sprite2D" parent="SandboxVisual" unique_id=1054473756]
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(1000, 280)
+scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
+region_enabled = true
+region_rect = Rect2(96, 0, 32, 32)
+
+[node name="FactoryPipeVertical" type="Sprite2D" parent="SandboxVisual" unique_id=663887830]
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(832, 130)
+scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
+region_enabled = true
+region_rect = Rect2(96, 64, 32, 32)
+
+[node name="FactoryPipeCorner" type="Sprite2D" parent="SandboxVisual" unique_id=1693359314]
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(832, 194)
+scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
+region_enabled = true
+region_rect = Rect2(96, 96, 32, 32)
+
+[node name="FactoryPipeHorizontal" type="Sprite2D" parent="SandboxVisual" unique_id=1250197829]
+modulate = Color(0.56, 0.52, 0.45, 0.68)
+texture_filter = 1
+position = Vector2(896, 194)
+scale = Vector2(2, 2)
+texture = ExtResource("9_factory_atlas")
+region_enabled = true
+region_rect = Rect2(96, 32, 32, 32)
+
+[node name="BallContainer" type="Node2D" parent="." unique_id=854280507 groups=["hostile_projectile_container"]]
+z_index = 1
+
+[node name="WorldCollision" type="StaticBody2D" parent="." unique_id=426925908]
+
+[node name="LeftWall" type="CollisionShape2D" parent="WorldCollision" unique_id=799015702]
+position = Vector2(32, 324)
+shape = SubResource("RectangleShape2D_left_wall")
+
+[node name="RightWall" type="CollisionShape2D" parent="WorldCollision" unique_id=26278744]
+position = Vector2(1120, 324)
+shape = SubResource("RectangleShape2D_right_wall")
+
+[node name="Ceiling" type="CollisionShape2D" parent="WorldCollision" unique_id=16121606]
+position = Vector2(576, -16)
+shape = SubResource("RectangleShape2D_ceiling")
+
+[node name="Floor" parent="." unique_id=2048039212 instance=ExtResource("5_solid_platform")]
+position = Vector2(576, 604)
+size = Vector2(1152, 88)
+fill_color = Color(0.101961, 0.14902, 0.196078, 1)
+factory_skin_enabled = null
+factory_surface_style = null
+
+[node name="FloorDetail" type="Line2D" parent="Floor" unique_id=717280858]
+visible = false
+position = Vector2(0, -12)
+points = PackedVector2Array(-576, 0, 576, 0)
+width = 1.0
+default_color = Color(0.145098, 0.215686, 0.27451, 1)
+
+[node name="PlatformA" parent="." unique_id=1192556465 instance=ExtResource("5_solid_platform")]
+position = Vector2(290, 480)
+randomize_position = false
+randomize_width = false
+factory_skin_enabled = null
+factory_surface_style = null
+
+[node name="PlatformB" parent="." unique_id=1509114514 instance=ExtResource("5_solid_platform")]
+position = Vector2(615, 468)
+randomize_position = false
+randomize_width = false
+size = Vector2(190, 24)
+factory_skin_enabled = null
+factory_surface_style = null
+
+[node name="PlatformC" parent="." unique_id=1065536872 instance=ExtResource("5_solid_platform")]
+position = Vector2(915, 452)
+randomize_position = false
+randomize_width = false
+size = Vector2(190, 24)
+factory_skin_enabled = null
+factory_surface_style = null
+
+[node name="ExitDoor" parent="." unique_id=1371105835 instance=ExtResource("8_exit_door")]
+position = Vector2(1040, 522)
+
+[node name="PlayerSpawnMarker" type="Marker2D" parent="." unique_id=745801978]
+position = Vector2(160, 560)
+
+[node name="Player" parent="." unique_id=349601874 instance=ExtResource("2_player")]
+position = Vector2(160, 560)
+
+[node name="TrainingTarget" parent="." unique_id=2030093939 instance=ExtResource("3_training_target")]
+position = Vector2(915, 392)
+spawn_on_platform = false
+authored_support_enabled = true
+fixed_support_path = NodePath("../PlatformC")
+fallback_support_path = NodePath("../PlatformA")
+
+[node name="WorkerPatrolArea" type="Node2D" parent="." unique_id=958438701]
+position = Vector2(670, 560)
+script = ExtResource("7_enemy_patrol_area")
+
+[node name="LeftLimit" type="Marker2D" parent="WorkerPatrolArea" unique_id=1059147527]
+position = Vector2(-250, 0)
+
+[node name="RightLimit" type="Marker2D" parent="WorkerPatrolArea" unique_id=1529381367]
+position = Vector2(250, 0)
+
+[node name="PreviewLine" type="Line2D" parent="WorkerPatrolArea" unique_id=603405082]
+points = PackedVector2Array(-250, 0, 250, 0)
+width = 2.0
+default_color = Color(0.83, 0.62, 0.3, 0.42)
+
+[node name="RivetWorker" parent="." unique_id=950643860 instance=ExtResource("6_rivet_worker")]
+position = Vector2(650, 560)
+patrol_area_path = NodePath("../WorkerPatrolArea")
+
+[node name="CombatRoom" type="Node" parent="." unique_id=594426197]
+script = ExtResource("4_combat_room")
+counter_label_path = NodePath("HUD/CounterLabel")
+status_label_path = NodePath("HUD/StatusLabel")
+health_label_path = NodePath("HUD/HealthLabel")
+
+[node name="HUD" type="CanvasLayer" parent="CombatRoom" unique_id=1348876616]
+layer = 10
+
+[node name="CounterLabel" type="Label" parent="CombatRoom/HUD" unique_id=2134221281]
+offset_left = 32.0
+offset_top = 24.0
+offset_right = 360.0
+offset_bottom = 52.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "INIMIGOS RESTANTES: 0"
+
+[node name="StatusLabel" type="Label" parent="CombatRoom/HUD" unique_id=1657364401]
+offset_left = 32.0
+offset_top = 54.0
+offset_right = 560.0
+offset_bottom = 88.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 22
+text = "ENCONTRO ATIVO"
+
+[node name="RoomLabel" type="Label" parent="CombatRoom/HUD" unique_id=1070069963]
+offset_left = 32.0
+offset_top = 120.0
+offset_right = 260.0
+offset_bottom = 150.0
+theme_override_colors/font_color = Color(0.768627, 0.494118, 0.25098, 1)
+theme_override_font_sizes/font_size = 18
+text = "SALA 01"
+
+[node name="HealthLabel" type="Label" parent="CombatRoom/HUD" unique_id=1507086004]
+offset_left = 32.0
+offset_top = 88.0
+offset_right = 250.0
+offset_bottom = 116.0
+theme_override_colors/font_color = Color(0.941176, 0.886275, 0.74902, 1)
+theme_override_font_sizes/font_size = 18
+text = "VIDA: 5 / 5"
+
+[node name="BuildLabel" type="Label" parent="CombatRoom/HUD" unique_id=1510303184]
+offset_left = 32.0
+offset_top = 154.0
+offset_right = 520.0
+offset_bottom = 184.0
+theme_override_colors/font_color = Color(0.509804, 0.843137, 0.741176, 1)
+theme_override_font_sizes/font_size = 18
+text = "BUILD: VAZIA"

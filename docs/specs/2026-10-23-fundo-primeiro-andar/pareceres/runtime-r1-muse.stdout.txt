@@ -1,0 +1,8 @@
+Read-only review — inspecting the frozen input.
+Input truncated at line 1044 — reading remainder for full static review.
+STATUS: done
+SUMMARY: Modular procedural background meets 3-independent-choice contract. Static input shows base bit0/left bit1/right bit2 mapping, editor fallbacks 000/111, SandboxVisual-only diffs, AtlasTexture regions/anchors consistent, no gameplay/RNG/progression changes.
+CHANGED_FILES: none
+TESTS: static review only
+RISKS: none — no actionable P1/P2 in functional/resource/seed/editor/layering/scope within static input. Residual (not defects): pixel seam/palette/visual coherence and engine load unverifiable without forbidden Godot/Aseprite run; captions bit-string uses LSB-first (base-left-right) convention, explicit but unusual.
+NEXT_STEP: Principal decides; no corrections required from this static pass.

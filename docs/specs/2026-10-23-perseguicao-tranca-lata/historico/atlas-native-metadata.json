@@ -1,0 +1,28 @@
+{
+  "producer": "Aseprite Lua; empacotar_atlas_tranca_lata.lua",
+  "source_preserved": true,
+  "atlases": [
+    {
+      "height": 64,
+      "rgba_bytes": 98304,
+      "width": 384,
+      "source": "assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png",
+      "output": "resources/enemy/tranca_lata_jump_texture.tres",
+      "file_bytes": 329166,
+      "source_sha256": "5400F8E39359CC069139EB5D94C4F969B1A2F56C2328F5149AEE07C6A4DDF001",
+      "output_sha256": "DED0F36ECAC8DF2497B8CE238F83A4CC1064027888732D8808083E02AC2E644E"
+    },
+    {
+      "height": 160,
+      "rgba_bytes": 614400,
+      "width": 960,
+      "source": "assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png",
+      "output": "resources/enemy/tranca_lata_shockwave_texture.tres",
+      "file_bytes": 1940442,
+      "source_sha256": "64D797D413875B0192886D42A89368A75118DCF2E7C06D8F78EE4C39F3CA823B",
+      "output_sha256": "BE297310EAE92AE9BC20D5D5AB76345A1FA785A53EAE2EFC5F86075F0F2D5D7C"
+    }
+  ],
+  "mipmaps": false,
+  "format": "RGBA8"
+}

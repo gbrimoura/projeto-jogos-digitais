@@ -1,0 +1,14 @@
+[
+  {
+    "path": "scripts/world/side_door_visual.gd",
+    "sha256": "2C5E4369B9184C09ACDF55BC33248886FD6F652D029989F29CA9F92DFABE2389"
+  },
+  {
+    "path": "assets/environment/factory_v1/door/side-opening/preview-side-opening.lua",
+    "sha256": "048FE852F5168CEFA003FCF3BF4C1D7FE3B76C133D8EA29BD542060C3523019C"
+  },
+  {
+    "path": "assets/environment/factory_v1/door/side-opening/porta-lateral-preview.png",
+    "sha256": "9E0329A916E3B2291DAB12DD50E6D17946EE0404C69A6B2C86B14238B3D0B3E9"
+  }
+]

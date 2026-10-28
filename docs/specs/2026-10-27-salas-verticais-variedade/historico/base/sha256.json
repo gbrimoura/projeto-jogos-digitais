@@ -1,0 +1,98 @@
+[
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "sha256": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "5D64FFBE2C4686F33276178E59F4CDF0AC9D45BAE0673A18D1E6252403D8827A"
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "E2274C171A5E55C6ACCE003A61EC4FC12D25EF7969F0AE72C2EA9A96160361A0"
+  },
+  {
+    "path": "scripts/world/side_door_visual.gd",
+    "sha256": "2C5E4369B9184C09ACDF55BC33248886FD6F652D029989F29CA9F92DFABE2389"
+  },
+  {
+    "path": "scripts/world/factory_ceiling_visual.gd",
+    "sha256": "4A9CA42C1B7A61B3E0B14D8DA0674B8001695DDB9AD7AEDD36C140B83A963FD3"
+  },
+  {
+    "path": "scripts/world/factory_wall_visual.gd",
+    "sha256": "1B67320689FDC71C76913F7A38C697B3914481D4226908076063F69320980F73"
+  },
+  {
+    "path": "scripts/world/factory_surface_visual.gd",
+    "sha256": "EA481EADD129B6C2305FD1FF14396A0D5FFEFB32E0B4EBF78A56B99BF490CF3D"
+  },
+  {
+    "path": "scripts/world/solid_platform.gd",
+    "sha256": "2F6233E4B67C3598B4F4E4C044E53475FC55EB4289FBA709F2E8BFE34DADE115"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0"
+  },
+  {
+    "path": "scenes/exit_door.tscn",
+    "sha256": "B3EFBA83E11E213B573ADD3422F8AB77722FCB61CE753DFE23CF6695A135F0D6"
+  },
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "64770EFB0053901302948D9A585F6BD42E108208A214BAEFC3E7B5885C42880F"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "56A72953CCEAEAFB811AE30D81435E5FD79AC8600FB16C27207229D0A4138D0C"
+  },
+  {
+    "path": "scripts/enemy/rivet_warning_visual.gd",
+    "sha256": "1BC816F411F208DB518CF3BC0A4CFF65ED9C191472052FC305D535F9B3AA1209"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "sha256": "DD15D923CC0663F400405710085890A5A68B841DBBFE8804235883B1D8EA252F"
+  },
+  {
+    "path": "scripts/player/player.gd",
+    "sha256": "E294502C526A80601B27C620EAC1B9301FEFA5E4A523496454DE8F39B62E2520"
+  },
+  {
+    "path": "scripts/player/movement_controller.gd",
+    "sha256": "59C8987F01C769C40F6657E09BC6E69A1EEB6FEFE98220D84F15D6C9A9F6E6EC"
+  },
+  {
+    "path": "resources/player_movement_config.tres",
+    "sha256": "72BFB502C5069FCFA3CB0681FFCECE9586EF7A807658720A88B85B99D6267202"
+  },
+  {
+    "path": "scripts/world/combat_room.gd",
+    "sha256": "87F8FB4CC6F920554EC3DD6C3B101327963C54EF60F6FB5262B574A97784B003"
+  },
+  {
+    "path": "scripts/world/room_transition.gd",
+    "sha256": "2A0EDA364FAEEEEE7BA06B349A8F1AEAF37407F3C29907543E52B8D075A08461"
+  },
+  {
+    "path": "scripts/progression/run_build.gd",
+    "sha256": "0E7426DEA962E22CAF3AED7B9F304B7E8698C463124FC0A2441D46A4B1632F2E"
+  },
+  {
+    "path": "run_root.tscn",
+    "sha256": "B04067D9C02C3B3A2E80653C9FBB1187AEE82D27A41BF67E95DB9FF29318CD50"
+  },
+  {
+    "path": "project.godot",
+    "sha256": "42A90285FEACC10034CBD02D270B66A48A88E33AC33F570A6CFB67329D9C5FF1"
+  }
+]

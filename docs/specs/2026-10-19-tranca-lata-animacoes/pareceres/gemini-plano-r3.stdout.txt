@@ -1,0 +1,32 @@
+STATUS: done
+SUMMARY: Delta Arquitetural R3 revisado e aprovado em modo somente leitura. Todos os apontamentos de R1 (conflito de colisão/depenetração com suporte em FLOATING, jitter de borda, query `test_only` em X sem componente vertical, shader `flash_amount`, controle manual de frames de ataque sem conflito de `play()`, e escopo estrito de 6 arquivos) foram devidamente sanados no contrato autoritativo do principal. Nenhum P1 bloqueante identificado.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- [P2.1] Acúmulo de logs se a condição de plataforma obstruída/<8px ou inválida for consultada por tick: mitigação simples via flag booleana de disparo único (`_warned_unusable_support`).
+- [P2.2] Amostragem manual de frame em fases de ataque com durações assimétricas (ex.: Windup 180+220+250 ms = 650 ms): a seleção por `1.0 - remaining / duration` requer mapeamento por faixas acumuladas de tempo/pesos para evitar descompasso visual (ex.: thresholds em `[180/650, 400/650, 1.0]`).
+- [P2.3] Flutuações de floating-point em `safe_dx` próximo a zero: o epsilon de deslocamento útil (`0.01 px`) protege contra micro-oscilações de walk, mas a inversão na borda deve zerar o acumulador fracionário residual para evitar descontinuidade no retorno pós-pausa.
+NEXT_STEP: Liberar o subagente Luna (`gpt-6-luna`, raciocínio `xhigh`) para persistir o fechamento das especificações em `plano.md` e `spec.md` na pasta ativa de documentação, mantendo runtime e geração Aseprite congelados para as etapas subsequentes.
+
+---
+
+### Avaliação Detalhada do Delta Arquitetural R3
+
+| Ponto R3 | Mecanismo Fechado | Status / Avaliação |
+| :--- | :--- | :--- |
+| **1. Suporte Efetivo** | `SolidPlatform` vencedor com fallback em ordem estrita (primário livre > fallback livre > estacionário avisado). Random com sweep/geometria limitadora e verificação de vão útil $\ge 8\text{ px}$. Guards de `_placement_pending` travando passo precoce. | **FECHADO (OK)**. Remove qualquer ambiguidade de posicionamento sem inventar regras procedurais. |
+| **2. Exceção de Suporte** | `add_collision_exception_with(support)` com descarte do bind anterior; `motion_mode = FLOATING`. Consultas LOS/AOE mantêm `exclude = [self]`, preservando bloqueio da plataforma ao ataque. | **FECHADO (OK)**. Elimina risco de prender o corpo no piso sem vazar colisão física contra outros corpos ou vazar raio de ataque através do chão. |
+| **3. Passo X em 2 Etapas** | Limite por bounds + query puramente virtual `move_and_collide(Vector2(req_dx, 0), true, 0.0)`. Deslocamento aplicado diretamente em `global_position.x += safe_dx`. Eixo Y estritamente intocado; sem `move_and_slide`. | **FECHADO (OK)**. Garante ausência total de depenetração espúria, impulsos verticais ou jitter de parede. |
+| **4. Guards e Ciclo** | Cascata estrita de guards; checagem de ataque em IDLE antes do deslocamento; `_begin_windup` zera velocidade, ancora centro e congela facing; 0 px nas 3 fases de ataque; colisão/borda aciona inversão + pausa de 0.25s. | **FECHADO (OK)**. Ordem determinística sem concorrência entre locomoção e ataque. |
+| **5. Precedência Visual** | Derrotado (`disabled`), repouso/pausa (`idle` cel 14), caminhada contínua (`walk` 3..6 via `play` condicional a troca de clip). Ataque com seleção manual direta de cels por progresso temporal. Shader atualizado para o parâmetro real `flash_amount`. Espelhamento por `flip_h` no sprite aceito explicitamente. | **FECHADO (OK)**. Elimina colisão de animações no loop de ataque e corrige a propriedade do material de shader. |
+| **6. Pipeline Aseprite** | Atlas 960x64 sem padding/trim, escala 2x, baseline y56 x32. Cels 0..2 preservados integralmente em RGBA e durações nativas. Fases manuais e walk com tempos pré-definidos. Hashing e validação isolada pré-runtime. | **FECHADO (OK)**. Não quebra compatibilidade retroativa nem corrompe os frames legados de impacto/disabled. |
+| **7. Interações de Mundo** | RicochetBall (layer 4 / mask 9) e Worker (layer 8 / mask 1) já se ignoram nativamente. Sem adição de reservas de IA desnecessárias. TrajectoryPreview intocado. | **FECHADO (OK)**. Alinhado com a física real do projeto sem efeitos colaterais em projéteis ou preview de mira. |
+| **8. Escopo Cirúrgico** | Restrito a 6 artefatos (`target.gd`, `main.gd`, `target.tscn`, `targetSpriteFrames.tres`, `target.png`, `target.ase`). `.import`, shaders e sistemas externos protegidos. | **FECHADO (OK)**. Risco de regressão em arquivos de infraestrutura e salas é nulo. |
+
+### Pendências P1 / P2 Remanescentes
+* **P1 (Bloqueantes)**: **Nenhum**. Todos os pontos de R1 foram tecnicamente endereçados com soluções compatíveis com Godot 4.x CharacterBody2D flutuante e pipelines estáticos.
+* **P2 (Ajustes de Implementação Mínimos para Luna documentar)**:
+  1. *Thresholds de frames de ataque*: No documento técnico, especificar que a amostragem de frame no Windup/Active/Recovery utiliza a soma cumulativa dos `duration` dos cels correspondentes, garantindo transição visualmente balanceada.
+  2. *Proteção contra warnings repetitivos*: Especificar que mensagens de aviso de suporte ausente/inválido usem guarda booleana para emissão única por instância.
+
+*Nota de integridade: Revisão estática documental realizada sem execução de engine, conforme diretrizes do repositório.*

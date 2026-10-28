@@ -1,0 +1,66 @@
+```text
+STATUS: done
+SUMMARY: Plano e especificação do Tranca-Lata aprovados com ressalvas arquiteturais saneadas. A transição para CharacterBody2D (layer 8, mask 3) e patrulha uniaxial preserva contratos existentes de combate, área (140 px), tempos autoritativos (650/140/1400 ms), dano e preview de trajetória. Foram identificados dois achados P1 e quatro achados P2 com correções mínimas definidas para a fase de implementação.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+  - Jitter de turnaround caso colisão com Player em movimento não acione a pausa de 0,25 s.
+  - Possível falso bloqueio horizontal no move_and_collide contra a própria SolidPlatform de suporte por margem de contato.
+  - Cels 0–2 do atlas sofrerem mutação acidental durante expansão para 15 cels (960×64).
+  - Invalidação contínua da trajetória no trajectory_preview.gd a cada physics frame durante a patrulha (custo aceitável, mas requer monitoramento).
+NEXT_STEP: Autorizar a fase isolada de produção de arte no Aseprite (pitch-assets/tranca-lata-animacoes-v1) conforme as diretrizes do pipeline, mantendo o runtime congelado até a aprovação da prancha e atlas.
+```
+
+---
+
+### Parecer Arquitetural e Análise de Contratos
+
+O plano e a especificação apresentados foram analisados estaticamente com base nos fatos de código e nos contratos congelados do repositório. A proposta é sólida, respeita o histórico (`2026-10-14-alvo-ataque-area`), preserva o nome técnico (`class_name TrainingTarget`, caminhos e node paths intactos) e isola o novo nome (**Tranca-Lata**) ao nível de apresentação visual (`display_name` e `NameLabel`).
+
+A conversão física de `StaticBody2D` para `CharacterBody2D` com `collision_layer = 8` e `collision_mask = 3` (World layer 1 + Player layer 2) é compatível com os sistemas consumidores:
+1. **RicochetBall:** Mantém `mask 9` (World 1 + Damageable 8) e consulta grupos `damageable`/`take_damage`, sem impacto pela mudança de tipo de corpo.
+2. **Player:** Possui `mask 9` e `layer 2`; colide com Tranca-Lata sem sofrer dano por contato.
+3. **Trajectory Preview:** Já rastreia `CharacterBody2D combat_enemy` e invalidará previsões dinamicamente conforme o alvo se desloca a 48 px/s.
+4. **Combate e Ataque:** Preservam rigidez do centro travado ao entrar em WINDUP, cancelamento em morte/troca de cena e deduplicação de dano.
+
+---
+
+### Achados P1 (Bloqueantes Contratuais)
+
+#### P1.1 — Acoplamento do `_update_hit_flash` com reprodução de animações non-looping
+* **Causa:** O código atual chama `_update_visuals()` a cada frame de física durante os 120 ms de flash, chaveando para `"impact"`. No Godot 4, chamar `play()` sobre animações não-loopadas (`windup`, `active`, `recovery`) ou sobrescrevê-las com `"impact"` reinicia o clipe ou quebra a leitura da telegrafia de combate.
+* **Impacto:** Ataques em andamento teriam seus frames visuais resetados ou cancelados se o alvo sofresse dano durante o windup ou recovery.
+* **Correção mínima obrigatória:**
+  1. O hit flash (120 ms) deve atuar estritamente via parâmetros de shader do material (`flash_strength`), sem chamar `$BodySprite.play()` e sem sobrescrever animações de ataque.
+  2. A troca para os clipes `windup`, `active` e `recovery` deve ser disparada **uma única vez** na entrada de seus respectivos estados (`_enter_windup`, `_enter_active`, `_enter_recovery`).
+  3. `_update_visuals()` deve atuar apenas em `State.IDLE`, alternando entre `"walk"` e `"idle"` com guarda estrita: `if $BodySprite.animation != target_anim: $BodySprite.play(target_anim)`.
+
+#### P1.2 — Segurança contra suporte nulo (`current_platform == null`)
+* **Causa:** O plano prevê que `Main` injete a `SolidPlatform` escolhida no layout autoral e `_place_on_platform` guarde a plataforma no spawn aleatório. No entanto, se o alvo for instanciado em cenas de teste isoladas, salas sem orquestrador ou antes do hook do `MainStage`, a referência será nula.
+* **Impacto:** Acesso a membros da plataforma (`size`, `global_position`) causará crash de runtime (`Invalid get on base 'Nil'`).
+* **Correção mínima obrigatória:**
+  - Implementar guarda de inicialização: se `current_platform == null`, emitir `push_warning`, definir `is_patrol_enabled = false` e manter o alvo estritamente estacionário em sua posição inicial, sem executar cálculos de borda ou movimentação física.
+
+---
+
+### Achados P2 (Robustez e Casos de Borda)
+
+#### P2.1 — Falso bloqueio com o piso no `move_and_collide`
+* **Causa:** `SolidPlatform` pertence à layer 1 (World). Como o Tranca-Lata usará `mask = 3`, o deslocamento horizontal `move_and_collide(Vector2(dx, 0))` rente à superfície do suporte pode colidir com a própria plataforma de apoio devido à margem de colisão (`safe_margin = 0.08 px`).
+* **Correção mínima:**
+  - Filtrar o resultado de `move_and_collide`: colisões cuja normal seja vertical (`abs(collision.get_normal().y) > 0.7`) ou cujo colisor seja a própria plataforma de suporte não devem ser interpretadas como bloqueio de patrulha. Apenas colisões com normais horizontais (`abs(collision.get_normal().x) > 0.7`) contra obstáculos/Player devem acionar turnaround.
+
+#### P2.2 — Prevenção de oscilação rápida (jitter) contra Player
+* **Causa:** O plano propõe pausar 0,25 s nas pontas e em paradas totais, mas reverter imediatamente em colisões parciais. Se o jogador caminhar continuamente contra o Tranca-Lata, uma reversão sem pausa gerará oscilação de direção a cada frame.
+* **Correção mínima:**
+  - Em qualquer bloqueio físico com avanço impedido (seja deslocamento nulo ou colisão contra corpo dinâmico na direção da marcha), aplicar a pausa de 0,25 s com pose neutra (`idle`) antes de prosseguir no sentido oposto.
+
+#### P2.3 — Plataformas estreitas (≤ 104 px) no spawn aleatório
+* **Causa:** O collider tem largura 72 px (half-width 36 px) e a margem de segurança aleatória é 16 px em cada lado (`36*2 + 16*2 = 104 px`). Em plataformas com largura ≤ 104 px, `max_patrol_x <= min_patrol_x`.
+* **Correção mínima:**
+  - Validar explicitamente: `if max_patrol_x <= min_patrol_x: is_patrol_enabled = false`. O alvo permanece centralizado no suporte, em estado estacionário, registrando aviso de percurso nulo sem gerar inversão de limites ou loops anômalos.
+
+#### P2.4 — Integridade byte-a-byte dos cels legados no pipeline Aseprite
+* **Causa:** A expansão do atlas de 3 cels (192×64) para 15 cels (960×64) não pode alterar os cels 0 (idle antigo), 1 (impact antigo) e 2 (disabled antigo). A prancha ImageGen é estritamente referência conceitual.
+* **Correção mínima:**
+  - A reprodução no Aseprite 1.3.18.6 deve manter os três primeiros quadros idênticos aos existentes. A passada de caminhada (cels 3 e 5 da referência) deve receber diferenciação manual legível de contato de pernas/pistões, mantendo o novo cel neutro 14 para o idle com pernas e respeitando os limites da silhueta do collider (36 px de largura nativa).

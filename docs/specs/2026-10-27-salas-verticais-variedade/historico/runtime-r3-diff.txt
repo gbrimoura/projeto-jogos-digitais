@@ -1,0 +1,90 @@
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/main.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/main.gd
+index a3999e3..d41d0c4 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/main.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/main.gd
+@@ -554,8 +554,11 @@ func _managed_can_jump_between(source: Rect2, target: Rect2, rects: Array[Rect2]
+ 					candidate_blocked = true
+ 					break
+ 				var descending_landing := vy > 0.0 and root.y <= target.position.y and next.y >= target.position.y
+-				if descending_landing and body.end.x > target.position.x + 0.5 and body.position.x < target.end.x - 0.5:
+-					return true
++				if descending_landing:
++					var crossing_fraction := clampf((target.position.y - root.y) / (next.y - root.y), 0.0, 1.0)
++					var landing_x := lerpf(root.x, next.x, crossing_fraction)
++					if landing_x >= target.position.x + 22.0 and landing_x <= target.end.x - 22.0:
++						return true
+ 				for blocker_index in rects.size():
+ 					if blocker_index == source_index:
+ 						continue
+@@ -616,8 +619,11 @@ func _managed_can_drop_between(source: Rect2, target: Rect2, rects: Array[Rect2]
+ 				if body.position.x < 64.0 or body.end.x > 1088.0:
+ 					break
+ 				var descending_landing := not still_supported and previous.y <= target.position.y and root.y >= target.position.y
+-				if descending_landing and body.end.x > target.position.x + 0.5 and body.position.x < target.end.x - 0.5:
+-					return true
++				if descending_landing:
++					var crossing_fraction := clampf((target.position.y - previous.y) / (root.y - previous.y), 0.0, 1.0)
++					var landing_x := lerpf(previous.x, root.x, crossing_fraction)
++					if landing_x >= target.position.x + 22.0 and landing_x <= target.end.x - 22.0:
++						return true
+ 				var blocked := false
+ 				for blocker_index in rects.size():
+ 					if blocker_index == source_index:
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/managed_room_topology.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/managed_room_topology.gd
+index 134b262..77ae4a2 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/managed_room_topology.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/managed_room_topology.gd
+@@ -57,12 +57,12 @@ func configure(room: Node2D, descriptor: Dictionary) -> Dictionary:
+ 		var left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+ 		var right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+ 		if left_edge > 0.0:
+-			_add_shape("ManagedCeilingUpperLeft", Vector2(ceiling_left_edge * 0.5, -16.0), Vector2(ceiling_left_edge, 32.0))
+-			_add_shape("ManagedCeilingBandLeft", Vector2(ceiling_left_edge * 0.5, 32.0), Vector2(ceiling_left_edge, 64.0))
++			_add_shape("ManagedCeilingUpperLeft", Vector2(left_edge * 0.5, -16.0), Vector2(left_edge, 32.0))
++			_add_shape("ManagedCeilingBandLeft", Vector2(left_edge * 0.5, 32.0), Vector2(left_edge, 64.0))
+ 		if right_edge < 1152.0:
+-			var ceiling_right_width := 1152.0 - ceiling_right_edge
+-			_add_shape("ManagedCeilingUpperRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, -16.0), Vector2(ceiling_right_width, 32.0))
+-			_add_shape("ManagedCeilingBandRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, 32.0), Vector2(ceiling_right_width, 64.0))
++			var right_width := 1152.0 - right_edge
++			_add_shape("ManagedCeilingUpperRight", Vector2(right_edge + right_width * 0.5, -16.0), Vector2(right_width, 32.0))
++			_add_shape("ManagedCeilingBandRight", Vector2(right_edge + right_width * 0.5, 32.0), Vector2(right_width, 64.0))
+ 		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 16.0), Vector2(PORTAL_WIDTH, 96.0))
+ 		_add_shape("ManagedTopOuterGuard", Vector2(576.0, -52.0), Vector2(1152.0, 8.0))
+ 		gate_name = &"ManagedExitGate"
+@@ -70,7 +70,7 @@ func configure(room: Node2D, descriptor: Dictionary) -> Dictionary:
+ 		var left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+ 		var right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+ 		var left_shape := _add_shape("ManagedFloorLeft", Vector2(left_edge * 0.5, 604.0), Vector2(left_edge, 88.0), true)
+-		var ceiling_right_width := 1152.0 - ceiling_right_edge
++		var right_width := 1152.0 - right_edge
+ 		var right_shape := _add_shape("ManagedFloorRight", Vector2(right_edge + right_width * 0.5, 604.0), Vector2(right_width, 88.0), true)
+ 		_floor_segments = [left_shape, right_shape]
+ 		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 604.0), Vector2(PORTAL_WIDTH, 88.0))
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/room_layout_generator.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/room_layout_generator.gd
+index ad2af9e..493eb0c 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/room_layout_generator.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/room_layout_generator.gd
+@@ -30,10 +30,10 @@ static func generate_managed_layout(
+ 	if not [&"catwalk", &"ridge", &"valley", &"roof_four", &"roof_five"].has(family):
+ 		return _invalid_result(seed_used, "família gerenciada desconhecida: %s" % String(family))
+ 	if force_canonical:
+-		return _managed_layout_result(
+-			_canonical_managed_entries(family, entry_dir, exit_dir, entry_offset, exit_offset),
+-			family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, true
+-		)
++		var canonical_entries := _canonical_managed_entries(family, entry_dir, exit_dir, entry_offset, exit_offset)
++		if _managed_entries_are_safe(canonical_entries, family, entry_dir, exit_dir, entry_offset, exit_offset):
++			return _managed_layout_result(canonical_entries, family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, true)
++		return _invalid_result(seed_used, "fallback canônico da família %s falhou no contrato geométrico" % String(family))
+ 	for _attempt in 12:
+ 		var entries := _build_managed_entries(family, rng, entry_dir, exit_dir, entry_offset, exit_offset)
+ 		if _managed_entries_are_safe(entries, family, entry_dir, exit_dir, entry_offset, exit_offset):
+@@ -149,6 +149,7 @@ static func _build_managed_entries(
+ 			centers[index] = centers[index - 1] + horizontal_sign * (widths[index - 1] * 0.5 + widths[index] * 0.5 + gap)
+ 	var entries: Array[Dictionary] = []
+ 	for index in count:
++		centers[index] = snappedf(centers[index], 8.0)
+ 		var size := Vector2(widths[index], 16.0)
+ 		var position := Vector2(centers[index], tops[index] + 8.0)
+ 		var rect := Rect2(position - size * 0.5, size)

@@ -1,0 +1,27 @@
+
+> plan · muse-spark-1.3-contributor
+
+Packet review de sprites — lendo pacote congelado.
+→ Read docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/pareceres-r1/review-input.txt
+→ Read docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/pareceres-r1/review-input.txt [offset=1286]
+→ Read docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/pareceres-r1/review-input.txt [offset=2773]
+→ Read docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/pareceres-r1/review-input.txt [offset=4161]
+STATUS: done
+SUMMARY: Static review of frozen packet only. Collision fixture, wall coverage 648px, authored positions/supports, pre-tree gates and invalid-room blocking are coherent. 1 P1 blocks main.tscn runtime (null skin exports). 3 P2 visual/gate gaps. Sprite invisibility unproven — frames/shader/visual scripts outside packet.
+CHANGED_FILES: none
+TESTS: none
+
+P1-1 — scenes/main.tscn + scripts/world/solid_platform.gd:_sync_surface_skin
+Evidence packet: main.tscn:290-298 `factory_skin_enabled=null / factory_surface_style=null` repeated PlatformA:308-312, PlatformB:316-320, PlatformC:328-331; solid_platform.gd:3159 `bool`, 3362 `use_factory_skin: bool = factory_skin_enabled and ...`, 3364-3372. Assigning null to bool export and `null and ...` to typed bool errors during `_sync_geometry` on Floor/A/B/C `_ready`. second_room.tscn:568-572 has no nulls (`factory_surface_style=1`, skin inherits true), so main-only regression. Fix requires packet-external edit, not done here.
+
+P2-1 — scenes/main.tscn:47-60, scenes/second_room.tscn:476-489, scripts/world/factory_wall_visual.gd:3079-3082,3098-3099
+Both `LeftWallVisual (0,1)` and `RightWallVisual (2,1)` use `flip_h=true` with same `draw_set_transform(Vector2(64,0),0,Vector2(-1,1))`. Collision correct (64-wide, faces 64/1088, height 10*64+8=648). Texture handedness cannot be proven from packet; validation in `main.gd:_validate_authored_room_boundaries/_validate_authored_platform` never checks `WallVisuals` coords/flip. Verify against atlas before any art change.
+
+P2-2 — scripts/world/main.gd:get_prepared_authored_target_position:842-845 + training_target.gd:2082-2088
+Failure sentinel is `Vector2.ZERO`, same type as success. Fixtures never zero (main 915,392; second 615,325) so no live misfire, but `TrainingTarget._ready` treats any `TYPE_VECTOR2` as valid and does `position=prepared`. Fragile API.
+
+P2-3 — scripts/world/main.gd:_collect_authored_world_obstacles:1009-1010, _validate_authored_spawns_and_patrol:1063-1066
+Only direct-children `StaticBody2D` collected; nested world bodies silently ignored. Sweep Y uses `worker_body.position.y`, not patrol-area Y (fixtures coincide at 560). Passes frozen fixtures, fragile to future nesting/drift.
+
+RISKS: Invisible-sprite cause unproven: `player_sprite_frames`, `training_target/rivet_worker_sprite_frames`, `enemy_hit_flash.gdshader`, `factory_surface_visual.gd`, `containment_attack_visual.gd: set_area_state`, `run_build/room_transition` outside packet, so `set(surface_size/surface_style)`, `set_area_state`, `flash_amount` API validity and runtime visibility not verifiable here. Managed wiring (`common_room_scene/boss_room_scene`) inspector-dependent.
+NEXT_STEP: Principal decides null-skin fix and atlas-orientation check; no workspace changes made.

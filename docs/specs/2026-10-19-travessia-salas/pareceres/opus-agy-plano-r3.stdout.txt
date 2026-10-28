@@ -1,0 +1,59 @@
+STATUS: done (approved with conditions; nothing in R3 blocks persisting it to plan/spec)
+
+SUMMARY: R3 closes the P1/P2 items from R2 as written. Four of them are closed as specified:
+- **Lock order:** check everything first, then lock.
+- **Crossing test:** uses positions only, never final velocity.
+- **Snapshot:** created only at black.
+- **Managed flow:** fixes the factual error in Grok's R2 review (the RunController always creates a new Player).
+
+What's left is wording to tighten in the spec text. None of it is new scope.
+
+1. **[P2] Order when restoring the lock.** When locking, set `disable_mode=KEEP_ACTIVE` first, then `PROCESS_MODE_DISABLED` (already correct). On rollback, do the reverse:
+   - Restore the original `process_mode` first, then the original `disable_mode`.
+   - If you restore `disable_mode` (REMOVE) while still DISABLED, the body leaves and re-enters the physics space for one frame. That fires stray `body_exited`/`body_entered` signals on Areas.
+   - The spec should state this order explicitly.
+
+2. **[P2] What the deferred re-check actually checks.** By the time the deferred call runs, `previousX` has already moved on, so the `previous<1120<=current` test can't be run a second time. The spec should say the deferred step checks:
+   - the stored (latched) crossing event;
+   - the *current* collider center X ≥1120, inside the tunnel X range (1088..1152);
+   - center Y within 432..560.
+
+3. **[P2] Rollback "opens gate" must mean "confirm it is open".** The gate must never be made solid again while the Player overlaps x1088..1152. If it were, the body would be pushed out unpredictably when processing resumes.
+   - Rollback just repeats `set_deferred("disabled", true)`, which is harmless if already open.
+   - The terminal case ("destination empty") must be decided *before* the gate would open, so the gate is never opened and then closed.
+   - On rollback, the gate open must take effect before the Player is unlocked.
+
+4. **[P2] Waiting for the new scene needs a limit.** The wait for the new `current_scene` should:
+   - poll each `process_frame` until `current_scene` is valid, is not the old scene, and `is_node_ready()`;
+   - check the token every frame;
+   - stop after a fixed number of frames.
+
+   If the scene fails after the swap, the old room is already gone. The spec must say what happens then: fade in to whatever exists, free the helper, clear the snapshot. Otherwise the screen can stay black forever. Don't depend on a `scene_changed` signal unless the engine version is confirmed to have it.
+
+5. **[P2] Replace "blocked or invalidates/cancels" with a decision per input.** Recommended:
+   - **Pause during a transition:** blocked.
+   - **Restart:** cancels the token.
+
+   Also fix the helper's `process_mode`. If it is ALWAYS and pause isn't blocked, the swap could happen under the pause menu.
+
+6. **[P3] Collider center and first sample.**
+   - Compute the collider center from the `CollisionShape2D` global transform, mapped into door/room coordinates, rather than the hard-coded `-38`.
+   - The first valid sample only sets `previous`; no crossing is evaluated on that frame.
+   - The `currentX>previousX` condition is redundant (the edge test already implies it). It does no harm.
+
+7. **[P3] The snapshot is used once.** The new room clears it when it reads it, so a later manual restart can't apply stale HP/build.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- **Can the Player physically reach X=1120? (P1 if not)** The OuterGuard stops the body at x=1152, so the furthest the collider center can go is `1152 − halfWidth − safe_margin` (0.08 by default).
+  - The crossing only works if the collider's half-width is under about 31.9 px.
+  - At exactly 32 px the center stops at about 1119.92 and the crossing never fires.
+  - The collider's full height must also be under 128 px to fit the tunnel.
+  - The Player's width hasn't been confirmed here; the principal needs to check it against the actual shape.
+- **Player child collision objects.** Child Areas such as a hurtbox inherit DISABLED but keep their own REMOVE mode. They leave the physics space during the lock and re-enter on rollback. This is low risk because the room is cleared, but it's worth noting.
+- **No way back after the swap.** If the new scene fails after `change_scene_to_packed` succeeds, the old room is already freed. Item 4 limits the damage but can't undo it.
+
+NEXT_STEP: Write items 1–5 (and optionally 6–7) into spec.md, and confirm the Player collider half-width is under 31.9 px. After that the principal can release implementation; no further R4 review is needed for these clarifications alone.

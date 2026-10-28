@@ -1,0 +1,13 @@
+diff --git a/docs/specs/2026-10-24-cospe-rebite-aviso/historico/base/scenes/rivet_worker.tscn b/scenes/rivet_worker.tscn
+index 85c038a..452d06a 100644
+--- a/docs/specs/2026-10-24-cospe-rebite-aviso/historico/base/scenes/rivet_worker.tscn
++++ b/scenes/rivet_worker.tscn
+@@ -118,7 +118,7 @@ vertical_alignment = 1
+ visible = false
+ z_index = 2
+ width = 12.0
+-default_color = Color(1.0, 0.27451, 0.247059, 0.82)
++default_color = Color(0.0980392, 0.12549, 0.192157, 0.44)
+ points = PackedVector2Array(0.0, 0.0, 100.0, 0.0)
+ 
+ [node name="WarningMark" type="Node2D" parent="."]

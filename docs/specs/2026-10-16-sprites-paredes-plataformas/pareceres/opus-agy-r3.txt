@@ -1,0 +1,33 @@
+STATUS: done
+
+SUMMARY: Revisão final da V3, apenas inline, sem ferramentas. Os cinco bloqueios da R2 foram resolvidos e não encontrei contradição concreta que impeça o plano.
+
+- **B1 (dono da falha): resolvido.** No modo managed, a validação roda antes de `add_child`. Se falhar, a instância não adicionada é descartada com `Node.free()`, `_fail_run` é chamado e não há `room_cleared`. No standalone, `Main._enter_tree` roda antes do `_ready` dos filhos, porque no Godot `_enter_tree` desce do pai para os filhos e `_ready` sobe dos filhos para o pai. Uma busca relativa por filhos (`get_node`) funciona mesmo com a sala fora da árvore, já que só usa coordenadas locais. A ordem é primário, depois fallback, e por fim erro visível sem vitória. Como `prepare_authored_layout()` é idempotente, rodá-la de novo no `_enter_tree` do managed não causa problema.
+- **B2 (apoio): resolvido.** Conferi os quatro suportes:
+  - C (915,392): base 440, igual ao topo de C; x=879..951 cabe em 828..1002.
+  - A (290,420): base 468; x=254..326 cabe em 188..392.
+  - Upper (615,325): base 373; x=579..651 cabe em 528..702.
+  - West (340,420): base 468; x=304..376 cabe em 228..452.
+  - Todas as larguras são ≥88. O contato com o suporte escolhido é permitido e fica fora da checagem de obstrução.
+- **B3 (spawns): resolvido.**
+  - Player em main ocupa x=146..174, sem sobrepor A (que começa em 180). Em second_room ocupa x=114..142, sem sobrepor West.
+  - No piso há só toque de borda (área zero).
+  - A patrulha do worker em main (y=496..560) cruza A no eixo x (397..400), mas não no eixo y, porque a base de A é 492.
+  - A patrulha em second_room não toca East nem a parede direita.
+  - Os AABBs do alvo não batem em outros corpos da layer 1.
+- **A1 (alvo sólido): resolvido.** O alvo vivo bloqueia o player. Ao chegar em C ou Upper, o player é parado pela lateral do alvo e cai no espaço livre de 59 ao lado. Altura de salto é cerca de 128 contra 96 do alvo. A rota completa depois do `queue_free` está prevista.
+- **M1 (skin): resolvido.** O helper tem fonte, posição e células definidas. As contas fecham: 10×64 + 8 = 648, e o recorte de 4px no atlas vira 8 na escala ×2. As faixas visuais coincidem com x=0..64 e x=1088..1152. A linha 55 usando a borda 56 também confere: 392+48 = 440 e 560−48+48 = 560.
+- **Escopo:** as APIs novas ficam em Main, RunController e TrainingTarget. Os gates em RivetWorker são condicionais. Bloquear o input no standalone pode ser feito pelo próprio `main.gd` (por exemplo, desligando o processamento do Player), sem tocar no script do player.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: Três ambiguidades de redação, nenhuma bloqueante:
+1. A spec §7 diz "centro global do suporte", enquanto §2 proíbe transform global. Como alvo e plataformas são filhos diretos da sala, isso deve ser lido como "coordenadas locais da sala".
+2. "Layer 8 / mask 9" só é coerente se os dois forem valores de bitmask, como `collision_layer = 8` (layer 4) e `collision_mask = 9`. Se "layer 8" fosse o número da camada, a mask 9 não a incluiria. Convém confirmar na implementação.
+3. A "passagem lateral de 31" é, na prática, o espaço onde o player cabe ao lado do alvo, não um desvio em 2D. A travessia com o alvo vivo depende de saltar por cima dele ou de esperar a derrota. Isso já está como pendente para o teste autorizado.
+
+Ficam pendentes só o que precisa de verificação autorizada: alcançabilidade real de East→Upper, causa da invisibilidade dos sprites e LOS.
+
+NEXT_STEP: Considerar a V3 aprovada nesta revisão e persistir este parecer em `pareceres/`. A implementação continua dependendo de autorização explícita, e verificação no Godot só se for pedida.

@@ -1,0 +1,16 @@
+{
+  "revision": "R1 antes de acrescentar contenção externa",
+  "files": [
+    {
+      "file": "plano.md",
+      "sha256": "1402b835ed4c12dfa985613c0f78822817749ede5bfd0f9bddde7b05ff350c57",
+      "bytes": 2554
+    },
+    {
+      "file": "spec.md",
+      "sha256": "9081dc86ba966311042f030edd0b23012ae644b2c3a43bf2b43297c1b977f9ff",
+      "bytes": 3717
+    }
+  ],
+  "captured_local_state": "2026-10-19T03:13:55Z"
+}

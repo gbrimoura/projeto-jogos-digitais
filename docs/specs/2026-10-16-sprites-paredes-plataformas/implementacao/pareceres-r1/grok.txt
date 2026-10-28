@@ -1,0 +1,31 @@
+STATUS: done  
+SUMMARY: Frozen packet reviewed read-only. Authored fixtures (sizes, interior 64px walls, target math, pre-tree `configure_run_managed` / `_enter_tree` prepare, invalid-room gates) are internally consistent. No P1 that would pass a valid room, skip validation, or allow progression. Several P2s: ungated wall visuals, `null` factory-skin overrides on sala 01, PlatformA shape not serialized, authored-support ZERO when layout flag is off, fake `atlas_source_id` draw gate.  
+CHANGED_FILES: none  
+TESTS: none  
+
+P1  
+none
+
+P2  
+1. `scripts/world/main.gd` `prepare_authored_layout` / `_validate_authored_room_boundaries` — wall **collision** is gated; wall **visuals** are not. A room with missing/misaligned `WallVisuals` still returns valid. Fixtures do align (Left `position` 0, Right `1088`, draw 64×648 vs collision `Vector2(32,324)`/`(1120,324)` size `64×648`), but that match is not enforced.
+
+2. `scenes/main.tscn` Floor / PlatformA / PlatformB / PlatformC — `factory_skin_enabled = null` and `factory_surface_style = null` on typed bool/enum exports. Packed `[scenes/solid_platform.tscn](scenes/solid_platform.tscn)` sets `factory_skin_enabled = true`; `[scenes/second_room.tscn](scenes/second_room.tscn)` inherits that. NIL on a bool/enum either errors at apply or turns skin off, so sala 01 can show Polygon2D Fill “bars” while sala 02 keeps factory surfaces. `_sync_surface_skin` in `solid_platform.gd` only shows factory tiles when `factory_skin_enabled` is true.
+
+3. `scenes/main.tscn` PlatformA — no `size` and no `CollisionShape2D` override. Validator `_authored_platform_size(&"PlatformA")` and `_validate_authored_platform` require `220×24`. That currently matches `solid_platform.tscn` (`size` and `RectangleShape2D_platform` both `220×24`). Floor/B/C serialize authored shapes; A does not. Packed-default drift fails the room at prepare.
+
+4. `scripts/world/training_target.gd` `_ready` / `scripts/world/main.gd` `is_authored_layout_valid` / `get_prepared_authored_target_position` — `is_authored_layout_valid()` is true whenever `authored_layout_enabled` is false. If `authored_support_enabled` stays true, `_parent_room_allows_enemy_activation()` passes, then `get_prepared_authored_target_position` returns `Vector2.ZERO` (`_authored_target_node` is null), and `_ready` does `position = prepared_position` with no ZERO check. Origin sits inside the new interior left wall (`x=0–64`). Current tscn sets both flags true; the exports are independent.
+
+5. `scripts/world/factory_wall_visual.gd` `_draw` — `if atlas_texture == null or atlas_source_id != 0` returns without drawing. `atlas_source_id` is never used as TileSet API; scenes hardcode `0`. Any non-zero value yields collision walls with no tiles. Fake API / silent fail.
+
+6. `scripts/world/training_target.gd` `_ready` vs `scripts/world/combat_room.gd` `_ready` on **invalid standalone** — both enemies `add_to_group("combat_enemy")` before disable. `CombatRoom` is a later child, so `_register_enemies` + `_update_hud` still run (`ENCONTRO ATIVO`). `Main._ready` then disables and shows a 720×200 overlay (`layer` 20) that does not cover HUD (`layer` 10). Progression is still blocked (`room_cleared` not connected; `_on_room_cleared` / `_resolve_after_physics_flush` return). Messy invalid-room presentation, not a run advance.
+
+Confirmed non-issues (evidence)  
+- Managed gate: `configure_run_managed` calls `prepare_authored_layout()` while `is_inside_tree()` is false; `RunController._load_current_encounter` instantiates, configures, frees on false, only then `add_child`.  
+- Standalone order: `Main._enter_tree` prepares before child `_ready`; `TrainingTarget` reads `get_prepared_authored_target_position`.  
+- Interior walls: old outside 32px at `-16`/`1168` → 64px at `32`/`1120` (playable `64–1088`). ExitDoor `1080→1040`. Patrol sweep uses body AABB and rejects `x<64` or `end.x>1088`; main `397–943`, sala 02 `~737–1063`.  
+- Target: collider `72×96` centered; on PlatformC top `440` → origin `(915, 392)` matches tscn; fallback `../PlatformA` / `../WestPlatform` only if primary fails; layer `8` / player mask `9` gated.  
+- PlatformA/B/C and second-room platforms: `randomize_position`/`randomize_width` false; Floor `1152×88` at `576,604` with matching shape.  
+- Wall orientation: Left `(0,1)` and Right `(2,1)` both `flip_h = true` matches `_draw` comment (finish toward interior if those cells are outer-left / outer-right). Atlas pixels not in the packet; not proven wrong.
+
+RISKS: Character `AnimatedSprite2D` frames/shader not in the packet — invisibility vs bars/attacks still unproven; no shader/art change recommended. Wall finishing vs atlas `(0,1)`/`(2,1)`+flip unproven without the PNG. `factory_skin_enabled = null` load/runtime meaning is engine-defined.  
+NEXT_STEP: Keep enemy sprite/shader work out of this increment. If a follow-up lands: gate `WallVisuals` pose/atlas/flip against the 64px interior AABBs; replace main.tscn `null` skin overrides with explicit bool/enum; serialize PlatformA `size`+shape like B/C; treat authored-support ZERO / layout-flag mismatch as invalid and disable.

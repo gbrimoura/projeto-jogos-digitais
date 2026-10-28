@@ -1,0 +1,54 @@
+STATUS: done
+SUMMARY: Revisão estática documental e de pipeline Aseprite concluída com sucesso sobre o script Lua, `metadata.json` e manifesto congelados. O contrato de arte foi integralmente cumprido: preservação exata dos 3 cels legados (RGBA e durações), atlas 960x64 sem trim/padding, 15 cels com temporizações nominais, paleta estrita de 14 cores (Cartoon V2 + #FE5B01), limites espaciais contidos em [14, 50) x [8, 56) com pivô (32, 56) e sobrancelha de 4 pixels aceita. Nenhum impeditivo P1 detectado.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco impeditivo na camada de arte/pipeline. Na futura camada de runtime, atenção ao consumo da tag `attack` que engloba o frame 14 (1100 ms).
+NEXT_STEP: Prosseguir para a etapa de integração em runtime Godot (quando solicitada pelo usuário), consumindo o atlas e mapeando as tags e o pivô conforme definidos no metadata.
+
+---
+
+### Parecer Técnico de Arte & Pipeline (Aseprite Lua / Metadata)
+
+#### 1. Verificação Contratual e Estrutural
+
+1. **Canvas e Atlas**:
+   - Canvas unitário: 64x64 px.
+   - Atlas horizontal: 960x64 px (exatamente 15 cels de 64 px contíguos, sem padding, sem margens e sem trimming).
+   - Modo de cor: RGB com canal alfa estritamente binário (0 ou 255), renderizado por vizinho mais próximo (*nearest-neighbor*), sem interpolação anti-aliasing ou dithering espúrio.
+
+2. **Preservação dos Cels Legados (0 a 2 / frames 1 a 3)**:
+   - Duração nominal preservada: Cel 0 = 250 ms, Cel 1 = 120 ms, Cel 2 = 250 ms (`[0.25, 0.12, 0.25]` s).
+   - O teste de decodificação no próprio script (`legacy_rgba.frames_0_to_2_pixel_values_and_durations_equal: true`) garante equivalência de pixels RGBA pixel a pixel em relação ao `training_target.aseprite` original.
+
+3. **Novas Poses e Temporizações (Cels 3 a 14 / frames 4 a 15)**:
+   - **Walk** (cels 3..6): 4 frames de 120 ms cada (`walk_contact_a`, `walk_pass_left`, `walk_contact_b`, `walk_pass_right`).
+   - **Windup** (cels 7..9): compressão e antecipação com 180 ms, 220 ms e 250 ms.
+   - **Active** (cels 10..11): impacto rápido com 70 ms e 70 ms.
+   - **Recovery / Neutral** (cels 12..14): 120 ms (`recovery_hold`), 180 ms (`recovery_unbrace`) e 1100 ms (`idle_neutral`).
+
+4. **Paleta e Cores**:
+   - Inventário estrito de 14 cores no `metadata.json`, derivado das cores do Cartoon V2 legado somadas ao swatch do visor `#FE5B01`.
+   - Nenhuma cor espúria ou vazada detectada (livre de `#2C4370` e `#B7C3CF`).
+   - As sobrancelhas dinâmicas de 4 pixels desenhadas durante a expressão agressiva utilizam `#00000D` (`C.outline`), em total conformidade com o estilo aceito.
+
+5. **Bounding Box e Pivô**:
+   - Pivô padronizado em `{"x": 32, "base_edge_y": 56}`.
+   - Limites espaciais contidos em todos os frames:
+     - Horizontal: mínimo `x = 14`, máximo exclusivo `x = 50` (largura máxima ocupada de 36 px, centralizada em torno de x=32).
+     - Vertical: mínimo `y = 9` (em `active_stomp`, dentro da tolerância `>= 8`), máximo exclusivo `y = 56` (linha de base da sola em `y = 55`, alinhada perfeitamente com a aresta de apoio em 56).
+
+---
+
+#### 2. Achados de Revisão
+
+##### Achados P1 (Impeditivos de Arte / Pipeline)
+- **Nenhum**. A entrega atende rigorosamente a todos os critérios e restrições do contrato congelado.
+
+##### Achados P2 (Observações Técnicas para Futura Integração em Runtime)
+- **P2.1 — Semântica de Tag Composta (`attack`) e Duração do Frame Final**:
+  - No `metadata.json`, a tag `"attack": [7, 14]` engloba os estágios de windup (7..9), active (10..11) e recovery completo (12..14).
+  - O frame index 14 (`idle_neutral`) possui `duration_ms: 1100`. Caso a futura máquina de estados de runtime execute a tag `attack` em reprodução linear direta sem evento de interrupção ou corte de transição, a animação ficará retida por 1,1 segundo na pose neutra antes de liberar o estado de ataque. Recomenda-se que a futura lógica de runtime encerre a janela de ataque ao final de `recovery_unbrace` (frame index 13) ou comute diretamente para a máquina de locomoção.
+- **P2.2 — Dependência de CWD Relativo no Script Lua**:
+  - A chamada `app.open('projeto-jogos-digitais/assets/player/source/player-animations.aseprite')` assume a execução com working directory no diretório pai (`TEC - Jogos`). Para re-execuções manuais do script fora do ambiente automatizado, essa dependência de caminho relativo deve ser observada. Como os artefatos estão congelados com hashes SHA-256 no manifesto, o estado atual está perfeitamente estável.
+- **P2.3 — Formato de Intervalo de Tags no Metadata**:
+  - O `metadata.json` registra as tags como arrays de índices zero-based inclusivos `[start, end]` (ex.: `"walk": [3, 6]`), em vez do formato de dicionário padrão de exports do Aseprite (`{"from": 3, "to": 6}`). O parser de animação da futura integração deverá ler essa convenção customizada do inventário.

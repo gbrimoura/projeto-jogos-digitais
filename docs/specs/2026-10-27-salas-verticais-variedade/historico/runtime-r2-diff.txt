@@ -1,0 +1,918 @@
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/exit_door.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/exit_door.gd
+index b5f9b6a..ca92bfd 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/exit_door.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/exit_door.gd
+@@ -63,8 +63,15 @@ func configure_managed_orientation(direction: Vector2i, offset: float, is_exit:
+ 		visual.set("flip_h", direction == Vector2i(-1, 0))
+ 	var label := get_node_or_null("DoorLabel") as Label
+ 	if label != null:
+-		label.offset_left = -112.0
+-		label.offset_right = 112.0
++		if direction == Vector2i(-1, 0):
++			label.offset_left = 40.0
++			label.offset_right = 264.0
++		elif direction == Vector2i(1, 0):
++			label.offset_left = -264.0
++			label.offset_right = -40.0
++		else:
++			label.offset_left = -112.0
++			label.offset_right = 112.0
+ 		label.offset_top = -112.0 if direction.y >= 0 else 76.0
+ 		label.offset_bottom = label.offset_top + 48.0
+ 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+@@ -198,6 +205,9 @@ func _player_collider_center_in_room(player: Player) -> Variant:
+ func _line_point_in_room() -> Vector2:
+ 	if _room_root == null:
+ 		return position
++	if not _managed_orientation_configured and _gate != null and _gate.shape != null:
++		var gate_center_global := _gate.global_transform * _gate.shape.get_rect().get_center()
++		return _room_root.to_local(gate_center_global)
+ 	return _room_root.to_local(global_position)
+ 
+ func _normal() -> Vector2:
+@@ -251,4 +261,4 @@ func _update_presentation() -> void:
+ 	elif not _room_is_cleared:
+ 		_door_label.text = "SAÍDA BLOQUEADA\nELIMINE OS INIMIGOS"
+ 	else:
+-		_door_label.text = "SAÍDA ABERTA\nATRAVESSE"
+\ No newline at end of file
++		_door_label.text = "SAÍDA ABERTA\nATRAVESSE"
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/main.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/main.gd
+index ffb4f88..a3999e3 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/main.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/main.gd
+@@ -83,6 +83,7 @@ var _run_progression_notified: bool = false
+ var _authored_layout_prepared: bool = false
+ var _authored_layout_valid: bool = false
+ var _authored_layout_error: String = ""
++var _suppress_authored_layout_errors: bool = false
+ var _authored_target_position: Vector2 = Vector2.ZERO
+ var _authored_target_node: Node
+ var _authored_target_support: SolidPlatform
+@@ -129,7 +130,6 @@ func prepare_authored_layout() -> bool:
+ 	if _run_controller_managed:
+ 		if _managed_room_descriptor.is_empty():
+ 			return _fail_authored_layout("descritor gerenciado ausente")
+-		SolidPlatform.room_seed = room_layout_seed
+ 		var family := StringName(_managed_room_descriptor.get("family", &""))
+ 		var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+ 		var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+@@ -200,8 +200,66 @@ func prepare_authored_layout() -> bool:
+ 		_prepared_platform_rects[platform_name] = platform_result.get("rect", Rect2())
+ 
+ 	if _run_controller_managed:
+-		if not _validate_managed_generated_route(authored_platform_names, generation):
+-			return false
++		_suppress_authored_layout_errors = true
++		var candidate_route_valid := _validate_managed_generated_route(authored_platform_names, generation)
++		_suppress_authored_layout_errors = false
++		if not candidate_route_valid:
++			var candidate_error := _authored_layout_error
++			_authored_layout_error = ""
++			_prepared_platform_rects.clear()
++			var family := StringName(_managed_room_descriptor.get("family", &""))
++			var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
++			var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
++			var entry_offset := float(_managed_room_descriptor.get("entry_offset", -1.0))
++			var exit_offset := float(_managed_room_descriptor.get("exit_offset", -1.0))
++			var fallback_generation := RoomLayoutGenerator.generate_managed_layout(
++				family, room_layout_seed, entry_dir, exit_dir, entry_offset, exit_offset, true
++			)
++			if not bool(fallback_generation.get("valid", false)):
++				return _fail_authored_layout("layout candidato inválido (%s); fallback da família %s: %s" % [
++					candidate_error,
++					String(family),
++					String(fallback_generation.get("error", "geometria recusada")),
++				])
++			var fallback_platforms: Array[Dictionary] = fallback_generation.get("platforms", [])
++			if fallback_platforms.size() != authored_platform_names.size():
++				return _fail_authored_layout("fallback da família %s diverge da quantidade de apoios" % String(family))
++			var fallback_primary := int(fallback_generation.get("primary_index", -1))
++			var fallback_index := int(fallback_generation.get("fallback_index", -1))
++			if fallback_primary < 0 or fallback_primary >= authored_platform_names.size() \
++				or fallback_index < 0 or fallback_index >= authored_platform_names.size():
++				return _fail_authored_layout("fallback da família %s não definiu suportes de Tranca-Lata" % String(family))
++			target.fixed_support_path = NodePath("../" + String(authored_platform_names[fallback_primary]))
++			target.fallback_support_path = NodePath("../" + String(authored_platform_names[fallback_index]))
++			for platform_index in authored_platform_names.size():
++				var platform_name: StringName = authored_platform_names[platform_index]
++				var platform := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
++				if platform == null:
++					return _fail_authored_layout("plataforma ausente durante fallback: %s" % String(platform_name))
++				var generated: Dictionary = fallback_platforms[platform_index]
++				var generated_size: Vector2 = generated.get("size", Vector2.ZERO)
++				var generated_position: Vector2 = generated.get("position", Vector2.ZERO)
++				platform.size = generated_size
++				platform.position = generated_position
++				var platform_result := _validate_authored_platform(platform, generated_position, generated_size)
++				if not bool(platform_result.get("valid", false)):
++					return _fail_authored_layout("fallback da família %s: %s" % [
++						String(family),
++						String(platform_result.get("error", "plataforma inválida")),
++					])
++				_prepared_platform_rects[platform_name] = platform_result.get("rect", Rect2())
++			_suppress_authored_layout_errors = true
++			var fallback_route_valid := _validate_managed_generated_route(authored_platform_names, fallback_generation)
++			var fallback_error := _authored_layout_error
++			_suppress_authored_layout_errors = false
++			if not fallback_route_valid:
++				return _fail_authored_layout("layout candidato da família %s falhou (%s); fallback canônico também falhou (%s)" % [
++					String(family),
++					candidate_error,
++					fallback_error,
++				])
++			generation = fallback_generation
++			_authored_layout_error = ""
+ 		if not _validate_managed_room_boundaries():
+ 			return false
+ 	elif not _validate_generated_route(authored_platform_names):
+@@ -248,7 +306,8 @@ func get_prepared_room_layout_seed() -> int:
+ func _fail_authored_layout(message: String) -> bool:
+ 	_authored_layout_valid = false
+ 	_authored_layout_error = message
+-	push_error("Main: layout autoral inválido — " + message)
++	if not _suppress_authored_layout_errors:
++		push_error("Main: layout autoral inválido — " + message)
+ 	return false
+ 
+ func _detect_authored_platform_set() -> Dictionary:
+@@ -358,6 +417,9 @@ func _validate_managed_room_boundaries() -> bool:
+ 	if gate.position.distance_to(expected_position) > 0.01 or gate_shape == null \
+ 		or gate_shape.size.distance_to(expected_size) > 0.01:
+ 		return _fail_authored_layout("dimensão ou posição do gate não corresponde ao slot descrito")
++	var topology_contract: Dictionary = _managed_topology.call("validate_contract")
++	if not bool(topology_contract.get("valid", false)):
++		return _fail_authored_layout(String(topology_contract.get("error", "contrato de colisões gerenciadas inválido")))
+ 	return true
+ 
+ func _validate_managed_generated_route(platform_names: Array[StringName], generation: Dictionary) -> bool:
+@@ -445,86 +507,120 @@ func _managed_reachable_supports(rects: Array[Rect2], entry_dir: Vector2i, exit_
+ 	return reachable
+ 
+ func _managed_can_jump_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int, top_open: bool) -> bool:
+-	var delta_x := target.get_center().x - source.get_center().x
+ 	var required_rise := source.position.y - target.position.y
+ 	if required_rise < 0.0 or required_rise > 128.0:
+ 		return false
++	var movement := _managed_movement_values()
++	var max_speed := float(movement.get("move_speed", 260.0))
++	var acceleration := float(movement.get("acceleration", 1600.0))
++	var deceleration := float(movement.get("deceleration", 2200.0))
++	var gravity := float(movement.get("gravity", 1600.0))
++	var jump_velocity := float(movement.get("jump_velocity", 640.0))
++	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+ 	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+-	var launch_min := source.position.x + 22.0
+-	var launch_max := source.end.x - 22.0
+-	for launch_x_step in range(ceili(launch_min / 8.0), floori(launch_max / 8.0) + 1):
+-		var launch_x := float(launch_x_step * 8)
+-		for speed_index in 7:
+-			var speed := float([-260, -180, -100, 0, 100, 180, 260][speed_index])
+-			if signf(speed) != 0.0 and signf(speed) != signf(delta_x):
++	var launch_min := source.position.x + 14.0
++	var launch_max := source.end.x - 14.0
++	if launch_max < launch_min:
++		return false
++	var launch_points := _managed_launch_points(source, target, launch_min, launch_max)
++	var speed_candidates: Array[float] = [0.0, -100.0, 100.0, -180.0, 180.0, -260.0, 260.0]
++	for launch_x in launch_points:
++		var approach_axis := 0.0
++		if launch_x < target.position.x + 22.0:
++			approach_axis = 1.0
++		elif launch_x > target.end.x - 22.0:
++			approach_axis = -1.0
++		for initial_speed in speed_candidates:
++			if not is_zero_approx(initial_speed) and signf(initial_speed) != approach_axis:
+ 				continue
+-			var runway := speed * speed / (2.0 * 1600.0)
+-			if speed > 0.0 and launch_x - launch_min < runway:
++			var runway := initial_speed * initial_speed / maxf(2.0 * acceleration, 1.0)
++			if initial_speed > 0.0 and launch_x - launch_min + 0.01 < runway:
+ 				continue
+-			if speed < 0.0 and launch_max - launch_x < runway:
++			if initial_speed < 0.0 and launch_max - launch_x + 0.01 < runway:
+ 				continue
+-			var axis := signf(delta_x)
+ 			var root := Vector2(launch_x, source.position.y)
+-			var vx := speed
+-			var vy := -640.0
++			var vx := initial_speed
++			var vy := 0.0
++			var candidate_blocked := false
+ 			for frame in 120:
+-				if frame > 0:
+-					vy += 1600.0 * dt
+-				vx = move_toward(vx, axis * 260.0, 1600.0 * dt)
++				vy = minf(vy + gravity * dt, max_fall_speed)
++				if frame == 0:
++					vy = -jump_velocity
++				var horizontal_rate := acceleration if not is_zero_approx(approach_axis) else deceleration
++				vx = move_toward(vx, approach_axis * max_speed, horizontal_rate * dt)
+ 				var next := root + Vector2(vx, vy) * dt
+-				if next.y >= root.y and vy > 0.0 and root.y <= target.position.y and next.y >= target.position.y:
+-					if next.x >= target.position.x + 22.0 and next.x <= target.end.x - 22.0:
+-						return true
+ 				var body := Rect2(Vector2(next.x - 14.0, next.y - 76.0), Vector2(28.0, 76.0))
++				if body.position.x < 64.0 or body.end.x > 1088.0:
++					candidate_blocked = true
++					break
++				var descending_landing := vy > 0.0 and root.y <= target.position.y and next.y >= target.position.y
++				if descending_landing and body.end.x > target.position.x + 0.5 and body.position.x < target.end.x - 0.5:
++					return true
+ 				for blocker_index in rects.size():
+-					if blocker_index == source_index or rects[blocker_index] == target:
++					if blocker_index == source_index:
+ 						continue
+-					if _positive_overlap_area(body, rects[blocker_index]) > 0.01:
+-						return false
+-				if top_open and body.position.y < 64.0 and body.end.y > -32.0:
++					if _positive_overlap_area(body, rects[blocker_index]) <= 0.01:
++						continue
++					# Plataformas sólidas também bloqueiam subida e colisões laterais.
++					# Só a aterrissagem descendente no topo do alvo é uma rota válida.
++					candidate_blocked = true
++					break
++				if candidate_blocked:
++					break
++				if body.position.y < 64.0 and body.end.y > -32.0:
+ 					var portal_x := float(_managed_room_descriptor.get("exit_offset", -1.0))
+-					if body.position.x < portal_x - 128.0 or body.end.x > portal_x + 128.0:
+-						return false
++					var inside_open_hatch := top_open \
++						and _managed_room_descriptor.get("exit_dir", Vector2i.ZERO) == Vector2i(0, -1) \
++						and body.position.x >= portal_x - 128.0 \
++						and body.end.x <= portal_x + 128.0
++					if not inside_open_hatch:
++						candidate_blocked = true
++						break
+ 				root = next
+ 				if root.y > source.position.y + 180.0:
+ 					break
++			# Um bloqueio invalida apenas este lançamento; os demais são testados.
++			if candidate_blocked:
++				continue
+ 	return false
+ 
+ func _managed_can_drop_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int) -> bool:
+ 	if target.position.y <= source.position.y or target.position.y - source.position.y > 400.0:
+ 		return false
+-	var horizontal_gap := maxf(target.position.x - source.end.x, source.position.x - target.end.x)
+-	if horizontal_gap > 96.0:
+-		return false
++	var movement := _managed_movement_values()
++	var max_speed := float(movement.get("move_speed", 260.0))
++	var acceleration := float(movement.get("acceleration", 1600.0))
++	var gravity := float(movement.get("gravity", 1600.0))
++	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+ 	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+-	var launch_min := source.position.x + 8.0
+-	var launch_max := source.end.x - 8.0
+-	for launch_x_step in range(ceili(launch_min / 8.0), floori(launch_max / 8.0) + 1):
+-		for initial_speed in [0.0, 100.0, 180.0, 260.0]:
+-			var root := Vector2(float(launch_x_step * 8), source.position.y)
+-			var sign_to_target := signf(target.get_center().x - root.x)
+-			if sign_to_target == 0.0:
+-				sign_to_target = 1.0
+-			var vx := initial_speed * sign_to_target
++	var launch_min := source.position.x - 14.0
++	var launch_max := source.end.x + 14.0
++	var launch_points := _managed_launch_points(source, target, launch_min, launch_max)
++	for launch_x in launch_points:
++		for direction in [-1.0, 1.0]:
++			var root := Vector2(launch_x, source.position.y)
++			var vx := 0.0
+ 			var vertical_speed := 0.0
+ 			for _frame in 120:
+ 				var previous := root
+-				vx = move_toward(vx, sign_to_target * 260.0, 1600.0 * dt)
++				vx = move_toward(vx, direction * max_speed, acceleration * dt)
+ 				root.x += vx * dt
+ 				var still_supported := root.x + 14.0 > source.position.x and root.x - 14.0 < source.end.x
+ 				if still_supported:
+ 					root.y = source.position.y
+ 					vertical_speed = 0.0
+ 				else:
+-					vertical_speed += 1600.0 * dt
++					vertical_speed = minf(vertical_speed + gravity * dt, max_fall_speed)
+ 					root.y += vertical_speed * dt
+-				if previous.y <= target.position.y and root.y >= target.position.y \
+-					and root.x >= target.position.x + 22.0 and root.x <= target.end.x - 22.0:
+-					return true
+ 				var body := Rect2(Vector2(root.x - 14.0, root.y - 76.0), Vector2(28.0, 76.0))
++				if body.position.x < 64.0 or body.end.x > 1088.0:
++					break
++				var descending_landing := not still_supported and previous.y <= target.position.y and root.y >= target.position.y
++				if descending_landing and body.end.x > target.position.x + 0.5 and body.position.x < target.end.x - 0.5:
++					return true
+ 				var blocked := false
+ 				for blocker_index in rects.size():
+-					if blocker_index == source_index or rects[blocker_index] == target:
++					if blocker_index == source_index:
+ 						continue
+ 					if _positive_overlap_area(body, rects[blocker_index]) > 0.01:
+ 						blocked = true
+@@ -534,29 +630,91 @@ func _managed_can_drop_between(source: Rect2, target: Rect2, rects: Array[Rect2]
+ 				if root.y > target.position.y + 80.0:
+ 					break
+ 	return false
++
++func _managed_launch_points(source: Rect2, target: Rect2, launch_min: float, launch_max: float) -> Array[float]:
++	var points: Array[float] = []
++	var candidates: Array[float] = [
++		launch_min + 8.0,
++		launch_min + 32.0,
++		source.get_center().x,
++		launch_max - 32.0,
++		launch_max - 8.0,
++		target.position.x - 64.0,
++		target.position.x - 32.0,
++		target.position.x + 22.0,
++		target.get_center().x,
++		target.end.x - 22.0,
++		target.end.x + 32.0,
++		target.end.x + 64.0,
++	]
++	for candidate in candidates:
++		var point := clampf(snappedf(candidate, 8.0), launch_min, launch_max)
++		if not points.has(point):
++			points.append(point)
++	return points
++
++func _managed_movement_values() -> Dictionary:
++	var config := MovementConfig.new()
++	var player_node := get_node_or_null("Player") as Player
++	if player_node != null and player_node.movement_config != null:
++		config = player_node.movement_config
++	return {
++		"move_speed": config.move_speed,
++		"acceleration": config.acceleration,
++		"deceleration": config.deceleration,
++		"gravity": config.gravity,
++		"jump_velocity": config.jump_velocity,
++		"max_fall_speed": config.max_fall_speed,
++	}
+ func _managed_can_reach_bottom_sensor(portal_x: float) -> bool:
+ 	if portal_x != 248.0 and portal_x != 904.0:
+ 		return false
++	var movement := _managed_movement_values()
++	var gravity := float(movement.get("gravity", 1600.0))
++	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+ 	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+ 	var root_y := 560.0
+ 	var vertical_speed := 0.0
+ 	for _frame in 120:
+-		vertical_speed += 1600.0 * dt
++		vertical_speed = minf(vertical_speed + gravity * dt, max_fall_speed)
++		var previous_center_y := root_y - 38.0
+ 		root_y += vertical_speed * dt
+ 		var center_y := root_y - 38.0
+-		if center_y >= 604.0:
+-			return portal_x - 14.0 >= portal_x - 128.0 and portal_x + 14.0 <= portal_x + 128.0 and root_y <= 660.0
++		if previous_center_y < 604.0 and center_y >= 604.0:
++			var body_left := portal_x - 14.0
++			var body_right := portal_x + 14.0
++			return body_left >= portal_x - 128.0 \
++				and body_right <= portal_x + 128.0 \
++				and root_y <= 660.0
+ 	return false
++
+ func _managed_can_reach_top_sensor(source: Rect2, portal_x: float) -> bool:
+-	if absf(source.get_center().x - portal_x) > 0.01 or source.position.y != 160.0:
++	if absf(source.get_center().x - portal_x) > 0.01 \
++		or absf(source.position.y - 160.0) > 0.01 \
++		or _managed_room_descriptor.get("exit_dir", Vector2i.ZERO) != Vector2i(0, -1):
+ 		return false
++	var movement := _managed_movement_values()
++	var gravity := float(movement.get("gravity", 1600.0))
++	var jump_velocity := float(movement.get("jump_velocity", 640.0))
++	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+ 	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
++	var root_y := source.position.y
++	var vertical_speed := 0.0
+ 	for frame in 30:
+-		var root_y := source.position.y - 640.0 * dt * float(frame) + 0.5 * 1600.0 * dt * dt * float(frame * (frame - 1))
++		vertical_speed = minf(vertical_speed + gravity * dt, max_fall_speed)
++		if frame == 0:
++			vertical_speed = -jump_velocity
++		var previous_center_y := root_y - 38.0
++		root_y += vertical_speed * dt
+ 		var center_y := root_y - 38.0
+-		var head_y := root_y - 76.0
+-		if center_y <= 32.0 and head_y > -48.0 and portal_x >= 64.0 + 14.0 and portal_x <= 1088.0 - 14.0:
+-			return true
++		var body_left := portal_x - 14.0
++		var body_right := portal_x + 14.0
++		if previous_center_y > 32.0 and center_y <= 32.0:
++			var head_y := root_y - 76.0
++			return head_y > -48.0 \
++				and body_left >= portal_x - 128.0 \
++				and body_right <= portal_x + 128.0 \
++				and body_left >= 64.0 and body_right <= 1088.0
+ 	return false
+ func _get_player_spawn_x_for_layout() -> float:
+ 	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+@@ -979,24 +1137,69 @@ func _restart_authored_room() -> void:
+ 	_cancel_standalone_transition()
+ 	get_tree().reload_current_scene()
+ 
++func _managed_descriptor_error(requested_seed: int, descriptor: Dictionary) -> String:
++	for key in [&"room_seed", &"family", &"entry_dir", &"exit_dir", &"coord", &"entry_offset", &"exit_offset"]:
++		if not descriptor.has(key):
++			return "descritor gerenciado sem campo obrigatório: %s" % String(key)
++	if typeof(descriptor["room_seed"]) != TYPE_INT or requested_seed == 0 or int(descriptor["room_seed"]) != requested_seed:
++		return "room_seed do descritor precisa ser inteiro não zero e coincidir com a seed solicitada"
++	if typeof(descriptor["family"]) != TYPE_STRING_NAME:
++		return "family do descritor precisa ser StringName"
++	var family := StringName(descriptor["family"])
++	if not [&"catwalk", &"ridge", &"valley", &"roof_four", &"roof_five"].has(family):
++		return "family gerenciada desconhecida: %s" % String(family)
++	if typeof(descriptor["entry_dir"]) != TYPE_VECTOR2I or typeof(descriptor["exit_dir"]) != TYPE_VECTOR2I or typeof(descriptor["coord"]) != TYPE_VECTOR2I:
++		return "direções e coordenada do descritor precisam ser Vector2i"
++	var entry_dir: Vector2i = descriptor["entry_dir"]
++	var exit_dir: Vector2i = descriptor["exit_dir"]
++	var directions: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
++	if not directions.has(entry_dir) or not directions.has(exit_dir) or entry_dir == exit_dir:
++		return "direções do descritor são inválidas ou saída coincide com entrada"
++	var requires_roof := entry_dir == Vector2i(0, -1) or exit_dir == Vector2i(0, -1)
++	var is_roof_family := family == &"roof_four" or family == &"roof_five"
++	if requires_roof != is_roof_family:
++		return "família não corresponde à necessidade de hatch superior do descritor"
++	for key in [&"entry_offset", &"exit_offset"]:
++		var offset_value: Variant = descriptor[key]
++		if typeof(offset_value) != TYPE_FLOAT and typeof(offset_value) != TYPE_INT:
++			return "%s do descritor precisa ser numérico" % String(key)
++		var expected := 496.0 if (entry_dir if key == &"entry_offset" else exit_dir).x != 0 else -1.0
++		var offset := float(offset_value)
++		if expected >= 0.0:
++			if absf(offset - expected) > 0.01:
++				return "%s fora do centro lateral canônico" % String(key)
++		elif offset != 248.0 and offset != 904.0:
++			return "%s fora dos slots verticais canônicos" % String(key)
++	return ""
++
++
+ func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool, requested_seed: int = 0, room_descriptor: Dictionary = {}) -> bool:
+ 	if is_inside_tree() or shared_build == null:
+ 		return false
++	if _run_controller_managed:
++		var same_request := _managed_room_descriptor == room_descriptor and _managed_run_build == shared_build \
++			and reward_enabled == offer_build_upgrade and room_layout_seed == requested_seed
++		return same_request and (not authored_layout_enabled or is_authored_layout_valid())
++	if _authored_layout_prepared:
++		return false
+ 	var managed_exit_door := get_node_or_null("ExitDoor")
+ 	if managed_exit_door == null or not managed_exit_door.has_signal("transition_requested"):
+ 		return false
+ 	if room_descriptor.is_empty():
+-		return false
++		return _fail_authored_layout("descritor gerenciado ausente")
++	var descriptor_error := _managed_descriptor_error(requested_seed, room_descriptor)
++	if not descriptor_error.is_empty():
++		return _fail_authored_layout(descriptor_error)
+ 	_run_controller_managed = true
+ 	_managed_room_descriptor = room_descriptor.duplicate(true)
+ 	_managed_run_build = shared_build
+ 	reward_enabled = offer_build_upgrade
+-	if requested_seed != 0:
+-		room_layout_seed = requested_seed
++	room_layout_seed = requested_seed
+ 	if authored_layout_enabled and not prepare_authored_layout():
+ 		return false
+ 	return true
+ 
++
+ func _ready() -> void:
+ 	if authored_layout_enabled and not is_authored_layout_valid():
+ 		_disable_invalid_authored_room()
+@@ -1537,4 +1740,4 @@ func _load_current_packed_scene() -> PackedScene:
+ 	var current_path := _current_scene_path()
+ 	if current_path.is_empty():
+ 		return null
+-	return ResourceLoader.load(current_path, "PackedScene") as PackedScene
+\ No newline at end of file
++	return ResourceLoader.load(current_path, "PackedScene") as PackedScene
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/managed_room_topology.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/managed_room_topology.gd
+index 3b5ca19..134b262 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/managed_room_topology.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/managed_room_topology.gd
+@@ -57,12 +57,12 @@ func configure(room: Node2D, descriptor: Dictionary) -> Dictionary:
+ 		var left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+ 		var right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+ 		if left_edge > 0.0:
+-			_add_shape("ManagedCeilingUpperLeft", Vector2(left_edge * 0.5, -16.0), Vector2(left_edge, 32.0))
+-			_add_shape("ManagedCeilingBandLeft", Vector2(left_edge * 0.5, 32.0), Vector2(left_edge, 64.0))
++			_add_shape("ManagedCeilingUpperLeft", Vector2(ceiling_left_edge * 0.5, -16.0), Vector2(ceiling_left_edge, 32.0))
++			_add_shape("ManagedCeilingBandLeft", Vector2(ceiling_left_edge * 0.5, 32.0), Vector2(ceiling_left_edge, 64.0))
+ 		if right_edge < 1152.0:
+-			var right_width := 1152.0 - right_edge
+-			_add_shape("ManagedCeilingUpperRight", Vector2(right_edge + right_width * 0.5, -16.0), Vector2(right_width, 32.0))
+-			_add_shape("ManagedCeilingBandRight", Vector2(right_edge + right_width * 0.5, 32.0), Vector2(right_width, 64.0))
++			var ceiling_right_width := 1152.0 - ceiling_right_edge
++			_add_shape("ManagedCeilingUpperRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, -16.0), Vector2(ceiling_right_width, 32.0))
++			_add_shape("ManagedCeilingBandRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, 32.0), Vector2(ceiling_right_width, 64.0))
+ 		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 16.0), Vector2(PORTAL_WIDTH, 96.0))
+ 		_add_shape("ManagedTopOuterGuard", Vector2(576.0, -52.0), Vector2(1152.0, 8.0))
+ 		gate_name = &"ManagedExitGate"
+@@ -70,7 +70,7 @@ func configure(room: Node2D, descriptor: Dictionary) -> Dictionary:
+ 		var left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+ 		var right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+ 		var left_shape := _add_shape("ManagedFloorLeft", Vector2(left_edge * 0.5, 604.0), Vector2(left_edge, 88.0), true)
+-		var right_width := 1152.0 - right_edge
++		var ceiling_right_width := 1152.0 - ceiling_right_edge
+ 		var right_shape := _add_shape("ManagedFloorRight", Vector2(right_edge + right_width * 0.5, 604.0), Vector2(right_width, 88.0), true)
+ 		_floor_segments = [left_shape, right_shape]
+ 		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 604.0), Vector2(PORTAL_WIDTH, 88.0))
+@@ -107,6 +107,65 @@ func set_exit_open(value: bool) -> void:
+ 			_floor_shape.set_deferred("disabled", false)
+ 	_set_visual_open(value)
+ 
++func validate_contract() -> Dictionary:
++	if _room == null or _world == null or _floor == null or _floor_shape == null:
++		return {"valid": false, "error": "topologia gerenciada não foi configurada"}
++	if _is_open or _exit_gate == null or _exit_gate.disabled:
++		return {"valid": false, "error": "gate de saída precisa permanecer fechado até a resolução do combate"}
++	if not _expect_shape("LeftWall", Vector2(32.0, 324.0), Vector2(64.0, 648.0), _exit_dir == LEFT):
++		return {"valid": false, "error": "parede esquerda não corresponde à saída descrita"}
++	if not _expect_shape("RightWallUpper", Vector2(1120.0, 216.0), Vector2(64.0, 432.0), false) \
++		or not _expect_shape("RightWallLower", Vector2(1120.0, 604.0), Vector2(64.0, 88.0), false):
++		return {"valid": false, "error": "parede direita precisa continuar fechada fora do slot de saída"}
++	if not _expect_shape("RightOuterGuard", Vector2(1156.0, 324.0), Vector2(8.0, 648.0), false):
++		return {"valid": false, "error": "guarda externa direita ausente ou incompatível"}
++	if _exit_dir == LEFT:
++		if not _expect_shape("ManagedLeftUpper", Vector2(32.0, 216.0), Vector2(64.0, 432.0), false) \
++			or not _expect_shape("ManagedLeftLower", Vector2(32.0, 604.0), Vector2(64.0, 88.0), false) \
++			or not _expect_shape("ManagedLeftOuterGuard", Vector2(-4.0, 324.0), Vector2(8.0, 648.0), false):
++			return {"valid": false, "error": "parede esquerda recortada ou guarda externa incompleta"}
++	var ceiling := _world.get_node_or_null("Ceiling") as CollisionShape2D
++	var ceiling_band := _world.get_node_or_null("CeilingBand") as CollisionShape2D
++	if ceiling == null or ceiling_band == null:
++		return {"valid": false, "error": "os dois colliders do teto precisam existir"}
++	if _exit_dir == UP:
++		if not ceiling.disabled or not ceiling_band.disabled:
++			return {"valid": false, "error": "teto completo precisa ser substituído pelos segmentos laterais"}
++		var ceiling_left_edge := _exit_offset - PORTAL_WIDTH * 0.5
++		var ceiling_right_edge := _exit_offset + PORTAL_WIDTH * 0.5
++		if not _expect_shape("ManagedCeilingUpperLeft", Vector2(ceiling_left_edge * 0.5, -16.0), Vector2(ceiling_left_edge, 32.0), false) \
++			or not _expect_shape("ManagedCeilingBandLeft", Vector2(ceiling_left_edge * 0.5, 32.0), Vector2(ceiling_left_edge, 64.0), false):
++			return {"valid": false, "error": "segmentos esquerdos do teto ausentes ou abertos"}
++		var ceiling_right_width := 1152.0 - ceiling_right_edge
++		if not _expect_shape("ManagedCeilingUpperRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, -16.0), Vector2(ceiling_right_width, 32.0), false) \
++			or not _expect_shape("ManagedCeilingBandRight", Vector2(ceiling_right_edge + ceiling_right_width * 0.5, 32.0), Vector2(ceiling_right_width, 64.0), false) \
++			or not _expect_shape("ManagedTopOuterGuard", Vector2(576.0, -52.0), Vector2(1152.0, 8.0), false):
++			return {"valid": false, "error": "segmentos direitos ou guarda superior ausentes"}
++	else:
++		if ceiling.disabled or ceiling_band.disabled:
++			return {"valid": false, "error": "teto precisa permanecer fechado sem saída superior"}
++	if _exit_dir == DOWN:
++		var floor_left_edge := _exit_offset - PORTAL_WIDTH * 0.5
++		var floor_right_edge := _exit_offset + PORTAL_WIDTH * 0.5
++		var floor_right_width := 1152.0 - floor_right_edge
++		if _floor_shape.disabled \
++			or not _expect_shape("ManagedFloorLeft", Vector2(floor_left_edge * 0.5, 604.0), Vector2(floor_left_edge, 88.0), true) \
++			or not _expect_shape("ManagedFloorRight", Vector2(floor_right_edge + floor_right_width * 0.5, 604.0), Vector2(floor_right_width, 88.0), true) \
++			or not _expect_shape("ManagedBottomCatch", Vector2(_exit_offset, 664.0), Vector2(PORTAL_WIDTH, 8.0), false):
++			return {"valid": false, "error": "piso contínuo de combate ou proteção do hatch inferior está inválido"}
++	elif _floor_shape.disabled or _world.get_node_or_null("ManagedFloorLeft") != null \
++		or _world.get_node_or_null("ManagedFloorRight") != null:
++		return {"valid": false, "error": "piso gerenciado deve permanecer contínuo durante o combate"}
++	return {"valid": true}
++func _expect_shape(node_name: String, expected_position: Vector2, expected_size: Vector2, expected_disabled: bool) -> bool:
++	var collision := _world.get_node_or_null(NodePath(node_name)) as CollisionShape2D
++	if collision == null or collision.disabled != expected_disabled \
++		or collision.position.distance_to(expected_position) > 0.01 \
++		or absf(collision.rotation) > 0.001 \
++		or not collision.scale.is_equal_approx(Vector2.ONE):
++		return false
++	var rectangle := collision.shape as RectangleShape2D
++	return rectangle != null and rectangle.size.distance_to(expected_size) <= 0.01
+ func get_exit_gate() -> CollisionShape2D:
+ 	return _exit_gate
+ 
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/room_layout_generator.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/room_layout_generator.gd
+index 18b5c29..ad2af9e 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r1/scripts/world/room_layout_generator.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r2/scripts/world/room_layout_generator.gd
+@@ -21,73 +21,189 @@ static func generate_managed_layout(
+ 	entry_dir: Vector2i,
+ 	exit_dir: Vector2i,
+ 	entry_offset: float,
+-	exit_offset: float
++	exit_offset: float,
++	force_canonical: bool = false
+ ) -> Dictionary:
++	var seed_used := 1 if requested_seed == 0 else requested_seed
++	var rng := RandomNumberGenerator.new()
++	rng.seed = seed_used
++	if not [&"catwalk", &"ridge", &"valley", &"roof_four", &"roof_five"].has(family):
++		return _invalid_result(seed_used, "família gerenciada desconhecida: %s" % String(family))
++	if force_canonical:
++		return _managed_layout_result(
++			_canonical_managed_entries(family, entry_dir, exit_dir, entry_offset, exit_offset),
++			family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, true
++		)
++	for _attempt in 12:
++		var entries := _build_managed_entries(family, rng, entry_dir, exit_dir, entry_offset, exit_offset)
++		if _managed_entries_are_safe(entries, family, entry_dir, exit_dir, entry_offset, exit_offset):
++			return _managed_layout_result(entries, family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, false)
++	var canonical := _canonical_managed_entries(family, entry_dir, exit_dir, entry_offset, exit_offset)
++	if _managed_entries_are_safe(canonical, family, entry_dir, exit_dir, entry_offset, exit_offset):
++		return _managed_layout_result(canonical, family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, true)
++	return _invalid_result(seed_used, "fallback canônico da família %s falhou no contrato geométrico" % String(family))
++
++static func _managed_layout_result(
++	entries: Array[Dictionary],
++	family: StringName,
++	seed_used: int,
++	entry_dir: Vector2i,
++	exit_dir: Vector2i,
++	entry_offset: float,
++	exit_offset: float,
++	used_fallback: bool
++) -> Dictionary:
++	var primary_index := 0
++	var fallback_index := mini(1, entries.size() - 1)
++	if family == &"roof_four" or family == &"roof_five":
++		primary_index = mini(1, entries.size() - 1)
++		fallback_index = 0
++	if entry_dir == Vector2i(0, -1):
++		primary_index = 0
++		fallback_index = mini(1, entries.size() - 1)
++	return {
++		"valid": true,
++		"platforms": entries,
++		"primary_index": primary_index,
++		"fallback_index": fallback_index,
++		"seed": seed_used,
++		"used_fallback": used_fallback,
++		"family": family,
++	}
++
++static func _build_managed_entries(
++	family: StringName,
++	rng: RandomNumberGenerator,
++	entry_dir: Vector2i,
++	exit_dir: Vector2i,
++	entry_offset: float,
++	exit_offset: float
++) -> Array[Dictionary]:
++	var count := 3 if family == &"catwalk" else (5 if family == &"roof_five" else 4)
++	var centers: Array[float] = []
++	var tops: Array[float] = []
++	var widths: Array[float] = []
++	centers.resize(count)
++	tops.resize(count)
++	widths.resize(count)
++	var is_roof := family == &"roof_four" or family == &"roof_five"
++	if is_roof:
++		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
++		var horizontal_sign := -1.0 if portal_x == 248.0 else 1.0
++		var allowed_steps: Array[int] = [64, 72, 80] if family == &"roof_five" else [80, 88, 96, 104, 112]
++		var rises: Array[int] = []
++		for _tries in 40:
++			rises.clear()
++			var total := 0
++			for _step in count - 1:
++				var rise: int = allowed_steps[rng.randi_range(0, allowed_steps.size() - 1)]
++				rises.append(rise)
++				total += rise
++			if total == 288:
++				break
++		var rise_sum := 0
++		for rise in rises:
++			rise_sum += rise
++		if rises.size() != count - 1 or rise_sum != 288:
++			rises.clear()
++			rises.resize(count - 1)
++			for index in rises.size():
++				rises[index] = 72 if family == &"roof_five" else 96
++		tops[0] = 448.0
++		for index in count - 1:
++			tops[index + 1] = tops[index] - float(rises[index])
++		for index in count:
++			widths[index] = 104.0 + float(rng.randi_range(0, 3) * 8) if family == &"roof_five" else 144.0 + float(rng.randi_range(0, 4) * 8)
++		centers[count - 1] = portal_x
++		for index in range(count - 1, 0, -1):
++			var gap := float(40 + rng.randi_range(0, 5) * 8)
++			var center_step := widths[index] * 0.5 + widths[index - 1] * 0.5 + gap
++			centers[index - 1] = centers[index] - horizontal_sign * center_step
++	else:
++		var base_tops: Array[float]
++		if family == &"catwalk":
++			base_tops = [448.0, 400.0, 448.0]
++		elif family == &"ridge":
++			base_tops = [448.0, 384.0, 352.0, 416.0]
++		else:
++			base_tops = [400.0, 448.0, 448.0, 400.0]
++		for index in count:
++			var offset_steps := rng.randi_range(-2, 2)
++			if index == 0:
++				offset_steps = rng.randi_range(-2, 0) if family != &"valley" else rng.randi_range(-1, 1)
++			tops[index] = clampf(base_tops[index] + float(offset_steps * 8), 376.0, 448.0)
++			widths[index] = float(144 + rng.randi_range(0, 5) * 8)
++		var spawn_x := 160.0 if entry_dir == Vector2i(-1, 0) else (992.0 if entry_dir == Vector2i(1, 0) else entry_offset)
++		var horizontal_sign := -1.0 if entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and spawn_x > 576.0) else 1.0
++		var center_min := 240.0
++		var center_max := 304.0
++		if horizontal_sign < 0.0:
++			center_min = 848.0
++			center_max = 912.0
++		if entry_dir.y != 0:
++			center_min = spawn_x - 24.0
++			center_max = spawn_x + 24.0
++		centers[0] = float(rng.randi_range(roundi(center_min / 8.0), roundi(center_max / 8.0)) * 8)
++		for index in range(1, count):
++			var gap := float(48 + rng.randi_range(0, 6) * 8)
++			centers[index] = centers[index - 1] + horizontal_sign * (widths[index - 1] * 0.5 + widths[index] * 0.5 + gap)
++	var entries: Array[Dictionary] = []
++	for index in count:
++		var size := Vector2(widths[index], 16.0)
++		var position := Vector2(centers[index], tops[index] + 8.0)
++		var rect := Rect2(position - size * 0.5, size)
++		entries.append({"position": position, "size": size, "rect": rect})
++	return entries
++
++static func _canonical_managed_entries(
++	family: StringName,
++	entry_dir: Vector2i,
++	exit_dir: Vector2i,
++	entry_offset: float,
++	exit_offset: float
++) -> Array[Dictionary]:
+ 	var centers: Array[float] = []
+ 	var tops: Array[float] = []
+ 	var widths: Array[float] = []
+-	var rng := RandomNumberGenerator.new()
+-	rng.seed = 1 if requested_seed == 0 else requested_seed
+-	var mirror := false
+ 	if family == &"roof_four":
+ 		centers = [256.0, 472.0, 688.0, 904.0]
+ 		tops = [448.0, 352.0, 256.0, 160.0]
+ 		widths = [160.0, 160.0, 160.0, 160.0]
+-		mirror = entry_offset == 248.0 if entry_dir == Vector2i(0, -1) else exit_offset == 248.0
++		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
++		if portal_x == 248.0:
++			for index in centers.size():
++				centers[index] = 1152.0 - centers[index]
+ 	elif family == &"roof_five":
+ 		centers = [328.0, 472.0, 616.0, 760.0, 904.0]
+ 		tops = [448.0, 376.0, 304.0, 232.0, 160.0]
+ 		widths = [104.0, 104.0, 104.0, 104.0, 104.0]
+-		mirror = entry_offset == 248.0 if entry_dir == Vector2i(0, -1) else exit_offset == 248.0
++		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
++		if portal_x == 248.0:
++			for index in centers.size():
++				centers[index] = 1152.0 - centers[index]
+ 	elif family == &"catwalk":
+ 		centers = [256.0, 472.0, 688.0]
+ 		tops = [448.0, 400.0, 448.0]
+ 		widths = [160.0, 176.0, 160.0]
+-		mirror = rng.randi_range(0, 1) == 0
+ 	elif family == &"ridge":
+ 		centers = [256.0, 472.0, 688.0, 904.0]
+ 		tops = [448.0, 384.0, 352.0, 416.0]
+ 		widths = [160.0, 160.0, 160.0, 160.0]
+-		mirror = rng.randi_range(0, 1) == 0
+ 	elif family == &"valley":
+ 		centers = [256.0, 472.0, 688.0, 904.0]
+ 		tops = [400.0, 448.0, 448.0, 400.0]
+ 		widths = [160.0, 160.0, 160.0, 160.0]
+-		mirror = rng.randi_range(0, 1) == 0
+-	else:
+-		return _invalid_result(requested_seed, "família gerenciada desconhecida: %s" % String(family))
+-
+-	if mirror:
+-		for index in centers.size():
+-			centers[index] = 1152.0 - centers[index]
+-		if family != &"roof_four" and family != &"roof_five":
+-			centers.reverse()
+-			tops.reverse()
+-			widths.reverse()
++	if family != &"roof_four" and family != &"roof_five":
++		var spawn_right := entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and entry_offset > 576.0)
++		if spawn_right:
++			for index in centers.size():
++				centers[index] = 1152.0 - centers[index]
+ 	var entries: Array[Dictionary] = []
+ 	for index in centers.size():
+ 		var size := Vector2(widths[index], 16.0)
+ 		var position := Vector2(centers[index], tops[index] + 8.0)
+-		var rect := Rect2(position - size * 0.5, size)
+-		entries.append({"position": position, "size": size, "rect": rect})
+-
+-	var primary_index := 0
+-	var fallback_index := mini(1, entries.size() - 1)
+-	if family == &"roof_four" or family == &"roof_five":
+-		primary_index = mini(1, entries.size() - 1)
+-		fallback_index = mini(2, entries.size() - 1)
+-	if entry_dir == Vector2i(0, -1):
+-		primary_index = 0
+-		fallback_index = mini(1, entries.size() - 1)
+-	return {
+-		"valid": _managed_entries_are_safe(entries, family, entry_dir, exit_dir, entry_offset, exit_offset),
+-		"platforms": entries,
+-		"primary_index": primary_index,
+-		"fallback_index": fallback_index,
+-		"seed": requested_seed,
+-		"used_fallback": false,
+-		"family": family,
+-	}
++		entries.append({"position": position, "size": size, "rect": Rect2(position - size * 0.5, size)})
++	return entries
+ 
+ static func _managed_entries_are_safe(
+ 	entries: Array[Dictionary],
+@@ -97,24 +213,24 @@ static func _managed_entries_are_safe(
+ 	entry_offset: float,
+ 	exit_offset: float
+ ) -> bool:
+-	if entries.size() < MIN_PLATFORM_COUNT or entries.size() > MAX_PLATFORM_COUNT:
+-		return false
+-	if entry_dir == exit_dir or entries.is_empty():
++	var expected_count := 3 if family == &"catwalk" else (5 if family == &"roof_five" else 4)
++	if entries.size() != expected_count or entry_dir == exit_dir:
+ 		return false
+ 	if exit_dir.x == 0 and absf(exit_offset - 248.0) > 0.01 and absf(exit_offset - 904.0) > 0.01:
+ 		return false
+ 	if entry_dir.x == 0 and absf(entry_offset - 248.0) > 0.01 and absf(entry_offset - 904.0) > 0.01:
+ 		return false
+-	if (entry_dir == Vector2i(0, -1) or exit_dir == Vector2i(0, -1)) \
+-		and family != &"roof_four" and family != &"roof_five":
++	var is_roof := family == &"roof_four" or family == &"roof_five"
++	if (entry_dir == Vector2i(0, -1) or exit_dir == Vector2i(0, -1)) and not is_roof:
+ 		return false
+ 	var previous := Rect2()
+ 	for index in entries.size():
+ 		var rect: Rect2 = entries[index].get("rect", Rect2())
+ 		if rect.size.y != 16.0 or rect.size.x < MIN_FALLBACK_WIDTH or rect.size.x > MAX_PLATFORM_WIDTH:
+ 			return false
+-		if rect.position.x < 64.0 or rect.end.x > 1088.0 or fposmod(rect.position.x, 8.0) > 0.01 \
+-			or fposmod(rect.size.x, 8.0) > 0.01 or fposmod(rect.position.y, 8.0) > 0.01:
++		if rect.position.x < 64.0 or rect.end.x > 1088.0 \
++			or fposmod(rect.get_center().x, 8.0) > 0.01 or fposmod(rect.size.x, 8.0) > 0.01 \
++			or fposmod(rect.position.y, 8.0) > 0.01:
+ 			return false
+ 		if rect.position.y < 152.0 or rect.position.y > 448.0 or 560.0 - rect.end.y < 96.0:
+ 			return false
+@@ -123,19 +239,49 @@ static func _managed_entries_are_safe(
+ 				return false
+ 			var gap := maxf(rect.position.x - previous.end.x, previous.position.x - rect.end.x)
+ 			var rise := previous.position.y - rect.position.y
+-			if family == &"roof_four" or family == &"roof_five":
+-				if gap < 40.0 or gap > 80.0 or rise < 72.0 or rise > 112.0:
++			if is_roof:
++				if gap < 40.0 or gap > 80.0 or rise < 64.0 or rise > 112.0:
+ 					return false
+-			elif gap < 40.0 or gap > 96.0:
++			elif gap < 40.0 or gap > 96.0 or absf(rise) > 64.0:
+ 				return false
+ 		previous = rect
+-	if family == &"roof_four" or family == &"roof_five":
++	if is_roof:
+ 		var last_rect: Rect2 = entries.back().get("rect", Rect2())
+ 		var expected := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
+ 		if (entry_dir == Vector2i(0, -1) or exit_dir == Vector2i(0, -1)) \
+ 			and absf(last_rect.get_center().x - expected) > 0.01:
+ 			return false
++	elif family == &"catwalk":
++		if entries.size() != 3 or tops_are_not_catwalk(entries):
++			return false
++	elif family == &"ridge":
++		if entries.size() != 4 or tops_are_not_ridge(entries):
++			return false
++	elif family == &"valley":
++		if entries.size() != 4 or tops_are_not_valley(entries):
++			return false
+ 	return true
++
++static func tops_are_not_catwalk(entries: Array[Dictionary]) -> bool:
++	var first: Rect2 = entries[0].get("rect", Rect2())
++	var middle: Rect2 = entries[1].get("rect", Rect2())
++	var last: Rect2 = entries[2].get("rect", Rect2())
++	return middle.position.y >= minf(first.position.y, last.position.y) - 16.0
++
++static func tops_are_not_ridge(entries: Array[Dictionary]) -> bool:
++	var first: Rect2 = entries[0].get("rect", Rect2())
++	var second: Rect2 = entries[1].get("rect", Rect2())
++	var third: Rect2 = entries[2].get("rect", Rect2())
++	var last: Rect2 = entries[3].get("rect", Rect2())
++	return minf(second.position.y, third.position.y) >= minf(first.position.y, last.position.y) - 16.0
++
++static func tops_are_not_valley(entries: Array[Dictionary]) -> bool:
++	var first: Rect2 = entries[0].get("rect", Rect2())
++	var second: Rect2 = entries[1].get("rect", Rect2())
++	var third: Rect2 = entries[2].get("rect", Rect2())
++	var last: Rect2 = entries[3].get("rect", Rect2())
++	return maxf(second.position.y, third.position.y) <= maxf(first.position.y, last.position.y) + 16.0
++
+ static func generate_layout(platform_count: int, requested_seed: int, spawn_x: float) -> Dictionary:
+ 	var rng := RandomNumberGenerator.new()
+ 	if requested_seed == 0:
+@@ -301,7 +447,7 @@ static func _entries_are_safe(entries: Array[Dictionary], spawn_x: float) -> boo
+ 		var rect: Rect2 = entries[index].get("rect", Rect2())
+ 		if rect.size.y != PLATFORM_THICKNESS or rect.size.x < MIN_FALLBACK_WIDTH or rect.size.x > MAX_PLATFORM_WIDTH:
+ 			return false
+-		if rect.position.x < 64.0 or rect.end.x > RIGHT_LIMIT or fposmod(rect.position.x, 8.0) > 0.01 or fposmod(rect.size.x, 8.0) > 0.01:
++		if rect.position.x < 64.0 or rect.end.x > RIGHT_LIMIT or fposmod(rect.get_center().x, 8.0) > 0.01 or fposmod(rect.size.x, 8.0) > 0.01:
+ 			return false
+ 		if rect.position.y < TOP_LIMIT or rect.position.y > FIRST_TOP or rect.end.y > 464.0:
+ 			return false

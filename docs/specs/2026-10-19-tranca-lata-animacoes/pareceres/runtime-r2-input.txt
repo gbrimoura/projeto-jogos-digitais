@@ -1,0 +1,2369 @@
+Revisao estatica FINAL R2. Somente leitura. Nenhum teste, engine, import, parser ou QA autorizado. Escopo: animacao e patrulha Tranca-Lata; todo resto de Main e sistemas e preexistente. Avalie bugs concretos introduzidos, nao exija novos sistemas fora de escopo. R1 tinha erro de newline no elif: corrigido na R2 e diff abaixo. Fonte snapshot e imutavel. Arte previamente aprovada, PNG/ASE copiados byte-identicos; nao inferir validacao visual/executada a partir de hashes. Contrato adicional: recovery1.4s inclui pose neutra1100ms intencional, nao encurtar; somente flash_amount; colisaoverticalPlayer bloqueia giro/pausa; nenhuma Area2D. Fallback patrulhafalse mantem combate. Nome tecnicoTrainingTarget preservado.
+
+CONTRATO R3
+
+Papel: revisor read-only de DELTA ARQUITETURAL R3, timeout10min. Sem ferramentas/comandos/escrita/testes. Revisar somente fechamento dos pontos R1 abaixo e riscos concretos novos. Entrada é contrato autoritativo imutável do principal; Luna persiste a mesma decisão em plano/spec, ainda SEM arteAseprite/runtime. Não reabrir ampliação de IA/reservas/lore fora do escopo. Retorne STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP, P1/P2 remanescentes com correção mínima. Não alegar enginevalidada.
+
+CONTEXTO: usuário pediu movimento+ataque e novo nome, confirmou deslocamento na própria plataforma. Tranca-Lata mantém identidadecartoon, face/tubo/visor/torso; base vira pernascurtas/botas. TrainingTarget interno epaths ficam. CharacterBody2D layer8 mask3; body72x96 central, 3HP. Patrulha48px/s, pausas0.25s, margemauthored8/random16, mínimoútil8px, epsilonactualdx0.01px. Semgravidade/pulo/chase/trocadesuporte/danoportoque. Ataque140raio,650windup/140active/1400recovery,dano1,flash120,LOSWorld1,dedup ecentrotravadoinalterados.
+
+R3 ME CANISMOS FECHADOS:
+1) Suporte efetivo: Main memoriza/getter do SolidPlatform que venceu seleção. Ordem: primário comspawnseguro+FULLsweepWorldlivre, fallbackequivalente, primeirospawnseguroestacionário+avisoúnico; nenhumspawnseguro=>erroexistente. Sem inventarintervaloreduzido. RandomguardaSolidPlatformreal, intervalobordas/forma/margem eWorldsweep equivalente ou consulta geométrica limitadora segura; seintervalo<8px ouobstruído,inativoestacionáriocomavisoúnico. null/!is_instance_valid=>semcálculo/passo, avisoúnico. _placement_pending e bind impedequalquermovimentoprecoce. Piso/plataformasatuaisestáticos/eixoalinhados.
+2) Exceção de colisãoSOMENTE paraSupport efetivo comadd_collision_exception_with e removerexceçãoanterior sebindmuda; motion_modeFLOATING. ConsultasLOS/AOE permanecem comohoje (excludeapenasself), a plataformaCONTINUA bloqueandoataque. Mask3 continua contraOutroWorld/Player.
+3) PassoX emDUASetapas: limitar requestdx pelosbounds; consultar move_and_collide(Vector2(requestdx,0), true, 0.0) (queryruntime, nãoexecutarGodotagora). Sehit, usartravel.x limitado aoMESMO sinal/módulo do requesteao intervalo; seoposto=>0. Senull,requestdx. AplicarAPENASglobal_position.x +=safe_dx. Não mover/aplicar/desfazerY na patrulha, nemmove_and_slide nemmove_and_collide real. Sem avanço grande/teleporte: dxlimitadoa48*delta e limite. Não implementa transporte de Player nascostas.
+4) Guards de _placement_pending, derrotado, cenaatual, suporteconfigured/valid e cancelamentoplayertravado/morto ANTES de passo. EmIDLE procurarataqueantesdeandar; beginwindupzera movimento, congela direção visual, capturacentro, muda frame/área. Nas3fasesataque, nenhum deslocamento. Cancel ocultaárea/liberalock antesIDLE, preservadireção. Playerconhecidomorto=>idlecongelado. Qualquerponta/bloqueiofísico=INVERSÃO+PAUSA.25,idle, semjitter; pausa nãoimpedeaquisiçãoLOS.
+5) Visualprecedência: derrotado disabled (remoçãopermaneceimediata); placement/sempercurso/pause/IDLEparado=>idle14; IDLEactualdx>epsilon=>walkloop, playapenasclipmuda; WINDUP/ACTIVE/RECOVERY=>seleçãoMANUALdeframeporprogresso1-remaining/effectiveStateDuration usando pesosdurationsSpriteFrames, semplay emataque, semreiníciois_playingfalse, holdúltimo. _begin_windup tambématualizacorpo. FlashSOMENTEshaderexistente **flash_amount**, deixa deusarimpact automaticamente(emACTIVE/flash). Celsimpact/disabledlegadoscontinuamcompatíveis. Facingflip_h APENASsprite, mirror do tubo explicitamente ACEITO pelo principal como direção, congeladoduranteataque; nãofliproot/collider/área/HUD. 15cels,nãocelsdirecionaisnovos.
+6) Asepritepipeline: referênciaImageGen jágerada SHA25663F1C18119C74BFF44910386F30BC640DE80555CBEB255293CB254C3A3E9E43E; Aseprite1.3.18.6+Lua,cels64x64, atlas960x64 horizontal semtrim/padding, nearest,paletaCartoonV2+swatchvisor#FE5B01,alpha0/255. Preservar RGBAdecodificado e durations doscels0..2, NÃO bytesinteiros doPNG de dimensãonova. Appendwalk3..6=4x120ms;windup7..9=180+220+250;active10..11=70+70;recovery12..14=120+180+1100. SpriteFrames speed1,duration emsegundos paraessespesos; fasesmanuaisnormalizadas seexportsduraçãoalterados; idle=14. WalkcontatosA/Bclaros, novofootbaseliney56 x32, scale2; corpo/botasdentrocollider. Distsolo por ciclo=23.04worldpx/~11.52nativos, passadaaprox5.76nativospasso. Arteisolada(rootinspecionapreview) antesruntime.
+7) Fatos adicionaisverificados: RicochetBalllayer4/mask9 (não1/2), Workerlayer8/mask1 jáignoraTargetlayer8. Nãoadicionarcolisãoentreinimigos/reservasnovaAI: mantersemânticaatual; PlayercolideviaMask3/9. AtualMainusa_body_aabb CollisionObject2Dgenérico; escolhasauthoredsãosempreMain(main.gdnasduasfixtures), semoverridesconstant_velocity/physics_material/mask/layer nosinstancesTarget. TrajectoryPreviewjádetectaCharacterBody2Dcombat_enemy ehashposições, nãoeditar. GDDantigoparado permanecehistórico ependênciadeupdateanotada; usuárioautorizoupatrulha19/10.
+8) ESC OPO6runtime: target.gd,main.gd,target.tscn,targetSpriteFrames.tres,targetPNG/ASE. .import,projectconfig,plugins,Player,Worker,shader,attackcircle,salas,gerador,bola/previewintocados. NameLabelirmãoBodySprite, nãodentroflip. Nãoadicionartestes/Godot/import/QA, nemGitmutation. Inspeçãoestáticageração/previews/hashesapenas. Revisores sobrepacotescongelados, semescreverworkspace.
+
+DECISÕES ROOT SOBRE R1: riscos reais de depenetração/flash/fasefechadosacima; mirror é escolha explícita(b), não violação restante. Nãoaceitar flash_strength (parâmetrorealflash_amount). Nãoampliarallowlist.import (mesmopath/UID). Semreservasdinâmicasentreinimigos/transportemechanic/intervaloclipcomplexo: nenhumcaminhorealnoslayoutsatuaisexigeisso ecorposatuaisjáseignoram. SegurançaPlayerficaemquerymask3. Cálculoscels/vazãodepêndemimplementaçãofutura; não alegar provaengine.
+
+MANIFEST R2
+
+{
+  "captured_at": "2026-10-20T22:29:44.691Z",
+  "description": "R2 textual repair of the joined authored-support else/elif line; R1 remains immutable.",
+  "previous_freeze_manifest": "historico/runtime-r1/sha256-runtime-r1.json",
+  "previous_freeze_manifest_sha256": "35B1DA17CE57C82D7391E77474B564A2FC02C557FFEA8DA0E6CB81D2D5A34515",
+  "review_status": "Frozen R2 for read-only review; no parser, engine or tests run.",
+  "changed_from_r1": [
+    "scripts/world/training_target.gd"
+  ],
+  "files": [
+    {
+      "source": "scripts/world/training_target.gd",
+      "sha256": "B764E233E7E2CE54D571AF278F15C0E627E9BCC62C445BCCAC1F356490C1A7E1",
+      "r1_sha256": "54E65BB5DD164E9DCF09CEA849BD7DD8AF5C28E3065677049C8C556D96231AB0",
+      "changed_from_r1": true,
+      "r1_snapshot": "historico/runtime-r1/snapshot/scripts/world/training_target.gd",
+      "snapshot": "historico/runtime-r2/snapshot/scripts/world/training_target.gd"
+    },
+    {
+      "source": "scripts/world/main.gd",
+      "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "r1_sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "changed_from_r1": false,
+      "r1_snapshot": "historico/runtime-r1/snapshot/scripts/world/main.gd",
+      "snapshot": "historico/runtime-r2/snapshot/scripts/world/main.gd"
+    },
+    {
+      "source": "scenes/training_target.tscn",
+      "sha256": "08AE902A590C174609059A9591BB146992B6D35655283989278E6F4DEF7309E2",
+      "r1_sha256": "08AE902A590C174609059A9591BB146992B6D35655283989278E6F4DEF7309E2",
+      "changed_from_r1": false,
+      "r1_snapshot": "historico/runtime-r1/snapshot/scenes/training_target.tscn",
+      "snapshot": "historico/runtime-r2/snapshot/scenes/training_target.tscn"
+    },
+    {
+      "source": "resources/enemy/training_target_sprite_frames.tres",
+      "sha256": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D",
+      "r1_sha256": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D",
+      "changed_from_r1": false,
+      "r1_snapshot": "historico/runtime-r1/snapshot/resources/enemy/training_target_sprite_frames.tres",
+      "snapshot": "historico/runtime-r2/snapshot/resources/enemy/training_target_sprite_frames.tres"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target-atlas.png",
+      "sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "r1_sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "changed_from_r1": false,
+      "r1_snapshot": "historico/runtime-r1/snapshot/assets/enemy/training_target/training_target-atlas.png",
+      "snapshot": "historico/runtime-r2/snapshot/assets/enemy/training_target/training_target-atlas.png",
+      "approved_art_source": "../GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/tranca-lata-atlas-v1.png",
+      "approved_art_source_sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target.aseprite",
+      "sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "r1_sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "changed_from_r1": false,
+      "r1_snapshot": "historico/runtime-r1/snapshot/assets/enemy/training_target/training_target.aseprite",
+      "snapshot": "historico/runtime-r2/snapshot/assets/enemy/training_target/training_target.aseprite",
+      "approved_art_source": "../GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/tranca-lata-animacoes-v1.aseprite",
+      "approved_art_source_sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8"
+    }
+  ]
+}
+
+
+DIFF MAIN CONTRA BASELOCAL
+
+--- a/scripts/world/main.gd
++++ b/scripts/world/main.gd
+@@ -80,6 +80,11 @@
+ var _authored_layout_error: String = ""
+ var _authored_target_position: Vector2 = Vector2.ZERO
+ var _authored_target_node: Node
++var _authored_target_support: SolidPlatform
++var _authored_target_support_path: NodePath = NodePath("")
++var _authored_target_patrol_enabled: bool = false
++var _authored_target_patrol_min_x: float = 0.0
++var _authored_target_patrol_max_x: float = 0.0
+ var _authored_world_obstacles: Array[Dictionary] = []
+ var _prepared_room_layout_seed: int = 0
+ var _prepared_platform_rects: Dictionary = {}
+@@ -106,6 +111,11 @@
+ 	_authored_layout_error = ""
+ 	_authored_target_position = Vector2.ZERO
+ 	_authored_target_node = null
++	_authored_target_support = null
++	_authored_target_support_path = NodePath("")
++	_authored_target_patrol_enabled = false
++	_authored_target_patrol_min_x = 0.0
++	_authored_target_patrol_max_x = 0.0
+ 	_authored_world_obstacles.clear()
+ 	_prepared_platform_rects.clear()
+ 
+@@ -179,6 +189,19 @@
+ 		return null
+ 	return _authored_target_position
+ 
++func get_prepared_authored_target_binding(target: Node) -> Dictionary:
++	if not authored_layout_enabled or not _authored_layout_prepared or not _authored_layout_valid or target != _authored_target_node:
++		return {}
++	return {
++		"position": _authored_target_position,
++		"support": _authored_target_support,
++		"support_path": _authored_target_support_path,
++		"patrol_enabled": _authored_target_patrol_enabled,
++		"patrol_min_x": _authored_target_patrol_min_x,
++		"patrol_max_x": _authored_target_patrol_max_x,
++		"edge_margin": AUTHORED_EDGE_MARGIN,
++	}
++
+ func get_prepared_room_layout_seed() -> int:
+ 	return _prepared_room_layout_seed
+ 
+@@ -403,6 +426,8 @@
+ 		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+ 	if target.collision_layer != 8:
+ 		return _fail_authored_layout("TrainingTarget deve permanecer na collision layer 8")
++	if target.collision_mask != 3:
++		return _fail_authored_layout("TrainingTarget deve manter collision_mask 3 para World e Player")
+ 	var player_body := get_node_or_null("Player") as CollisionObject2D
+ 	if player_body == null or player_body.collision_mask != 9:
+ 		return _fail_authored_layout("Player deve manter collision_mask 9 para World e TrainingTarget vivo")
+@@ -414,10 +439,13 @@
+ 		return _fail_authored_layout("caminho de suporte autoral vazio")
+ 
+ 	var support_paths: Array[NodePath] = [target.fixed_support_path, target.fallback_support_path]
++	var first_safe_position: Dictionary = {}
++	var selected_patrol: Dictionary = {}
+ 	for support_path in support_paths:
+ 		var support := _resolve_authored_support(target, support_path)
+ 		if support == null or not platform_rects.has(support.name):
+ 			continue
++		var support_is_compatible := _is_target_support_compatible(support)
+ 		var support_rect: Rect2 = platform_rects[support.name]
+ 		if support_rect.size.x < target_local_bounds.size.x + AUTHORED_EDGE_MARGIN * 2.0:
+ 			continue
+@@ -434,12 +462,58 @@
+ 			continue
+ 		if not _find_world_layer_overlap(target_bounds, support).is_empty():
+ 			continue
+-		_authored_target_position = target_origin
+-		_authored_target_node = target
+-		return true
++		var minimum_center_x := support_rect.position.x + AUTHORED_EDGE_MARGIN - target_local_bounds.position.x
++		var maximum_center_x := support_rect.end.x - AUTHORED_EDGE_MARGIN - target_local_bounds.end.x
++		var route_is_useful := support_is_compatible and maximum_center_x - minimum_center_x >= 8.0
++		var route_is_clear := false
++		if route_is_useful:
++			var sweep_bounds := Rect2(
++				Vector2(minimum_center_x + target_local_bounds.position.x, target_origin.y + target_local_bounds.position.y),
++				Vector2(maximum_center_x - minimum_center_x + target_local_bounds.size.x, target_local_bounds.size.y)
++			)
++			route_is_clear = _find_world_layer_overlap(sweep_bounds, support).is_empty()
++		var candidate: Dictionary = {
++			"position": target_origin,
++			"support": support,
++			"support_path": support_path,
++			"minimum_center_x": minimum_center_x,
++			"maximum_center_x": maximum_center_x,
++		}
++		if first_safe_position.is_empty():
++			first_safe_position = candidate
++		if route_is_clear:
++			selected_patrol = candidate
++			break
+ 
+-	return _fail_authored_layout("suportes primário e fallback do TrainingTarget são inválidos")
++	var selected: Dictionary = selected_patrol if not selected_patrol.is_empty() else first_safe_position
++	if selected.is_empty():
++		return _fail_authored_layout("suportes primário e fallback do TrainingTarget são inválidos ou sem posição segura")
++	_authored_target_position = selected.get("position", Vector2.ZERO)
++	_authored_target_node = target
++	_authored_target_support = selected.get("support") as SolidPlatform
++	_authored_target_support_path = selected.get("support_path", NodePath(""))
++	_authored_target_patrol_min_x = to_global(Vector2(float(selected.get("minimum_center_x", 0.0)), 0.0)).x
++	_authored_target_patrol_max_x = to_global(Vector2(float(selected.get("maximum_center_x", 0.0)), 0.0)).x
++	_authored_target_patrol_enabled = not selected_patrol.is_empty()
++	return true
+ 
++func _is_target_support_compatible(support: SolidPlatform) -> bool:
++	if support == null or not is_instance_valid(support):
++		return false
++	if absf(support.global_rotation) > 0.001 or not support.global_scale.is_equal_approx(Vector2.ONE):
++		return false
++	var shape_count := 0
++	for child in support.get_children():
++		var collision := child as CollisionShape2D
++		if collision == null:
++			continue
++		shape_count += 1
++		if collision.disabled or not collision.shape is RectangleShape2D:
++			return false
++		if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
++			return false
++	return shape_count == 1
++
+ func _resolve_authored_support(target: TrainingTarget, path: NodePath) -> SolidPlatform:
+ 	if target.get_parent() != self:
+ 		return null
+
+
+DIFF R1 PARA R2
+
+--- a/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -103,7 +103,8 @@
+ 			)
+ 			_placement_pending = false
+ 		else:
+-			_bind_patrol_support(null, global_position.x, global_position.x, false)	elif spawn_on_platform:
++			_bind_patrol_support(null, global_position.x, global_position.x, false)
++	elif spawn_on_platform:
+ 		# O movimento e a aquisição de combate ficam bloqueados até posição e suporte estarem prontos.
+ 		_placement_pending = true
+ 		_place_on_platform.call_deferred()
+
+
+SOURCE scripts/world/training_target.gd
+
+class_name TrainingTarget
+extends CharacterBody2D
+
+## Alvo móvel de contenção que preserva o contrato técnico TrainingTarget.
+
+signal defeated
+
+enum AttackState { IDLE, WINDUP, ACTIVE, RECOVERY }
+
+const PLAYER_MASK: int = 2
+const WORLD_MASK: int = 1
+const PATROL_MASK: int = PLAYER_MASK | WORLD_MASK
+const MAX_QUERY_RESULTS: int = 32
+const CLAIMED_META := &"_target_claimed"
+const PATROL_SPEED: float = 48.0
+const PATROL_PAUSE: float = 0.25
+const MIN_PATROL_DISTANCE: float = 8.0
+const MOVEMENT_EPSILON: float = 0.01
+
+@export var display_name: String = "Tranca-Lata"
+@export_range(1, 100, 1) var max_health: int = 3
+@export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
+@export_range(16.0, 400.0, 1.0) var attack_radius: float = 140.0
+@export var attack_center_offset: Vector2 = Vector2.ZERO
+@export_range(0.05, 3.0, 0.01) var windup_duration: float = 0.65
+@export_range(0.05, 1.0, 0.01) var active_window: float = 0.14
+@export_range(1, 100, 1) var attack_damage: int = 1
+@export_range(0.05, 5.0, 0.01) var recovery_duration: float = 1.4
+@export_range(0.0, 0.5, 0.01) var recovery_fade_duration: float = 0.18
+
+@export_group("Spawn")
+## Posiciona o inimigo automaticamente em cima de uma plataforma da sala.
+@export var spawn_on_platform: bool = true
+## Distância mínima entre o inimigo e as bordas da plataforma.
+@export var edge_margin: float = 16.0
+@export var authored_support_enabled: bool = false
+@export var fixed_support_path: NodePath = NodePath("")
+@export var fallback_support_path: NodePath = NodePath("")
+
+@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
+@onready var _health_fill: Polygon2D = $Visuals/HealthFill
+@onready var _name_label: Label = $Visuals/NameLabel
+@onready var _attack_visual: Node2D = $AttackAreaVisual
+
+var health: int
+var _flash_remaining: float = 0.0
+var _attack_state: AttackState = AttackState.IDLE
+var _state_remaining: float = 0.0
+var _recovery_fade_remaining: float = 0.0
+var _locked_attack_center: Vector2 = Vector2.ZERO
+var _locked_player: PhysicsBody2D
+var _known_player: PhysicsBody2D
+var _damaged_player_ids: Dictionary = {}
+var _defeated_emitted: bool = false
+var _area_shape: CircleShape2D
+var _area_query: PhysicsShapeQueryParameters2D
+var _line_of_sight_query: PhysicsRayQueryParameters2D
+var _patrol_query_shape: RectangleShape2D
+var _patrol_query: PhysicsShapeQueryParameters2D
+var _placement_pending: bool = false
+var _bound_support: SolidPlatform
+var _patrol_enabled: bool = false
+var _patrol_min_x: float = 0.0
+var _patrol_max_x: float = 0.0
+var _patrol_direction: int = 1
+var _patrol_pause_remaining: float = 0.0
+var _patrol_moving: bool = false
+var _patrol_warning_emitted: bool = false
+
+func _ready() -> void:
+	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	collision_mask = PATROL_MASK
+	health = maxi(max_health, 1)
+	add_to_group("damageable")
+	add_to_group("combat_enemy")
+	_known_player = get_tree().get_first_node_in_group("player") as PhysicsBody2D
+	_name_label.text = display_name
+	if not _parent_room_allows_enemy_activation():
+		process_mode = Node.PROCESS_MODE_DISABLED
+		return
+
+	_configure_physics_queries()
+	_set_attack_visual(&"hidden", 0.0)
+	_update_visuals()
+	if authored_support_enabled:
+		var room := get_parent()
+		var binding: Variant = {}
+		if room != null and room.has_method("get_prepared_authored_target_binding"):
+			binding = room.call("get_prepared_authored_target_binding", self)
+		var prepared_position_value: Variant = null
+		if typeof(binding) == TYPE_DICTIONARY:
+			prepared_position_value = binding.get("position")
+		if typeof(prepared_position_value) == TYPE_VECTOR2:
+			_placement_pending = true
+			var prepared_position: Vector2 = prepared_position_value
+			position = prepared_position
+			var prepared_support := binding.get("support") as SolidPlatform
+			_bind_patrol_support(
+				prepared_support,
+				float(binding.get("patrol_min_x", global_position.x)),
+				float(binding.get("patrol_max_x", global_position.x)),
+				bool(binding.get("patrol_enabled", false))
+			)
+			_placement_pending = false
+		else:
+			_bind_patrol_support(null, global_position.x, global_position.x, false)
+	elif spawn_on_platform:
+		# O movimento e a aquisição de combate ficam bloqueados até posição e suporte estarem prontos.
+		_placement_pending = true
+		_place_on_platform.call_deferred()
+	else:
+		_warn_patrol_once("nenhum suporte foi vinculado; o alvo permanecerá estacionário")
+
+func _parent_room_allows_enemy_activation() -> bool:
+	var room := get_parent()
+	if room == null or not room.has_method("is_authored_layout_valid"):
+		return true
+	return bool(room.call("is_authored_layout_valid"))
+
+func take_damage(amount: int, _source: Node = null) -> bool:
+	if _defeated_emitted or health <= 0 or amount <= 0:
+		return false
+
+	health = maxi(health - amount, 0)
+	_flash_remaining = maxf(flash_duration, 0.0)
+	_update_visuals()
+	if health == 0:
+		_defeated_emitted = true
+		_cancel_attack()
+		defeated.emit()
+		queue_free()
+	return true
+
+func _physics_process(delta: float) -> void:
+	_update_hit_flash(delta)
+	if _defeated_emitted:
+		return
+	if not _is_inside_current_scene():
+		_cancel_attack()
+		_stop_patrol()
+		return
+	if _placement_pending:
+		_stop_patrol()
+		return
+	if _is_known_player_defeated():
+		_cancel_attack()
+		_stop_patrol()
+		return
+	if _attack_state != AttackState.IDLE and not _is_alive_player(_locked_player):
+		_cancel_attack()
+		return
+
+	var physics_step := maxf(delta, 0.0)
+	match _attack_state:
+		AttackState.IDLE:
+			var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
+			if detected_player != null:
+				_known_player = detected_player
+				_begin_windup(detected_player)
+				return
+			if not _patrol_preconditions_hold():
+				_stop_patrol()
+				return
+			_advance_patrol(physics_step)
+		AttackState.WINDUP:
+			_update_windup(physics_step)
+		AttackState.ACTIVE:
+			_update_active(physics_step)
+		AttackState.RECOVERY:
+			_update_recovery(physics_step)
+
+func _configure_physics_queries() -> void:
+	_area_shape = CircleShape2D.new()
+	_area_shape.radius = _effective_attack_radius()
+	_area_query = PhysicsShapeQueryParameters2D.new()
+	_area_query.shape = _area_shape
+	_area_query.collision_mask = PLAYER_MASK
+	_area_query.collide_with_bodies = true
+	_area_query.collide_with_areas = false
+	_area_query.margin = 0.0
+	_area_query.exclude = [get_rid()]
+
+	_line_of_sight_query = PhysicsRayQueryParameters2D.new()
+	_line_of_sight_query.collision_mask = WORLD_MASK
+	_line_of_sight_query.collide_with_bodies = true
+	_line_of_sight_query.collide_with_areas = false
+	_line_of_sight_query.exclude = [get_rid()]
+
+	_patrol_query_shape = RectangleShape2D.new()
+	_patrol_query = PhysicsShapeQueryParameters2D.new()
+	_patrol_query.shape = _patrol_query_shape
+	_patrol_query.collision_mask = WORLD_MASK
+	_patrol_query.collide_with_bodies = true
+	_patrol_query.collide_with_areas = false
+	_patrol_query.margin = 0.0
+
+func _effective_attack_radius() -> float:
+	return clampf(attack_radius, 16.0, 400.0)
+
+func _find_player_in_attack_area(area_center: Vector2) -> PhysicsBody2D:
+	if _area_query == null or _area_shape == null:
+		return null
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, area_center)
+	var overlaps: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		if _has_clear_line_of_sight(player_body, area_center):
+			return player_body
+	return null
+
+func _is_alive_player(candidate: PhysicsBody2D) -> bool:
+	if not is_instance_valid(candidate):
+		return false
+	if not candidate.is_in_group("player") or not candidate.has_method("take_damage"):
+		return false
+	var dead_value: Variant = candidate.get("is_dead")
+	if typeof(dead_value) != TYPE_BOOL or bool(dead_value):
+		return false
+	return _node_is_inside_current_scene(candidate)
+
+func _is_known_player_defeated() -> bool:
+	if _known_player == null or not is_instance_valid(_known_player):
+		return false
+	var dead_value: Variant = _known_player.get("is_dead")
+	return typeof(dead_value) == TYPE_BOOL and bool(dead_value)
+
+func _has_clear_line_of_sight(player_body: PhysicsBody2D, area_center: Vector2) -> bool:
+	_line_of_sight_query.from = area_center
+	_line_of_sight_query.to = _get_player_collider_center(player_body)
+	var obstruction: Dictionary = get_world_2d().direct_space_state.intersect_ray(
+		_line_of_sight_query
+	)
+	return obstruction.is_empty()
+
+func _get_player_collider_center(player_body: PhysicsBody2D) -> Vector2:
+	var player_shape := player_body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if player_shape != null and not player_shape.disabled:
+		return player_shape.global_position
+	return player_body.global_position
+
+func _begin_windup(player_body: PhysicsBody2D) -> void:
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	_locked_player = player_body
+	_damaged_player_ids.clear()
+	_attack_state = AttackState.WINDUP
+	_state_remaining = maxf(windup_duration, 0.05)
+	_recovery_fade_remaining = 0.0
+	_body_sprite.pause()
+	_locked_attack_center = global_position + attack_center_offset
+	_select_attack_frame(&"windup", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+
+func _update_windup(delta: float) -> void:
+	var effective_duration := maxf(windup_duration, 0.05)
+	var before_step := _state_remaining
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		var overshoot := maxf(delta - before_step, 0.0)
+		_enter_active()
+		_apply_attack_area()
+		if overshoot >= maxf(active_window, 0.05):
+			_enter_recovery()
+		else:
+			_state_remaining = maxf(active_window, 0.05) - overshoot
+			_select_attack_frame(&"active", _state_remaining, maxf(active_window, 0.05))
+		return
+	_select_attack_frame(&"windup", _state_remaining, effective_duration)
+	_update_attack_area_visual()
+
+func _enter_active() -> void:
+	_attack_state = AttackState.ACTIVE
+	_state_remaining = maxf(active_window, 0.05)
+	_select_attack_frame(&"active", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_active(delta: float) -> void:
+	_apply_attack_area()
+	var effective_duration := maxf(active_window, 0.05)
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		_enter_recovery()
+		return
+	_select_attack_frame(&"active", _state_remaining, effective_duration)
+
+func _apply_attack_area() -> void:
+	if _defeated_emitted or _attack_state != AttackState.ACTIVE:
+		return
+	var overlaps: Array[Dictionary] = _find_overlaps_at_locked_center()
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		var player_id := player_body.get_instance_id()
+		if _damaged_player_ids.has(player_id):
+			continue
+		if not _has_clear_line_of_sight(player_body, _locked_attack_center):
+			continue
+		_damaged_player_ids[player_id] = true
+		var damage_result: Variant = player_body.call(
+			"take_damage",
+			maxi(attack_damage, 1),
+			self
+		)
+		if typeof(damage_result) == TYPE_BOOL and bool(damage_result):
+			_set_attack_visual(&"impact", 1.0)
+
+func _find_overlaps_at_locked_center() -> Array[Dictionary]:
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, _locked_attack_center)
+	return get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+
+func _enter_recovery() -> void:
+	_attack_state = AttackState.RECOVERY
+	_state_remaining = maxf(recovery_duration, 0.05)
+	_recovery_fade_remaining = maxf(recovery_fade_duration, 0.0)
+	_select_attack_frame(&"recovery", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_recovery(delta: float) -> void:
+	var effective_duration := maxf(recovery_duration, 0.05)
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	_recovery_fade_remaining = maxf(_recovery_fade_remaining - delta, 0.0)
+	_update_attack_area_visual()
+	if _state_remaining <= 0.0:
+		_set_attack_visual(&"hidden", 0.0)
+		_attack_state = AttackState.IDLE
+		_state_remaining = 0.0
+		_recovery_fade_remaining = 0.0
+		_locked_player = null
+		_locked_attack_center = Vector2.ZERO
+		_damaged_player_ids.clear()
+		_update_visuals()
+		return
+	_select_attack_frame(&"recovery", _state_remaining, effective_duration)
+
+func _select_attack_frame(animation_name: StringName, remaining: float, effective_duration: float) -> void:
+	if _body_sprite.sprite_frames == null or not _body_sprite.sprite_frames.has_animation(animation_name):
+		return
+	var frames := _body_sprite.sprite_frames.get_frame_count(animation_name)
+	if frames <= 0:
+		return
+	if _body_sprite.animation != animation_name:
+		_body_sprite.animation = animation_name
+	_body_sprite.pause()
+	var normalized_progress := clampf(1.0 - remaining / maxf(effective_duration, 0.0001), 0.0, 1.0)
+	var total_weight := 0.0
+	for frame_index in frames:
+		total_weight += _body_sprite.sprite_frames.get_frame_duration(animation_name, frame_index)
+	var elapsed := normalized_progress * total_weight
+	var cumulative := 0.0
+	var selected_frame := frames - 1
+	for frame_index in frames:
+		cumulative += _body_sprite.sprite_frames.get_frame_duration(animation_name, frame_index)
+		if elapsed < cumulative:
+			selected_frame = frame_index
+			break
+	_body_sprite.pause()
+	_body_sprite.frame = selected_frame
+
+func _update_attack_area_visual() -> void:
+	match _attack_state:
+		AttackState.WINDUP:
+			var windup_progress := 1.0 - clampf(
+				_state_remaining / maxf(windup_duration, 0.05),
+				0.0,
+				1.0
+			)
+			_set_attack_visual(&"windup", 0.58 + windup_progress * 0.34)
+		AttackState.ACTIVE:
+			_set_attack_visual(&"active", 1.0)
+		AttackState.RECOVERY:
+			var fade_alpha := 0.0
+			if recovery_fade_duration > 0.0:
+				fade_alpha = _recovery_fade_remaining / recovery_fade_duration
+			_set_attack_visual(&"recovery", clampf(fade_alpha, 0.0, 1.0))
+		_:
+			_set_attack_visual(&"hidden", 0.0)
+
+func _set_attack_visual(phase: StringName, alpha: float) -> void:
+	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_area_state"):
+		return
+	_attack_visual.call(
+		"set_area_state",
+		_effective_attack_radius(),
+		attack_center_offset if _attack_state == AttackState.IDLE else _locked_attack_center - global_position,
+		phase,
+		alpha
+	)
+
+func _update_hit_flash(delta: float) -> void:
+	if _flash_remaining <= 0.0:
+		return
+	_flash_remaining = maxf(_flash_remaining - maxf(delta, 0.0), 0.0)
+	_update_visuals()
+
+func _update_visuals() -> void:
+	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
+		return
+	if _attack_state == AttackState.IDLE:
+		var locomotion_clip: StringName = &"walk" if _patrol_moving else &"idle"
+		if _body_sprite.animation != locomotion_clip:
+			_body_sprite.play(locomotion_clip)
+	_body_sprite.flip_h = _patrol_direction < 0
+	var hit_flash := _body_sprite.material as ShaderMaterial
+	if hit_flash != null:
+		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
+	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
+	_health_fill.scale.x = health_ratio
+
+func _cancel_attack() -> void:
+	_set_attack_visual(&"hidden", 0.0)
+	_attack_state = AttackState.IDLE
+	_state_remaining = 0.0
+	_recovery_fade_remaining = 0.0
+	_locked_player = null
+	_locked_attack_center = Vector2.ZERO
+	_damaged_player_ids.clear()
+	_update_visuals()
+
+func _is_inside_current_scene() -> bool:
+	return _node_is_inside_current_scene(self)
+
+func _node_is_inside_current_scene(node: Node) -> bool:
+	if not is_instance_valid(node):
+		return false
+	var scene_root := get_tree().current_scene
+	return is_instance_valid(scene_root) and (scene_root == node or scene_root.is_ancestor_of(node))
+
+func _patrol_preconditions_hold() -> bool:
+	if not _patrol_enabled:
+		return false
+	if _defeated_emitted or health <= 0 or _placement_pending or not _is_inside_current_scene():
+		return false
+	if _bound_support == null or not is_instance_valid(_bound_support) \
+		or not _bound_support.is_inside_tree() or not _is_compatible_support(_bound_support):
+		_disable_patrol_with_warning("o suporte vinculado deixou de ser válido")
+		return false
+	return true
+
+func _advance_patrol(delta: float) -> void:
+	velocity = Vector2.ZERO
+	if _patrol_pause_remaining > 0.0:
+		_patrol_pause_remaining = maxf(_patrol_pause_remaining - delta, 0.0)
+		_patrol_moving = false
+		_update_visuals()
+		return
+	var distance_to_bound := _patrol_max_x - global_position.x if _patrol_direction > 0 else global_position.x - _patrol_min_x
+	if distance_to_bound <= MOVEMENT_EPSILON:
+		_turn_patrol_around()
+		return
+	var requested_dx := float(_patrol_direction) * minf(PATROL_SPEED * delta, distance_to_bound)
+	if absf(requested_dx) < MOVEMENT_EPSILON:
+		_patrol_moving = false
+		_update_visuals()
+		return
+
+	var collision: KinematicCollision2D = move_and_collide(Vector2(requested_dx, 0.0), true, 0.0)
+	var travel_x := requested_dx
+	if collision != null:
+		travel_x = collision.get_travel().x
+	if signf(travel_x) != signf(requested_dx):
+		travel_x = 0.0
+	travel_x = signf(requested_dx) * minf(absf(travel_x), absf(requested_dx))
+	var candidate_x := global_position.x + travel_x
+	var clamped_x := clampf(candidate_x, _patrol_min_x, _patrol_max_x)
+	var safe_dx := clamped_x - global_position.x
+	var postcondition_valid := (
+		candidate_x >= _patrol_min_x - MOVEMENT_EPSILON
+		and candidate_x <= _patrol_max_x + MOVEMENT_EPSILON
+		and signf(safe_dx) == signf(requested_dx)
+		and absf(safe_dx) <= absf(requested_dx) + MOVEMENT_EPSILON
+	)
+	if not postcondition_valid:
+		safe_dx = 0.0
+	if absf(safe_dx) >= MOVEMENT_EPSILON:
+		global_position.x += safe_dx
+	var hit_bound := absf(_patrol_max_x - global_position.x) <= MOVEMENT_EPSILON if _patrol_direction > 0 else absf(global_position.x - _patrol_min_x) <= MOVEMENT_EPSILON
+	var blocked := collision != null or absf(safe_dx - requested_dx) >= MOVEMENT_EPSILON
+	if hit_bound or blocked:
+		_turn_patrol_around()
+		return
+	_patrol_moving = absf(safe_dx) >= MOVEMENT_EPSILON
+	_update_visuals()
+
+func _turn_patrol_around() -> void:
+	_patrol_moving = false
+	_patrol_direction *= -1
+	_patrol_pause_remaining = PATROL_PAUSE
+	_update_visuals()
+
+func _stop_patrol() -> void:
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	if _attack_state == AttackState.IDLE:
+		_update_visuals()
+
+func _bind_patrol_support(support: SolidPlatform, minimum_x: float, maximum_x: float, enable_patrol: bool) -> void:
+	var previous_support := _bound_support
+	var valid_support := support != null and is_instance_valid(support) and _is_compatible_support(support)
+	if previous_support != null and is_instance_valid(previous_support) \
+		and (not valid_support or previous_support != support):
+		remove_collision_exception_with(previous_support)
+	_patrol_enabled = false
+	_patrol_moving = false
+	if not valid_support:
+		_bound_support = null
+		_warn_patrol_once("suporte ausente ou incompatível; o alvo permanecerá estacionário")
+		return
+	if previous_support != support:
+		_bound_support = support
+		add_collision_exception_with(support)
+	else:
+		_bound_support = previous_support
+	_patrol_min_x = minf(minimum_x, maximum_x)
+	_patrol_max_x = maxf(minimum_x, maximum_x)
+	if enable_patrol and _patrol_max_x - _patrol_min_x >= MIN_PATROL_DISTANCE:
+		_patrol_enabled = true
+		_patrol_direction = 1
+		_patrol_pause_remaining = 0.0
+		_body_sprite.flip_h = false
+	else:
+		_warn_patrol_once("nenhum percurso livre e útil de 8 px; o alvo permanecerá estacionário")
+
+func _is_compatible_support(support: SolidPlatform) -> bool:
+	if not is_instance_valid(support) or not support.is_inside_tree():
+		return false
+	if absf(support.global_rotation) > 0.001 or not support.global_scale.is_equal_approx(Vector2.ONE):
+		return false
+	var shape_count := 0
+	for child in support.get_children():
+		var collision := child as CollisionShape2D
+		if collision == null:
+			continue
+		shape_count += 1
+		if collision.disabled or not collision.shape is RectangleShape2D:
+			return false
+		if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
+			return false
+	return shape_count == 1
+
+func _disable_patrol_with_warning(message: String) -> void:
+	_patrol_enabled = false
+	_patrol_moving = false
+	velocity = Vector2.ZERO
+	if _bound_support != null and is_instance_valid(_bound_support):
+		remove_collision_exception_with(_bound_support)
+	_bound_support = null
+	_warn_patrol_once(message)
+	if _attack_state == AttackState.IDLE:
+		_update_visuals()
+
+func _warn_patrol_once(message: String) -> void:
+	if _patrol_warning_emitted:
+		return
+	_patrol_warning_emitted = true
+	push_warning("%s: %s." % [name, message])
+
+## Retângulo da colisão em coordenadas locais (relativo à origem do inimigo).
+func _get_collision_rect() -> Rect2:
+	for child in get_children():
+		var collision := child as CollisionShape2D
+		if collision != null and not collision.disabled and collision.shape != null:
+			var rect := collision.shape.get_rect()
+			rect.position += collision.position
+			return rect
+	# Sem CollisionShape2D: assume que a origem está no centro da base.
+	return Rect2(-16.0, -32.0, 32.0, 32.0)
+
+func _get_support_rect(support: SolidPlatform) -> Dictionary:
+	if not _is_compatible_support(support):
+		return {"valid": false}
+	for child in support.get_children():
+		var collision := child as CollisionShape2D
+		if collision == null:
+			continue
+		var rectangle := collision.shape as RectangleShape2D
+		var top_left := collision.global_position - rectangle.size * 0.5
+		return {"valid": true, "rect": Rect2(top_left, rectangle.size)}
+	return {"valid": false}
+
+func _patrol_bounds_for_support(support_rect: Rect2, body_rect: Rect2, margin: float) -> Vector2:
+	return Vector2(
+		support_rect.position.x + margin - body_rect.position.x,
+		support_rect.end.x - margin - body_rect.end.x
+	)
+
+func _make_body_sweep(minimum_x: float, maximum_x: float, body_rect: Rect2, body_global_y: float) -> Rect2:
+	return Rect2(
+		Vector2(minimum_x + body_rect.position.x, body_global_y + body_rect.position.y),
+		Vector2(maximum_x - minimum_x + body_rect.size.x, body_rect.size.y)
+	)
+
+func _is_world_rect_clear(bounds: Rect2, support: SolidPlatform) -> bool:
+	if _patrol_query == null or _patrol_query_shape == null or support == null or not is_instance_valid(support):
+		return false
+	_patrol_query_shape.size = bounds.size
+	_patrol_query.transform = Transform2D(0.0, bounds.get_center())
+	_patrol_query.exclude = [get_rid(), support.get_rid()]
+	var blockers := get_world_2d().direct_space_state.intersect_shape(_patrol_query, MAX_QUERY_RESULTS)
+	return blockers.is_empty()
+
+func _find_first_safe_stationary_x(minimum_x: float, maximum_x: float, body_rect: Rect2, body_global_y: float, support: SolidPlatform) -> Dictionary:
+	var span := maxf(maximum_x - minimum_x, 0.0)
+	var sample_count := maxi(1, int(ceil(span / 8.0)))
+	for sample_index in range(sample_count + 1):
+		var x := lerpf(minimum_x, maximum_x, float(sample_index) / float(sample_count))
+		var bounds := _make_body_sweep(x, x, body_rect, body_global_y)
+		if _is_world_rect_clear(bounds, support):
+			return {"valid": true, "x": x}
+	return {"valid": false}
+
+func _place_on_platform() -> void:
+	if not _placement_pending:
+		return
+	var body := _get_collision_rect()
+	var needed_width := body.size.x + edge_margin * 2.0
+
+	# Prefere plataformas livres; o Floor só entra se não sobrar nenhuma,
+	# e plataformas já ocupadas por outro inimigo ficam por último.
+	var free: Array[SolidPlatform] = []
+	var floors: Array[SolidPlatform] = []
+	var taken: Array[SolidPlatform] = []
+	for node in get_tree().get_nodes_in_group(&"solid_platform"):
+		var candidate := node as SolidPlatform
+		if candidate == null or candidate.size.x < needed_width or not _is_compatible_support(candidate):
+			continue
+		if candidate.name == &"Floor":
+			floors.append(candidate)
+		elif candidate.has_meta(CLAIMED_META):
+			taken.append(candidate)
+		else:
+			free.append(candidate)
+
+	var pool: Array[SolidPlatform] = free
+	if pool.is_empty():
+		pool = floors
+	if pool.is_empty():
+		pool = taken
+	if pool.is_empty():
+		_placement_pending = false
+		_disable_patrol_with_warning("nenhuma plataforma compatível; o alvo permanecerá estacionário")
+		return
+
+	var rng := RandomNumberGenerator.new()
+	if SolidPlatform.room_seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = hash([SolidPlatform.room_seed, get_index(), "training_target"])
+
+	var platform := pool[rng.randi_range(0, pool.size() - 1)]
+	platform.set_meta(CLAIMED_META, true)
+	var support_data := _get_support_rect(platform)
+	var support_rect: Rect2 = support_data.get("rect", Rect2())
+	var patrol_bounds := _patrol_bounds_for_support(support_rect, body, edge_margin)
+	var minimum_x := patrol_bounds.x
+	var maximum_x := patrol_bounds.y
+	var platform_top := support_rect.position.y
+	var body_global_y := platform_top - body.end.y
+	var sweep := _make_body_sweep(minimum_x, maximum_x, body, body_global_y)
+	var has_useful_route := maximum_x - minimum_x >= MIN_PATROL_DISTANCE
+	var sweep_is_clear := has_useful_route and _is_world_rect_clear(sweep, platform)
+	if sweep_is_clear:
+		global_position = Vector2(rng.randf_range(minimum_x, maximum_x), body_global_y)
+		_bind_patrol_support(platform, minimum_x, maximum_x, true)
+	else:
+		var stationary := _find_first_safe_stationary_x(minimum_x, maximum_x, body, body_global_y, platform)
+		if bool(stationary.get("valid", false)):
+			global_position = Vector2(float(stationary.get("x", minimum_x)), body_global_y)
+			_bind_patrol_support(platform, minimum_x, maximum_x, false)
+			_warn_patrol_once("sweep bloqueado ou curto; usando posição estacionária segura")
+		else:
+			_bind_patrol_support(null, global_position.x, global_position.x, false)
+			_warn_patrol_once("nenhum spawn seguro; mantendo a posição original")
+	_placement_pending = false
+	_update_visuals()
+
+
+SOURCE scripts/world/main.gd
+
+extends Node2D
+
+signal run_progression_ready
+
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RoomTransitionOverlayScript = preload("res://scripts/world/room_transition_overlay.gd")
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const UpgradeOfferScene: PackedScene = preload("res://scenes/upgrade_offer.tscn")
+const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
+const MOTOR_ACELERADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/motor_acelerado.tres")
+const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
+const FALLBACK_PLAYER_SPAWN := Vector2(160.0, 560.0)
+const WORLD_LAYER_BIT_MASK: int = 1
+const AUTHORED_EDGE_MARGIN: float = 8.0
+const AUTHORED_CONTACT_TOLERANCE: float = 0.5
+const AUTHORED_OVERLAP_AREA_LIMIT: float = 0.01
+const KNOWN_AUTHORED_PLATFORM_NAMES: Array[StringName] = [
+	&"PlatformA", &"PlatformB", &"PlatformC",
+	&"WestPlatform", &"UpperPlatform", &"EastPlatform",
+]
+const RoomLayoutGenerator = preload("res://scripts/world/room_layout_generator.gd")
+const DISCRETE_INPUT_ACTIONS: Array[StringName] = [
+	&"launch_ball",
+	&"parry",
+	&"dash",
+	&"jump",
+	&"interact",
+]
+
+enum UpgradeFlowState {
+	INACTIVE,
+	VICTORY_PENDING,
+	OFFER_OPEN,
+	SELECTED,
+	EXIT_RELEASED,
+	CANCELLED,
+	COMPLETED,
+}
+
+@export var authored_layout_enabled: bool = false
+@export var room_layout_seed: int = 0
+@export_file("*.tscn") var next_room_scene_path: String = "res://scenes/second_room.tscn"
+@export var room_title: String = "SALA 01"
+@export var reward_enabled: bool = true
+@export_range(0.0, 2.0, 0.01) var post_upgrade_input_guard_seconds: float = 0.25
+@export var room_title_label_path: NodePath = NodePath("CombatRoom/HUD/RoomLabel")
+@export var build_status_label_path: NodePath = NodePath("CombatRoom/HUD/BuildLabel")
+@export var player_spawn_marker_path: NodePath = NodePath("PlayerSpawnMarker")
+
+@onready var player: Player = $Player
+@onready var combat_room: CombatRoom = $CombatRoom
+@onready var exit_door: Node = get_node_or_null("ExitDoor")
+
+var _transition_in_progress: bool = false
+var _door_request_pending: bool = false
+var _transition_token: int = 0
+var _transition_source_scene: Node
+var _transition_player: Player
+var _transition_overlay: Node
+var _transition_original_disable_mode: int = 0
+var _transition_original_process_mode: int = Node.PROCESS_MODE_INHERIT
+var _transition_player_locked: bool = false
+var _standalone_swap_committed: bool = false
+var _local_reward_resolved: bool = false
+var _upgrade_flow_state: UpgradeFlowState = UpgradeFlowState.INACTIVE
+var _death_pending: bool = false
+var _post_flush_resolution_queued: bool = false
+var _upgrade_offer: UpgradeOffer
+var _offered_upgrade_ids: Array[StringName] = []
+var _owned_offer_pause: bool = false
+var _guard_active: bool = false
+var _guard_waiting_for_release: bool = false
+var _guard_quiet_remaining: float = 0.0
+var run_build: RunBuild = RunBuild.new()
+var _run_controller_managed: bool = false
+var _managed_run_build: RunBuild
+var _run_progression_notified: bool = false
+var _authored_layout_prepared: bool = false
+var _authored_layout_valid: bool = false
+var _authored_layout_error: String = ""
+var _authored_target_position: Vector2 = Vector2.ZERO
+var _authored_target_node: Node
+var _authored_target_support: SolidPlatform
+var _authored_target_support_path: NodePath = NodePath("")
+var _authored_target_patrol_enabled: bool = false
+var _authored_target_patrol_min_x: float = 0.0
+var _authored_target_patrol_max_x: float = 0.0
+var _authored_world_obstacles: Array[Dictionary] = []
+var _prepared_room_layout_seed: int = 0
+var _prepared_platform_rects: Dictionary = {}
+var _door_unlock_pending: bool = false
+
+var _upgrade_definitions: Array[UpgradeDefinitionResource] = [
+	IMPACTO_REFORCADO_DEFINITION,
+	MOTOR_ACELERADO_DEFINITION,
+	CARGA_REATIVA_DEFINITION,
+]
+
+func _enter_tree() -> void:
+	if authored_layout_enabled:
+		prepare_authored_layout()
+
+func prepare_authored_layout() -> bool:
+	if not authored_layout_enabled:
+		return true
+	if _authored_layout_prepared:
+		return _authored_layout_valid
+
+	_authored_layout_prepared = true
+	_authored_layout_valid = false
+	_authored_layout_error = ""
+	_authored_target_position = Vector2.ZERO
+	_authored_target_node = null
+	_authored_target_support = null
+	_authored_target_support_path = NodePath("")
+	_authored_target_patrol_enabled = false
+	_authored_target_patrol_min_x = 0.0
+	_authored_target_patrol_max_x = 0.0
+	_authored_world_obstacles.clear()
+	_prepared_platform_rects.clear()
+
+	var platform_set_result: Dictionary = _detect_authored_platform_set()
+	if not bool(platform_set_result.get("valid", false)):
+		return _fail_authored_layout(String(platform_set_result.get("error", "fixture de plataformas inválida")))
+	var authored_platform_names: Array[StringName] = platform_set_result.get("names", [])
+	var generation: Dictionary = RoomLayoutGenerator.generate_layout(
+		authored_platform_names.size(),
+		room_layout_seed,
+		_get_player_spawn_x_for_layout()
+	)
+	_prepared_room_layout_seed = int(generation.get("seed", 0))
+	if not bool(generation.get("valid", false)):
+		return _fail_authored_layout(String(generation.get("error", "gerador de layout recusou a sala")))
+	var generated_platforms: Array[Dictionary] = generation.get("platforms", [])
+	if generated_platforms.size() != authored_platform_names.size():
+		return _fail_authored_layout("gerador retornou quantidade diferente de plataformas")
+	var target := get_node_or_null("TrainingTarget") as TrainingTarget
+	if target == null or not target.authored_support_enabled:
+		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+	var primary_index := int(generation.get("primary_index", -1))
+	var fallback_index := int(generation.get("fallback_index", -1))
+	if primary_index < 0 or primary_index >= authored_platform_names.size() or fallback_index < 0 or fallback_index >= authored_platform_names.size():
+		return _fail_authored_layout("gerador não definiu suportes primário e fallback")
+	target.fixed_support_path = NodePath("../" + String(authored_platform_names[primary_index]))
+	target.fallback_support_path = NodePath("../" + String(authored_platform_names[fallback_index]))
+	for platform_index in authored_platform_names.size():
+		var platform_name: StringName = authored_platform_names[platform_index]
+		var platform := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
+		if platform == null:
+			return _fail_authored_layout("plataforma ausente ou de tipo incorreto: %s" % String(platform_name))
+		var generated: Dictionary = generated_platforms[platform_index]
+		var generated_size: Vector2 = generated.get("size", Vector2.ZERO)
+		var generated_position: Vector2 = generated.get("position", Vector2.ZERO)
+		platform.randomize_position = false
+		platform.randomize_width = false
+		platform.size = generated_size
+		platform.position = generated_position
+		var platform_result: Dictionary = _validate_authored_platform(
+			platform,
+			generated_position,
+			generated_size
+		)
+		if not bool(platform_result.get("valid", false)):
+			return _fail_authored_layout(String(platform_result.get("error", "plataforma inválida")))
+		_prepared_platform_rects[platform_name] = platform_result.get("rect", Rect2())
+
+	if not _validate_generated_route(authored_platform_names):
+		return false
+	if not _validate_authored_room_boundaries():
+		return false
+	if not _collect_authored_world_obstacles():
+		return false
+	if not _validate_authored_spawns_and_patrol():
+		return false
+	if not _validate_authored_target(_prepared_platform_rects):
+		return false
+
+	_authored_layout_valid = true
+	return true
+
+func is_authored_layout_valid() -> bool:
+	return not authored_layout_enabled or (_authored_layout_prepared and _authored_layout_valid)
+
+func get_authored_layout_error() -> String:
+	return _authored_layout_error
+
+func get_prepared_authored_target_position(target: Node) -> Variant:
+	if not authored_layout_enabled or not _authored_layout_prepared or not _authored_layout_valid or target != _authored_target_node:
+		return null
+	return _authored_target_position
+
+func get_prepared_authored_target_binding(target: Node) -> Dictionary:
+	if not authored_layout_enabled or not _authored_layout_prepared or not _authored_layout_valid or target != _authored_target_node:
+		return {}
+	return {
+		"position": _authored_target_position,
+		"support": _authored_target_support,
+		"support_path": _authored_target_support_path,
+		"patrol_enabled": _authored_target_patrol_enabled,
+		"patrol_min_x": _authored_target_patrol_min_x,
+		"patrol_max_x": _authored_target_patrol_max_x,
+		"edge_margin": AUTHORED_EDGE_MARGIN,
+	}
+
+func get_prepared_room_layout_seed() -> int:
+	return _prepared_room_layout_seed
+
+func _fail_authored_layout(message: String) -> bool:
+	_authored_layout_valid = false
+	_authored_layout_error = message
+	push_error("Main: layout autoral inválido — " + message)
+	return false
+
+func _detect_authored_platform_set() -> Dictionary:
+	var present_names: Array[StringName] = []
+	for child in get_children():
+		var child_name: StringName = StringName(child.name)
+		if child_name == &"Floor":
+			continue
+		var platform := child as SolidPlatform
+		var known_platform: bool = KNOWN_AUTHORED_PLATFORM_NAMES.has(child_name)
+		if not known_platform:
+			if platform != null:
+				return {"valid": false, "error": "plataforma autoral desconhecida: %s" % String(child_name)}
+			continue
+		if platform == null:
+			return {"valid": false, "error": "nó de plataforma tem tipo incorreto: %s" % String(child_name)}
+		present_names.append(child_name)
+
+	if present_names.size() < RoomLayoutGenerator.MIN_PLATFORM_COUNT \
+		or present_names.size() > RoomLayoutGenerator.MAX_PLATFORM_COUNT:
+		return {"valid": false, "error": "quantidade de plataformas fora do intervalo suportado (2..5)"}
+	return {"valid": true, "names": present_names}
+
+func _get_player_spawn_x_for_layout() -> float:
+	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+	return spawn_marker.position.x if spawn_marker != null else FALLBACK_PLAYER_SPAWN.x
+
+func _validate_generated_route(platform_names: Array[StringName]) -> bool:
+	var previous_rect := Rect2()
+	for index in platform_names.size():
+		var platform_name: StringName = platform_names[index]
+		if not _prepared_platform_rects.has(platform_name):
+			return _fail_authored_layout("retângulo físico ausente para %s" % String(platform_name))
+		var rect: Rect2 = _prepared_platform_rects[platform_name]
+		if rect.size.y != 24.0 or rect.size.x < 104.0 or rect.size.x > 216.0:
+			return _fail_authored_layout("dimensão física inválida em %s" % String(platform_name))
+		if rect.position.x < 64.0 or rect.end.x > 980.0 or fposmod(rect.position.x, 8.0) > 0.01 or fposmod(rect.size.x, 8.0) > 0.01:
+			return _fail_authored_layout("%s ultrapassa a faixa de geração" % String(platform_name))
+		if rect.position.y < 376.0 or rect.position.y > 440.0:
+			return _fail_authored_layout("%s está fora dos limites verticais" % String(platform_name))
+		if rect.end.y > 464.0 or 560.0 - rect.end.y < 96.0:
+			return _fail_authored_layout("%s reduz a folga livre do piso abaixo de 96 px" % String(platform_name))
+		if index == 0:
+			if absf(rect.position.y - 440.0) > 0.01:
+				return _fail_authored_layout("a primeira plataforma deve ter topo y=440")
+			var spawn_x := _get_player_spawn_x_for_layout()
+			if rect.position.x < 208.0 or rect.position.x > 256.0 or rect.position.x - (spawn_x + 14.0) < 24.0:
+				return _fail_authored_layout("a primeira plataforma invade a margem do spawn")
+		else:
+			var gap := rect.position.x - previous_rect.end.x
+			var rise := previous_rect.position.y - rect.position.y
+			if gap < 56.0 or gap > 96.0 or rise < 0.0 or rise > 64.0:
+				return _fail_authored_layout("vão ou desnível inválido entre plataformas")
+			if _positive_overlap_area(rect, previous_rect) > AUTHORED_OVERLAP_AREA_LIMIT:
+				return _fail_authored_layout("plataformas adjacentes se sobrepõem")
+		previous_rect = rect
+	return true
+
+func _validate_authored_room_boundaries() -> bool:
+	var floor_platform := get_node_or_null("Floor") as SolidPlatform
+	if floor_platform == null:
+		return _fail_authored_layout("Floor ausente ou de tipo incorreto")
+	if floor_platform.position.distance_to(Vector2(576.0, 604.0)) > 0.01:
+		return _fail_authored_layout("Floor fora da posição 576×604")
+	if floor_platform.size.distance_to(Vector2(1152.0, 88.0)) > 0.01:
+		return _fail_authored_layout("Floor deve medir 1152×88")
+	if absf(floor_platform.rotation) > 0.001 or not floor_platform.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("Floor tem transform incompatível")
+	var floor_collision := floor_platform.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if floor_collision == null or floor_collision.disabled:
+		return _fail_authored_layout("Floor sem CollisionShape2D ativo")
+	var floor_rectangle := floor_collision.shape as RectangleShape2D
+	if floor_rectangle == null or floor_rectangle.size.distance_to(Vector2(1152.0, 88.0)) > 0.01:
+		return _fail_authored_layout("shape físico de Floor deve medir 1152×88")
+	if floor_collision.position.length() > 0.01 or absf(floor_collision.rotation) > 0.001 or not floor_collision.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("shape físico de Floor está deslocado")
+
+	var world_collision := get_node_or_null("WorldCollision") as StaticBody2D
+	if world_collision == null:
+		return _fail_authored_layout("WorldCollision ausente ou de tipo incorreto")
+	if world_collision.position.length() > 0.01 or absf(world_collision.rotation) > 0.001 or not world_collision.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("WorldCollision tem transform incompatível")
+
+	var boundary_names: Array[StringName] = [
+		&"LeftWall", &"RightWallUpper", &"RightWallLower", &"ExitGate", &"RightOuterGuard", &"Ceiling",
+	]
+	var boundary_positions: Array[Vector2] = [
+		Vector2(32.0, 324.0), Vector2(1120.0, 216.0), Vector2(1120.0, 604.0),
+		Vector2(1120.0, 496.0), Vector2(1156.0, 324.0), Vector2(576.0, -16.0),
+	]
+	var boundary_sizes: Array[Vector2] = [
+		Vector2(64.0, 648.0), Vector2(64.0, 432.0), Vector2(64.0, 88.0),
+		Vector2(64.0, 128.0), Vector2(8.0, 648.0), Vector2(1152.0, 32.0),
+	]
+	for boundary_index in boundary_names.size():
+		var boundary := world_collision.get_node_or_null(NodePath(String(boundary_names[boundary_index]))) as CollisionShape2D
+		if boundary == null:
+			return _fail_authored_layout("shape de limite ausente: %s" % String(boundary_names[boundary_index]))
+		if boundary_names[boundary_index] != &"ExitGate" and boundary.disabled:
+			return _fail_authored_layout("shape de limite desativado: %s" % String(boundary_names[boundary_index]))
+		if boundary.position.distance_to(boundary_positions[boundary_index]) > 0.01:
+			return _fail_authored_layout("%s fora da posição autoral" % String(boundary_names[boundary_index]))
+		var rectangle := boundary.shape as RectangleShape2D
+		if rectangle == null or rectangle.size.distance_to(boundary_sizes[boundary_index]) > 0.01:
+			return _fail_authored_layout("%s tem shape físico incompatível" % String(boundary_names[boundary_index]))
+		if absf(boundary.rotation) > 0.001 or not boundary.scale.is_equal_approx(Vector2.ONE):
+			return _fail_authored_layout("%s tem transform incompatível" % String(boundary_names[boundary_index]))
+
+	var ceiling_band := world_collision.get_node_or_null("CeilingBand") as CollisionShape2D
+	if ceiling_band == null or ceiling_band.disabled:
+		return _fail_authored_layout("faixa física visível do teto ausente ou desativada")
+	if ceiling_band.position.distance_to(Vector2(576.0, 32.0)) > 0.01:
+		return _fail_authored_layout("CeilingBand fora da faixa y=0..64")
+	var ceiling_rectangle := ceiling_band.shape as RectangleShape2D
+	if ceiling_rectangle == null or ceiling_rectangle.size.distance_to(Vector2(1152.0, 64.0)) > 0.01:
+		return _fail_authored_layout("CeilingBand deve medir 1152×64")
+	if absf(ceiling_band.rotation) > 0.001 or not ceiling_band.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("CeilingBand tem transform incompatível")
+	return true
+
+func _validate_authored_platform(
+	platform: SolidPlatform,
+	expected_position: Vector2,
+	expected_size: Vector2
+) -> Dictionary:
+	if platform.position.distance_to(expected_position) > 0.01:
+		return {"valid": false, "error": "%s fora da posição autoral" % platform.name}
+	if platform.size.distance_to(expected_size) > 0.01:
+		return {"valid": false, "error": "%s fora do tamanho autoral" % platform.name}
+	if platform.randomize_position or platform.randomize_width:
+		return {"valid": false, "error": "%s ainda permite aleatoriedade" % platform.name}
+	if absf(platform.rotation) > 0.001 or not platform.scale.is_equal_approx(Vector2.ONE):
+		return {"valid": false, "error": "%s tem transform autoral incompatível" % platform.name}
+
+	var collision := platform.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision == null or collision.disabled:
+		return {"valid": false, "error": "%s sem CollisionShape2D ativo" % platform.name}
+	var rectangle := collision.shape as RectangleShape2D
+	if rectangle == null or rectangle.size.distance_to(expected_size) > 0.01:
+		return {"valid": false, "error": "%s tem shape diferente do tamanho autoral" % platform.name}
+	if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
+		return {"valid": false, "error": "%s tem shape fora da origem local" % platform.name}
+	return {"valid": true, "rect": Rect2(platform.position - expected_size * 0.5, expected_size)}
+
+func _collect_authored_world_obstacles() -> bool:
+	_authored_world_obstacles.clear()
+	for child in get_children():
+		var body := child as StaticBody2D
+		if body == null or (body.collision_layer & WORLD_LAYER_BIT_MASK) == 0:
+			continue
+		var found_shape := false
+		for shape_child in body.get_children():
+			var collision := shape_child as CollisionShape2D
+			if collision == null or collision.disabled:
+				continue
+			if collision.name == &"RightOuterGuard":
+				continue
+			if collision.shape == null:
+				return _fail_authored_layout("shape ausente em %s" % body.name)
+			found_shape = true
+			_authored_world_obstacles.append({
+				"owner": body,
+				"rect": _collision_shape_aabb_in_main(collision),
+			})
+		if not found_shape:
+			return _fail_authored_layout("nenhum shape ativo em World layer 1: %s" % body.name)
+	return true
+
+func _validate_authored_spawns_and_patrol() -> bool:
+	var player_body := get_node_or_null("Player") as CollisionObject2D
+	var player_spawn := get_node_or_null("PlayerSpawnMarker") as Marker2D
+	if player_body == null or player_spawn == null:
+		return _fail_authored_layout("spawn do jogador ausente")
+	var player_bounds_result: Dictionary = _body_aabb(player_body, false)
+	if not bool(player_bounds_result.get("valid", false)):
+		return _fail_authored_layout("collider do jogador ausente")
+	var player_bounds: Rect2 = player_bounds_result.get("rect", Rect2())
+	var player_spawn_offset: Vector2 = player_spawn.position - player_body.position
+	player_bounds = Rect2(player_bounds.position + player_spawn_offset, player_bounds.size)
+	if not _validate_clear_of_world_layer(player_bounds, "spawn do jogador"):
+		return false
+
+	var worker_body := get_node_or_null("RivetWorker") as CollisionObject2D
+	var patrol_area := get_node_or_null("WorkerPatrolArea") as Node2D
+	if worker_body == null or patrol_area == null:
+		return _fail_authored_layout("spawn ou patrulha do worker ausente")
+	var worker_bounds_result: Dictionary = _body_aabb(worker_body, false)
+	var worker_local_result: Dictionary = _body_aabb(worker_body, true)
+	if not bool(worker_bounds_result.get("valid", false)) or not bool(worker_local_result.get("valid", false)):
+		return _fail_authored_layout("collider do worker ausente")
+	var worker_bounds: Rect2 = worker_bounds_result.get("rect", Rect2())
+	var worker_local_bounds: Rect2 = worker_local_result.get("rect", Rect2())
+	if not _validate_clear_of_world_layer(worker_bounds, "spawn do worker"):
+		return false
+
+	var left_limit := patrol_area.get_node_or_null("LeftLimit") as Marker2D
+	var right_limit := patrol_area.get_node_or_null("RightLimit") as Marker2D
+	if left_limit == null or right_limit == null:
+		return _fail_authored_layout("limites de patrulha ausentes")
+	var left_center: Vector2 = _local_transform_to_main(left_limit) * Vector2.ZERO
+	var right_center: Vector2 = _local_transform_to_main(right_limit) * Vector2.ZERO
+	var minimum_center_x := minf(left_center.x, right_center.x)
+	var maximum_center_x := maxf(left_center.x, right_center.x)
+	var sweep_bounds := Rect2(
+		Vector2(minimum_center_x + worker_local_bounds.position.x, worker_body.position.y + worker_local_bounds.position.y),
+		Vector2(maximum_center_x - minimum_center_x + worker_local_bounds.size.x, worker_local_bounds.size.y)
+	)
+	if sweep_bounds.position.x < 64.0 or sweep_bounds.end.x > 1088.0:
+		return _fail_authored_layout("patrulha do worker cruza as faces internas das paredes")
+	return _validate_clear_of_world_layer(sweep_bounds, "intervalo de patrulha do worker")
+
+func _validate_authored_target(platform_rects: Dictionary) -> bool:
+	var target := get_node_or_null("TrainingTarget") as TrainingTarget
+	if target == null or not target.authored_support_enabled:
+		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+	if target.collision_layer != 8:
+		return _fail_authored_layout("TrainingTarget deve permanecer na collision layer 8")
+	if target.collision_mask != 3:
+		return _fail_authored_layout("TrainingTarget deve manter collision_mask 3 para World e Player")
+	var player_body := get_node_or_null("Player") as CollisionObject2D
+	if player_body == null or player_body.collision_mask != 9:
+		return _fail_authored_layout("Player deve manter collision_mask 9 para World e TrainingTarget vivo")
+	var target_local_result: Dictionary = _body_aabb(target, true)
+	if not bool(target_local_result.get("valid", false)):
+		return _fail_authored_layout("collider do TrainingTarget ausente")
+	var target_local_bounds: Rect2 = target_local_result.get("rect", Rect2())
+	if target.fixed_support_path.is_empty() or target.fallback_support_path.is_empty():
+		return _fail_authored_layout("caminho de suporte autoral vazio")
+
+	var support_paths: Array[NodePath] = [target.fixed_support_path, target.fallback_support_path]
+	var first_safe_position: Dictionary = {}
+	var selected_patrol: Dictionary = {}
+	for support_path in support_paths:
+		var support := _resolve_authored_support(target, support_path)
+		if support == null or not platform_rects.has(support.name):
+			continue
+		var support_is_compatible := _is_target_support_compatible(support)
+		var support_rect: Rect2 = platform_rects[support.name]
+		if support_rect.size.x < target_local_bounds.size.x + AUTHORED_EDGE_MARGIN * 2.0:
+			continue
+		var target_origin := Vector2(
+			support_rect.get_center().x - target_local_bounds.get_center().x,
+			support_rect.position.y - target_local_bounds.end.y
+		)
+		var target_bounds: Rect2 = Rect2(target_local_bounds.position + target_origin, target_local_bounds.size)
+		if target_bounds.position.x < support_rect.position.x + AUTHORED_EDGE_MARGIN - 0.01:
+			continue
+		if target_bounds.end.x > support_rect.end.x - AUTHORED_EDGE_MARGIN + 0.01:
+			continue
+		if absf(target_bounds.end.y - support_rect.position.y) > AUTHORED_CONTACT_TOLERANCE:
+			continue
+		if not _find_world_layer_overlap(target_bounds, support).is_empty():
+			continue
+		var minimum_center_x := support_rect.position.x + AUTHORED_EDGE_MARGIN - target_local_bounds.position.x
+		var maximum_center_x := support_rect.end.x - AUTHORED_EDGE_MARGIN - target_local_bounds.end.x
+		var route_is_useful := support_is_compatible and maximum_center_x - minimum_center_x >= 8.0
+		var route_is_clear := false
+		if route_is_useful:
+			var sweep_bounds := Rect2(
+				Vector2(minimum_center_x + target_local_bounds.position.x, target_origin.y + target_local_bounds.position.y),
+				Vector2(maximum_center_x - minimum_center_x + target_local_bounds.size.x, target_local_bounds.size.y)
+			)
+			route_is_clear = _find_world_layer_overlap(sweep_bounds, support).is_empty()
+		var candidate: Dictionary = {
+			"position": target_origin,
+			"support": support,
+			"support_path": support_path,
+			"minimum_center_x": minimum_center_x,
+			"maximum_center_x": maximum_center_x,
+		}
+		if first_safe_position.is_empty():
+			first_safe_position = candidate
+		if route_is_clear:
+			selected_patrol = candidate
+			break
+
+	var selected: Dictionary = selected_patrol if not selected_patrol.is_empty() else first_safe_position
+	if selected.is_empty():
+		return _fail_authored_layout("suportes primário e fallback do TrainingTarget são inválidos ou sem posição segura")
+	_authored_target_position = selected.get("position", Vector2.ZERO)
+	_authored_target_node = target
+	_authored_target_support = selected.get("support") as SolidPlatform
+	_authored_target_support_path = selected.get("support_path", NodePath(""))
+	_authored_target_patrol_min_x = to_global(Vector2(float(selected.get("minimum_center_x", 0.0)), 0.0)).x
+	_authored_target_patrol_max_x = to_global(Vector2(float(selected.get("maximum_center_x", 0.0)), 0.0)).x
+	_authored_target_patrol_enabled = not selected_patrol.is_empty()
+	return true
+
+func _is_target_support_compatible(support: SolidPlatform) -> bool:
+	if support == null or not is_instance_valid(support):
+		return false
+	if absf(support.global_rotation) > 0.001 or not support.global_scale.is_equal_approx(Vector2.ONE):
+		return false
+	var shape_count := 0
+	for child in support.get_children():
+		var collision := child as CollisionShape2D
+		if collision == null:
+			continue
+		shape_count += 1
+		if collision.disabled or not collision.shape is RectangleShape2D:
+			return false
+		if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
+			return false
+	return shape_count == 1
+
+func _resolve_authored_support(target: TrainingTarget, path: NodePath) -> SolidPlatform:
+	if target.get_parent() != self:
+		return null
+	var path_parts: PackedStringArray = String(path).split("/", false)
+	if path_parts.size() != 2 or path_parts[0] != ".." or path_parts[1].is_empty():
+		return null
+	return get_node_or_null(NodePath(path_parts[1])) as SolidPlatform
+
+func _validate_clear_of_world_layer(
+	bounds: Rect2,
+	label: String,
+	allowed_support: CollisionObject2D = null
+) -> bool:
+	var blocker := _find_world_layer_overlap(bounds, allowed_support)
+	if blocker.is_empty():
+		return true
+	return _fail_authored_layout("%s intersecta World layer 1 em %s" % [label, blocker])
+
+func _find_world_layer_overlap(bounds: Rect2, allowed_support: CollisionObject2D = null) -> String:
+	for obstacle_data: Dictionary in _authored_world_obstacles:
+		var owner: CollisionObject2D = obstacle_data.get("owner") as CollisionObject2D
+		if owner == null or owner == allowed_support:
+			continue
+		var obstacle_bounds: Rect2 = obstacle_data.get("rect", Rect2())
+		if _positive_overlap_area(bounds, obstacle_bounds) > AUTHORED_OVERLAP_AREA_LIMIT:
+			return String(owner.name)
+	return ""
+
+func _positive_overlap_area(first: Rect2, second: Rect2) -> float:
+	var overlap_width := minf(first.end.x, second.end.x) - maxf(first.position.x, second.position.x)
+	var overlap_height := minf(first.end.y, second.end.y) - maxf(first.position.y, second.position.y)
+	if overlap_width <= 0.0 or overlap_height <= 0.0:
+		return 0.0
+	return overlap_width * overlap_height
+
+func _body_aabb(body: CollisionObject2D, relative_to_body: bool) -> Dictionary:
+	var found_shape := false
+	var combined_bounds := Rect2()
+	var body_transform := _local_transform_to_main(body)
+	for shape_child in body.get_children():
+		var collision := shape_child as CollisionShape2D
+		if collision == null or collision.disabled or collision.shape == null:
+			continue
+		var shape_transform := _local_transform_to_main(collision)
+		if relative_to_body:
+			shape_transform = body_transform.affine_inverse() * shape_transform
+		var shape_bounds := _transform_rect(collision.shape.get_rect(), shape_transform)
+		if found_shape:
+			combined_bounds = combined_bounds.merge(shape_bounds)
+		else:
+			combined_bounds = shape_bounds
+			found_shape = true
+	return {"valid": found_shape, "rect": combined_bounds}
+
+func _collision_shape_aabb_in_main(collision: CollisionShape2D) -> Rect2:
+	return _transform_rect(collision.shape.get_rect(), _local_transform_to_main(collision))
+
+func _local_transform_to_main(node: Node2D) -> Transform2D:
+	var transforms: Array[Transform2D] = []
+	var current: Node = node
+	while current != self:
+		var current_2d := current as Node2D
+		if current_2d == null:
+			return Transform2D.IDENTITY
+		transforms.append(current_2d.transform)
+		current = current.get_parent()
+		if current == null:
+			return Transform2D.IDENTITY
+	var result := Transform2D.IDENTITY
+	for transform_index in range(transforms.size() - 1, -1, -1):
+		result = result * transforms[transform_index]
+	return result
+
+func _transform_rect(rect: Rect2, transform: Transform2D) -> Rect2:
+	var point_a := transform * rect.position
+	var point_b := transform * Vector2(rect.end.x, rect.position.y)
+	var point_c := transform * rect.end
+	var point_d := transform * Vector2(rect.position.x, rect.end.y)
+	var minimum_x := minf(minf(point_a.x, point_b.x), minf(point_c.x, point_d.x))
+	var minimum_y := minf(minf(point_a.y, point_b.y), minf(point_c.y, point_d.y))
+	var maximum_x := maxf(maxf(point_a.x, point_b.x), maxf(point_c.x, point_d.x))
+	var maximum_y := maxf(maxf(point_a.y, point_b.y), maxf(point_c.y, point_d.y))
+	return Rect2(minimum_x, minimum_y, maximum_x - minimum_x, maximum_y - minimum_y)
+
+func _disable_invalid_authored_room() -> void:
+	if player != null:
+		player.process_mode = Node.PROCESS_MODE_DISABLED
+	if combat_room != null:
+		combat_room.process_mode = Node.PROCESS_MODE_DISABLED
+	var target := get_node_or_null("TrainingTarget")
+	if target != null:
+		target.process_mode = Node.PROCESS_MODE_DISABLED
+	var worker := get_node_or_null("RivetWorker")
+	if worker != null:
+		worker.process_mode = Node.PROCESS_MODE_DISABLED
+	if exit_door != null:
+		exit_door.call("set_room_cleared", false)
+
+func _show_authored_layout_error() -> void:
+	var error_layer := CanvasLayer.new()
+	error_layer.name = "AuthoredLayoutError"
+	error_layer.layer = 20
+	add_child(error_layer)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	error_layer.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(720.0, 200.0)
+	center.add_child(panel)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 16)
+	panel.add_child(content)
+	var message := Label.new()
+	message.text = "ERRO DE LAYOUT AUTORAL\n" + _authored_layout_error
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(message)
+	var restart := Button.new()
+	restart.text = "REINICIAR SALA"
+	restart.pressed.connect(_restart_authored_room)
+	content.add_child(restart)
+
+func _restart_authored_room() -> void:
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		return
+	_cancel_standalone_transition()
+	get_tree().reload_current_scene()
+
+func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool, requested_seed: int = 0) -> bool:
+	if is_inside_tree() or shared_build == null:
+		return false
+	var managed_exit_door := get_node_or_null("ExitDoor")
+	if managed_exit_door == null or not managed_exit_door.has_signal("transition_requested"):
+		return false
+	if requested_seed != 0:
+		room_layout_seed = requested_seed
+	if authored_layout_enabled and not prepare_authored_layout():
+		return false
+	_run_controller_managed = true
+	_managed_run_build = shared_build
+	reward_enabled = offer_build_upgrade
+	return true
+
+func _ready() -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		_disable_invalid_authored_room()
+		_show_authored_layout_error()
+		return
+	set_process_input(true)
+	if not combat_room.room_cleared.is_connected(_on_room_cleared):
+		combat_room.room_cleared.connect(_on_room_cleared)
+	if player != null and not player.died.is_connected(_on_player_died):
+		player.died.connect(_on_player_died)
+	if exit_door != null:
+		exit_door.call("set_retry_enabled", not _run_controller_managed)
+		var transition_callback := Callable(self, "_on_exit_door_transition_requested")
+		if not exit_door.is_connected("transition_requested", transition_callback):
+			exit_door.connect("transition_requested", transition_callback)
+
+	var title_label := get_node_or_null(room_title_label_path) as Label
+	if title_label != null:
+		title_label.text = room_title
+
+	if player != null:
+		player.reset_to_spawn(_get_player_spawn_position())
+
+	# Os filhos já executaram _ready. O controlador mantém o estado da run
+	# entre encontros; cenas standalone continuam consumindo o snapshot one-shot.
+	var incoming_snapshot: Dictionary = {}
+	if not _run_controller_managed:
+		incoming_snapshot = RoomTransition.consume_pending_snapshot(_load_current_packed_scene())
+	if _run_controller_managed and _managed_run_build != null:
+		run_build = _managed_run_build
+	else:
+		run_build = RunBuild.new()
+	if player != null:
+		if not incoming_snapshot.is_empty() and player.health != null:
+			var restored_build := RunBuild.new()
+			if restored_build.replace_state(
+				incoming_snapshot.get("upgrade_ids"),
+				incoming_snapshot.get("counts_by_id")
+			):
+				var health_restored := player.health.restore_health_for_room_transition(
+					int(incoming_snapshot["hp_current"]),
+					int(incoming_snapshot["hp_max"])
+				)
+				if health_restored:
+					run_build = restored_build
+		player.apply_run_build(run_build)
+
+	_upgrade_offer = UpgradeOfferScene.instantiate() as UpgradeOffer
+	if _upgrade_offer != null:
+		add_child(_upgrade_offer)
+		_upgrade_offer.upgrade_selected.connect(_on_upgrade_selected)
+		_upgrade_offer.hide()
+
+	_update_build_status()
+	if exit_door != null:
+		exit_door.call("set_room_cleared", false)
+	if combat_room.room_is_cleared:
+		_on_room_cleared()
+
+func _exit_tree() -> void:
+	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+		_upgrade_offer.close_offer()
+	if not _standalone_swap_committed:
+		if is_instance_valid(_transition_overlay) and _transition_overlay.has_method("cancel_transition"):
+			_transition_overlay.call("cancel_transition")
+		if not _run_controller_managed and (_door_request_pending or _transition_in_progress):
+			RoomTransition.clear_pending_snapshot()
+	_guard_active = false
+	_guard_waiting_for_release = false
+	_guard_quiet_remaining = 0.0
+	# Do not unpause during teardown; the new room inherits the actual tree state.
+	_owned_offer_pause = false
+
+func _input(event: InputEvent) -> void:
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		if event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"interact") \
+			or (event is InputEventKey and (event as InputEventKey).keycode == KEY_R):
+			get_viewport().set_input_as_handled()
+			return
+	if authored_layout_enabled and not is_authored_layout_valid():
+		for action in DISCRETE_INPUT_ACTIONS:
+			if event.is_action_pressed(action):
+				get_viewport().set_input_as_handled()
+				return
+	if _upgrade_flow_state == UpgradeFlowState.OFFER_OPEN and event.is_action_pressed("interact"):
+		get_viewport().set_input_as_handled()
+		return
+	if not _guard_active:
+		return
+	for action in DISCRETE_INPUT_ACTIONS:
+		if event.is_action_pressed(action):
+			_guard_waiting_for_release = true
+			_guard_quiet_remaining = 0.0
+			get_viewport().set_input_as_handled()
+			return
+
+func _process(delta: float) -> void:
+	if not _guard_active:
+		return
+	if _any_discrete_input_pressed():
+		_guard_waiting_for_release = true
+		_guard_quiet_remaining = 0.0
+		return
+	if _guard_waiting_for_release:
+		_guard_waiting_for_release = false
+		_guard_quiet_remaining = maxf(post_upgrade_input_guard_seconds, 0.0)
+		if _guard_quiet_remaining <= 0.0:
+			_end_input_guard()
+		return
+
+	_guard_quiet_remaining = maxf(_guard_quiet_remaining - delta, 0.0)
+	if _guard_quiet_remaining <= 0.0:
+		_end_input_guard()
+
+func _physics_process(_delta: float) -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		return
+	if player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	if player.global_position.y > 760.0:
+		player.reset_to_spawn(_get_player_spawn_position())
+
+func is_gameplay_action_blocked(action: StringName) -> bool:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		return true
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		return true
+	if not DISCRETE_INPUT_ACTIONS.has(action):
+		return false
+	if _upgrade_flow_state in [
+		UpgradeFlowState.VICTORY_PENDING,
+		UpgradeFlowState.OFFER_OPEN,
+		UpgradeFlowState.SELECTED,
+	]:
+		return true
+	return _guard_active
+
+func _on_room_cleared() -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		return
+	if _upgrade_flow_state != UpgradeFlowState.INACTIVE:
+		return
+	_upgrade_flow_state = UpgradeFlowState.VICTORY_PENDING
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.request_stop_active_sweep()
+	_queue_post_flush_resolution()
+
+func _on_player_died() -> void:
+	_cancel_standalone_transition()
+	_death_pending = true
+	_upgrade_flow_state = UpgradeFlowState.CANCELLED
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.request_stop_active_sweep()
+	_queue_post_flush_resolution()
+
+func _queue_post_flush_resolution() -> void:
+	if _post_flush_resolution_queued:
+		return
+	_post_flush_resolution_queued = true
+	call_deferred("_resolve_after_physics_flush")
+
+func _resolve_after_physics_flush() -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		_post_flush_resolution_queued = false
+		return
+	_post_flush_resolution_queued = false
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.cleanup_active_ball_after_flush()
+	combat_room.cleanup_hostile_projectiles_after_flush()
+	combat_room.refresh_status_after_physics()
+
+	if _death_pending or player == null or not is_instance_valid(player) or player.is_dead:
+		_death_pending = true
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		_transition_in_progress = false
+		run_build.clear()
+		RoomTransition.clear_pending_snapshot()
+		_offered_upgrade_ids.clear()
+		if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+			_upgrade_offer.close_offer()
+		if exit_door != null:
+			exit_door.call("set_room_cleared", false)
+		_close_owned_offer_pause()
+		_end_input_guard()
+		_update_build_status()
+		if player != null and is_instance_valid(player):
+			player.finish_death_after_physics()
+		return
+
+	if _upgrade_flow_state != UpgradeFlowState.VICTORY_PENDING or not combat_room.room_is_cleared:
+		return
+	if reward_enabled and run_build.total_count() == 0:
+		_open_upgrade_offer()
+	else:
+		_release_exit_or_complete()
+
+func _open_upgrade_offer() -> void:
+	if _upgrade_offer == null or not is_instance_valid(_upgrade_offer):
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		push_error("Main: não foi possível criar a oferta de upgrades.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
+		return
+	_offered_upgrade_ids.clear()
+	for definition in _upgrade_definitions:
+		_offered_upgrade_ids.append(definition.upgrade_id)
+	if not _upgrade_offer.present_options(_upgrade_definitions):
+		_offered_upgrade_ids.clear()
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		push_error("Main: definições inválidas para a oferta.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
+		return
+
+	_owned_offer_pause = not get_tree().paused
+	_upgrade_flow_state = UpgradeFlowState.OFFER_OPEN
+	if _owned_offer_pause:
+		get_tree().paused = true
+
+func _on_upgrade_selected(upgrade_id: StringName) -> void:
+	if _upgrade_flow_state != UpgradeFlowState.OFFER_OPEN:
+		return
+	if player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	if not _offered_upgrade_ids.has(upgrade_id):
+		return
+	if not RunBuild.is_known_upgrade_id(upgrade_id):
+		return
+	if run_build.count_for(upgrade_id) != 0 or run_build.total_count() >= RunBuild.MAX_UPGRADES:
+		return
+
+	# State changes before the build and player configurations are mutated.
+	_upgrade_flow_state = UpgradeFlowState.SELECTED
+	if not run_build.add_upgrade(upgrade_id):
+		_upgrade_flow_state = UpgradeFlowState.OFFER_OPEN
+		return
+	player.apply_run_build(run_build)
+	_update_build_status()
+	_offered_upgrade_ids.clear()
+	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+		_upgrade_offer.close_offer()
+	_begin_input_guard()
+	_close_owned_offer_pause()
+	_release_exit_or_complete()
+
+func _release_exit_or_complete() -> void:
+	if exit_door == null:
+		_upgrade_flow_state = UpgradeFlowState.COMPLETED
+		return
+	_upgrade_flow_state = UpgradeFlowState.EXIT_RELEASED
+	_local_reward_resolved = true
+	_door_unlock_pending = true
+	_release_exit_door_if_ready()
+
+func _release_exit_door_if_ready() -> void:
+	if not _door_unlock_pending or _guard_active or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return
+	if not combat_room.room_is_cleared or player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	_door_unlock_pending = false
+	if not _run_controller_managed and next_room_scene_path.strip_edges().is_empty():
+		_upgrade_flow_state = UpgradeFlowState.COMPLETED
+		exit_door.call("set_terminal_complete")
+		return
+	exit_door.call("set_room_cleared", true)
+
+func _notify_run_progression_ready() -> void:
+	if not _run_controller_managed or _run_progression_notified:
+		return
+	_run_progression_notified = true
+	run_progression_ready.emit()
+
+func _begin_input_guard() -> void:
+	_guard_active = true
+	_guard_waiting_for_release = _any_discrete_input_pressed()
+	_guard_quiet_remaining = 0.0 if _guard_waiting_for_release else maxf(post_upgrade_input_guard_seconds, 0.0)
+	if not _guard_waiting_for_release and _guard_quiet_remaining <= 0.0:
+		_end_input_guard()
+
+func _end_input_guard() -> void:
+	_guard_active = false
+	_guard_waiting_for_release = false
+	_guard_quiet_remaining = 0.0
+	_release_exit_door_if_ready()
+
+func _any_discrete_input_pressed() -> bool:
+	for action in DISCRETE_INPUT_ACTIONS:
+		if Input.is_action_pressed(action):
+			return true
+	return false
+
+func _close_owned_offer_pause() -> void:
+	if _owned_offer_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_offer_pause = false
+
+func _on_exit_door_transition_requested(requested_player: Player) -> void:
+	if _door_request_pending or _transition_in_progress or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return
+	_door_request_pending = true
+	_transition_token += 1
+	_transition_player = requested_player
+	_transition_source_scene = get_tree().current_scene if not _run_controller_managed else self
+	call_deferred("_validate_exit_crossing_deferred", requested_player, _transition_token)
+
+func _validate_exit_crossing_deferred(requested_player: Player, token: int) -> void:
+	if token != _transition_token or not _door_request_pending:
+		return
+	var failure := _exit_crossing_validation_error(requested_player)
+	if not failure.is_empty():
+		_door_request_pending = false
+		if exit_door != null and is_instance_valid(exit_door):
+			exit_door.call("report_transition_failure", failure)
+		if _run_controller_managed and not _death_pending and _is_current_room_source():
+			_report_managed_transition_failure(failure)
+		return
+
+	var destination_scene: PackedScene
+	if not _run_controller_managed:
+		var destination_path := next_room_scene_path.strip_edges()
+		destination_scene = ResourceLoader.load(destination_path, "PackedScene") as PackedScene
+		if destination_scene == null or destination_scene.resource_path.is_empty() \
+			or not destination_scene.resource_path.begins_with("res://"):
+			_door_request_pending = false
+			exit_door.call("report_transition_failure", "FALHA AO CARREGAR SALA")
+			return
+
+	_door_request_pending = false
+	_transition_in_progress = true
+	_transition_source_scene = get_tree().current_scene if not _run_controller_managed else self
+	_transition_player = requested_player
+	_lock_player_for_transition(requested_player)
+	if _run_controller_managed:
+		_notify_run_progression_ready()
+		return
+
+	_transition_overlay = RoomTransitionOverlayScript.new()
+	_transition_overlay.name = "RoomTransitionOverlay"
+	get_tree().root.add_child(_transition_overlay)
+	var overlay_started := bool(_transition_overlay.call(
+		"begin_transition",
+		self,
+		_transition_source_scene,
+		destination_scene,
+		token
+	))
+	if not overlay_started:
+		transition_overlay_failed(token, "FALHA AO INICIAR TRANSIÇÃO")
+		_transition_overlay.call("cancel_transition")
+		_transition_overlay = null
+
+func _exit_crossing_validation_error(requested_player: Player) -> String:
+	if _transition_in_progress or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return "SAÍDA INDISPONÍVEL"
+	if _guard_active or not _local_reward_resolved or not combat_room.room_is_cleared:
+		return "SAÍDA INDISPONÍVEL"
+	if requested_player == null or not is_instance_valid(requested_player) \
+		or requested_player != player or requested_player.is_dead:
+		return "JOGADOR INDISPONÍVEL"
+	if not _is_current_room_source():
+		return "SALA INDISPONÍVEL"
+	if exit_door == null or not is_instance_valid(exit_door) \
+		or not bool(exit_door.call("has_latched_crossing", requested_player)) \
+		or not bool(exit_door.call("is_player_inside_exit_opening", requested_player)) \
+		or not bool(exit_door.call("is_gate_open")):
+		return "ATRAVESSE A SAÍDA"
+	return ""
+
+func _is_current_room_source() -> bool:
+	if not _run_controller_managed:
+		return is_inside_tree() and get_tree().current_scene == self
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("is_active_room_instance"):
+			return bool(ancestor.call("is_active_room_instance", self))
+		ancestor = ancestor.get_parent()
+	return false
+
+func _lock_player_for_transition(requested_player: Player) -> void:
+	_transition_original_disable_mode = requested_player.disable_mode
+	_transition_original_process_mode = requested_player.process_mode
+	requested_player.disable_mode = CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE
+	requested_player.process_mode = Node.PROCESS_MODE_DISABLED
+	requested_player.velocity = Vector2.ZERO
+	_transition_player_locked = true
+
+func _restore_player_after_transition_failure() -> void:
+	if not _transition_player_locked:
+		return
+	if is_instance_valid(_transition_player):
+		_transition_player.process_mode = _transition_original_process_mode
+		_transition_player.disable_mode = _transition_original_disable_mode
+		_transition_player.velocity = Vector2.ZERO
+	_transition_player_locked = false
+
+func is_standalone_transition_valid(token: int) -> bool:
+	return (
+		token == _transition_token
+		and _transition_in_progress
+		and not _run_controller_managed
+		and not _death_pending
+		and _transition_source_scene == self
+		and _is_current_room_source()
+		and _exit_crossing_validation_error_after_lock(_transition_player).is_empty()
+	)
+
+func _exit_crossing_validation_error_after_lock(requested_player: Player) -> String:
+	if _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED or _guard_active \
+		or not _local_reward_resolved or not combat_room.room_is_cleared:
+		return "SAÍDA INDISPONÍVEL"
+	if requested_player == null or not is_instance_valid(requested_player) \
+		or requested_player != player or requested_player.is_dead:
+		return "JOGADOR INDISPONÍVEL"
+	if exit_door == null or not is_instance_valid(exit_door) \
+		or not bool(exit_door.call("has_latched_crossing", requested_player)) \
+		or not bool(exit_door.call("is_player_inside_exit_opening", requested_player)) \
+		or not bool(exit_door.call("is_gate_open")):
+		return "ATRAVESSE A SAÍDA"
+	return ""
+
+func commit_standalone_room_swap(token: int, destination_scene: PackedScene) -> int:
+	if not is_standalone_transition_valid(token) or destination_scene == null:
+		return ERR_INVALID_DATA
+	if not RoomTransition.prepare_run_snapshot(
+		destination_scene,
+		_transition_player.current_health,
+		_transition_player.maximum_health,
+		run_build
+	):
+		return ERR_INVALID_DATA
+	_standalone_swap_committed = true
+	var result := get_tree().change_scene_to_packed(destination_scene)
+	if result != OK:
+		_standalone_swap_committed = false
+		RoomTransition.clear_pending_snapshot()
+		return result
+	return OK
+
+func transition_overlay_failed(token: int, message: String) -> void:
+	if token != _transition_token or _standalone_swap_committed:
+		return
+	RoomTransition.clear_pending_snapshot()
+	_transition_in_progress = false
+	_door_request_pending = false
+	_restore_player_after_transition_failure()
+	if exit_door != null and is_instance_valid(exit_door):
+		exit_door.call("report_transition_failure", message)
+
+func transition_overlay_source_still_active_after_timeout(token: int, message: String) -> bool:
+	if token != _transition_token or not _standalone_swap_committed \
+		or not _transition_in_progress or _run_controller_managed or _death_pending:
+		return false
+	if _transition_source_scene != self or not is_inside_tree() \
+		or not _is_current_room_source() or get_tree().current_scene != self:
+		return false
+	# A scene swap accepted by Godot did not leave this source scene before the
+	# timeout fade completed. Only this verified path may roll it back.
+	_standalone_swap_committed = false
+	transition_overlay_failed(token, message)
+	return true
+
+func transition_overlay_finished(token: int) -> void:
+	if token == _transition_token:
+		_transition_overlay = null
+
+func _cancel_standalone_transition() -> void:
+	if _run_controller_managed:
+		return
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		_transition_token += 1
+	if is_instance_valid(_transition_overlay) and _transition_overlay.has_method("cancel_transition"):
+		_transition_overlay.call("cancel_transition")
+	_transition_overlay = null
+	if not _standalone_swap_committed:
+		RoomTransition.clear_pending_snapshot()
+	_restore_player_after_transition_failure()
+	_door_request_pending = false
+	_transition_in_progress = false
+
+func _report_managed_transition_failure(message: String) -> void:
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("fail_managed_room_transition"):
+			ancestor.call("fail_managed_room_transition", self, message)
+			return
+		ancestor = ancestor.get_parent()
+
+func _update_build_status() -> void:
+	var label := get_node_or_null(build_status_label_path) as Label
+	if label == null:
+		return
+	if run_build == null or run_build.total_count() == 0:
+		label.text = "BUILD: VAZIA"
+		return
+
+	var upgrade_id := run_build.get_upgrade_ids()[0]
+	var display_name := ""
+	for definition in _upgrade_definitions:
+		if definition.upgrade_id == upgrade_id:
+			display_name = definition.title
+			break
+	label.text = "BUILD: %s" % display_name.to_upper()
+
+func _get_player_spawn_position() -> Vector2:
+	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+	if spawn_marker != null:
+		return spawn_marker.global_position
+	return FALLBACK_PLAYER_SPAWN
+
+func _current_scene_path() -> String:
+	if not scene_file_path.is_empty():
+		return scene_file_path
+	var current_scene := get_tree().current_scene
+	if current_scene != null:
+		return current_scene.scene_file_path
+	return ""
+
+func _load_current_packed_scene() -> PackedScene:
+	var current_path := _current_scene_path()
+	if current_path.is_empty():
+		return null
+	return ResourceLoader.load(current_path, "PackedScene") as PackedScene
+
+
+SOURCE scenes/training_target.tscn
+
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
+[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+[ext_resource type="Script" path="res://scripts/enemy/containment_attack_visual.gd" id="4_attack_visual"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+size = Vector2(72.0, 96.0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_target_hit_flash"]
+resource_local_to_scene = true
+shader = ExtResource("3_hit_flash_shader")
+
+[node name="TrainingTarget" type="CharacterBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 3
+motion_mode = 1
+z_index = 1
+script = ExtResource("1_training_target")
+display_name = "Tranca-Lata"
+max_health = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_training_target")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+material = SubResource("ShaderMaterial_target_hit_flash")
+sprite_frames = ExtResource("2_target_frames")
+animation = &"idle"
+autoplay = &"idle"
+centered = true
+
+[node name="NameLabel" type="Label" parent="Visuals"]
+offset_left = -48.0
+offset_top = -84.0
+offset_right = 48.0
+offset_bottom = -66.0
+theme_override_colors/font_color = Color(0.82, 0.91, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.07, 0.11, 1)
+theme_override_constants/outline_size = 3
+text = "Tranca-Lata"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+
+[node name="Visor" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+
+[node name="UpperStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+
+[node name="LowerStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+
+[node name="FootLine" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-38.0, -60.0)
+color = Color(0.894118, 0.435294, 0.345098, 1)
+polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)
+
+[node name="AttackAreaVisual" type="Node2D" parent="."]
+visible = false
+z_index = 1
+script = ExtResource("4_attack_visual")
+
+
+
+SOURCE resources/enemy/training_target_sprite_frames.tres
+
+[gd_resource type="SpriteFrames" format=3 uid="uid://npjlmss8ot51"]
+
+[ext_resource type="Texture2D" uid="uid://j41jcj06ctmm" path="res://assets/enemy/training_target/training_target-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_disabled"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle"]
+atlas = ExtResource("1_atlas")
+region = Rect2(896, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact"]
+atlas = ExtResource("1_atlas")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_3"]
+atlas = ExtResource("1_atlas")
+region = Rect2(384, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_windup_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(448, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_windup_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(512, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_windup_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(576, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_active_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(640, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_active_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(704, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(768, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(832, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(896, 0, 64, 64)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_disabled")
+}],
+"loop": 1,
+"name": &"disabled",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_idle")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_impact")
+}],
+"loop": 1,
+"name": &"impact",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_0")
+}, {
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_1")
+}, {
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_2")
+}, {
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_3")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.18,
+"texture": SubResource("AtlasTexture_windup_0")
+}, {
+"duration": 0.22,
+"texture": SubResource("AtlasTexture_windup_1")
+}, {
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_windup_2")
+}],
+"loop": 0,
+"name": &"windup",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.07,
+"texture": SubResource("AtlasTexture_active_0")
+}, {
+"duration": 0.07,
+"texture": SubResource("AtlasTexture_active_1")
+}],
+"loop": 0,
+"name": &"active",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_recovery_0")
+}, {
+"duration": 0.18,
+"texture": SubResource("AtlasTexture_recovery_1")
+}, {
+"duration": 1.1,
+"texture": SubResource("AtlasTexture_recovery_2")
+}],
+"loop": 0,
+"name": &"recovery",
+"speed": 1.0
+}]

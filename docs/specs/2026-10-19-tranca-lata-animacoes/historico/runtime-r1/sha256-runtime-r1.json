@@ -1,0 +1,54 @@
+{
+  "captured_at": "2026-10-20T22:28:11.094Z",
+  "description": "Frozen R1 runtime state compared with the exact local baseline in historico/base/sha256-before.json.",
+  "baseline_manifest": "historico/base/sha256-before.json",
+  "review_status": "Frozen for read-only review; engine validation intentionally not run.",
+  "files": [
+    {
+      "source": "scripts/world/training_target.gd",
+      "sha256": "54E65BB5DD164E9DCF09CEA849BD7DD8AF5C28E3065677049C8C556D96231AB0",
+      "baseline_sha256": "2C88C39BF474EECBB4C852B5F46083040A11F44B589B9564A72EBF036C05F5BD",
+      "baseline_snapshot": "historico/base/scripts/world/training_target.gd",
+      "snapshot": "historico/runtime-r1/snapshot/scripts/world/training_target.gd"
+    },
+    {
+      "source": "scripts/world/main.gd",
+      "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "baseline_sha256": "768D548C89ECC8AC745EBB6AEBE73C7CF76B8F9383E7D0EAAF6A53D25B30EDE4",
+      "baseline_snapshot": "historico/base/scripts/world/main.gd",
+      "snapshot": "historico/runtime-r1/snapshot/scripts/world/main.gd"
+    },
+    {
+      "source": "scenes/training_target.tscn",
+      "sha256": "08AE902A590C174609059A9591BB146992B6D35655283989278E6F4DEF7309E2",
+      "baseline_sha256": "95A0028C50A4BE3ED201BF985A842C082558F02DB499042D73FAE35D1E2CB532",
+      "baseline_snapshot": "historico/base/scenes/training_target.tscn",
+      "snapshot": "historico/runtime-r1/snapshot/scenes/training_target.tscn"
+    },
+    {
+      "source": "resources/enemy/training_target_sprite_frames.tres",
+      "sha256": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D",
+      "baseline_sha256": "6DA3CF801747E473525D27A0D02527A79AEC8C20F87B7A870C4D2BD589110185",
+      "baseline_snapshot": "historico/base/resources/enemy/training_target_sprite_frames.tres",
+      "snapshot": "historico/runtime-r1/snapshot/resources/enemy/training_target_sprite_frames.tres"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target-atlas.png",
+      "sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "baseline_sha256": "B81CC88B02B37F740845DED39A146D9480D8EBD57F6B493F4B8491CE986E99D6",
+      "baseline_snapshot": "historico/base/assets/enemy/training_target/training_target-atlas.png",
+      "snapshot": null,
+      "approved_art_source": "../GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/tranca-lata-atlas-v1.png",
+      "approved_art_source_sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target.aseprite",
+      "sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "baseline_sha256": "78DC598E6BF20E4DA56A5FD975597245871F14365010E9D5C85B17A827807C88",
+      "baseline_snapshot": "historico/base/assets/enemy/training_target/training_target.aseprite",
+      "snapshot": null,
+      "approved_art_source": "../GDD_Dieselpunk_Noir/pitch-assets/tranca-lata-animacoes-v1/tranca-lata-animacoes-v1.aseprite",
+      "approved_art_source_sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8"
+    }
+  ]
+}

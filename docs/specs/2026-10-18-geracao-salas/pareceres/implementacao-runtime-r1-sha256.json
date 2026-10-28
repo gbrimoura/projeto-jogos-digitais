@@ -1,0 +1,26 @@
+[
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "E818CFED456B7700530C382C3326387C7B5317190E97CBB908F36C752E172F13"
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "70C309F9D22BF6402AB60DBA52ADF4663A8086DF85D6940537DCAAFD814B5AD0"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "D686230A275ED8CD17CC1A1E5E72C0F216685D8471D0BE40F4B7B2EDFE08DEEF"
+  },
+  {
+    "path": "scripts/world/factory_ceiling_visual.gd",
+    "sha256": "4A9CA42C1B7A61B3E0B14D8DA0674B8001695DDB9AD7AEDD36C140B83A963FD3"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "C8D2C6AAF4098671909222A55772D8B60CA8E5F733F64AE315B6DCE921F5BDEC"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "7F82A742E51EE8D719FF02A8D4CCC9AC7B5C9E87CAE483EA168B4DBBD8952E35"
+  }
+]

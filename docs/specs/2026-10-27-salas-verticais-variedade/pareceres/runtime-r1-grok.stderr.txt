@@ -1,0 +1,12 @@
+Get-Item : Não é possível localizar o caminho 
+'C:\Users\danie\AppData\Local\cursor-agent\versions\.promote-lock' porque ele 
+não existe.
+No linha:1 caractere:6
++ if ((Get-Item -LiteralPath $env:PROMOTELOCK).LastWriteTime -lt (Get-D ...
++      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\Users\danie\...s\.promote-lo 
+   ck:String) [Get-Item], ItemNotFoundException
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetIt 
+   emCommand
+ 
+O sistema não pode encontrar o arquivo especificado.

@@ -1,0 +1,233 @@
+READ ONLY STATIC REVIEW, NO TOOLS/COMMANDS. Timeout10min. User asked modest polish of current side-wall opening. Scope ONLY visual helper draw and matching AsepritepreviewLua/PNG. Existing64x128footprint Rect(-32,-64,64,128), mirroredleft, z-1, E/collision/roots/states unchanged. Strict existingfactorypalette and2pxworldgrid. Check concrete syntax, bounds, palette, mirror and Lua parity(localcoord +32,+64), previewclip+alpha, no speculative gameplaychanges. Open remains broad48x108darkvoid with details onlyedges; closed reinforcedgrate/latch. Prior baseline is preserved. No engine/import/tests/QA authorized. Return STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP. 
+FILE scripts/world/side_door_visual.gd
+@tool
+extends Node2D
+
+const VOID := Color("#0E0D0E")
+const DEPTH := Color("#1D1B1A")
+const SHADOW := Color("#302D2A")
+const METAL_DARK := Color("#5B5249")
+const METAL := Color("#756957")
+const METAL_LIGHT := Color("#90816A")
+const COPPER := Color("#70432C")
+const AMBER := Color("#B78342")
+
+@export var flip_h: bool = false:
+	set(value):
+		flip_h = value
+		queue_redraw()
+
+@export var is_open: bool = false:
+	set(value):
+		is_open = value
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func set_aperture_open(value: bool) -> void:
+	is_open = value
+
+func _draw() -> void:
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+
+	# The outer silhouette remains the 64×128 through-cut at the lateral wall.
+	draw_rect(Rect2(-32, -64, 64, 128), VOID)
+	draw_rect(Rect2(-32, -64, 4, 128), SHADOW)
+	draw_rect(Rect2(28, -64, 4, 128), DEPTH)
+
+	# Thick lintel and low sill build a stepped, horizontal tunnel reveal.
+	draw_rect(Rect2(-30, -64, 60, 8), METAL_DARK)
+	draw_rect(Rect2(-28, -62, 56, 2), METAL_LIGHT)
+	draw_rect(Rect2(-28, -58, 56, 2), SHADOW)
+	draw_rect(Rect2(-30, 58, 60, 6), METAL_DARK)
+	draw_rect(Rect2(-28, 58, 56, 2), METAL_LIGHT)
+	draw_rect(Rect2(-30, 62, 60, 2), SHADOW)
+
+	# Recessed side rails use the factory steel and copper tones.
+	draw_rect(Rect2(-28, -56, 2, 112), COPPER)
+	draw_rect(Rect2(26, -56, 2, 112), METAL_DARK)
+	# A single low rust trace keeps the finish used, without adding surface noise.
+	draw_rect(Rect2(-26, 42, 2, 4), COPPER)
+
+	# Paired 2×2 fasteners stay on the exposed jambs.
+	for rivet_y in [-48, -16, 16, 48]:
+		draw_rect(Rect2(-30, rivet_y, 2, 2), AMBER)
+		draw_rect(Rect2(28, rivet_y, 2, 2), METAL_LIGHT)
+
+	if not is_open:
+		# Heavy grate bars and cross rails sit inside the wall thickness.
+		draw_rect(Rect2(-22, -54, 44, 4), METAL_DARK)
+		draw_rect(Rect2(-22, 50, 44, 4), METAL_DARK)
+		for bar_x in [-18, -6, 6, 18]:
+			draw_rect(Rect2(bar_x, -50, 4, 100), METAL)
+			draw_rect(Rect2(bar_x, -50, 2, 100), METAL_LIGHT)
+		for rail_y in [-22, 18]:
+			draw_rect(Rect2(-18, rail_y, 36, 4), METAL_DARK)
+		# Compact sliding latch and amber status pin.
+		draw_rect(Rect2(20, -12, 6, 24), METAL_DARK)
+		draw_rect(Rect2(22, -10, 2, 20), METAL_LIGHT)
+		draw_rect(Rect2(20, -2, 6, 4), COPPER)
+		draw_rect(Rect2(22, -2, 2, 4), AMBER)
+	else:
+		# The open state keeps a broad, dark passage; only the tunnel edges remain detailed.
+		draw_rect(Rect2(-24, -54, 48, 108), VOID)
+		draw_rect(Rect2(-24, -54, 48, 2), METAL_DARK)
+		draw_rect(Rect2(-24, 52, 48, 2), SHADOW)
+		draw_rect(Rect2(-24, -52, 2, 104), DEPTH)
+		draw_rect(Rect2(22, -52, 2, 104), COPPER)
+
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+FILE assets/environment/factory_v1/door/side-opening/preview-side-opening.lua
+-- Static inspection composition for the side-wall cut. It does not export runtime art.
+local p = app.params or {}
+local root = p.root or "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais"
+local out = p.out or (root .. "/assets/environment/factory_v1/door/side-opening/porta-lateral-preview.png")
+local atlasPath = root .. "/assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"
+local playerPath = root .. "/assets/player/player-animations.png"
+local pc = app.pixelColor
+local function rgba(hex)
+  return pc.rgba(tonumber(hex:sub(1, 2), 16), tonumber(hex:sub(3, 4), 16), tonumber(hex:sub(5, 6), 16), 255)
+end
+local C = {
+  void = rgba("0E0D0E"), depth = rgba("1D1B1A"), shadow = rgba("302D2A"),
+  metalDark = rgba("5B5249"), metal = rgba("756957"), metalLight = rgba("90816A"),
+  copper = rgba("70432C"), amber = rgba("B78342"), cream = rgba("D3C3A7")
+}
+local function rect(img, x, y, w, h, color)
+  for py = y, y + h - 1 do
+    for px = x, x + w - 1 do
+      if px >= 0 and py >= 0 and px < img.width and py < img.height then img:drawPixel(px, py, color) end
+    end
+  end
+end
+local function extract(src, sx, sy, w, h)
+  local dst = Image(w, h)
+  for y = 0, h - 1 do for x = 0, w - 1 do dst:drawPixel(x, y, src:getPixel(sx + x, sy + y)) end end
+  return dst
+end
+local function nearestScale(src, scale)
+  local dst = Image(src.width * scale, src.height * scale)
+  for y = 0, src.height - 1 do
+    for x = 0, src.width - 1 do
+      local pixel = src:getPixel(x, y)
+      for dy = 0, scale - 1 do for dx = 0, scale - 1 do dst:drawPixel(x * scale + dx, y * scale + dy, pixel) end end
+    end
+  end
+  return dst
+end
+local function flipHorizontal(src)
+  local dst = Image(src.width, src.height)
+  for y = 0, src.height - 1 do for x = 0, src.width - 1 do dst:drawPixel(src.width - 1 - x, y, src:getPixel(x, y)) end end
+  return dst
+end
+local function runtimeRect(img, x, y, w, h, color)
+  rect(img, x + 32, y + 64, w, h, color)
+end
+local function makeDoor(open)
+  local img = Image(64, 128)
+  local function r(x, y, w, h, color) runtimeRect(img, x, y, w, h, color) end
+  -- Runtime-space rectangles are translated to the 64×128 preview frame by (+32,+64).
+  r(-32, -64, 64, 128, C.void)
+  r(-32, -64, 4, 128, C.shadow)
+  r(28, -64, 4, 128, C.depth)
+  r(-30, -64, 60, 8, C.metalDark)
+  r(-28, -62, 56, 2, C.metalLight)
+  r(-28, -58, 56, 2, C.shadow)
+  r(-30, 58, 60, 6, C.metalDark)
+  r(-28, 58, 56, 2, C.metalLight)
+  r(-30, 62, 60, 2, C.shadow)
+  r(-28, -56, 2, 112, C.copper)
+  r(26, -56, 2, 112, C.metalDark)
+  r(-26, 42, 2, 4, C.copper)
+  for _, y in ipairs({-48, -16, 16, 48}) do
+    r(-30, y, 2, 2, C.amber)
+    r(28, y, 2, 2, C.metalLight)
+  end
+  if not open then
+    r(-22, -54, 44, 4, C.metalDark)
+    r(-22, 50, 44, 4, C.metalDark)
+    for _, x in ipairs({-18, -6, 6, 18}) do
+      r(x, -50, 4, 100, C.metal)
+      r(x, -50, 2, 100, C.metalLight)
+    end
+    for _, y in ipairs({-22, 18}) do r(-18, y, 36, 4, C.metalDark) end
+    r(20, -12, 6, 24, C.metalDark)
+    r(22, -10, 2, 20, C.metalLight)
+    r(20, -2, 6, 4, C.copper)
+    r(22, -2, 2, 4, C.amber)
+  else
+    r(-24, -54, 48, 108, C.void)
+    r(-24, -54, 48, 2, C.metalDark)
+    r(-24, 52, 48, 2, C.shadow)
+    r(-24, -52, 2, 104, C.depth)
+    r(22, -52, 2, 104, C.copper)
+  end
+  return img
+end
+local function glyph(img, x, y, pattern, color, scale)
+  for py, row in ipairs(pattern) do for px = 1, #row do if row:sub(px, px) == "1" then rect(img, x + (px - 1) * scale, y + (py - 1) * scale, scale, scale, color) end end end
+end
+local FONT = {
+  A={"010","101","111","101","101"}, B={"110","101","110","101","110"}, C={"011","100","100","100","011"},
+  D={"110","101","101","101","110"}, E={"111","100","110","100","111"}, G={"011","100","101","101","011"},
+  H={"101","101","111","101","101"}, I={"111","010","010","010","111"}, L={"100","100","100","100","111"},
+  M={"101","111","111","101","101"}, N={"101","111","111","111","101"}, O={"010","101","101","101","010"},
+  P={"110","101","110","100","100"}, R={"110","101","110","101","101"}, S={"011","100","010","001","110"},
+  T={"111","010","010","010","010"}, U={"101","101","101","101","111"}, Y={"101","101","010","010","010"},
+  ["-"]={"000","000","111","000","000"}, [" "]={"000","000","000","000","000"}
+}
+local function drawText(img, x, y, text, color, scale)
+  local cursor = x
+  for i = 1, #text do glyph(img, cursor, y, FONT[text:sub(i, i)] or FONT[" "], color, scale); cursor = cursor + 4 * scale end
+end
+local function blitClipped(dst, src, x, y)
+  local left = math.max(0, x)
+  local top = math.max(0, y)
+  local right = math.min(dst.width, x + src.width)
+  local bottom = math.min(dst.height, y + src.height)
+  if right <= left or bottom <= top then return end
+  for py = top, bottom - 1 do
+    for px = left, right - 1 do
+      local pixel = src:getPixel(px - x, py - y)
+      if pc.rgbaA(pixel) ~= 0 then dst:drawPixel(px, py, pixel) end
+    end
+  end
+end
+local function drawSceneRow(dst, y0, open)
+  local row = Image(1152, 224)
+  rect(row, 0, 0, 1152, 224, C.void)
+  local atlas = Image{fromFile = atlasPath}
+  local leftWall = flipHorizontal(nearestScale(extract(atlas, 0, 32, 32, 32), 2))
+  local rightWall = flipHorizontal(nearestScale(extract(atlas, 64, 32, 32, 32), 2))
+  for _, globalY in ipairs({384, 448, 512, 576}) do
+    blitClipped(row, leftWall, 0, globalY - 376)
+    blitClipped(row, rightWall, 1088, globalY - 376)
+  end
+  -- Paint the through-hole over the clipped wall tiles at the same 64x128 geometry as runtime.
+  local door = makeDoor(open)
+  blitClipped(row, flipHorizontal(door), 0, 56)
+  blitClipped(row, door, 1088, 56)
+  for x = 0, 1087, 64 do
+    local tileCol = (x == 0) and 0 or 1
+    blitClipped(row, nearestScale(extract(atlas, tileCol * 32, 0, 32, 32), 2), x, 184)
+  end
+  blitClipped(row, nearestScale(extract(atlas, 64, 0, 32, 32), 2), 1088, 184)
+  local playerAtlas = Image{fromFile = playerPath}
+  blitClipped(row, nearestScale(extract(playerAtlas, 0, 0, 64, 64), 2), 920, 70)
+  blitClipped(dst, row, 0, y0)
+end
+local board = Image(1152, 492)
+rect(board, 0, 0, 1152, 492, C.void)
+rect(board, 0, 0, 1152, 18, C.depth)
+drawText(board, 16, 4, "BOTH ENDS CLOSED", C.cream, 2)
+drawSceneRow(board, 18, false)
+rect(board, 0, 246, 1152, 18, C.depth)
+drawText(board, 16, 250, "OPEN SAMPLE - GAME ENTRY STAYS CLOSED", C.cream, 2)
+drawSceneRow(board, 268, true)
+board:saveAs(out)
+print("Static side-wall opening preview saved: " .. out)

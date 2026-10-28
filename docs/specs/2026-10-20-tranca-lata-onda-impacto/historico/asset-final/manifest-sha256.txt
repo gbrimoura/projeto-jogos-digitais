@@ -1,0 +1,18 @@
+SHA-256 manifest — pass3 aprovado, 20/10/2026
+Aseprite source/output, project outputs, and frozen snapshot. Hashes use SHA-256.
+53218b541a475e84dded126062421d28bf0ada2d738faf483f20aabeb2619ab9  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/generate_tranca_lata_shockwave.lua
+55335c0f7bd2a7f51490ccc5e5c6b48a120f40ef79628535915946cf3115b5b6  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/metadata.json
+7b65856d9088fc5373b2bf74fc76fc7b8e29042045b07eac599b86d9b639adaa  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/contact-3x2-2x.png
+bb052a052e97da260fd73e6386dbf14f2109b9c6c9f75fe4e9345e65e6f57c97  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/shockwave-preview-real-2x.gif
+22cd41c2f7eb827cd29510f77757e3fa0f493cd6200a3bfa9052d5b42fcd7165  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/shockwave-preview-slow-4x.gif
+a57d0862d6e8303d01ee0b3dac96e7820e6ef27984618364ca95b0833dd71b80  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/aseprite-run.log
+64d797d413875b0192886d42a89368a75118dcf2e7c06d8f78ee4c39f3ca823b  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/tranca-lata-shockwave-atlas.png
+72651dc20f936b172cf725570d4ef8ba203ddbeca437d07238bff0bb4ccb364a  fonte/pitch-assets/tranca-lata-onda-impacto-v1/passes/pass3/tranca-lata-shockwave.aseprite
+64d797d413875b0192886d42a89368a75118dcf2e7c06d8f78ee4c39f3ca823b  projeto/assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png
+72651dc20f936b172cf725570d4ef8ba203ddbeca437d07238bff0bb4ccb364a  projeto/assets/enemy/training_target/shockwave/tranca-lata-shockwave.aseprite
+e451f265002fd1b0d66d97712b16ddbd6af37416cf7d303517022b67405d02d9  projeto/resources/enemy/tranca_lata_shockwave_sprite_frames.tres
+64d797d413875b0192886d42a89368a75118dcf2e7c06d8f78ee4c39f3ca823b  snapshot/assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png
+72651dc20f936b172cf725570d4ef8ba203ddbeca437d07238bff0bb4ccb364a  snapshot/assets/enemy/training_target/shockwave/tranca-lata-shockwave.aseprite
+e451f265002fd1b0d66d97712b16ddbd6af37416cf7d303517022b67405d02d9  snapshot/resources/enemy/tranca_lata_shockwave_sprite_frames.tres
+fccb9119bb213c06d4033b068bdaed185c6530b4b5371640e21ee9aa8c11048b  referencia/pitch-assets/tranca-lata-onda-impacto-v1/referencia-imagegen-v1.png
+

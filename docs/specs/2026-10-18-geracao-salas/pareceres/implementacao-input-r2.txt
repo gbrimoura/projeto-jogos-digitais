@@ -1,0 +1,26 @@
+Revisor read-only R2 delta final, timeout10min. SOMENTE INLINE. Sem ferramentas, arquivos, mutacao, Git, engine, Godot, testes. R1 completo ja revisado Gemini/Grok semP1; 2P2Grok agora implementados: permitirrise0e8doc+maisvariedade; Floorflagsfalse explicitos. Semoutrasmudancasruntime. Musechaveexpirada eOpusCursorquotasemparecer, nao substituir. RNGperroomseed, firsttop440, TOP_LIMIT376,totalrise<=64, corredor96, gaps56..96, seedcache eflowdoors+HP/buildinalterados. Helpers validamrise>=0; suporteprimarioindexultimo, desempatepelaordemX, entaoalturasiguaispermitidas. Revise somente deltaabaixo porP1/P2concretos, retornando STATUS/SUMMARY/CHANGED_FILES none/TESTS none/RISKS/NEXT_STEP. Nada de pedidos de recursos futuros.
+
+
+
+
+		var entries: Array[Dictionary] = []
+		var left := float(first_left)
+		var previous_top := FIRST_TOP
+		for index in platform_count:
+			var width := rng.randi_range(minimum_width / 8, candidate_max_width / 8) * 8
+			var top := FIRST_TOP
+			if index > 0:
+				var rise := rng.randi_range(0, MAX_RISE_PER_STEP / 8) * 8
+				top = maxi(TOP_LIMIT, previous_top - rise)
+			previous_top = top
+			var rect := Rect2(Vector2(left, top), Vector2(width, PLATFORM_THICKNESS))
+			entries.append(_entry_from_rect(rect))
+			left = rect.end.x
+			if index < platform_count - 1:
+				left += rng.randi_range(GAP_MIN / 8, GAP_MAX / 8) * 8
+
+		if _entries_are_safe(entries, spawn_x):
+			return _success_result(entries, seed_used, false)
+
+	var fallback_entries := _safe_fallback(platform_count)
+	if not _entries_are_safe(fallback_entries, spawn_x):

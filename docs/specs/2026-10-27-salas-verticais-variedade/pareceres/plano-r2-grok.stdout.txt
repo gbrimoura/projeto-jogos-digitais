@@ -1,0 +1,22 @@
+STATUS: done  
+SUMMARY: R2 fecha os conflitos R1 aceitos (teto, n+2, rollback DOWN, contratos, famílias, seed por flag, sem mutar colisão no callback). Ainda há falha concreta de envelope horizontal: `roof_five` (vão 40, subida 72, largura 104) não pousa com corrida 260 e salto 128; o layout “comprovado” da família é inválido. Hatch 256 em `roof_four` também não cobre corpo+arco na borda. Não autorizar código até um delta numérico curto.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: implementar R2 como está embarca rota alta irrecuperável em `roof_five`; validador ingênuo (só rise/gap) aceitaria o layout; validador fiel ao arco rejeitaria o fallback da própria família. Hatch 256 + apoio 160 + raio 14 + vx 260 deixa ~1px no latch UP. `gap 40..80` literal nas arestas a partir do piso rejeita as famílias roof. Folga 4px ápice vs guarda y=-48 só é segura se o freeze no latch ocorrer.  
+NEXT_STEP: delta R3 só de números/contratos (sem código, sem testes): recalcular `roof_five` (e a margem do hatch `roof_four`) contra g=1600, jump=640, vx∈[0,260], cápsula 76/r14; restringir `gap 40..80` a apoios elevados; depois autorizar um incremento integrado.
+
+R2 acerta o que R1 pedia: zigzag/n+2 saem, primeiro degrau 112, DOWN com `reset_to_spawn` diferido, `randomize_run_seed` sem quebrar seed 0 standalone, descritor tipado, prepare idempotente, teto/piso/parede com slot+gate+guarda, `factory_wall_visual` no escopo, e não exige freeze dentro do callback de física. Isso não precisa estar escrito como código para valer.
+
+A geometria vertical foi validada só em Y. Com Player 640/1600 o salto útil é 128px (`640²/(2×1600)`), cápsula 76 (centro = pés−38, cabeça = pés−76), corrida 260.
+
+`roof_four` (vão 56, subida 96, largura 160) fecha no arco longo (~0,6s, ~156px): o arco curto (~52px) não cobre o vão, o longo ainda cai no apoio. Piso→448 (112) é corrida no piso, não vão. Esse envelope é coerente.
+
+`roof_five` não é. Subida 72 cruza +72 só em t≈0,135s (~35px) e t≈0,665s (~173px). O arco curto não cobre vão 40. O longo, com decolagem segura na borda (centro ≤ half−14), ultrapassa largura 104: a janela de vx que pousa é ≈102–216, **não inclui 260**. Não existe salto extra a inventar; o impulso é fixo. Tranca 72+margens no apoio 104 está certo e é irrelevante para a rota. O mesmo par 72/40/104 se repete até o último apoio, então a saída UP nem é alcançável em corrida. “Fallback da própria família comprovado pelo validador” é contraditório: ou o validador é fraco e deixa passar rota quebrada, ou é honesto e não tem fallback válido.
+
+Hatch teto 256 vs último apoio 160: metade hatch 128 vs metade apoio 80. Em t≈0,182s (centro 122→32, +90) a corrida desloca ~47px; com raio 14 o corpo sai da faixa aberta se a decolagem for na borda (`80+47+14=141 > 128`). R2 afirma que o arco cabe; com os contratos de transversal (corpo/margem) não cabe. `roof_five` teria mais folga no hatch, mas essa família já cai antes.
+
+`Arestas UP … gap 40..80 para rota alta` não pode aplicar-se à aresta piso→primeiro apoio (vão 0). Se o helper tratar todas as arestas iguais, `roof_four`/`roof_five` falham o validador mesmo depois de corrigir X.
+
+Não são falhas concretas (não bloquear por isto): sete P1 de detalhe de plano; freeze no callback; mudar seed 0 legado; exigir o código do arco no texto; catwalk/ridge/valley sem todo X congelado (R2 já manda documentar perfil equivalente antes de freeze; ridge/valley com o exemplo 144..160/vão 56 tendem a fechar no arco longo). Entrada LEFT + fluxo LEFT no andar seguinte só força a primeira saída a ser UP/DOWN, não encurrala. Spawn UP sob gate fechado (cabeça 84, gate 64) é apertado mas jogável se o jogador desce; não é lock.
+
+Autorização: **não**. Um R3 de envelope (largura/vão/subida `roof_five` que admita vx=260 no arco longo, ou vão ≤ alcance do arco curto; hatch `roof_four` ≥ corpo+deriva+margem ou faixa de decolagem restrita; gap 40..80 só entre apoios altos) autoriza código sem escrever o validador no plano.

@@ -1,0 +1,42 @@
+[
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "C2F94E8568441518A80739E4EA3C78BE39B6FA77E4D063118A22EFC2AE8EDC7F"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "sha256": "0FC31ABBBC279DE3C9B9CB101DFDDC132DCB81DCC4C2BF4BCC169706A976F634"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "08315586F86613CC06F378A8CD4B45CFCAAEF4A84CBA9E126756BB63E9DA77BD"
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "FB41985E38427726BA2B94E99413C11DC92538729B3019CB070C2C38FCCCC416"
+  },
+  {
+    "path": "scripts/world/side_door_visual.gd",
+    "sha256": "DFBA90D0D1A938C4B98E11138B5FFCC922AED1F26303BD5FDA1B6E1BCA0388B2"
+  },
+  {
+    "path": "scripts/world/factory_ceiling_visual.gd",
+    "sha256": "7E66B76838E57DC899FA8E21047290F5C321EEC9E5451762D2239A73B3D24864"
+  },
+  {
+    "path": "scripts/world/factory_wall_visual.gd",
+    "sha256": "1B67320689FDC71C76913F7A38C697B3914481D4226908076063F69320980F73"
+  },
+  {
+    "path": "scripts/world/factory_surface_visual.gd",
+    "sha256": "B24E6A9715639E63C6BAC309F93B45541E92D392283A12CCC64D57CB4934458E"
+  },
+  {
+    "path": "scripts/world/room_run_layout.gd",
+    "sha256": "89B2453C198AFC1A661C6E290401CE3D5369D37FFE120AD4D238BB7806673D9E"
+  },
+  {
+    "path": "scripts/world/managed_room_topology.gd",
+    "sha256": "F61889C5AA7CA1876E40B0BB26A2A1D63985FA38E382B8AC41C9E901CF8F7C04"
+  }
+]

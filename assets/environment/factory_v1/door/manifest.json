@@ -1,0 +1,23 @@
+{
+  "asset_id": "factory_wall_door_horizontal_v2",
+  "status": "visual-source-frozen",
+  "palette": "../../../../../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/palette-fabrica-v1.json",
+  "palette_colors": 20,
+  "alpha": "binary (0 or 255); runtime modules are opaque",
+  "native_frame": { "width": 160, "height": 80, "count": 2, "layout": "horizontal", "states": ["Closed", "Open"] },
+  "runtime_sheet": { "width": 320, "height": 80, "filter": "nearest (texture_filter=1)", "scale": 2 },
+  "integrated_door_rect_per_frame": { "x": 16, "y": 8, "width": 128, "height": 64 },
+  "open_clear_aperture_px": { "width": 80, "height": 48 },
+  "open_leaf": "telescoping slats stowed in the built-in lateral jamb pocket",
+  "runtime_behavior": "visual only; wall collision remains continuous; entrance remains closed",
+  "source_tool": "Aseprite Lua batch authoring; no engine/import was run",
+  "reference_prompt": "../../../../docs/specs/2026-10-18-porta-parede/imagegen-prompt-horizontal-v2.txt",
+  "files": [
+    { "path": "porta-fabrica-horizontal-v2.png", "role": "runtime spritesheet", "sha256": "a8bfdc0d5f1c0fb2fe5bbd693eadbe4c9e0bae0467f7a1349cf98276b707add8" },
+    { "path": "porta-fabrica-horizontal-v2.aseprite", "role": "editable source document", "sha256": "e78deea45bb66c4254751d73a2599431c840da91248511c7a1d119125d53b232" },
+    { "path": "porta-fabrica-horizontal-v2.lua", "role": "editable pixel-art generation/export script", "sha256": "47c53ea313975e4551ef641e2dcf7aa4587dc5306102e3db8663b74a048e765d" },
+    { "path": "porta-fabrica-horizontal-v2-preview-4x.png", "role": "4x visual inspection preview", "sha256": "746be9ad45f5c6c7f01b7b8832efe114a3613c38b50db0ae97205a3a6629bd03" },
+    { "path": "porta-fabrica-horizontal-v2-montagem-estatica.png", "role": "static wall/floor/player composition; not an engine screenshot", "sha256": "c9ec1ff4efa8f87872ca07fb7bb5b9b93f4ada1fd7d241a0793db558e408fa32" },
+    { "path": "referencia-porta-horizontal-v2.png", "role": "preserved conceptual reference; not runtime art", "sha256": "1a0b1fc64064061d109ab6c2aa857324e49ab7ba6b51b40b019a8b4302f3a5df" }
+  ]
+}

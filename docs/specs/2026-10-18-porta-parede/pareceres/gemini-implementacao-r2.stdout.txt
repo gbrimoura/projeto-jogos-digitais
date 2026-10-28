@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão R2 final concluída estritamente sobre o delta contra R1 da porta de parede horizontal. O único defeito concreto aceito em R1 (`out` relativo enquanto `root` era absoluto) foi corrigido com sucesso via `local out = p.out or (root .. "/assets/environment/factory_v1/door/porta-fabrica-horizontal-v2")`, garantindo ancoragem correta ao `root` e paridade com `atlasPath` e `playerPath`. O alinhamento com hashes de manifesto, documentação, preservação dos PNGs gerados e confirmações de runtime/posicionamento permanecem válidos. Nenhum defeito concreto remanescente identificado no delta.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Baixo. Caso `p.root` seja injetado externamente com barra final (`/`), haverá barra dupla irrelevante (`//`) tratada normalmente pelos sistemas de arquivos e runtimes.
+NEXT_STEP: Manter o estado estável e prosseguir com a consolidação da etapa da porta horizontal.

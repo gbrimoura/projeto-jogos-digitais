@@ -1,0 +1,6 @@
+STATUS: done  
+SUMMARY: R1 coloca o SpriteFrames aprovado (`impact`, 6 cels, speed 1, sem loop) como filho `Shockwave` de `AttackAreaVisual`, com animação só manual. A ponte em `training_target.gd` corre depois do `match` e usa o timer final de `ACTIVE` (`1 - state_remaining / max(active_window, 0.05)`), então o overshoot do windup entra no progresso; `set_area_state` de 4 args permanece; `set_shockwave_progress` não muda fase nem redesenha o círculo. ACTIVE/IMPACT mostram e avançam quadro; windup/recovery/hidden pausam, escondem e zeram quadro 0. Cena: centro 0, `centered`, nearest (`texture_filter = 1`), escala `radius/70` (2 em 140), `z_index = 0` absoluto; corpo do ator permanece z global 1 e o círculo z global 2. Morte/cancel/inativo continuam no path `hidden`. Poeira e combate não foram abertos. Sem P1/P2 concretos introduzidos neste diff.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: no findings  
+NEXT_STEP: Aceitar a integração R1 neste escopo de 3 arquivos; qualquer checagem em runtime no editor fica fora desta revisão estática e não foi feita.

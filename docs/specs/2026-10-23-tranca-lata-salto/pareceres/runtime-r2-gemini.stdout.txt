@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática R2 de runtime e recursos concluída sobre a entrada imutável `runtime-r2-input.txt`. A implementação do salto do Tranca-Lata (`TrainingTarget`, `TrancaLataJump`, `containment_attack_visual.gd` e `training_target_sprite_frames.tres`) é robusta e cumpre integralmente os contratos técnicos: os três defeitos de R1 foram corrigidos (integração de gravidade por subpasso via `g * step_time`, escape tangencial físico sem pinning em topo de Player e pouso fora de bounds revertendo para suporte estacionário); interlocks entre ataques e ciclo de salto (`PREPARE`, `FLIGHT`, `FALLING`, `LANDING`, `GROUND`) são mutuamente excludentes e priorizam combate ao detectar o Player em solo/preparo; a cinemática e os casts de trajetória (`mask 11`, segmentação <= 8 px e desvinculação analítica da plataforma de origem em `clear_time`) refletem exatamente o comportamento físico em runtime; as 6 novas poses de salto e a escala visual 1.25 da onda de choque preservam integralmente o hitbox e os tempos de dano.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum defeito P1 ou P2 identificado. O código é consistente, sem divisões por zero, sem loops infinitos em colisões a TOI 0 e com tipagem/APIs aderentes ao Godot 4.
+NEXT_STEP: Prosseguir com a consolidação dos pareceres e aprovação da etapa R2 pelo orquestrador.

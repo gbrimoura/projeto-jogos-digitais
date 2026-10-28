@@ -1,0 +1,6 @@
+STATUS: done  
+SUMMARY: Source/pipeline/resource review of the pass3 Tranca-Lata shockwave (Lua authoring, metadata.json, SpriteFrames, frozen SHA-256 manifest). The provided texts are internally consistent with the stated contract: 6×160 native cels, pivot 80,80, atlas 960×160, palette of 8 colors, alpha 0/255 checks, hollow center, radius cap 70, timings 20/20/20/20/30/30 (140 ms), non-loop, 5 ASE layers, ASE tag `shockwave` vs runtime anim `impact` at speed 1.0 with second-weighted durations, preview GIFs as separate 160px sprites plus 700 ms blank (slow 4×), `real-2x` treated as historical name. Manifest lists identical PNG/ASE/resource hashes for fonte, projeto, and snapshot. Images were not viewed; nothing was executed, imported, parsed by engine, hashed, or tested.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: no P1/P2 findings  
+NEXT_STEP: Keep this increment asset-only. A later consumer can instance the SpriteFrames, apply the recommended 2× display/contact scale, and hide/free on `animation_finished` without changing existing attack, particle, collision, or protected scripts.

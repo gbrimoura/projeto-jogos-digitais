@@ -1,0 +1,69 @@
+# Parecer de Revisão Estática (Read-Only) — Correção Visual Godot/Aseprite (R2)
+
+**Revisor:** Gemini 3.8 Flash (High) — modo `plan` (read-only)  
+**Arquivo de Entrada:** [`runtime-r2-input.txt`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/docs/specs/2026-10-23-fundo-primeiro-andar/compatibilidade-janelas/pareceres/runtime-r2-input.txt)  
+**SHA-256 Confirmado:** `0B8CAD25B7BD7092B5A37FCB81F4AD915C16095D58E65FA6BF81B34C4DEEF9C4`  
+**Escopo da Análise:** Correção de vão de vidro livre nas 8 combinações procedurais, script de produção Lua, atlas nativo de bases, metadados e integridade estrita de runtime, módulos e cenas.
+
+---
+
+## 1. Avaliação Geométrica e Espacial do Vão Livre
+
+A baía arquitetônica compartilhada está fixada em `Rect2(344, 56, 38, 78)`. Com a calota superior semicircular (`r = 19`, `cx = 363`, `ay = 75`), a ocupação geométrica efetiva da abertura é `x ∈ [344, 382]` e `y ∈ [56, 133]`.
+
+A verificação estática das 8 combinações demonstra conformidade total e folgas limpas:
+
+1. **Bases Arquitetônicas (`variant 1` e `variant 2`):**
+   - **Variante 1 (Boiler wall):** Colunas posicionadas em `x ∈ {20, 177, 420, 548}`. A antiga coluna em `x = 354` foi deslocada com sucesso para `x = 420`, conferindo uma margem de segurança de **38 px** à direita do vão (`420 - 382 = 38`).
+   - **Variante 2 (Maintenance wall):** Colunas em `x ∈ {28, 139, 300, 548}`. A coluna em `300` encerra-se antes de `x = 344` com **44 px** de folga à esquerda.
+   - **Travessa inferior:** Posicionada em `y = 140`, ficando **7 px** abaixo do término inferior do vão (`y = 133`).
+
+2. **Módulos Esquerdos:**
+   - **`left_boiler`:** Limite horizontal máximo em `x = 311`. Folga de **33 px** até `x = 344`.
+   - **`left_cabinets`:** Limite horizontal máximo em `x = 193`. Folga de mais de **150 px**.
+
+3. **Módulos Direitos:**
+   - **`right_service`:** A caixa de serviços de parede ocupa `x ∈ [313, 341]` (folga de **3 px** antes do início do vão). O tubo superior (`pipeH`) corre em `y ∈ [25, 33]`, posicionado **23 px acima** do topo do vidro (`y = 56`). A luminária pendente localiza-se em `x = 390` com aba em `x = 387`, garantindo folga lateral de **5 px** em relação ao contorno do arco circular (`x = 382`).
+   - **`right_press`:** A treliça superior (`drawTruss`) ocupa `y ∈ [25, 51]`, situada **5 px acima** do topo do vidro. O manômetro e tubulações da prensa têm limite esquerdo em `x = 389` (centro em `397`, raio `8`), garantindo folga lateral de **7 px** à direita do vidro (`382`).
+
+**Conclusão Geométrica:** Todas as 8 combinações estáticas e procedurais eliminam completamente as sobreposições de tubos, colunas e equipamentos sobre a janela. O vidro permanece 100% desobstruído.
+
+---
+
+## 2. Integridade dos Recursos e Rastreabilidade
+
+- **27 Arquivos Protegidos:** Confirmados byte a byte idênticos via [`protected-r2.json`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/docs/specs/2026-10-23-fundo-primeiro-andar/compatibilidade-janelas/historico/protected-r2.json). Nenhum script de runtime ([`factory_floor1_background.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/factory_floor1_background.gd), gameplay ou geradores), cenas (`main.tscn`, `second_room.tscn`) ou módulos de maquinaria foram alterados.
+- **Atlas de Bases e Recursos Nativos:** [`factory_floor1_base_atlas_texture.tres`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/resources/environment/factory_floor1_base_atlas_texture.tres) reflete a dimensão 576×648 RGBA8 com os novos gráficos baked. As sub-regiões de [`factory_floor1_base_boiler_texture.tres`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/resources/environment/factory_floor1_base_boiler_texture.tres) (`Rect2(0, 0, 576, 324)`) e [`factory_floor1_base_maintenance_texture.tres`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/resources/environment/factory_floor1_base_maintenance_texture.tres) (`Rect2(0, 324, 576, 324)`) mantêm alinhamento exato.
+- **Invocação Aseprite:** Documentação no cabeçalho de [`background_floor1.lua`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/background_floor1/background_floor1.lua) e em [`README.md`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/background_floor1/README.md) corrigida para passar parâmetros antes de `--script`, prevenindo fallback silencioso para `mode=full`. A execução registrada resultou em `ExitCode 0`, stderr vazio e stdout consistente.
+
+---
+
+## 3. Apontamento de Defeitos Concretos (P1 / P2)
+
+### P1 (Críticos / Bloqueantes)
+*Nenhum defeito P1 identificado.* O vão livre está garantido, os recursos nativos são válidos e nenhum contrato de engine/runtime foi quebrado.
+
+### P2 (Não Bloqueantes / Desvios Contratuais)
+1. **Omissão de atualização de `regions-and-anchors.json` na rota `bases-only`:**
+   - **Descrição:** O [`README.md`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/background_floor1/README.md#L59) afirma textualmente que *"The bases-only mode refreshes both bases, the base atlas, its native texture resource, metadata, and all eight static contexts"*. Contudo, na implementação de [`background_floor1.lua`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/background_floor1/background_floor1.lua#L755-L820), a função `generateWindowRevisionBases()` regrava apenas `context-captions.txt`, deixando de atualizar [`regions-and-anchors.json`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/background_floor1/modular/regions-and-anchors.json) (que só é gerado em `saveMetadataAndTres`, invocado exclusivamente em `mode=full`).
+   - **Impacto:** Embora o campo `"shared_window_aperture_native_px": [344, 56, 38, 78]` esteja presente no JSON atual, futuras execuções estritas de `bases-only` não manterão esse JSON atualizado se a abertura for editada no script Lua.
+
+---
+
+## 4. Sugestões de Melhoria e Débito Técnico
+
+1. **Eliminação do loop legado de 4 contextos em `generateModularAssets()`:**
+   - Na linha 846–847 de [`background_floor1.lua`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/background_floor1/background_floor1.lua#L846-L847), ao rodar `mode=full`, `generateModularAssets()` gera primeiro 4 contextos e um contato 2×2, para em seguida `generateWindowRevisionBases()` sobrescrever o arquivo de contato com as 8 combinações e `context-captions.txt`. Consolidar a geração de contatos exclusivamente na rotina de 8 combinações evita I/O redundante e elimina código morto/duplicado.
+2. **Alinhamento do texto no README:**
+   - Especificar no [`README.md`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/background_floor1/README.md) que `bases-only` atualiza especificamente as legendas de contato (`context-captions.txt`), enquanto o arquivo de metadados do atlas modular (`regions-and-anchors.json`) requer `mode=full`.
+
+---
+
+```text
+STATUS: done
+SUMMARY: Revisão estática conclui que a baía de vidro compartilhada em Rect2(344,56,38,78) está 100% desobstruída nas 8 combinações; coluna em x420 e módulos respeitam folgas mínimas; 27 arquivos protegidos continuam intactos. Identificado desvio P2 na ausência de regravação de regions-and-anchors.json na rota bases-only.
+CHANGED_FILES: none
+TESTS: static review only
+RISKS: Nenhum risco para o runtime atual; risco menor de descompasso de metadados JSON caso o script seja futuramente reexecutado exclusivamente em bases-only após edição manual da abertura.
+NEXT_STEP: Registrar parecer em docs/specs/2026-10-23-fundo-primeiro-andar/compatibilidade-janelas/pareceres/ e prosseguir com as demais análises de revisores previstas no fluxo.
+```

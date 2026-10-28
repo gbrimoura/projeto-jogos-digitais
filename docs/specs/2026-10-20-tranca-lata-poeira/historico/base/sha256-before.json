@@ -1,0 +1,10 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "B764E233E7E2CE54D571AF278F15C0E627E9BCC62C445BCCAC1F356490C1A7E1"
+  },
+  {
+    "path": "scenes/training_target.tscn",
+    "sha256": "08AE902A590C174609059A9591BB146992B6D35655283989278E6F4DEF7309E2"
+  }
+]

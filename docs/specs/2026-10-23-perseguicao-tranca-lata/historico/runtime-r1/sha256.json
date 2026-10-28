@@ -1,0 +1,42 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "9EFBED5CFEFEC70A1A3F1F3145E38ABD14F1601F9B0B6AA8470B14EFD3284609"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "sha256": "21405FA654E6EA2278172AD04B2C54D9C214B5FC3A35C8624315F46114BEC629"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_pursuit.gd",
+    "sha256": "6C652B9AD17927BCC4A416F927087985C11F144723DE1109D94FC84DF9B300E5"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "C84D99DAD9B7FE5F467FBEBFF56B3F747061834B289AFA2DB6F4796E68C428A9"
+  },
+  {
+    "path": "scenes/rivet_worker.tscn",
+    "sha256": "CA6EEC52AECB9E9FC7F376814EB17660DFED28F0D317B9A53570C3468AD44687"
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "sha256": "946257D18D056CB9CC091604003E916091375D321AE85C5B099D2ADC91E38D6E"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+    "sha256": "CBE1903D51B687DA009861A7C0B71C3966EB727905ADF5DDFA70EF2E78D8AC04"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_jump_texture.tres",
+    "sha256": "DED0F36ECAC8DF2497B8CE238F83A4CC1064027888732D8808083E02AC2E644E"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_texture.tres",
+    "sha256": "BE297310EAE92AE9BC20D5D5AB76345A1FA785A53EAE2EFC5F86075F0F2D5D7C"
+  },
+  {
+    "path": "docs/specs/2026-10-23-perseguicao-tranca-lata/empacotar_atlas_tranca_lata.lua",
+    "sha256": "D367000D715BF6BFF5BD6FADD00B7EBF2EDF4EF90E82171ACDD7453FB169268B"
+  }
+]

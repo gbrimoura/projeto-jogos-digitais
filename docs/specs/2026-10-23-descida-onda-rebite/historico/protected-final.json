@@ -1,0 +1,46 @@
+[
+  {
+    "unchanged": true,
+    "path": "scripts/enemy/tranca_lata_pursuit.gd"
+  },
+  {
+    "unchanged": true,
+    "path": "scripts/projectile/hostile_rivet.gd"
+  },
+  {
+    "unchanged": true,
+    "path": "scenes/training_target.tscn"
+  },
+  {
+    "unchanged": true,
+    "path": "scripts/world/main.gd"
+  },
+  {
+    "unchanged": true,
+    "path": "scenes/main.tscn"
+  },
+  {
+    "unchanged": true,
+    "path": "scenes/second_room.tscn"
+  },
+  {
+    "unchanged": true,
+    "path": "project.godot"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/enemy/rivet_worker/rivet_worker-atlas.png"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/enemy/rivet_worker/rivet_worker.aseprite"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png"
+  }
+]

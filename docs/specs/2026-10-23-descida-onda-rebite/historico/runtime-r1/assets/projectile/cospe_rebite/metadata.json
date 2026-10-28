@@ -1,0 +1,44 @@
+{
+  "asset": "Cospe-Rebite",
+  "source": {
+    "path": "assets/projectile/cospe_rebite/reference-imagegen.png",
+    "sha256": "1F71E628F071972EC6486E1E3B435A9E9CBB171BFF645ADC9080C65AD2DF7A61",
+    "use": "visual direction; native pixels drawn separately"
+  },
+  "native": {
+    "path": "assets/projectile/cospe_rebite/cospe_rebite.png",
+    "aseprite": "assets/projectile/cospe_rebite/cospe_rebite.aseprite",
+    "size_px": [32, 16],
+    "pivot_px": [20, 8],
+    "facing": "+X",
+    "core_approx_px": [13, 10],
+    "hit_radius_px": 6,
+    "alpha": [0, 255],
+    "palette": ["#00000D", "#192031", "#373F4D", "#F5E9D8", "#CFC3B7", "#FFFCF0", "#70432C", "#925A36", "#B37949", "#D94B4B", "#F0524E", "#FF7256", "#F5A84F"],
+    "sha256": {
+      "png": "5C59886A864E6658AA4698D3100E1DA702048A652170E57ABD6EF8F9B10B21C7",
+      "aseprite": "45CC569597702C219F25A0AD0E0E559340F7C4CE7FBCDEEE27C27C194CF20B00"
+    }
+  },
+  "texture_resource": {
+    "path": "resources/enemy/cospe_rebite_projectile_texture.tres",
+    "encoding": "RGBA8",
+    "size_px": [32, 16],
+    "sha256": "FE2E12D21803159CED82174531F32740A76469378EA61A1265B10EB8462590A7"
+  },
+  "previews": {
+    "nearest_8x": {
+      "path": "assets/projectile/cospe_rebite/cospe_rebite-preview-8x.png",
+      "sha256": "2C10A40F20EE32B6D7B6342C0C15618E35370CC46F7CC0EFF28CA195E2817841"
+    },
+    "contact_2x_scale_comparison": {
+      "path": "assets/projectile/cospe_rebite/cospe_rebite-contact-preview.png",
+      "sha256": "CA9C1581F03514B7A676DA5ADD5BF9147596E11EA4CB2DFD7E78B922838FB90E",
+      "note": "worker and projectile are both shown at 2x for inspection"
+    }
+  },
+  "generator": {
+    "path": "assets/projectile/cospe_rebite/generate_cospe_rebite.lua",
+    "aseprite": "1.3.18.6"
+  }
+}

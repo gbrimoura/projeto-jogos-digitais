@@ -1,0 +1,176 @@
+[
+  {
+    "path": "scripts/world/factory_floor1_background.gd",
+    "before": "B18EF04DD82FF1CC4F9A57A1603A8FCB0833EE052EEF34B397CD97AEAC4625D4",
+    "final": "B18EF04DD82FF1CC4F9A57A1603A8FCB0833EE052EEF34B397CD97AEAC4625D4",
+    "intact": true
+  },
+  {
+    "path": "scenes/main.tscn",
+    "before": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905",
+    "final": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905",
+    "intact": true
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "before": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0",
+    "final": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0",
+    "intact": true
+  },
+  {
+    "path": "resources/environment/factory_floor1_base_boiler_texture.tres",
+    "before": "BD37ECDBFEA99050306EF9E77F2E2EAAC221ACFC8E62F3C17C621721A1FBA6F0",
+    "final": "BD37ECDBFEA99050306EF9E77F2E2EAAC221ACFC8E62F3C17C621721A1FBA6F0",
+    "intact": true
+  },
+  {
+    "path": "resources/environment/factory_floor1_base_maintenance_texture.tres",
+    "before": "F9241611FA55FC19F7FCB270D6DA0F6A37C5AF946305893B815AF5497B2BDDA8",
+    "final": "F9241611FA55FC19F7FCB270D6DA0F6A37C5AF946305893B815AF5497B2BDDA8",
+    "intact": true
+  },
+  {
+    "path": "resources/environment/factory_floor1_left_boiler_texture.tres",
+    "before": "CBF28C82AAA5B1943DCA2FBBEF9B279FD69C0754082953BB348A8221CA46915D",
+    "final": "CBF28C82AAA5B1943DCA2FBBEF9B279FD69C0754082953BB348A8221CA46915D",
+    "intact": true
+  },
+  {
+    "path": "resources/environment/factory_floor1_left_cabinets_texture.tres",
+    "before": "6238A041FBA1C0F5CE2BFFB8DD6D176762AEE08E4A9589DCD48F8FB9E624174C",
+    "final": "6238A041FBA1C0F5CE2BFFB8DD6D176762AEE08E4A9589DCD48F8FB9E624174C",
+    "intact": true
+  },
+  {
+    "path": "resources/environment/factory_floor1_modules_atlas_texture.tres",
+    "before": "BB4F276FBED99A420A5FFE55746B5A2B36B6E5224A340D1A67EB71531723A4D3",
+    "final": "BB4F276FBED99A420A5FFE55746B5A2B36B6E5224A340D1A67EB71531723A4D3",
+    "intact": true
+  },
+  {
+    "path": "resources/environment/factory_floor1_right_press_texture.tres",
+    "before": "816AD0FFF4D3F453E665D2D20CDE59079370E9F1F39CC2E949F1AF331B6F8DDB",
+    "final": "816AD0FFF4D3F453E665D2D20CDE59079370E9F1F39CC2E949F1AF331B6F8DDB",
+    "intact": true
+  },
+  {
+    "path": "resources/environment/factory_floor1_right_service_texture.tres",
+    "before": "06627C32FB044FAC2935B957DE6EA6C5F1ABB728E9849C40380A2A73F0C6D2CD",
+    "final": "06627C32FB044FAC2935B957DE6EA6C5F1ABB728E9849C40380A2A73F0C6D2CD",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/reference-imagegen.png",
+    "before": "27C586A5A3C8493ED8ABBD907FED58DC32A370966032C3D219A95B2D376ED69E",
+    "final": "27C586A5A3C8493ED8ABBD907FED58DC32A370966032C3D219A95B2D376ED69E",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-left_boiler.png",
+    "before": "432EE902E192AA7214C594291FAA7992BFE7C26B7185CBF37B3B506EA4DACB0E",
+    "final": "432EE902E192AA7214C594291FAA7992BFE7C26B7185CBF37B3B506EA4DACB0E",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-left_cabinets.png",
+    "before": "8C87030D66E16BD7E71028FE096E2591332BCA3BE74654EFB9B816E4272B9BF3",
+    "final": "8C87030D66E16BD7E71028FE096E2591332BCA3BE74654EFB9B816E4272B9BF3",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-right_press.png",
+    "before": "1B239E257A27E609E118BED1FEFA627199F047348E36C1C0F17E921C3B56F462",
+    "final": "1B239E257A27E609E118BED1FEFA627199F047348E36C1C0F17E921C3B56F462",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-right_service.png",
+    "before": "A9B969F2732F22C413C8DF47667F15746C480203B342480AB1D82D596B766903",
+    "final": "A9B969F2732F22C413C8DF47667F15746C480203B342480AB1D82D596B766903",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-modules-atlas.png",
+    "before": "8B4A8A317184B8EB341F107E5DCE8FD002399DD276AEE35FBFFE7D79BF96349B",
+    "final": "8B4A8A317184B8EB341F107E5DCE8FD002399DD276AEE35FBFFE7D79BF96349B",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-modules.aseprite",
+    "before": "64D8CE9D22D86F964F175D92B01DCE2E39333517D8875FC90B5C1A2C2347602D",
+    "final": "64D8CE9D22D86F964F175D92B01DCE2E39333517D8875FC90B5C1A2C2347602D",
+    "intact": true
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "before": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+    "final": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+    "intact": true
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "before": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D",
+    "final": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D",
+    "intact": true
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "before": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A",
+    "final": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A",
+    "intact": true
+  },
+  {
+    "path": "scripts/world/training_target.gd",
+    "before": "40EF7CB932182820E674E57B90D8FCBB5C0EAD0DC280AA4FCD1CBCD51458356C",
+    "final": "40EF7CB932182820E674E57B90D8FCBB5C0EAD0DC280AA4FCD1CBCD51458356C",
+    "intact": true
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "before": "DD15D923CC0663F400405710085890A5A68B841DBBFE8804235883B1D8EA252F",
+    "final": "DD15D923CC0663F400405710085890A5A68B841DBBFE8804235883B1D8EA252F",
+    "intact": true
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "before": "FA03F262AC5F92AD4537D5A1468C0758DE5C66031CA397F4854BB3908FCEC755",
+    "final": "FA03F262AC5F92AD4537D5A1468C0758DE5C66031CA397F4854BB3908FCEC755",
+    "intact": true
+  },
+  {
+    "path": "scenes/hostile_rivet.tscn",
+    "before": "4E537D042A713944EDB6C31721AAA402D36D143812B1041EFCC580CB33F1C41C",
+    "final": "4E537D042A713944EDB6C31721AAA402D36D143812B1041EFCC580CB33F1C41C",
+    "intact": true
+  },
+  {
+    "path": "project.godot",
+    "before": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+    "final": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png",
+    "before": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+    "final": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+    "intact": true
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1.aseprite",
+    "before": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8",
+    "final": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8",
+    "intact": true
+  },
+  {
+    "path": "assets/player/player-animations.png",
+    "before": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC",
+    "final": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC",
+    "intact": true
+  },
+  {
+    "path": "assets/enemy/rivet_worker/rivet_worker-atlas.png",
+    "before": "9028C991C29F072E4AA41C85FCFD7648F0650BB80AE4C41658BC056E26E75DD1",
+    "final": "9028C991C29F072E4AA41C85FCFD7648F0650BB80AE4C41658BC056E26E75DD1",
+    "intact": true
+  }
+]

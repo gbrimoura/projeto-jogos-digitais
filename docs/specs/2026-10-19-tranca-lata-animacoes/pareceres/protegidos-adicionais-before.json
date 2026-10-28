@@ -1,0 +1,22 @@
+[
+  {
+    "path": "assets/enemy/training_target/training_target-atlas.png.import",
+    "sha256": "0232677B1AFF3817C28F0754DFD1A07FA07091BF94FF53508395A70B830D0DE2"
+  },
+  {
+    "path": "scripts/world/training_target.gd.uid",
+    "sha256": "C03CAE51F24B4E3B559AD5FFE59D133B1E096FBCEBCEFD52AFD2A795E4C2CB5D"
+  },
+  {
+    "path": "assets/player/player-animations.png",
+    "sha256": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC"
+  },
+  {
+    "path": "assets/player/source/player-animations.aseprite",
+    "sha256": "4C8311F9F37AC1362EEA2E884F7D79C7F7D3F7A61B83A3A3D033559CC9BD5FBC"
+  },
+  {
+    "path": "resources/enemy/rivet_worker_sprite_frames.tres",
+    "sha256": "CB4139D41D0E6640D8AFF45E7814B909B6AFA50181DDC5338740CB23B318DAAA"
+  }
+]

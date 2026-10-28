@@ -1,0 +1,30 @@
+[
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "AAB8E700F1C51349F95FAAE003A86DFF467531B940004FDE5710900E511E94DC"
+  },
+  {
+    "path": "scenes/exit_door.tscn",
+    "sha256": "B3EFBA83E11E213B573ADD3422F8AB77722FCB61CE753DFE23CF6695A135F0D6"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "46D8EB0D0DB7E1C11791FEE64DA34E8B364B4CEDE86AB226653D95B5B77CB127"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "sha256": "F94A096DC0893ECC1A5FF386A813C3DB32DB4D7F98301846A4F7516616DCED5E"
+  },
+  {
+    "path": "scripts/world/room_transition_overlay.gd",
+    "sha256": "9BF7625E2A36F1CAA72D02079D3F00E0501F7A4253E7406DAD4E2FA7C97EDBFC"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D"
+  }
+]

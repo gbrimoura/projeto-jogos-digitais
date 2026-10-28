@@ -1,0 +1,11 @@
+Get-Item : Não é possível localizar o caminho 'C:\Users\danie\AppData\Local\cursor-agent\versions\.promote-lock' 
+porque ele não existe.
+No linha:1 caractere:6
++ if ((Get-Item -LiteralPath $env:PROMOTELOCK).LastWriteTime -lt (Get-D ...
++      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\Users\danie\...s\.promote-lock:String) [Get-Item], ItemNotFoundExcep 
+   tion
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetItemCommand
+ 
+O sistema não pode encontrar o arquivo especificado.
+ActionRequiredError: You've hit your usage limit for Opus You've saved $239 on API model usage this month with Pro. Switch to a different model or set a Spend Limit to continue with Opus. Your usage limits will reset when your monthly cycle ends on 11/3/2026.

@@ -1,0 +1,16 @@
+{
+  "revision": "R2 preservada antes do adendo R3",
+  "captured_local_state": "2026-10-19T03:27:45Z",
+  "files": [
+    {
+      "file": "plano.md",
+      "sha256": "aae8c4b1f939c9f4b6d01154876e44fd56a7e3e4622a1190dd3b32b7ae811b23",
+      "bytes": 2707
+    },
+    {
+      "file": "spec.md",
+      "sha256": "8fb39ec3bb2eecb094e2da75ebef407f2442f63253b96098debce518f355746c",
+      "bytes": 4100
+    }
+  ]
+}

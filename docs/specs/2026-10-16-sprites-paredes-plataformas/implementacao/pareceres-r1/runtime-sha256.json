@@ -1,0 +1,30 @@
+[
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "99E7D23E5F76255A95B6E1BFFE9D7C30FC7EC9A7D674E4C870934AF66E36FE72"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "C217FE70E8F454CBCFB29EDFF983DA9E40B32B4FB2049B2C5F7B5D6264A7759C"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "36076D4731F7949EE6E6E953B797535BBA386F3BDED4B1AE0A29A34151FB49BF"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "sha256": "7A3648986F07E3A72FC0E6B56A8FC703AD298AB79B56B6F3C6539F01C1977B82"
+  },
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "2C88C39BF474EECBB4C852B5F46083040A11F44B589B9564A72EBF036C05F5BD"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "2D6587661C7559BD067AE24A3D49D2AB62DF2561607A7FB187A55EF8A96B1FD3"
+  },
+  {
+    "path": "scripts/world/factory_wall_visual.gd",
+    "sha256": "990F7F0509A848BBEA1DF9EACBD311461B30C69CB22BA92D21A81462F29E4BAE"
+  }
+]

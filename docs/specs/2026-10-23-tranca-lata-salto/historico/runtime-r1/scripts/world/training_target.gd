@@ -1,0 +1,1015 @@
+class_name TrainingTarget
+extends CharacterBody2D
+
+## Alvo móvel de contenção que preserva o contrato técnico TrainingTarget.
+
+signal defeated
+
+enum AttackState { IDLE, WINDUP, ACTIVE, RECOVERY }
+enum LocomotionState { GROUND, PREPARE, FLIGHT, FALLING, LANDING }
+
+const PLAYER_MASK: int = 2
+const WORLD_MASK: int = 1
+const PATROL_MASK: int = PLAYER_MASK | WORLD_MASK
+const MAX_QUERY_RESULTS: int = 32
+const CLAIMED_META := &"_target_claimed"
+const PATROL_SPEED: float = 48.0
+const PATROL_PAUSE: float = 0.25
+const MIN_PATROL_DISTANCE: float = 8.0
+const MOVEMENT_EPSILON: float = 0.01
+const JUMP_COOLDOWN: float = 2.5
+const JUMP_PREPARE_TIME: float = 0.16
+const JUMP_IMPULSE_TIME: float = 0.06
+const JUMP_LANDING_TIME: float = 0.18
+const JUMP_MAX_FLIGHT_TIME: float = 2.0
+const JUMP_GRAVITY: float = 1400.0
+const JUMP_MAX_SEGMENT: float = 8.0
+const JUMP_SAFE_MARGIN: float = 0.08
+const PLAYER_ESCAPE_SPEED: float = 48.0
+
+@export var display_name: String = "Tranca-Lata"
+@export_range(1, 100, 1) var max_health: int = 3
+@export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
+@export_range(16.0, 400.0, 1.0) var attack_radius: float = 140.0
+@export var attack_center_offset: Vector2 = Vector2.ZERO
+@export_range(0.05, 3.0, 0.01) var windup_duration: float = 0.65
+@export_range(0.05, 1.0, 0.01) var active_window: float = 0.14
+@export_range(1, 100, 1) var attack_damage: int = 1
+@export_range(0.05, 5.0, 0.01) var recovery_duration: float = 1.4
+@export_range(0.0, 0.5, 0.01) var recovery_fade_duration: float = 0.18
+
+@export_group("Spawn")
+## Posiciona o inimigo automaticamente em cima de uma plataforma da sala.
+@export var spawn_on_platform: bool = true
+## Distância mínima entre o inimigo e as bordas da plataforma.
+@export var edge_margin: float = 16.0
+@export var authored_support_enabled: bool = false
+@export var fixed_support_path: NodePath = NodePath("")
+@export var fallback_support_path: NodePath = NodePath("")
+
+@onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
+@onready var _health_fill: Polygon2D = $Visuals/HealthFill
+@onready var _name_label: Label = $Visuals/NameLabel
+@onready var _attack_visual: Node2D = $AttackAreaVisual
+@onready var _attack_dust: Node2D = $TrancaLataDust
+
+var health: int
+var _flash_remaining: float = 0.0
+var _attack_state: AttackState = AttackState.IDLE
+var _state_remaining: float = 0.0
+var _recovery_fade_remaining: float = 0.0
+var _locked_attack_center: Vector2 = Vector2.ZERO
+var _locked_player: PhysicsBody2D
+var _known_player: PhysicsBody2D
+var _damaged_player_ids: Dictionary = {}
+var _defeated_emitted: bool = false
+var _area_shape: CircleShape2D
+var _area_query: PhysicsShapeQueryParameters2D
+var _line_of_sight_query: PhysicsRayQueryParameters2D
+var _patrol_query_shape: RectangleShape2D
+var _patrol_query: PhysicsShapeQueryParameters2D
+var _placement_pending: bool = false
+var _bound_support: SolidPlatform
+var _patrol_enabled: bool = false
+var _patrol_min_x: float = 0.0
+var _patrol_max_x: float = 0.0
+var _patrol_direction: int = 1
+var _patrol_pause_remaining: float = 0.0
+var _patrol_moving: bool = false
+var _patrol_warning_emitted: bool = false
+var _jump_helper: TrancaLataJump
+var _locomotion_state: LocomotionState = LocomotionState.GROUND
+var _jump_plan: Dictionary = {}
+var _jump_cooldown_remaining: float = JUMP_COOLDOWN
+var _jump_landing_remaining: float = 0.0
+var _jump_elapsed: float = 0.0
+var _jump_impulse_remaining: float = 0.0
+var _jump_source: SolidPlatform
+var _jump_source_top: float = 0.0
+var _jump_facing_direction: int = 1
+var _jump_escape_direction: int = 0
+var _decisions_suspended: bool = false
+
+func _ready() -> void:
+	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	collision_mask = PATROL_MASK
+	safe_margin = JUMP_SAFE_MARGIN
+	health = maxi(max_health, 1)
+	add_to_group("damageable")
+	add_to_group("combat_enemy")
+	_known_player = get_tree().get_first_node_in_group("player") as PhysicsBody2D
+	_name_label.text = display_name
+	if not _parent_room_allows_enemy_activation():
+		process_mode = Node.PROCESS_MODE_DISABLED
+		return
+
+	_configure_physics_queries()
+	_jump_helper = TrancaLataJump.new()
+	_jump_helper.configure(self, _get_collision_rect())
+	_set_attack_visual(&"hidden", 0.0)
+	_update_visuals()
+	if authored_support_enabled:
+		var room := get_parent()
+		var binding: Variant = {}
+		if room != null and room.has_method("get_prepared_authored_target_binding"):
+			binding = room.call("get_prepared_authored_target_binding", self)
+		var prepared_position_value: Variant = null
+		if typeof(binding) == TYPE_DICTIONARY:
+			prepared_position_value = binding.get("position")
+		if typeof(prepared_position_value) == TYPE_VECTOR2:
+			_placement_pending = true
+			var prepared_position: Vector2 = prepared_position_value
+			position = prepared_position
+			var prepared_support := binding.get("support") as SolidPlatform
+			_bind_patrol_support(
+				prepared_support,
+				float(binding.get("patrol_min_x", global_position.x)),
+				float(binding.get("patrol_max_x", global_position.x)),
+				bool(binding.get("patrol_enabled", false))
+			)
+			_placement_pending = false
+		else:
+			_bind_patrol_support(null, global_position.x, global_position.x, false)
+	elif spawn_on_platform:
+		# O movimento e a aquisição de combate ficam bloqueados até posição e suporte estarem prontos.
+		_placement_pending = true
+		_place_on_platform.call_deferred()
+	else:
+		_warn_patrol_once("nenhum suporte foi vinculado; o alvo permanecerá estacionário")
+
+func _parent_room_allows_enemy_activation() -> bool:
+	var room := get_parent()
+	if room == null or not room.has_method("is_authored_layout_valid"):
+		return true
+	return bool(room.call("is_authored_layout_valid"))
+
+func take_damage(amount: int, _source: Node = null) -> bool:
+	if _defeated_emitted or health <= 0 or amount <= 0:
+		return false
+
+	health = maxi(health - amount, 0)
+	_flash_remaining = maxf(flash_duration, 0.0)
+	_update_visuals()
+	if health == 0:
+		_defeated_emitted = true
+		_cancel_attack()
+		defeated.emit()
+		queue_free()
+	return true
+
+func _physics_process(delta: float) -> void:
+	_update_hit_flash(delta)
+	if _defeated_emitted:
+		return
+	if _placement_pending:
+		_stop_patrol()
+		return
+
+	var scene_active := _is_inside_current_scene()
+	var player_active := scene_active and not _is_known_player_defeated()
+	var physics_step := maxf(delta, 0.0)
+	if not player_active:
+		_cancel_attack()
+	if _locomotion_state == LocomotionState.FLIGHT or _locomotion_state == LocomotionState.FALLING:
+		_decisions_suspended = not player_active
+		_advance_airborne(physics_step)
+		_sync_shockwave_progress()
+		return
+	if not player_active:
+		_decisions_suspended = true
+		if _locomotion_state == LocomotionState.PREPARE:
+			_abort_jump_prepare()
+		_stop_patrol()
+		_sync_shockwave_progress()
+		return
+	_decisions_suspended = false
+	if _attack_state != AttackState.IDLE and not _is_alive_player(_locked_player):
+		_cancel_attack()
+	if _locomotion_state == LocomotionState.LANDING:
+		_jump_landing_remaining = maxf(_jump_landing_remaining - physics_step, 0.0)
+		velocity = Vector2.ZERO
+		_patrol_moving = false
+		if _jump_landing_remaining <= 0.0:
+			_locomotion_state = LocomotionState.GROUND
+		_update_visuals()
+		_sync_shockwave_progress()
+		return
+	if _locomotion_state == LocomotionState.PREPARE:
+		_update_jump_prepare(physics_step)
+		_sync_shockwave_progress()
+		return
+	if not _ground_support_is_current():
+		_cancel_attack()
+		_start_unplanned_fall()
+		_advance_airborne(physics_step)
+		_sync_shockwave_progress()
+		return
+	if _attack_state == AttackState.IDLE:
+		_jump_cooldown_remaining = maxf(_jump_cooldown_remaining - physics_step, 0.0)
+	match _attack_state:
+		AttackState.IDLE:
+			var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
+			if detected_player != null:
+				_known_player = detected_player
+				_begin_windup(detected_player)
+				return
+			if not _patrol_preconditions_hold():
+				_stop_patrol()
+			else:
+				_advance_patrol(physics_step)
+			if _attack_state == AttackState.IDLE and _jump_cooldown_remaining <= 0.0:
+				_try_begin_jump()
+		AttackState.WINDUP:
+			_update_windup(physics_step)
+		AttackState.ACTIVE:
+			_update_active(physics_step)
+		AttackState.RECOVERY:
+			_update_recovery(physics_step)
+	_sync_shockwave_progress()
+func _sync_shockwave_progress() -> void:
+	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_shockwave_progress"):
+		return
+	var progress := 0.0
+	if _attack_state == AttackState.ACTIVE:
+		progress = 1.0 - _state_remaining / maxf(active_window, 0.05)
+	_attack_visual.call("set_shockwave_progress", clampf(progress, 0.0, 1.0))
+
+func _ground_support_is_current() -> bool:
+	return _bound_support != null and is_instance_valid(_bound_support) \
+		and _is_valid_landing_support(_bound_support) and _support_feet_match(_bound_support)
+
+func _support_feet_match(support: SolidPlatform) -> bool:
+	var support_data := _get_support_rect(support)
+	if not bool(support_data.get("valid", false)):
+		return false
+	var rect: Rect2 = support_data.get("rect", Rect2())
+	return absf(global_position.y + _get_collision_rect().end.y - rect.position.y) <= 1.0
+
+func _try_begin_jump() -> void:
+	_jump_cooldown_remaining = JUMP_COOLDOWN
+	if _jump_helper == null or not _ground_support_is_current() or _attack_state != AttackState.IDLE:
+		return
+	var plan := _jump_helper.plan_jump(_bound_support, _patrol_direction)
+	if plan.is_empty():
+		return
+	_jump_plan = plan
+	_jump_facing_direction = 1 if float(_jump_plan["landing_x"]) >= global_position.x else -1
+	_locomotion_state = LocomotionState.PREPARE
+	_state_remaining = JUMP_PREPARE_TIME
+	_patrol_moving = false
+	velocity = Vector2.ZERO
+	_update_visuals()
+func _update_jump_prepare(delta: float) -> void:
+	var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
+	if detected_player != null:
+		_abort_jump_prepare()
+		_known_player = detected_player
+		_begin_windup(detected_player)
+		return
+	if not _ground_support_is_current():
+		_abort_jump_prepare()
+		return
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining > 0.0:
+		_update_visuals()
+		return
+	detected_player = _find_player_in_attack_area(global_position + attack_center_offset)
+	if detected_player != null:
+		_abort_jump_prepare()
+		_known_player = detected_player
+		_begin_windup(detected_player)
+		return
+	var refreshed := _jump_helper.revalidate_plan(_jump_plan, _bound_support)
+	if refreshed.is_empty():
+		_abort_jump_prepare()
+		return
+	_jump_plan = refreshed
+	_jump_source = _bound_support
+	var source_data := _get_support_rect(_jump_source)
+	var source_rect: Rect2 = source_data.get("rect", Rect2())
+	_jump_source_top = source_rect.position.y
+	_jump_facing_direction = 1 if float(_jump_plan["landing_x"]) >= global_position.x else -1
+	_patrol_direction = _jump_facing_direction
+	_jump_escape_direction = 0
+	_jump_elapsed = 0.0
+	_jump_impulse_remaining = JUMP_IMPULSE_TIME
+	velocity = _jump_plan["launch_velocity"]
+	_locomotion_state = LocomotionState.FLIGHT
+	_update_visuals()
+
+func _abort_jump_prepare() -> void:
+	_jump_plan.clear()
+	_state_remaining = 0.0
+	_jump_facing_direction = _patrol_direction
+	_jump_cooldown_remaining = JUMP_COOLDOWN
+	_locomotion_state = LocomotionState.GROUND
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	_update_visuals()
+func _start_unplanned_fall() -> void:
+	if _bound_support != null and is_instance_valid(_bound_support):
+		remove_collision_exception_with(_bound_support)
+	_bound_support = null
+	_patrol_enabled = false
+	_patrol_moving = false
+	_jump_plan.clear()
+	_jump_source = null
+	_jump_elapsed = 0.0
+	_jump_escape_direction = 0
+	velocity = Vector2.ZERO
+	_locomotion_state = LocomotionState.FALLING
+
+func _advance_airborne(delta: float) -> void:
+	if delta <= 0.0:
+		return
+	_release_jump_source_if_clear()
+	if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME:
+		if _jump_escape_direction == 0:
+			velocity.x = 0.0
+	var remaining := delta
+	var iterations := 0
+	while remaining > 0.00001 and iterations < 256:
+		iterations += 1
+		var final_velocity := velocity + Vector2(0.0, JUMP_GRAVITY * remaining)
+		var max_speed := maxf(velocity.length(), final_velocity.length())
+		var step_time := minf(remaining, JUMP_MAX_SEGMENT / maxf(max_speed, 1.0))
+		# End the source-support exception at the same analytic clearance used by route casts.
+		if _locomotion_state == LocomotionState.FLIGHT and is_instance_valid(_jump_source) and velocity.y < 0.0:
+			var feet_y := global_position.y + _get_collision_rect().end.y
+			var clearance := feet_y - (_jump_source_top - TrancaLataJump.EXIT_CLEARANCE)
+			var discriminant := velocity.y * velocity.y - 2.0 * JUMP_GRAVITY * clearance
+			if clearance > 0.0 and discriminant >= 0.0:
+				var clear_time := (-velocity.y - sqrt(discriminant)) / JUMP_GRAVITY
+				if clear_time > 0.000001:
+					step_time = minf(step_time, clear_time)
+		var motion := velocity * step_time + Vector2(0.0, 0.5 * JUMP_GRAVITY * step_time * step_time)
+		while motion.length() > JUMP_MAX_SEGMENT + 0.0001:
+			step_time *= 0.5
+			motion = velocity * step_time + Vector2(0.0, 0.5 * JUMP_GRAVITY * step_time * step_time)
+		var collision := move_and_collide(motion, false, JUMP_SAFE_MARGIN)
+		var consumed := step_time
+		if collision != null:
+			var travel_ratio := 1.0
+			if motion.length_squared() > 0.000001:
+				travel_ratio = clampf(collision.get_travel().length() / motion.length(), 0.0, 1.0)
+			consumed = maxf(step_time * travel_ratio, minf(step_time, 0.0001))
+			velocity += Vector2(0.0, JUMP_GRAVITY * consumed)
+			var normal := collision.get_normal()
+			var into_surface := velocity.dot(normal)
+			if into_surface < 0.0:
+				velocity -= normal * into_surface
+			if normal.dot(Vector2.UP) >= 0.7:
+				var collider := collision.get_collider()
+				var landing_support := collider as SolidPlatform
+				if _try_bind_landing(landing_support):
+					return
+				if _is_player_collider(collider):
+					_begin_player_top_escape(collider as PhysicsBody2D)
+				elif absf(velocity.x) < PLAYER_ESCAPE_SPEED:
+					if _jump_escape_direction == 0:
+						_jump_escape_direction = _jump_facing_direction
+					velocity.x = float(_jump_escape_direction) * PLAYER_ESCAPE_SPEED
+			elif _jump_escape_direction != 0 and absf(normal.x) >= 0.7:
+				_jump_escape_direction *= -1
+				velocity.x = float(_jump_escape_direction) * PLAYER_ESCAPE_SPEED
+			remaining -= consumed
+			_jump_elapsed += consumed
+		else:
+			velocity = final_velocity
+			remaining -= step_time
+			_jump_elapsed += step_time
+		if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME:
+			if _jump_escape_direction == 0:
+				velocity.x = 0.0
+		if _jump_impulse_remaining > 0.0:
+			_jump_impulse_remaining = maxf(_jump_impulse_remaining - consumed, 0.0)
+		_release_jump_source_if_clear()
+		_update_visuals()
+	if iterations >= 256:
+		velocity.x = 0.0
+	_update_visuals()
+
+func _release_jump_source_if_clear() -> void:
+	if _locomotion_state != LocomotionState.FLIGHT or not is_instance_valid(_jump_source):
+		return
+	var feet_y := global_position.y + _get_collision_rect().end.y
+	if feet_y <= _jump_source_top - TrancaLataJump.EXIT_CLEARANCE or velocity.y >= 0.0:
+		remove_collision_exception_with(_jump_source)
+		_jump_source = null
+func _is_player_collider(collider: Object) -> bool:
+	return collider is PhysicsBody2D and (collider as PhysicsBody2D).is_in_group("player")
+
+func _begin_player_top_escape(player_body: PhysicsBody2D) -> void:
+	if _jump_escape_direction == 0:
+		var away := global_position.x - player_body.global_position.x
+		_jump_escape_direction = signi(away) if absf(away) > 1.0 else _jump_facing_direction
+	velocity.x = float(_jump_escape_direction) * PLAYER_ESCAPE_SPEED
+	if velocity.y > 0.0:
+		velocity.y = 0.0
+
+func _try_bind_landing(support: SolidPlatform) -> bool:
+	if support == null or not is_instance_valid(support) or support.get_parent() != get_parent() or not _is_compatible_support(support):
+		return false
+	var data := _get_support_rect(support)
+	if not bool(data.get("valid", false)):
+		return false
+	var support_rect: Rect2 = data.get("rect", Rect2())
+	var body := _get_collision_rect()
+	var feet_y := global_position.y + body.end.y
+	if absf(feet_y - support_rect.position.y) > 1.0:
+		return false
+	if global_position.x + body.position.x < support_rect.position.x - 0.01 \
+		or global_position.x + body.end.x > support_rect.end.x + 0.01:
+		return false
+	if _decisions_suspended:
+		if _bound_support != null and is_instance_valid(_bound_support):
+			remove_collision_exception_with(_bound_support)
+		_bound_support = null
+		_patrol_enabled = false
+		_jump_plan.clear()
+		_jump_source = null
+		_jump_landing_remaining = 0.0
+		_locomotion_state = LocomotionState.LANDING
+		velocity = Vector2.ZERO
+		_patrol_moving = false
+		return true
+	if not _is_valid_landing_support(support):
+		return false
+	var minimum_x := support_rect.position.x + edge_margin - body.position.x
+	var maximum_x := support_rect.end.x - edge_margin - body.end.x
+	var can_patrol := maximum_x - minimum_x >= MIN_PATROL_DISTANCE
+	var sweep := _make_body_sweep(minimum_x, maximum_x, body, global_position.y)
+	if can_patrol and not _is_world_rect_clear(sweep, support):
+		can_patrol = false
+	if not can_patrol:
+		var stationary := _make_body_sweep(global_position.x, global_position.x, body, global_position.y)
+		if not _is_world_rect_clear(stationary, support):
+			return false
+		minimum_x = global_position.x
+		maximum_x = global_position.x
+	_patrol_direction = _jump_facing_direction
+	_bind_patrol_support(support, minimum_x, maximum_x, can_patrol)
+	_jump_source = null
+	_jump_plan.clear()
+	_jump_landing_remaining = JUMP_LANDING_TIME
+	_jump_cooldown_remaining = JUMP_COOLDOWN
+	_jump_elapsed = 0.0
+	_jump_escape_direction = 0
+	_locomotion_state = LocomotionState.LANDING
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	_update_visuals()
+	return true
+func _is_valid_landing_support(support: SolidPlatform) -> bool:
+	return support != null and is_instance_valid(support) \
+		and support.get_parent() == get_parent() and _node_is_inside_current_scene(support) \
+		and _is_compatible_support(support)
+func _configure_physics_queries() -> void:
+	_area_shape = CircleShape2D.new()
+	_area_shape.radius = _effective_attack_radius()
+	_area_query = PhysicsShapeQueryParameters2D.new()
+	_area_query.shape = _area_shape
+	_area_query.collision_mask = PLAYER_MASK
+	_area_query.collide_with_bodies = true
+	_area_query.collide_with_areas = false
+	_area_query.margin = 0.0
+	_area_query.exclude = [get_rid()]
+
+	_line_of_sight_query = PhysicsRayQueryParameters2D.new()
+	_line_of_sight_query.collision_mask = WORLD_MASK
+	_line_of_sight_query.collide_with_bodies = true
+	_line_of_sight_query.collide_with_areas = false
+	_line_of_sight_query.exclude = [get_rid()]
+
+	_patrol_query_shape = RectangleShape2D.new()
+	_patrol_query = PhysicsShapeQueryParameters2D.new()
+	_patrol_query.shape = _patrol_query_shape
+	_patrol_query.collision_mask = TrancaLataJump.QUERY_MASK
+	_patrol_query.collide_with_bodies = true
+	_patrol_query.collide_with_areas = false
+	_patrol_query.margin = 0.0
+
+func _effective_attack_radius() -> float:
+	return clampf(attack_radius, 16.0, 400.0)
+
+func _find_player_in_attack_area(area_center: Vector2) -> PhysicsBody2D:
+	if _area_query == null or _area_shape == null:
+		return null
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, area_center)
+	var overlaps: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		if _has_clear_line_of_sight(player_body, area_center):
+			return player_body
+	return null
+
+func _is_alive_player(candidate: PhysicsBody2D) -> bool:
+	if not is_instance_valid(candidate):
+		return false
+	if not candidate.is_in_group("player") or not candidate.has_method("take_damage"):
+		return false
+	var dead_value: Variant = candidate.get("is_dead")
+	if typeof(dead_value) != TYPE_BOOL or bool(dead_value):
+		return false
+	return _node_is_inside_current_scene(candidate)
+
+func _is_known_player_defeated() -> bool:
+	if _known_player == null or not is_instance_valid(_known_player):
+		return false
+	var dead_value: Variant = _known_player.get("is_dead")
+	return typeof(dead_value) == TYPE_BOOL and bool(dead_value)
+
+func _has_clear_line_of_sight(player_body: PhysicsBody2D, area_center: Vector2) -> bool:
+	_line_of_sight_query.from = area_center
+	_line_of_sight_query.to = _get_player_collider_center(player_body)
+	var obstruction: Dictionary = get_world_2d().direct_space_state.intersect_ray(
+		_line_of_sight_query
+	)
+	return obstruction.is_empty()
+
+func _get_player_collider_center(player_body: PhysicsBody2D) -> Vector2:
+	var player_shape := player_body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if player_shape != null and not player_shape.disabled:
+		return player_shape.global_position
+	return player_body.global_position
+
+func _begin_windup(player_body: PhysicsBody2D) -> void:
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	_locked_player = player_body
+	_damaged_player_ids.clear()
+	_attack_state = AttackState.WINDUP
+	_state_remaining = maxf(windup_duration, 0.05)
+	_recovery_fade_remaining = 0.0
+	_body_sprite.pause()
+	_locked_attack_center = global_position + attack_center_offset
+	_select_attack_frame(&"windup", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+
+func _update_windup(delta: float) -> void:
+	var effective_duration := maxf(windup_duration, 0.05)
+	var before_step := _state_remaining
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		var overshoot := maxf(delta - before_step, 0.0)
+		_enter_active()
+		_apply_attack_area()
+		if overshoot >= maxf(active_window, 0.05):
+			_enter_recovery()
+		else:
+			_state_remaining = maxf(active_window, 0.05) - overshoot
+			_select_attack_frame(&"active", _state_remaining, maxf(active_window, 0.05))
+		return
+	_select_attack_frame(&"windup", _state_remaining, effective_duration)
+	_update_attack_area_visual()
+
+func _enter_active() -> void:
+	_attack_state = AttackState.ACTIVE
+	_state_remaining = maxf(active_window, 0.05)
+	var feet_origin := Vector2(global_position.x, global_position.y + _get_collision_rect().end.y)
+	if is_instance_valid(_attack_dust) and _attack_dust.has_method("burst"):
+		_attack_dust.call("burst", feet_origin)
+	_select_attack_frame(&"active", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_active(delta: float) -> void:
+	_apply_attack_area()
+	var effective_duration := maxf(active_window, 0.05)
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		_enter_recovery()
+		return
+	_select_attack_frame(&"active", _state_remaining, effective_duration)
+
+func _apply_attack_area() -> void:
+	if _defeated_emitted or _attack_state != AttackState.ACTIVE:
+		return
+	var overlaps: Array[Dictionary] = _find_overlaps_at_locked_center()
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		var player_id := player_body.get_instance_id()
+		if _damaged_player_ids.has(player_id):
+			continue
+		if not _has_clear_line_of_sight(player_body, _locked_attack_center):
+			continue
+		_damaged_player_ids[player_id] = true
+		var damage_result: Variant = player_body.call(
+			"take_damage",
+			maxi(attack_damage, 1),
+			self
+		)
+		if typeof(damage_result) == TYPE_BOOL and bool(damage_result):
+			_set_attack_visual(&"impact", 1.0)
+
+func _find_overlaps_at_locked_center() -> Array[Dictionary]:
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, _locked_attack_center)
+	return get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+
+func _enter_recovery() -> void:
+	_attack_state = AttackState.RECOVERY
+	_state_remaining = maxf(recovery_duration, 0.05)
+	_recovery_fade_remaining = maxf(recovery_fade_duration, 0.0)
+	_select_attack_frame(&"recovery", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_recovery(delta: float) -> void:
+	var effective_duration := maxf(recovery_duration, 0.05)
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	_recovery_fade_remaining = maxf(_recovery_fade_remaining - delta, 0.0)
+	_update_attack_area_visual()
+	if _state_remaining <= 0.0:
+		_set_attack_visual(&"hidden", 0.0)
+		_attack_state = AttackState.IDLE
+		_state_remaining = 0.0
+		_recovery_fade_remaining = 0.0
+		_locked_player = null
+		_locked_attack_center = Vector2.ZERO
+		_damaged_player_ids.clear()
+		_update_visuals()
+		return
+	_select_attack_frame(&"recovery", _state_remaining, effective_duration)
+
+func _select_attack_frame(animation_name: StringName, remaining: float, effective_duration: float) -> void:
+	if _body_sprite.sprite_frames == null or not _body_sprite.sprite_frames.has_animation(animation_name):
+		return
+	var frames := _body_sprite.sprite_frames.get_frame_count(animation_name)
+	if frames <= 0:
+		return
+	if _body_sprite.animation != animation_name:
+		_body_sprite.animation = animation_name
+	_body_sprite.pause()
+	var normalized_progress := clampf(1.0 - remaining / maxf(effective_duration, 0.0001), 0.0, 1.0)
+	var total_weight := 0.0
+	for frame_index in frames:
+		total_weight += _body_sprite.sprite_frames.get_frame_duration(animation_name, frame_index)
+	var elapsed := normalized_progress * total_weight
+	var cumulative := 0.0
+	var selected_frame := frames - 1
+	for frame_index in frames:
+		cumulative += _body_sprite.sprite_frames.get_frame_duration(animation_name, frame_index)
+		if elapsed < cumulative:
+			selected_frame = frame_index
+			break
+	_body_sprite.pause()
+	_body_sprite.frame = selected_frame
+
+func _update_attack_area_visual() -> void:
+	match _attack_state:
+		AttackState.WINDUP:
+			var windup_progress := 1.0 - clampf(
+				_state_remaining / maxf(windup_duration, 0.05),
+				0.0,
+				1.0
+			)
+			_set_attack_visual(&"windup", 0.58 + windup_progress * 0.34)
+		AttackState.ACTIVE:
+			_set_attack_visual(&"active", 1.0)
+		AttackState.RECOVERY:
+			var fade_alpha := 0.0
+			if recovery_fade_duration > 0.0:
+				fade_alpha = _recovery_fade_remaining / recovery_fade_duration
+			_set_attack_visual(&"recovery", clampf(fade_alpha, 0.0, 1.0))
+		_:
+			_set_attack_visual(&"hidden", 0.0)
+
+func _set_attack_visual(phase: StringName, alpha: float) -> void:
+	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_area_state"):
+		return
+	_attack_visual.call(
+		"set_area_state",
+		_effective_attack_radius(),
+		attack_center_offset if _attack_state == AttackState.IDLE else _locked_attack_center - global_position,
+		phase,
+		alpha
+	)
+
+func _update_hit_flash(delta: float) -> void:
+	if _flash_remaining <= 0.0:
+		return
+	_flash_remaining = maxf(_flash_remaining - maxf(delta, 0.0), 0.0)
+	_update_visuals()
+
+func _update_visuals() -> void:
+	if not is_instance_valid(_body_sprite) or not is_instance_valid(_health_fill):
+		return
+	match _locomotion_state:
+		LocomotionState.PREPARE:
+			_select_jump_animation(&"jump_crouch")
+			_body_sprite.flip_h = _jump_facing_direction < 0
+		LocomotionState.FLIGHT, LocomotionState.FALLING:
+			if _jump_impulse_remaining > 0.0:
+				_select_jump_animation(&"jump_impulse")
+			elif velocity.y < -80.0:
+				_select_jump_animation(&"jump_ascent")
+			elif absf(velocity.y) <= 80.0:
+				_select_jump_animation(&"jump_apex")
+			else:
+				_select_jump_animation(&"jump_fall")
+			_body_sprite.flip_h = _jump_facing_direction < 0
+		LocomotionState.LANDING:
+			_select_jump_animation(&"jump_land")
+			_body_sprite.flip_h = _jump_facing_direction < 0
+		LocomotionState.GROUND:
+			if _attack_state == AttackState.IDLE:
+				var locomotion_clip: StringName = &"walk" if _patrol_moving else &"idle"
+				if _body_sprite.animation != locomotion_clip:
+					_body_sprite.play(locomotion_clip)
+			_body_sprite.flip_h = _patrol_direction < 0
+	var hit_flash := _body_sprite.material as ShaderMaterial
+	if hit_flash != null:
+		hit_flash.set_shader_parameter("flash_amount", 1.0 if _flash_remaining > 0.0 else 0.0)
+	var health_ratio := clampf(float(health) / float(maxi(max_health, 1)), 0.0, 1.0)
+	_health_fill.scale.x = health_ratio
+
+func _select_jump_animation(animation_name: StringName) -> void:
+	if _body_sprite.sprite_frames == null or not _body_sprite.sprite_frames.has_animation(animation_name):
+		return
+	if _body_sprite.animation != animation_name:
+		_body_sprite.animation = animation_name
+	_body_sprite.pause()
+	_body_sprite.frame = 0
+func _cancel_attack() -> void:
+	if is_instance_valid(_attack_dust) and _attack_dust.has_method("clear"):
+		_attack_dust.call("clear")
+	_set_attack_visual(&"hidden", 0.0)
+	_attack_state = AttackState.IDLE
+	_state_remaining = 0.0
+	_recovery_fade_remaining = 0.0
+	_locked_player = null
+	_locked_attack_center = Vector2.ZERO
+	_damaged_player_ids.clear()
+	_update_visuals()
+
+func _is_inside_current_scene() -> bool:
+	return _node_is_inside_current_scene(self)
+
+func _node_is_inside_current_scene(node: Node) -> bool:
+	if not is_instance_valid(node):
+		return false
+	var scene_root := get_tree().current_scene
+	return is_instance_valid(scene_root) and (scene_root == node or scene_root.is_ancestor_of(node))
+
+func _patrol_preconditions_hold() -> bool:
+	if not _patrol_enabled:
+		return false
+	if _defeated_emitted or health <= 0 or _placement_pending or not _is_inside_current_scene():
+		return false
+	if _bound_support == null or not is_instance_valid(_bound_support) \
+		or not _bound_support.is_inside_tree() or not _is_compatible_support(_bound_support):
+		_disable_patrol_with_warning("o suporte vinculado deixou de ser válido")
+		return false
+	return true
+
+func _advance_patrol(delta: float) -> void:
+	velocity = Vector2.ZERO
+	if _patrol_pause_remaining > 0.0:
+		_patrol_pause_remaining = maxf(_patrol_pause_remaining - delta, 0.0)
+		_patrol_moving = false
+		_update_visuals()
+		return
+	var distance_to_bound := _patrol_max_x - global_position.x if _patrol_direction > 0 else global_position.x - _patrol_min_x
+	if distance_to_bound <= MOVEMENT_EPSILON:
+		_turn_patrol_around()
+		return
+	var requested_dx := float(_patrol_direction) * minf(PATROL_SPEED * delta, distance_to_bound)
+	if absf(requested_dx) < MOVEMENT_EPSILON:
+		_patrol_moving = false
+		_update_visuals()
+		return
+
+	var collision: KinematicCollision2D = move_and_collide(Vector2(requested_dx, 0.0), true, 0.0)
+	var travel_x := requested_dx
+	if collision != null:
+		travel_x = collision.get_travel().x
+	if signf(travel_x) != signf(requested_dx):
+		travel_x = 0.0
+	travel_x = signf(requested_dx) * minf(absf(travel_x), absf(requested_dx))
+	var candidate_x := global_position.x + travel_x
+	var clamped_x := clampf(candidate_x, _patrol_min_x, _patrol_max_x)
+	var safe_dx := clamped_x - global_position.x
+	var postcondition_valid := (
+		candidate_x >= _patrol_min_x - MOVEMENT_EPSILON
+		and candidate_x <= _patrol_max_x + MOVEMENT_EPSILON
+		and signf(safe_dx) == signf(requested_dx)
+		and absf(safe_dx) <= absf(requested_dx) + MOVEMENT_EPSILON
+	)
+	if not postcondition_valid:
+		safe_dx = 0.0
+	if absf(safe_dx) >= MOVEMENT_EPSILON:
+		global_position.x += safe_dx
+	var hit_bound := absf(_patrol_max_x - global_position.x) <= MOVEMENT_EPSILON if _patrol_direction > 0 else absf(global_position.x - _patrol_min_x) <= MOVEMENT_EPSILON
+	var blocked := collision != null or absf(safe_dx - requested_dx) >= MOVEMENT_EPSILON
+	if hit_bound or blocked:
+		_turn_patrol_around()
+		return
+	_patrol_moving = absf(safe_dx) >= MOVEMENT_EPSILON
+	_update_visuals()
+
+func _turn_patrol_around() -> void:
+	_patrol_moving = false
+	_patrol_direction *= -1
+	_patrol_pause_remaining = PATROL_PAUSE
+	_update_visuals()
+
+func _stop_patrol() -> void:
+	_patrol_moving = false
+	if _locomotion_state != LocomotionState.FLIGHT and _locomotion_state != LocomotionState.FALLING:
+		velocity = Vector2.ZERO
+	if _attack_state == AttackState.IDLE:
+		_update_visuals()
+func _bind_patrol_support(support: SolidPlatform, minimum_x: float, maximum_x: float, enable_patrol: bool) -> void:
+	var previous_support := _bound_support
+	var valid_support := support != null and is_instance_valid(support) and _is_compatible_support(support)
+	if previous_support != null and is_instance_valid(previous_support) \
+		and (not valid_support or previous_support != support):
+		remove_collision_exception_with(previous_support)
+	_patrol_enabled = false
+	_patrol_moving = false
+	if not valid_support:
+		_bound_support = null
+		_warn_patrol_once("suporte ausente ou incompatível; o alvo permanecerá estacionário")
+		return
+	_bound_support = support
+	_patrol_min_x = minf(minimum_x, maximum_x)
+	_patrol_max_x = maxf(minimum_x, maximum_x)
+	# Reafirma a exceção após pousos, inclusive quando voltamos ao mesmo suporte.
+	add_collision_exception_with(support)
+	if enable_patrol and _patrol_max_x - _patrol_min_x >= MIN_PATROL_DISTANCE:
+		_patrol_enabled = true
+		_patrol_direction = _jump_facing_direction if _locomotion_state == LocomotionState.FLIGHT else 1
+		_patrol_pause_remaining = 0.0
+		_body_sprite.flip_h = _patrol_direction < 0
+	else:
+		_warn_patrol_once("nenhum percurso livre e útil de 8 px; o alvo permanecerá estacionário")
+func _is_compatible_support(support: SolidPlatform) -> bool:
+	if not is_instance_valid(support) or not support.is_inside_tree():
+		return false
+	if absf(support.global_rotation) > 0.001 or not support.global_scale.is_equal_approx(Vector2.ONE):
+		return false
+	var shape_count := 0
+	for child in support.get_children():
+		var collision := child as CollisionShape2D
+		if collision == null:
+			continue
+		shape_count += 1
+		if collision.disabled or not collision.shape is RectangleShape2D:
+			return false
+		if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
+			return false
+	return shape_count == 1
+
+func _disable_patrol_with_warning(message: String) -> void:
+	_patrol_enabled = false
+	_patrol_moving = false
+	velocity = Vector2.ZERO
+	if _bound_support != null and is_instance_valid(_bound_support):
+		remove_collision_exception_with(_bound_support)
+	_bound_support = null
+	_warn_patrol_once(message)
+	if _attack_state == AttackState.IDLE:
+		_update_visuals()
+
+func _warn_patrol_once(message: String) -> void:
+	if _patrol_warning_emitted:
+		return
+	_patrol_warning_emitted = true
+	push_warning("%s: %s." % [name, message])
+
+## Retângulo da colisão em coordenadas locais (relativo à origem do inimigo).
+func _get_collision_rect() -> Rect2:
+	for child in get_children():
+		var collision := child as CollisionShape2D
+		if collision != null and not collision.disabled and collision.shape != null:
+			var rect := collision.shape.get_rect()
+			rect.position += collision.position
+			return rect
+	# Sem CollisionShape2D: assume que a origem está no centro da base.
+	return Rect2(-16.0, -32.0, 32.0, 32.0)
+
+func _get_support_rect(support: SolidPlatform) -> Dictionary:
+	if not _is_compatible_support(support):
+		return {"valid": false}
+	for child in support.get_children():
+		var collision := child as CollisionShape2D
+		if collision == null:
+			continue
+		var rectangle := collision.shape as RectangleShape2D
+		var top_left := collision.global_position - rectangle.size * 0.5
+		return {"valid": true, "rect": Rect2(top_left, rectangle.size)}
+	return {"valid": false}
+
+func _patrol_bounds_for_support(support_rect: Rect2, body_rect: Rect2, margin: float) -> Vector2:
+	return Vector2(
+		support_rect.position.x + margin - body_rect.position.x,
+		support_rect.end.x - margin - body_rect.end.x
+	)
+
+func _make_body_sweep(minimum_x: float, maximum_x: float, body_rect: Rect2, body_global_y: float) -> Rect2:
+	return Rect2(
+		Vector2(minimum_x + body_rect.position.x, body_global_y + body_rect.position.y),
+		Vector2(maximum_x - minimum_x + body_rect.size.x, body_rect.size.y)
+	)
+
+func _is_world_rect_clear(bounds: Rect2, support: SolidPlatform) -> bool:
+	if _patrol_query == null or _patrol_query_shape == null or support == null or not is_instance_valid(support):
+		return false
+	_patrol_query_shape.size = bounds.size
+	_patrol_query.transform = Transform2D(0.0, bounds.get_center())
+	_patrol_query.exclude = [get_rid(), support.get_rid()]
+	var blockers := get_world_2d().direct_space_state.intersect_shape(_patrol_query, MAX_QUERY_RESULTS)
+	return blockers.is_empty()
+
+func _find_first_safe_stationary_x(minimum_x: float, maximum_x: float, body_rect: Rect2, body_global_y: float, support: SolidPlatform) -> Dictionary:
+	var span := maxf(maximum_x - minimum_x, 0.0)
+	var sample_count := maxi(1, int(ceil(span / 8.0)))
+	for sample_index in range(sample_count + 1):
+		var x := lerpf(minimum_x, maximum_x, float(sample_index) / float(sample_count))
+		var bounds := _make_body_sweep(x, x, body_rect, body_global_y)
+		if _is_world_rect_clear(bounds, support):
+			return {"valid": true, "x": x}
+	return {"valid": false}
+
+func _place_on_platform() -> void:
+	if not _placement_pending:
+		return
+	var body := _get_collision_rect()
+	var needed_width := body.size.x + edge_margin * 2.0
+
+	# Prefere plataformas livres; o Floor só entra se não sobrar nenhuma,
+	# e plataformas já ocupadas por outro inimigo ficam por último.
+	var free: Array[SolidPlatform] = []
+	var floors: Array[SolidPlatform] = []
+	var taken: Array[SolidPlatform] = []
+	for node in get_tree().get_nodes_in_group(&"solid_platform"):
+		var candidate := node as SolidPlatform
+		if candidate == null or candidate.size.x < needed_width or not _is_compatible_support(candidate):
+			continue
+		if candidate.name == &"Floor":
+			floors.append(candidate)
+		elif candidate.has_meta(CLAIMED_META):
+			taken.append(candidate)
+		else:
+			free.append(candidate)
+
+	var pool: Array[SolidPlatform] = free
+	if pool.is_empty():
+		pool = floors
+	if pool.is_empty():
+		pool = taken
+	if pool.is_empty():
+		_placement_pending = false
+		_disable_patrol_with_warning("nenhuma plataforma compatível; o alvo permanecerá estacionário")
+		return
+
+	var rng := RandomNumberGenerator.new()
+	if SolidPlatform.room_seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = hash([SolidPlatform.room_seed, get_index(), "training_target"])
+
+	var platform := pool[rng.randi_range(0, pool.size() - 1)]
+	platform.set_meta(CLAIMED_META, true)
+	var support_data := _get_support_rect(platform)
+	var support_rect: Rect2 = support_data.get("rect", Rect2())
+	var patrol_bounds := _patrol_bounds_for_support(support_rect, body, edge_margin)
+	var minimum_x := patrol_bounds.x
+	var maximum_x := patrol_bounds.y
+	var platform_top := support_rect.position.y
+	var body_global_y := platform_top - body.end.y
+	var sweep := _make_body_sweep(minimum_x, maximum_x, body, body_global_y)
+	var has_useful_route := maximum_x - minimum_x >= MIN_PATROL_DISTANCE
+	var sweep_is_clear := has_useful_route and _is_world_rect_clear(sweep, platform)
+	if sweep_is_clear:
+		global_position = Vector2(rng.randf_range(minimum_x, maximum_x), body_global_y)
+		_bind_patrol_support(platform, minimum_x, maximum_x, true)
+	else:
+		var stationary := _find_first_safe_stationary_x(minimum_x, maximum_x, body, body_global_y, platform)
+		if bool(stationary.get("valid", false)):
+			global_position = Vector2(float(stationary.get("x", minimum_x)), body_global_y)
+			_bind_patrol_support(platform, minimum_x, maximum_x, false)
+			_warn_patrol_once("sweep bloqueado ou curto; usando posição estacionária segura")
+		else:
+			_bind_patrol_support(null, global_position.x, global_position.x, false)
+			_warn_patrol_once("nenhum spawn seguro; mantendo a posição original")
+	_placement_pending = false
+	_update_visuals()

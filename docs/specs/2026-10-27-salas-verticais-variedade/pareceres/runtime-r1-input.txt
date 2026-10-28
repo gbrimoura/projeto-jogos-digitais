@@ -1,0 +1,4105 @@
+REVISÃO ESTÁTICA RUNTIME R1 — Godot. Somente leitura, não altere arquivos nem execute testes/Godot/parser/linter/QA/simulações. Timeout10min. Retorne STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP. Aponte somente P1/P2 concretos com arquivo/função/motivo e correção delimitada; se semachados diga claramente. Não atribua validação no engine.
+Pedido confirmado: layouts menos repetitivos e sequência LINEAR de salas que pode subir/descer, sem branches/revisitas. Preserve encontros/commonboss/rewards/HP/build/Player e locaisdirty. Implementador Luna6xhigh escreveu10scripts, cenas/arte/IA nãoalteradas. Runcria descritorantesconfigure/addchild;seedflagpermite0;rotaconstruída semreocupargrid,portaisopostos eoffsetsiguais;famílias3..5apoios (managedespessura16,legado24),roof4/5retascomespelho;Player640jump/gravity1600/speed260,body76radius14centerroot−38. Gate liberadoapósclear/reward/inputguard, sensorCENTROreal normaloutward,Mainrevalidadeferred e lockKEEP_ACTIVE/disabled existente. PisoFloor umshape durantecombate,slotsegmentadoapósclear. UPslot256center248/904line32recortatetoCeiling−32..0Band0..64,downline604catch660,sidey496. Entradas fechadas,spawnUP160sobreapoio,spawnDOWNfloor560; saídaDOWNopostasponladoentradaevitaquedaautomática. ArcosaltaUPvalidamcomgatedesaídaaberto pós-clear;rotadespawnUPdesce,nãoexigesubirpeloentradafechada. Nãoassumaque sódecolar na borda a260vale: podemsearchtakesoffsinterioresevx<=260. Famíliaroof5width104gap40rise72podeusarlaunch−28.8noapoio[−52,52] e landingcentro144a260emtempo.665, nãoéprova deimpossibilidade por ultrapassagem daborda. SaltofinalUPpodevx0partirdocentro. PlanoR3OpusAGY/Gemini/Museliberaramcomcorreções; não substituirevisãodecódigo.
+REVISÃOCRÍTICA: lifecycle/idempotência, tiposGDScriptinferência, montagemshapesantes/ready/deferred, FloorcompatívelIAatéclear, recortesvisuais reais, grafoBFS/arcosruntimevsdescritor, entradas/saídaspareadas,spawnPlayerWorld/inimigos,SourceGate/EntranceGate nãointerferem, standalone preservado,rollback/fade/pause/snapshot, seedglobalstaticdesnecessário/possívelvazamento. Avalie código concreto abaixo e contexto protegido, não invente finalGDD, nãoexijaexecutartestescontrainstrução.
+===== FILE scripts/world/main.gd =====
+extends Node2D
+
+signal run_progression_ready
+
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RoomTransitionOverlayScript = preload("res://scripts/world/room_transition_overlay.gd")
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const UpgradeOfferScene: PackedScene = preload("res://scenes/upgrade_offer.tscn")
+const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
+const MOTOR_ACELERADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/motor_acelerado.tres")
+const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
+const FALLBACK_PLAYER_SPAWN := Vector2(160.0, 560.0)
+const WORLD_LAYER_BIT_MASK: int = 1
+const AUTHORED_EDGE_MARGIN: float = 8.0
+const AUTHORED_CONTACT_TOLERANCE: float = 0.5
+const AUTHORED_OVERLAP_AREA_LIMIT: float = 0.01
+const KNOWN_AUTHORED_PLATFORM_NAMES: Array[StringName] = [
+	&"PlatformA", &"PlatformB", &"PlatformC", &"PlatformD", &"PlatformE",
+	&"WestPlatform", &"UpperPlatform", &"EastPlatform",
+]
+const RoomLayoutGenerator = preload("res://scripts/world/room_layout_generator.gd")
+const ManagedRoomTopologyScript = preload("res://scripts/world/managed_room_topology.gd")
+const ManagedPlatformScene: PackedScene = preload("res://scenes/solid_platform.tscn")
+const DISCRETE_INPUT_ACTIONS: Array[StringName] = [
+	&"launch_ball",
+	&"parry",
+	&"dash",
+	&"jump",
+	&"interact",
+]
+
+enum UpgradeFlowState {
+	INACTIVE,
+	VICTORY_PENDING,
+	OFFER_OPEN,
+	SELECTED,
+	EXIT_RELEASED,
+	CANCELLED,
+	COMPLETED,
+}
+
+@export var authored_layout_enabled: bool = false
+@export var room_layout_seed: int = 0
+@export_file("*.tscn") var next_room_scene_path: String = "res://scenes/second_room.tscn"
+@export var room_title: String = "SALA 01"
+@export var reward_enabled: bool = true
+@export_range(0.0, 2.0, 0.01) var post_upgrade_input_guard_seconds: float = 0.25
+@export var room_title_label_path: NodePath = NodePath("CombatRoom/HUD/RoomLabel")
+@export var build_status_label_path: NodePath = NodePath("CombatRoom/HUD/BuildLabel")
+@export var player_spawn_marker_path: NodePath = NodePath("PlayerSpawnMarker")
+
+@onready var player: Player = $Player
+@onready var combat_room: CombatRoom = $CombatRoom
+@onready var exit_door: Node = get_node_or_null("ExitDoor")
+
+var _transition_in_progress: bool = false
+var _door_request_pending: bool = false
+var _transition_token: int = 0
+var _transition_source_scene: Node
+var _transition_player: Player
+var _transition_overlay: Node
+var _transition_original_disable_mode: int = 0
+var _transition_original_process_mode: int = Node.PROCESS_MODE_INHERIT
+var _transition_player_locked: bool = false
+var _standalone_swap_committed: bool = false
+var _local_reward_resolved: bool = false
+var _upgrade_flow_state: UpgradeFlowState = UpgradeFlowState.INACTIVE
+var _death_pending: bool = false
+var _post_flush_resolution_queued: bool = false
+var _upgrade_offer: UpgradeOffer
+var _offered_upgrade_ids: Array[StringName] = []
+var _owned_offer_pause: bool = false
+var _guard_active: bool = false
+var _guard_waiting_for_release: bool = false
+var _guard_quiet_remaining: float = 0.0
+var run_build: RunBuild = RunBuild.new()
+var _run_controller_managed: bool = false
+var _managed_room_descriptor: Dictionary = {}
+var _managed_topology: RefCounted
+var _managed_transition_direction := Vector2i.RIGHT
+var _managed_run_build: RunBuild
+var _run_progression_notified: bool = false
+var _authored_layout_prepared: bool = false
+var _authored_layout_valid: bool = false
+var _authored_layout_error: String = ""
+var _authored_target_position: Vector2 = Vector2.ZERO
+var _authored_target_node: Node
+var _authored_target_support: SolidPlatform
+var _authored_target_support_path: NodePath = NodePath("")
+var _authored_target_patrol_enabled: bool = false
+var _authored_target_patrol_min_x: float = 0.0
+var _authored_target_patrol_max_x: float = 0.0
+var _authored_world_obstacles: Array[Dictionary] = []
+var _prepared_room_layout_seed: int = 0
+var _prepared_platform_rects: Dictionary = {}
+var _door_unlock_pending: bool = false
+
+var _upgrade_definitions: Array[UpgradeDefinitionResource] = [
+	IMPACTO_REFORCADO_DEFINITION,
+	MOTOR_ACELERADO_DEFINITION,
+	CARGA_REATIVA_DEFINITION,
+]
+
+func _enter_tree() -> void:
+	if authored_layout_enabled:
+		prepare_authored_layout()
+
+func prepare_authored_layout() -> bool:
+	if not authored_layout_enabled:
+		return true
+	if _authored_layout_prepared:
+		return _authored_layout_valid
+
+	_authored_layout_prepared = true
+	_authored_layout_valid = false
+	_authored_layout_error = ""
+	_authored_target_position = Vector2.ZERO
+	_authored_target_node = null
+	_authored_target_support = null
+	_authored_target_support_path = NodePath("")
+	_authored_target_patrol_enabled = false
+	_authored_target_patrol_min_x = 0.0
+	_authored_target_patrol_max_x = 0.0
+	_authored_world_obstacles.clear()
+	_prepared_platform_rects.clear()
+
+	var generation: Dictionary
+	var authored_platform_names: Array[StringName] = []
+	if _run_controller_managed:
+		if _managed_room_descriptor.is_empty():
+			return _fail_authored_layout("descritor gerenciado ausente")
+		SolidPlatform.room_seed = room_layout_seed
+		var family := StringName(_managed_room_descriptor.get("family", &""))
+		var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+		var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+		var entry_offset := float(_managed_room_descriptor.get("entry_offset", -1.0))
+		var exit_offset := float(_managed_room_descriptor.get("exit_offset", -1.0))
+		generation = RoomLayoutGenerator.generate_managed_layout(
+			family, room_layout_seed, entry_dir, exit_dir, entry_offset, exit_offset
+		)
+		if not bool(generation.get("valid", false)):
+			return _fail_authored_layout("família %s: gerador recusou a geometria ou a orientação" % String(family))
+		var generated_entries: Array = generation.get("platforms", [])
+		if not _ensure_managed_platform_nodes(generated_entries.size()):
+			return _fail_authored_layout("não foi possível preparar a contagem de apoios gerenciados")
+		var managed_set: Dictionary = _detect_authored_platform_set()
+		if not bool(managed_set.get("valid", false)):
+			return _fail_authored_layout(String(managed_set.get("error", "fixture gerenciada inválida")))
+		authored_platform_names = managed_set.get("names", [])
+		_managed_topology = ManagedRoomTopologyScript.new()
+		var topology_result: Dictionary = _managed_topology.call("configure", self, _managed_room_descriptor)
+		if not bool(topology_result.get("valid", false)):
+			return _fail_authored_layout(String(topology_result.get("error", "limites gerenciados inválidos")))
+		if not _configure_managed_spawn(entry_dir, entry_offset):
+			return _fail_authored_layout("spawn incompatível com a porta de entrada")
+	else:
+		var platform_set_result: Dictionary = _detect_authored_platform_set()
+		if not bool(platform_set_result.get("valid", false)):
+			return _fail_authored_layout(String(platform_set_result.get("error", "fixture de plataformas inválida")))
+		authored_platform_names = platform_set_result.get("names", [])
+		generation = RoomLayoutGenerator.generate_layout(
+			authored_platform_names.size(),
+			room_layout_seed,
+			_get_player_spawn_x_for_layout()
+		)
+	_prepared_room_layout_seed = int(generation.get("seed", 0))
+	if not bool(generation.get("valid", false)):
+		return _fail_authored_layout(String(generation.get("error", "gerador de layout recusou a sala")))
+	var generated_platforms: Array[Dictionary] = generation.get("platforms", [])
+	if generated_platforms.size() != authored_platform_names.size():
+		return _fail_authored_layout("gerador retornou quantidade diferente de plataformas")
+	var target := get_node_or_null("TrainingTarget") as TrainingTarget
+	if target == null or not target.authored_support_enabled:
+		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+	var primary_index := int(generation.get("primary_index", -1))
+	var fallback_index := int(generation.get("fallback_index", -1))
+	if primary_index < 0 or primary_index >= authored_platform_names.size() or fallback_index < 0 or fallback_index >= authored_platform_names.size():
+		return _fail_authored_layout("gerador não definiu suportes primário e fallback")
+	target.fixed_support_path = NodePath("../" + String(authored_platform_names[primary_index]))
+	target.fallback_support_path = NodePath("../" + String(authored_platform_names[fallback_index]))
+	for platform_index in authored_platform_names.size():
+		var platform_name: StringName = authored_platform_names[platform_index]
+		var platform := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
+		if platform == null:
+			return _fail_authored_layout("plataforma ausente ou de tipo incorreto: %s" % String(platform_name))
+		var generated: Dictionary = generated_platforms[platform_index]
+		var generated_size: Vector2 = generated.get("size", Vector2.ZERO)
+		var generated_position: Vector2 = generated.get("position", Vector2.ZERO)
+		platform.randomize_position = false
+		platform.randomize_width = false
+		platform.size = generated_size
+		platform.position = generated_position
+		var platform_result: Dictionary = _validate_authored_platform(
+			platform,
+			generated_position,
+			generated_size
+		)
+		if not bool(platform_result.get("valid", false)):
+			return _fail_authored_layout(String(platform_result.get("error", "plataforma inválida")))
+		_prepared_platform_rects[platform_name] = platform_result.get("rect", Rect2())
+
+	if _run_controller_managed:
+		if not _validate_managed_generated_route(authored_platform_names, generation):
+			return false
+		if not _validate_managed_room_boundaries():
+			return false
+	elif not _validate_generated_route(authored_platform_names):
+		return false
+	elif not _validate_authored_room_boundaries():
+		return false
+	if not _collect_authored_world_obstacles():
+		return false
+	if not _validate_authored_spawns_and_patrol():
+		return false
+	if not _validate_authored_target(_prepared_platform_rects):
+		return false
+
+	_authored_layout_valid = true
+	return true
+
+func is_authored_layout_valid() -> bool:
+	return not authored_layout_enabled or (_authored_layout_prepared and _authored_layout_valid)
+
+func get_authored_layout_error() -> String:
+	return _authored_layout_error
+
+func get_prepared_authored_target_position(target: Node) -> Variant:
+	if not authored_layout_enabled or not _authored_layout_prepared or not _authored_layout_valid or target != _authored_target_node:
+		return null
+	return _authored_target_position
+
+func get_prepared_authored_target_binding(target: Node) -> Dictionary:
+	if not authored_layout_enabled or not _authored_layout_prepared or not _authored_layout_valid or target != _authored_target_node:
+		return {}
+	return {
+		"position": _authored_target_position,
+		"support": _authored_target_support,
+		"support_path": _authored_target_support_path,
+		"patrol_enabled": _authored_target_patrol_enabled,
+		"patrol_min_x": _authored_target_patrol_min_x,
+		"patrol_max_x": _authored_target_patrol_max_x,
+		"edge_margin": AUTHORED_EDGE_MARGIN,
+	}
+
+func get_prepared_room_layout_seed() -> int:
+	return _prepared_room_layout_seed
+
+func _fail_authored_layout(message: String) -> bool:
+	_authored_layout_valid = false
+	_authored_layout_error = message
+	push_error("Main: layout autoral inválido — " + message)
+	return false
+
+func _detect_authored_platform_set() -> Dictionary:
+	var present_names: Array[StringName] = []
+	for child in get_children():
+		var child_name: StringName = StringName(child.name)
+		if child_name == &"Floor":
+			continue
+		var platform := child as SolidPlatform
+		var known_platform: bool = KNOWN_AUTHORED_PLATFORM_NAMES.has(child_name)
+		if not known_platform:
+			if platform != null:
+				return {"valid": false, "error": "plataforma autoral desconhecida: %s" % String(child_name)}
+			continue
+		if platform == null:
+			return {"valid": false, "error": "nó de plataforma tem tipo incorreto: %s" % String(child_name)}
+		present_names.append(child_name)
+
+	if present_names.size() < RoomLayoutGenerator.MIN_PLATFORM_COUNT \
+		or present_names.size() > RoomLayoutGenerator.MAX_PLATFORM_COUNT:
+		return {"valid": false, "error": "quantidade de plataformas fora do intervalo suportado (2..5)"}
+	return {"valid": true, "names": present_names}
+
+func _ensure_managed_platform_nodes(required_count: int) -> bool:
+	if required_count < RoomLayoutGenerator.MIN_PLATFORM_COUNT or required_count > RoomLayoutGenerator.MAX_PLATFORM_COUNT:
+		return false
+	var platforms: Array[SolidPlatform] = []
+	for child in get_children():
+		var platform := child as SolidPlatform
+		if platform != null and platform.name != &"Floor":
+			platforms.append(platform)
+	while platforms.size() < required_count:
+		var platform := ManagedPlatformScene.instantiate() as SolidPlatform
+		if platform == null:
+			return false
+		var extra_index := platforms.size() - 3
+		if extra_index < 0 or extra_index >= 2:
+			platform.free()
+			return false
+		platform.name = [&"PlatformD", &"PlatformE"][extra_index]
+		platform.randomize_position = false
+		platform.randomize_width = false
+		add_child(platform)
+		platforms.append(platform)
+	if platforms.size() > required_count:
+		for index in range(platforms.size() - 1, required_count - 1, -1):
+			var extra := platforms[index]
+			if extra.name != &"PlatformD" and extra.name != &"PlatformE":
+				return false
+			remove_child(extra)
+			extra.free()
+	return platforms.size() == required_count
+
+func _configure_managed_spawn(entry_dir: Vector2i, entry_offset: float) -> bool:
+	var marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+	if marker == null:
+		return false
+	if entry_dir == Vector2i(-1, 0):
+		marker.position = Vector2(160.0, 560.0)
+	elif entry_dir == Vector2i(1, 0):
+		marker.position = Vector2(992.0, 560.0)
+	elif entry_dir == Vector2i(0, 1):
+		marker.position = Vector2(entry_offset, 560.0)
+	elif entry_dir == Vector2i(0, -1):
+		marker.position = Vector2(entry_offset, 160.0)
+	else:
+		return false
+	_managed_transition_direction = _managed_room_descriptor.get("exit_dir", Vector2i.RIGHT)
+	return true
+
+func _validate_managed_room_boundaries() -> bool:
+	var floor_platform := get_node_or_null("Floor") as SolidPlatform
+	var world := get_node_or_null("WorldCollision") as StaticBody2D
+	if floor_platform == null or world == null or _managed_topology == null:
+		return _fail_authored_layout("limites principais da sala gerenciada ausentes")
+	if floor_platform.position.distance_to(Vector2(576.0, 604.0)) > 0.01 \
+		or floor_platform.size.distance_to(Vector2(1152.0, 88.0)) > 0.01:
+		return _fail_authored_layout("Floor gerenciado precisa permanecer em 1152×88 na posição 576×604")
+	var floor_shape_count := 0
+	var floor_collision := floor_platform.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	for child in floor_platform.get_children():
+		if child is CollisionShape2D:
+			floor_shape_count += 1
+	if floor_shape_count != 1 or floor_collision == null or floor_collision.disabled:
+		return _fail_authored_layout("Floor deve conservar exatamente um shape ativo durante o combate")
+	var floor_rect := floor_collision.shape as RectangleShape2D
+	if floor_rect == null or floor_rect.size.distance_to(Vector2(1152.0, 88.0)) > 0.01:
+		return _fail_authored_layout("shape único de Floor gerenciado tem dimensão incompatível")
+	if absf(world.rotation) > 0.001 or not world.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("WorldCollision gerenciado tem transform incompatível")
+	var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+	var offset := float(_managed_room_descriptor.get("exit_offset", -1.0))
+	var gate := _managed_topology.call("get_exit_gate") as CollisionShape2D
+	if gate == null or gate.disabled:
+		return _fail_authored_layout("gate de saída gerenciado ausente ou aberto antes do clear")
+	var expected_position := Vector2(1120.0, 496.0)
+	var expected_size := Vector2(64.0, 128.0)
+	if exit_dir == Vector2i(-1, 0):
+		expected_position = Vector2(32.0, 496.0)
+	elif exit_dir == Vector2i(0, -1):
+		expected_position = Vector2(offset, 16.0)
+		expected_size = Vector2(256.0, 96.0)
+	elif exit_dir == Vector2i(0, 1):
+		expected_position = Vector2(offset, 604.0)
+		expected_size = Vector2(256.0, 88.0)
+	var gate_shape := gate.shape as RectangleShape2D
+	if gate.position.distance_to(expected_position) > 0.01 or gate_shape == null \
+		or gate_shape.size.distance_to(expected_size) > 0.01:
+		return _fail_authored_layout("dimensão ou posição do gate não corresponde ao slot descrito")
+	return true
+
+func _validate_managed_generated_route(platform_names: Array[StringName], generation: Dictionary) -> bool:
+	var platform_data: Array = generation.get("platforms", [])
+	if platform_data.size() != platform_names.size():
+		return _fail_authored_layout("descritor gerenciado e nós de plataforma divergem")
+	var family := StringName(_managed_room_descriptor.get("family", &""))
+	var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+	var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+	if entry_dir == Vector2i.ZERO or exit_dir == Vector2i.ZERO or entry_dir == exit_dir:
+		return _fail_authored_layout("direções de entrada e saída gerenciadas são inválidas")
+	var rects: Array[Rect2] = []
+	for name in platform_names:
+		if not _prepared_platform_rects.has(name):
+			return _fail_authored_layout("retângulo gerenciado ausente para %s" % String(name))
+		rects.append(_prepared_platform_rects[name])
+	for first_index in rects.size():
+		for second_index in range(first_index + 1, rects.size()):
+			if _positive_overlap_area(rects[first_index], rects[second_index]) > AUTHORED_OVERLAP_AREA_LIMIT:
+				return _fail_authored_layout("apoios gerenciados se sobrepõem")
+	var primary_index := int(generation.get("primary_index", -1))
+	if primary_index < 0 or primary_index >= rects.size():
+		return _fail_authored_layout("suporte primário gerenciado inválido")
+	var reachable := _managed_reachable_supports(rects, entry_dir, exit_dir)
+	if not reachable.has(primary_index):
+		return _fail_authored_layout("suporte primário não tem arco ou queda segura a partir do spawn")
+	if exit_dir == Vector2i(0, -1):
+		var final_index := rects.size() - 1
+		if not reachable.has(final_index):
+			return _fail_authored_layout("apoio final da saída superior não é alcançável com o gate liberado")
+		if not _managed_can_reach_top_sensor(rects[final_index], float(_managed_room_descriptor.get("exit_offset", -1.0))):
+			return _fail_authored_layout("último arco não cruza o sensor superior dentro da abertura")
+	elif exit_dir == Vector2i(0, 1):
+		var down_floor_rect := Rect2(Vector2(0.0, 560.0), Vector2(1152.0, 88.0))
+		var down_reaches_floor := false
+		for support_index in reachable:
+			if _managed_can_drop_between(rects[support_index], down_floor_rect, rects, support_index):
+				down_reaches_floor = true
+				break
+		if not down_reaches_floor:
+			return _fail_authored_layout("saída inferior não tem rota segura até o piso")
+		var offset := float(_managed_room_descriptor.get("exit_offset", -1.0))
+		if offset != 248.0 and offset != 904.0:
+			return _fail_authored_layout("saída inferior fora do slot canônico")
+		if not _managed_can_reach_bottom_sensor(offset):
+			return _fail_authored_layout("queda inferior não cruza o sensor dentro da abertura")
+	elif exit_dir.x != 0:
+		if float(_managed_room_descriptor.get("exit_offset", -1.0)) != 496.0:
+			return _fail_authored_layout("saída lateral fora do centro vertical canônico")
+	if entry_dir == Vector2i(0, -1):
+		var entry_floor_rect := Rect2(Vector2(0.0, 560.0), Vector2(1152.0, 88.0))
+		var entry_reaches_floor := false
+		for support_index in reachable:
+			if _managed_can_drop_between(rects[support_index], entry_floor_rect, rects, support_index):
+				entry_reaches_floor = true
+				break
+		if not entry_reaches_floor:
+			return _fail_authored_layout("spawn superior não tem rota de descida segura ao piso")
+	return true
+
+func _managed_reachable_supports(rects: Array[Rect2], entry_dir: Vector2i, exit_dir: Vector2i) -> Array[int]:
+	var reachable: Array[int] = []
+	var frontier: Array[int] = []
+	if entry_dir == Vector2i(0, -1):
+		frontier.append(rects.size() - 1)
+	else:
+		var floor_rect := Rect2(Vector2(0.0, 560.0), Vector2(1152.0, 88.0))
+		for index in rects.size():
+			if _managed_can_jump_between(floor_rect, rects[index], rects, -1, false):
+				frontier.append(index)
+	while not frontier.is_empty():
+		var source_index: int = frontier.pop_front()
+		if reachable.has(source_index):
+			continue
+		reachable.append(source_index)
+		for target_index in rects.size():
+			if target_index == source_index or reachable.has(target_index) or frontier.has(target_index):
+				continue
+			var can_move := _managed_can_jump_between(rects[source_index], rects[target_index], rects, source_index, false) \
+				or _managed_can_drop_between(rects[source_index], rects[target_index], rects, source_index)
+			if exit_dir == Vector2i(0, -1) and target_index == rects.size() - 1:
+				can_move = _managed_can_jump_between(rects[source_index], rects[target_index], rects, source_index, true)
+			if can_move:
+				frontier.append(target_index)
+	return reachable
+
+func _managed_can_jump_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int, top_open: bool) -> bool:
+	var delta_x := target.get_center().x - source.get_center().x
+	var required_rise := source.position.y - target.position.y
+	if required_rise < 0.0 or required_rise > 128.0:
+		return false
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	var launch_min := source.position.x + 22.0
+	var launch_max := source.end.x - 22.0
+	for launch_x_step in range(ceili(launch_min / 8.0), floori(launch_max / 8.0) + 1):
+		var launch_x := float(launch_x_step * 8)
+		for speed_index in 7:
+			var speed := float([-260, -180, -100, 0, 100, 180, 260][speed_index])
+			if signf(speed) != 0.0 and signf(speed) != signf(delta_x):
+				continue
+			var runway := speed * speed / (2.0 * 1600.0)
+			if speed > 0.0 and launch_x - launch_min < runway:
+				continue
+			if speed < 0.0 and launch_max - launch_x < runway:
+				continue
+			var axis := signf(delta_x)
+			var root := Vector2(launch_x, source.position.y)
+			var vx := speed
+			var vy := -640.0
+			for frame in 120:
+				if frame > 0:
+					vy += 1600.0 * dt
+				vx = move_toward(vx, axis * 260.0, 1600.0 * dt)
+				var next := root + Vector2(vx, vy) * dt
+				if next.y >= root.y and vy > 0.0 and root.y <= target.position.y and next.y >= target.position.y:
+					if next.x >= target.position.x + 22.0 and next.x <= target.end.x - 22.0:
+						return true
+				var body := Rect2(Vector2(next.x - 14.0, next.y - 76.0), Vector2(28.0, 76.0))
+				for blocker_index in rects.size():
+					if blocker_index == source_index or rects[blocker_index] == target:
+						continue
+					if _positive_overlap_area(body, rects[blocker_index]) > 0.01:
+						return false
+				if top_open and body.position.y < 64.0 and body.end.y > -32.0:
+					var portal_x := float(_managed_room_descriptor.get("exit_offset", -1.0))
+					if body.position.x < portal_x - 128.0 or body.end.x > portal_x + 128.0:
+						return false
+				root = next
+				if root.y > source.position.y + 180.0:
+					break
+	return false
+
+func _managed_can_drop_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int) -> bool:
+	if target.position.y <= source.position.y or target.position.y - source.position.y > 400.0:
+		return false
+	var horizontal_gap := maxf(target.position.x - source.end.x, source.position.x - target.end.x)
+	if horizontal_gap > 96.0:
+		return false
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	var launch_min := source.position.x + 8.0
+	var launch_max := source.end.x - 8.0
+	for launch_x_step in range(ceili(launch_min / 8.0), floori(launch_max / 8.0) + 1):
+		for initial_speed in [0.0, 100.0, 180.0, 260.0]:
+			var root := Vector2(float(launch_x_step * 8), source.position.y)
+			var sign_to_target := signf(target.get_center().x - root.x)
+			if sign_to_target == 0.0:
+				sign_to_target = 1.0
+			var vx := initial_speed * sign_to_target
+			var vertical_speed := 0.0
+			for _frame in 120:
+				var previous := root
+				vx = move_toward(vx, sign_to_target * 260.0, 1600.0 * dt)
+				root.x += vx * dt
+				var still_supported := root.x + 14.0 > source.position.x and root.x - 14.0 < source.end.x
+				if still_supported:
+					root.y = source.position.y
+					vertical_speed = 0.0
+				else:
+					vertical_speed += 1600.0 * dt
+					root.y += vertical_speed * dt
+				if previous.y <= target.position.y and root.y >= target.position.y \
+					and root.x >= target.position.x + 22.0 and root.x <= target.end.x - 22.0:
+					return true
+				var body := Rect2(Vector2(root.x - 14.0, root.y - 76.0), Vector2(28.0, 76.0))
+				var blocked := false
+				for blocker_index in rects.size():
+					if blocker_index == source_index or rects[blocker_index] == target:
+						continue
+					if _positive_overlap_area(body, rects[blocker_index]) > 0.01:
+						blocked = true
+						break
+				if blocked:
+					break
+				if root.y > target.position.y + 80.0:
+					break
+	return false
+func _managed_can_reach_bottom_sensor(portal_x: float) -> bool:
+	if portal_x != 248.0 and portal_x != 904.0:
+		return false
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	var root_y := 560.0
+	var vertical_speed := 0.0
+	for _frame in 120:
+		vertical_speed += 1600.0 * dt
+		root_y += vertical_speed * dt
+		var center_y := root_y - 38.0
+		if center_y >= 604.0:
+			return portal_x - 14.0 >= portal_x - 128.0 and portal_x + 14.0 <= portal_x + 128.0 and root_y <= 660.0
+	return false
+func _managed_can_reach_top_sensor(source: Rect2, portal_x: float) -> bool:
+	if absf(source.get_center().x - portal_x) > 0.01 or source.position.y != 160.0:
+		return false
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	for frame in 30:
+		var root_y := source.position.y - 640.0 * dt * float(frame) + 0.5 * 1600.0 * dt * dt * float(frame * (frame - 1))
+		var center_y := root_y - 38.0
+		var head_y := root_y - 76.0
+		if center_y <= 32.0 and head_y > -48.0 and portal_x >= 64.0 + 14.0 and portal_x <= 1088.0 - 14.0:
+			return true
+	return false
+func _get_player_spawn_x_for_layout() -> float:
+	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+	return spawn_marker.position.x if spawn_marker != null else FALLBACK_PLAYER_SPAWN.x
+
+func _validate_generated_route(platform_names: Array[StringName]) -> bool:
+	var previous_rect := Rect2()
+	for index in platform_names.size():
+		var platform_name: StringName = platform_names[index]
+		if not _prepared_platform_rects.has(platform_name):
+			return _fail_authored_layout("retângulo físico ausente para %s" % String(platform_name))
+		var rect: Rect2 = _prepared_platform_rects[platform_name]
+		if rect.size.y != 24.0 or rect.size.x < 104.0 or rect.size.x > 216.0:
+			return _fail_authored_layout("dimensão física inválida em %s" % String(platform_name))
+		if rect.position.x < 64.0 or rect.end.x > 980.0 or fposmod(rect.position.x, 8.0) > 0.01 or fposmod(rect.size.x, 8.0) > 0.01:
+			return _fail_authored_layout("%s ultrapassa a faixa de geração" % String(platform_name))
+		if rect.position.y < 376.0 or rect.position.y > 440.0:
+			return _fail_authored_layout("%s está fora dos limites verticais" % String(platform_name))
+		if rect.end.y > 464.0 or 560.0 - rect.end.y < 96.0:
+			return _fail_authored_layout("%s reduz a folga livre do piso abaixo de 96 px" % String(platform_name))
+		if index == 0:
+			if absf(rect.position.y - 440.0) > 0.01:
+				return _fail_authored_layout("a primeira plataforma deve ter topo y=440")
+			var spawn_x := _get_player_spawn_x_for_layout()
+			if rect.position.x < 208.0 or rect.position.x > 256.0 or rect.position.x - (spawn_x + 14.0) < 24.0:
+				return _fail_authored_layout("a primeira plataforma invade a margem do spawn")
+		else:
+			var gap := rect.position.x - previous_rect.end.x
+			var rise := previous_rect.position.y - rect.position.y
+			if gap < 56.0 or gap > 96.0 or rise < 0.0 or rise > 64.0:
+				return _fail_authored_layout("vão ou desnível inválido entre plataformas")
+			if _positive_overlap_area(rect, previous_rect) > AUTHORED_OVERLAP_AREA_LIMIT:
+				return _fail_authored_layout("plataformas adjacentes se sobrepõem")
+		previous_rect = rect
+	return true
+
+func _validate_authored_room_boundaries() -> bool:
+	var floor_platform := get_node_or_null("Floor") as SolidPlatform
+	if floor_platform == null:
+		return _fail_authored_layout("Floor ausente ou de tipo incorreto")
+	if floor_platform.position.distance_to(Vector2(576.0, 604.0)) > 0.01:
+		return _fail_authored_layout("Floor fora da posição 576×604")
+	if floor_platform.size.distance_to(Vector2(1152.0, 88.0)) > 0.01:
+		return _fail_authored_layout("Floor deve medir 1152×88")
+	if absf(floor_platform.rotation) > 0.001 or not floor_platform.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("Floor tem transform incompatível")
+	var floor_collision := floor_platform.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if floor_collision == null or floor_collision.disabled:
+		return _fail_authored_layout("Floor sem CollisionShape2D ativo")
+	var floor_rectangle := floor_collision.shape as RectangleShape2D
+	if floor_rectangle == null or floor_rectangle.size.distance_to(Vector2(1152.0, 88.0)) > 0.01:
+		return _fail_authored_layout("shape físico de Floor deve medir 1152×88")
+	if floor_collision.position.length() > 0.01 or absf(floor_collision.rotation) > 0.001 or not floor_collision.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("shape físico de Floor está deslocado")
+
+	var world_collision := get_node_or_null("WorldCollision") as StaticBody2D
+	if world_collision == null:
+		return _fail_authored_layout("WorldCollision ausente ou de tipo incorreto")
+	if world_collision.position.length() > 0.01 or absf(world_collision.rotation) > 0.001 or not world_collision.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("WorldCollision tem transform incompatível")
+
+	var boundary_names: Array[StringName] = [
+		&"LeftWall", &"RightWallUpper", &"RightWallLower", &"ExitGate", &"RightOuterGuard", &"Ceiling",
+	]
+	var boundary_positions: Array[Vector2] = [
+		Vector2(32.0, 324.0), Vector2(1120.0, 216.0), Vector2(1120.0, 604.0),
+		Vector2(1120.0, 496.0), Vector2(1156.0, 324.0), Vector2(576.0, -16.0),
+	]
+	var boundary_sizes: Array[Vector2] = [
+		Vector2(64.0, 648.0), Vector2(64.0, 432.0), Vector2(64.0, 88.0),
+		Vector2(64.0, 128.0), Vector2(8.0, 648.0), Vector2(1152.0, 32.0),
+	]
+	for boundary_index in boundary_names.size():
+		var boundary := world_collision.get_node_or_null(NodePath(String(boundary_names[boundary_index]))) as CollisionShape2D
+		if boundary == null:
+			return _fail_authored_layout("shape de limite ausente: %s" % String(boundary_names[boundary_index]))
+		if boundary_names[boundary_index] != &"ExitGate" and boundary.disabled:
+			return _fail_authored_layout("shape de limite desativado: %s" % String(boundary_names[boundary_index]))
+		if boundary.position.distance_to(boundary_positions[boundary_index]) > 0.01:
+			return _fail_authored_layout("%s fora da posição autoral" % String(boundary_names[boundary_index]))
+		var rectangle := boundary.shape as RectangleShape2D
+		if rectangle == null or rectangle.size.distance_to(boundary_sizes[boundary_index]) > 0.01:
+			return _fail_authored_layout("%s tem shape físico incompatível" % String(boundary_names[boundary_index]))
+		if absf(boundary.rotation) > 0.001 or not boundary.scale.is_equal_approx(Vector2.ONE):
+			return _fail_authored_layout("%s tem transform incompatível" % String(boundary_names[boundary_index]))
+
+	var ceiling_band := world_collision.get_node_or_null("CeilingBand") as CollisionShape2D
+	if ceiling_band == null or ceiling_band.disabled:
+		return _fail_authored_layout("faixa física visível do teto ausente ou desativada")
+	if ceiling_band.position.distance_to(Vector2(576.0, 32.0)) > 0.01:
+		return _fail_authored_layout("CeilingBand fora da faixa y=0..64")
+	var ceiling_rectangle := ceiling_band.shape as RectangleShape2D
+	if ceiling_rectangle == null or ceiling_rectangle.size.distance_to(Vector2(1152.0, 64.0)) > 0.01:
+		return _fail_authored_layout("CeilingBand deve medir 1152×64")
+	if absf(ceiling_band.rotation) > 0.001 or not ceiling_band.scale.is_equal_approx(Vector2.ONE):
+		return _fail_authored_layout("CeilingBand tem transform incompatível")
+	return true
+
+func _validate_authored_platform(
+	platform: SolidPlatform,
+	expected_position: Vector2,
+	expected_size: Vector2
+) -> Dictionary:
+	if platform.position.distance_to(expected_position) > 0.01:
+		return {"valid": false, "error": "%s fora da posição autoral" % platform.name}
+	if platform.size.distance_to(expected_size) > 0.01:
+		return {"valid": false, "error": "%s fora do tamanho autoral" % platform.name}
+	if platform.randomize_position or platform.randomize_width:
+		return {"valid": false, "error": "%s ainda permite aleatoriedade" % platform.name}
+	if absf(platform.rotation) > 0.001 or not platform.scale.is_equal_approx(Vector2.ONE):
+		return {"valid": false, "error": "%s tem transform autoral incompatível" % platform.name}
+
+	var collision := platform.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision == null or collision.disabled:
+		return {"valid": false, "error": "%s sem CollisionShape2D ativo" % platform.name}
+	var rectangle := collision.shape as RectangleShape2D
+	if rectangle == null or rectangle.size.distance_to(expected_size) > 0.01:
+		return {"valid": false, "error": "%s tem shape diferente do tamanho autoral" % platform.name}
+	if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
+		return {"valid": false, "error": "%s tem shape fora da origem local" % platform.name}
+	return {"valid": true, "rect": Rect2(platform.position - expected_size * 0.5, expected_size)}
+
+func _collect_authored_world_obstacles() -> bool:
+	_authored_world_obstacles.clear()
+	for child in get_children():
+		var body := child as StaticBody2D
+		if body == null or (body.collision_layer & WORLD_LAYER_BIT_MASK) == 0:
+			continue
+		var found_shape := false
+		for shape_child in body.get_children():
+			var collision := shape_child as CollisionShape2D
+			if collision == null or collision.disabled:
+				continue
+			if collision.name == &"RightOuterGuard":
+				continue
+			if collision.shape == null:
+				return _fail_authored_layout("shape ausente em %s" % body.name)
+			found_shape = true
+			_authored_world_obstacles.append({
+				"owner": body,
+				"rect": _collision_shape_aabb_in_main(collision),
+			})
+		if not found_shape:
+			return _fail_authored_layout("nenhum shape ativo em World layer 1: %s" % body.name)
+	return true
+
+func _validate_authored_spawns_and_patrol() -> bool:
+	var player_body := get_node_or_null("Player") as CollisionObject2D
+	var player_spawn := get_node_or_null("PlayerSpawnMarker") as Marker2D
+	if player_body == null or player_spawn == null:
+		return _fail_authored_layout("spawn do jogador ausente")
+	var player_bounds_result: Dictionary = _body_aabb(player_body, false)
+	if not bool(player_bounds_result.get("valid", false)):
+		return _fail_authored_layout("collider do jogador ausente")
+	var player_bounds: Rect2 = player_bounds_result.get("rect", Rect2())
+	var player_spawn_offset: Vector2 = player_spawn.position - player_body.position
+	player_bounds = Rect2(player_bounds.position + player_spawn_offset, player_bounds.size)
+	if not _validate_clear_of_world_layer(player_bounds, "spawn do jogador"):
+		return false
+
+	var worker_body := get_node_or_null("RivetWorker") as CollisionObject2D
+	var patrol_area := get_node_or_null("WorkerPatrolArea") as Node2D
+	if worker_body == null or patrol_area == null:
+		return _fail_authored_layout("spawn ou patrulha do worker ausente")
+	var worker_bounds_result: Dictionary = _body_aabb(worker_body, false)
+	var worker_local_result: Dictionary = _body_aabb(worker_body, true)
+	if not bool(worker_bounds_result.get("valid", false)) or not bool(worker_local_result.get("valid", false)):
+		return _fail_authored_layout("collider do worker ausente")
+	var worker_bounds: Rect2 = worker_bounds_result.get("rect", Rect2())
+	var worker_local_bounds: Rect2 = worker_local_result.get("rect", Rect2())
+	if not _validate_clear_of_world_layer(worker_bounds, "spawn do worker"):
+		return false
+
+	var left_limit := patrol_area.get_node_or_null("LeftLimit") as Marker2D
+	var right_limit := patrol_area.get_node_or_null("RightLimit") as Marker2D
+	if left_limit == null or right_limit == null:
+		return _fail_authored_layout("limites de patrulha ausentes")
+	var left_center: Vector2 = _local_transform_to_main(left_limit) * Vector2.ZERO
+	var right_center: Vector2 = _local_transform_to_main(right_limit) * Vector2.ZERO
+	var minimum_center_x := minf(left_center.x, right_center.x)
+	var maximum_center_x := maxf(left_center.x, right_center.x)
+	var sweep_bounds := Rect2(
+		Vector2(minimum_center_x + worker_local_bounds.position.x, worker_body.position.y + worker_local_bounds.position.y),
+		Vector2(maximum_center_x - minimum_center_x + worker_local_bounds.size.x, worker_local_bounds.size.y)
+	)
+	if sweep_bounds.position.x < 64.0 or sweep_bounds.end.x > 1088.0:
+		return _fail_authored_layout("patrulha do worker cruza as faces internas das paredes")
+	return _validate_clear_of_world_layer(sweep_bounds, "intervalo de patrulha do worker")
+
+func _validate_authored_target(platform_rects: Dictionary) -> bool:
+	var target := get_node_or_null("TrainingTarget") as TrainingTarget
+	if target == null or not target.authored_support_enabled:
+		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+	if target.collision_layer != 8:
+		return _fail_authored_layout("TrainingTarget deve permanecer na collision layer 8")
+	if target.collision_mask != 3:
+		return _fail_authored_layout("TrainingTarget deve manter collision_mask 3 para World e Player")
+	var player_body := get_node_or_null("Player") as CollisionObject2D
+	if player_body == null or player_body.collision_mask != 9:
+		return _fail_authored_layout("Player deve manter collision_mask 9 para World e TrainingTarget vivo")
+	var target_local_result: Dictionary = _body_aabb(target, true)
+	if not bool(target_local_result.get("valid", false)):
+		return _fail_authored_layout("collider do TrainingTarget ausente")
+	var target_local_bounds: Rect2 = target_local_result.get("rect", Rect2())
+	if target.fixed_support_path.is_empty() or target.fallback_support_path.is_empty():
+		return _fail_authored_layout("caminho de suporte autoral vazio")
+
+	var support_paths: Array[NodePath] = [target.fixed_support_path, target.fallback_support_path]
+	var first_safe_position: Dictionary = {}
+	var selected_patrol: Dictionary = {}
+	for support_path in support_paths:
+		var support := _resolve_authored_support(target, support_path)
+		if support == null or not platform_rects.has(support.name):
+			continue
+		var support_is_compatible := _is_target_support_compatible(support)
+		var support_rect: Rect2 = platform_rects[support.name]
+		if support_rect.size.x < target_local_bounds.size.x + AUTHORED_EDGE_MARGIN * 2.0:
+			continue
+		var target_origin := Vector2(
+			support_rect.get_center().x - target_local_bounds.get_center().x,
+			support_rect.position.y - target_local_bounds.end.y
+		)
+		var target_bounds: Rect2 = Rect2(target_local_bounds.position + target_origin, target_local_bounds.size)
+		if target_bounds.position.x < support_rect.position.x + AUTHORED_EDGE_MARGIN - 0.01:
+			continue
+		if target_bounds.end.x > support_rect.end.x - AUTHORED_EDGE_MARGIN + 0.01:
+			continue
+		if absf(target_bounds.end.y - support_rect.position.y) > AUTHORED_CONTACT_TOLERANCE:
+			continue
+		if not _find_world_layer_overlap(target_bounds, support).is_empty():
+			continue
+		var minimum_center_x := support_rect.position.x + AUTHORED_EDGE_MARGIN - target_local_bounds.position.x
+		var maximum_center_x := support_rect.end.x - AUTHORED_EDGE_MARGIN - target_local_bounds.end.x
+		var route_is_useful := support_is_compatible and maximum_center_x - minimum_center_x >= 8.0
+		var route_is_clear := false
+		if route_is_useful:
+			var sweep_bounds := Rect2(
+				Vector2(minimum_center_x + target_local_bounds.position.x, target_origin.y + target_local_bounds.position.y),
+				Vector2(maximum_center_x - minimum_center_x + target_local_bounds.size.x, target_local_bounds.size.y)
+			)
+			route_is_clear = _find_world_layer_overlap(sweep_bounds, support).is_empty()
+		var candidate: Dictionary = {
+			"position": target_origin,
+			"support": support,
+			"support_path": support_path,
+			"minimum_center_x": minimum_center_x,
+			"maximum_center_x": maximum_center_x,
+		}
+		if first_safe_position.is_empty():
+			first_safe_position = candidate
+		if route_is_clear:
+			selected_patrol = candidate
+			break
+
+	var selected: Dictionary = selected_patrol if not selected_patrol.is_empty() else first_safe_position
+	if selected.is_empty():
+		return _fail_authored_layout("suportes primário e fallback do TrainingTarget são inválidos ou sem posição segura")
+	_authored_target_position = selected.get("position", Vector2.ZERO)
+	_authored_target_node = target
+	_authored_target_support = selected.get("support") as SolidPlatform
+	_authored_target_support_path = selected.get("support_path", NodePath(""))
+	_authored_target_patrol_min_x = to_global(Vector2(float(selected.get("minimum_center_x", 0.0)), 0.0)).x
+	_authored_target_patrol_max_x = to_global(Vector2(float(selected.get("maximum_center_x", 0.0)), 0.0)).x
+	_authored_target_patrol_enabled = not selected_patrol.is_empty()
+	if _run_controller_managed:
+		var player_body := get_node_or_null("Player") as CollisionObject2D
+		var player_spawn := get_node_or_null("PlayerSpawnMarker") as Marker2D
+		var player_bounds_result := _body_aabb(player_body, false) if player_body != null else {}
+		if player_spawn == null or not bool(player_bounds_result.get("valid", false)):
+			return _fail_authored_layout("spawn do jogador não pode ser comparado ao TrainingTarget")
+		var player_bounds: Rect2 = player_bounds_result.get("rect", Rect2())
+		player_bounds.position += player_spawn.position - player_body.position
+		var target_bounds: Rect2 = target_local_bounds
+		target_bounds.position += _authored_target_position
+		if _positive_overlap_area(player_bounds, target_bounds) > AUTHORED_OVERLAP_AREA_LIMIT:
+			return _fail_authored_layout("spawn do jogador intersecta o TrainingTarget preparado")
+	return true
+
+func _is_target_support_compatible(support: SolidPlatform) -> bool:
+	if support == null or not is_instance_valid(support):
+		return false
+	if absf(support.global_rotation) > 0.001 or not support.global_scale.is_equal_approx(Vector2.ONE):
+		return false
+	var shape_count := 0
+	for child in support.get_children():
+		var collision := child as CollisionShape2D
+		if collision == null:
+			continue
+		shape_count += 1
+		if collision.disabled or not collision.shape is RectangleShape2D:
+			return false
+		if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
+			return false
+	return shape_count == 1
+
+func _resolve_authored_support(target: TrainingTarget, path: NodePath) -> SolidPlatform:
+	if target.get_parent() != self:
+		return null
+	var path_parts: PackedStringArray = String(path).split("/", false)
+	if path_parts.size() != 2 or path_parts[0] != ".." or path_parts[1].is_empty():
+		return null
+	return get_node_or_null(NodePath(path_parts[1])) as SolidPlatform
+
+func _validate_clear_of_world_layer(
+	bounds: Rect2,
+	label: String,
+	allowed_support: CollisionObject2D = null
+) -> bool:
+	var blocker := _find_world_layer_overlap(bounds, allowed_support)
+	if blocker.is_empty():
+		return true
+	return _fail_authored_layout("%s intersecta World layer 1 em %s" % [label, blocker])
+
+func _find_world_layer_overlap(bounds: Rect2, allowed_support: CollisionObject2D = null) -> String:
+	for obstacle_data: Dictionary in _authored_world_obstacles:
+		var owner: CollisionObject2D = obstacle_data.get("owner") as CollisionObject2D
+		if owner == null or owner == allowed_support:
+			continue
+		var obstacle_bounds: Rect2 = obstacle_data.get("rect", Rect2())
+		if _positive_overlap_area(bounds, obstacle_bounds) > AUTHORED_OVERLAP_AREA_LIMIT:
+			return String(owner.name)
+	return ""
+
+func _positive_overlap_area(first: Rect2, second: Rect2) -> float:
+	var overlap_width := minf(first.end.x, second.end.x) - maxf(first.position.x, second.position.x)
+	var overlap_height := minf(first.end.y, second.end.y) - maxf(first.position.y, second.position.y)
+	if overlap_width <= 0.0 or overlap_height <= 0.0:
+		return 0.0
+	return overlap_width * overlap_height
+
+func _body_aabb(body: CollisionObject2D, relative_to_body: bool) -> Dictionary:
+	var found_shape := false
+	var combined_bounds := Rect2()
+	var body_transform := _local_transform_to_main(body)
+	for shape_child in body.get_children():
+		var collision := shape_child as CollisionShape2D
+		if collision == null or collision.disabled or collision.shape == null:
+			continue
+		var shape_transform := _local_transform_to_main(collision)
+		if relative_to_body:
+			shape_transform = body_transform.affine_inverse() * shape_transform
+		var shape_bounds := _transform_rect(collision.shape.get_rect(), shape_transform)
+		if found_shape:
+			combined_bounds = combined_bounds.merge(shape_bounds)
+		else:
+			combined_bounds = shape_bounds
+			found_shape = true
+	return {"valid": found_shape, "rect": combined_bounds}
+
+func _collision_shape_aabb_in_main(collision: CollisionShape2D) -> Rect2:
+	return _transform_rect(collision.shape.get_rect(), _local_transform_to_main(collision))
+
+func _local_transform_to_main(node: Node2D) -> Transform2D:
+	var transforms: Array[Transform2D] = []
+	var current: Node = node
+	while current != self:
+		var current_2d := current as Node2D
+		if current_2d == null:
+			return Transform2D.IDENTITY
+		transforms.append(current_2d.transform)
+		current = current.get_parent()
+		if current == null:
+			return Transform2D.IDENTITY
+	var result := Transform2D.IDENTITY
+	for transform_index in range(transforms.size() - 1, -1, -1):
+		result = result * transforms[transform_index]
+	return result
+
+func _transform_rect(rect: Rect2, transform: Transform2D) -> Rect2:
+	var point_a := transform * rect.position
+	var point_b := transform * Vector2(rect.end.x, rect.position.y)
+	var point_c := transform * rect.end
+	var point_d := transform * Vector2(rect.position.x, rect.end.y)
+	var minimum_x := minf(minf(point_a.x, point_b.x), minf(point_c.x, point_d.x))
+	var minimum_y := minf(minf(point_a.y, point_b.y), minf(point_c.y, point_d.y))
+	var maximum_x := maxf(maxf(point_a.x, point_b.x), maxf(point_c.x, point_d.x))
+	var maximum_y := maxf(maxf(point_a.y, point_b.y), maxf(point_c.y, point_d.y))
+	return Rect2(minimum_x, minimum_y, maximum_x - minimum_x, maximum_y - minimum_y)
+
+func _disable_invalid_authored_room() -> void:
+	if player != null:
+		player.process_mode = Node.PROCESS_MODE_DISABLED
+	if combat_room != null:
+		combat_room.process_mode = Node.PROCESS_MODE_DISABLED
+	var target := get_node_or_null("TrainingTarget")
+	if target != null:
+		target.process_mode = Node.PROCESS_MODE_DISABLED
+	var worker := get_node_or_null("RivetWorker")
+	if worker != null:
+		worker.process_mode = Node.PROCESS_MODE_DISABLED
+	if exit_door != null:
+		exit_door.call("set_room_cleared", false)
+
+func _show_authored_layout_error() -> void:
+	var error_layer := CanvasLayer.new()
+	error_layer.name = "AuthoredLayoutError"
+	error_layer.layer = 20
+	add_child(error_layer)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	error_layer.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(720.0, 200.0)
+	center.add_child(panel)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 16)
+	panel.add_child(content)
+	var message := Label.new()
+	message.text = "ERRO DE LAYOUT AUTORAL\n" + _authored_layout_error
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(message)
+	var restart := Button.new()
+	restart.text = "REINICIAR SALA"
+	restart.pressed.connect(_restart_authored_room)
+	content.add_child(restart)
+
+func _restart_authored_room() -> void:
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		return
+	_cancel_standalone_transition()
+	get_tree().reload_current_scene()
+
+func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool, requested_seed: int = 0, room_descriptor: Dictionary = {}) -> bool:
+	if is_inside_tree() or shared_build == null:
+		return false
+	var managed_exit_door := get_node_or_null("ExitDoor")
+	if managed_exit_door == null or not managed_exit_door.has_signal("transition_requested"):
+		return false
+	if room_descriptor.is_empty():
+		return false
+	_run_controller_managed = true
+	_managed_room_descriptor = room_descriptor.duplicate(true)
+	_managed_run_build = shared_build
+	reward_enabled = offer_build_upgrade
+	if requested_seed != 0:
+		room_layout_seed = requested_seed
+	if authored_layout_enabled and not prepare_authored_layout():
+		return false
+	return true
+
+func _ready() -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		_disable_invalid_authored_room()
+		_show_authored_layout_error()
+		return
+	set_process_input(true)
+	if not combat_room.room_cleared.is_connected(_on_room_cleared):
+		combat_room.room_cleared.connect(_on_room_cleared)
+	if player != null and not player.died.is_connected(_on_player_died):
+		player.died.connect(_on_player_died)
+	if exit_door != null:
+		exit_door.call("set_retry_enabled", true)
+		var transition_callback := Callable(self, "_on_exit_door_transition_requested")
+		if not exit_door.is_connected("transition_requested", transition_callback):
+			exit_door.connect("transition_requested", transition_callback)
+
+	var title_label := get_node_or_null(room_title_label_path) as Label
+	if title_label != null:
+		title_label.text = room_title
+
+	if player != null:
+		player.reset_to_spawn(_get_player_spawn_position())
+
+	# Os filhos já executaram _ready. O controlador mantém o estado da run
+	# entre encontros; cenas standalone continuam consumindo o snapshot one-shot.
+	var incoming_snapshot: Dictionary = {}
+	if not _run_controller_managed:
+		incoming_snapshot = RoomTransition.consume_pending_snapshot(_load_current_packed_scene())
+	if _run_controller_managed and _managed_run_build != null:
+		run_build = _managed_run_build
+	else:
+		run_build = RunBuild.new()
+	if player != null:
+		if not incoming_snapshot.is_empty() and player.health != null:
+			var restored_build := RunBuild.new()
+			if restored_build.replace_state(
+				incoming_snapshot.get("upgrade_ids"),
+				incoming_snapshot.get("counts_by_id")
+			):
+				var health_restored := player.health.restore_health_for_room_transition(
+					int(incoming_snapshot["hp_current"]),
+					int(incoming_snapshot["hp_max"])
+				)
+				if health_restored:
+					run_build = restored_build
+		player.apply_run_build(run_build)
+
+	_upgrade_offer = UpgradeOfferScene.instantiate() as UpgradeOffer
+	if _upgrade_offer != null:
+		add_child(_upgrade_offer)
+		_upgrade_offer.upgrade_selected.connect(_on_upgrade_selected)
+		_upgrade_offer.hide()
+
+	_update_build_status()
+	if exit_door != null:
+		exit_door.call("set_room_cleared", false)
+	if combat_room.room_is_cleared:
+		_on_room_cleared()
+
+func _exit_tree() -> void:
+	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+		_upgrade_offer.close_offer()
+	if not _standalone_swap_committed:
+		if is_instance_valid(_transition_overlay) and _transition_overlay.has_method("cancel_transition"):
+			_transition_overlay.call("cancel_transition")
+		if not _run_controller_managed and (_door_request_pending or _transition_in_progress):
+			RoomTransition.clear_pending_snapshot()
+	_guard_active = false
+	_guard_waiting_for_release = false
+	_guard_quiet_remaining = 0.0
+	# Do not unpause during teardown; the new room inherits the actual tree state.
+	_owned_offer_pause = false
+
+func _input(event: InputEvent) -> void:
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		if event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"interact") \
+			or (event is InputEventKey and (event as InputEventKey).keycode == KEY_R):
+			get_viewport().set_input_as_handled()
+			return
+	if authored_layout_enabled and not is_authored_layout_valid():
+		for action in DISCRETE_INPUT_ACTIONS:
+			if event.is_action_pressed(action):
+				get_viewport().set_input_as_handled()
+				return
+	if _upgrade_flow_state == UpgradeFlowState.OFFER_OPEN and event.is_action_pressed("interact"):
+		get_viewport().set_input_as_handled()
+		return
+	if not _guard_active:
+		return
+	for action in DISCRETE_INPUT_ACTIONS:
+		if event.is_action_pressed(action):
+			_guard_waiting_for_release = true
+			_guard_quiet_remaining = 0.0
+			get_viewport().set_input_as_handled()
+			return
+
+func _process(delta: float) -> void:
+	if not _guard_active:
+		return
+	if _any_discrete_input_pressed():
+		_guard_waiting_for_release = true
+		_guard_quiet_remaining = 0.0
+		return
+	if _guard_waiting_for_release:
+		_guard_waiting_for_release = false
+		_guard_quiet_remaining = maxf(post_upgrade_input_guard_seconds, 0.0)
+		if _guard_quiet_remaining <= 0.0:
+			_end_input_guard()
+		return
+
+	_guard_quiet_remaining = maxf(_guard_quiet_remaining - delta, 0.0)
+	if _guard_quiet_remaining <= 0.0:
+		_end_input_guard()
+
+func _physics_process(_delta: float) -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		return
+	if player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	if player.global_position.y > 760.0:
+		player.reset_to_spawn(_get_player_spawn_position())
+
+func is_gameplay_action_blocked(action: StringName) -> bool:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		return true
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		return true
+	if not DISCRETE_INPUT_ACTIONS.has(action):
+		return false
+	if _upgrade_flow_state in [
+		UpgradeFlowState.VICTORY_PENDING,
+		UpgradeFlowState.OFFER_OPEN,
+		UpgradeFlowState.SELECTED,
+	]:
+		return true
+	return _guard_active
+
+func _on_room_cleared() -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		return
+	if _upgrade_flow_state != UpgradeFlowState.INACTIVE:
+		return
+	_upgrade_flow_state = UpgradeFlowState.VICTORY_PENDING
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.request_stop_active_sweep()
+	_queue_post_flush_resolution()
+
+func _on_player_died() -> void:
+	_cancel_standalone_transition()
+	_death_pending = true
+	_upgrade_flow_state = UpgradeFlowState.CANCELLED
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.request_stop_active_sweep()
+	_queue_post_flush_resolution()
+
+func _queue_post_flush_resolution() -> void:
+	if _post_flush_resolution_queued:
+		return
+	_post_flush_resolution_queued = true
+	call_deferred("_resolve_after_physics_flush")
+
+func _resolve_after_physics_flush() -> void:
+	if authored_layout_enabled and not is_authored_layout_valid():
+		_post_flush_resolution_queued = false
+		return
+	_post_flush_resolution_queued = false
+	if player != null and is_instance_valid(player):
+		player.ball_launcher.cleanup_active_ball_after_flush()
+	combat_room.cleanup_hostile_projectiles_after_flush()
+	combat_room.refresh_status_after_physics()
+
+	if _death_pending or player == null or not is_instance_valid(player) or player.is_dead:
+		_death_pending = true
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		_transition_in_progress = false
+		run_build.clear()
+		RoomTransition.clear_pending_snapshot()
+		_offered_upgrade_ids.clear()
+		if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+			_upgrade_offer.close_offer()
+		if exit_door != null:
+			exit_door.call("set_room_cleared", false)
+		_close_owned_offer_pause()
+		_end_input_guard()
+		_update_build_status()
+		if player != null and is_instance_valid(player):
+			player.finish_death_after_physics()
+		return
+
+	if _upgrade_flow_state != UpgradeFlowState.VICTORY_PENDING or not combat_room.room_is_cleared:
+		return
+	if reward_enabled and run_build.total_count() == 0:
+		_open_upgrade_offer()
+	else:
+		_release_exit_or_complete()
+
+func _open_upgrade_offer() -> void:
+	if _upgrade_offer == null or not is_instance_valid(_upgrade_offer):
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		push_error("Main: não foi possível criar a oferta de upgrades.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
+		return
+	_offered_upgrade_ids.clear()
+	for definition in _upgrade_definitions:
+		_offered_upgrade_ids.append(definition.upgrade_id)
+	if not _upgrade_offer.present_options(_upgrade_definitions):
+		_offered_upgrade_ids.clear()
+		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+		push_error("Main: definições inválidas para a oferta.")
+		if _run_controller_managed:
+			_release_exit_or_complete()
+		return
+
+	_owned_offer_pause = not get_tree().paused
+	_upgrade_flow_state = UpgradeFlowState.OFFER_OPEN
+	if _owned_offer_pause:
+		get_tree().paused = true
+
+func _on_upgrade_selected(upgrade_id: StringName) -> void:
+	if _upgrade_flow_state != UpgradeFlowState.OFFER_OPEN:
+		return
+	if player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	if not _offered_upgrade_ids.has(upgrade_id):
+		return
+	if not RunBuild.is_known_upgrade_id(upgrade_id):
+		return
+	if run_build.count_for(upgrade_id) != 0 or run_build.total_count() >= RunBuild.MAX_UPGRADES:
+		return
+
+	# State changes before the build and player configurations are mutated.
+	_upgrade_flow_state = UpgradeFlowState.SELECTED
+	if not run_build.add_upgrade(upgrade_id):
+		_upgrade_flow_state = UpgradeFlowState.OFFER_OPEN
+		return
+	player.apply_run_build(run_build)
+	_update_build_status()
+	_offered_upgrade_ids.clear()
+	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
+		_upgrade_offer.close_offer()
+	_begin_input_guard()
+	_close_owned_offer_pause()
+	_release_exit_or_complete()
+
+func _release_exit_or_complete() -> void:
+	if exit_door == null:
+		_upgrade_flow_state = UpgradeFlowState.COMPLETED
+		return
+	_upgrade_flow_state = UpgradeFlowState.EXIT_RELEASED
+	_local_reward_resolved = true
+	_door_unlock_pending = true
+	_release_exit_door_if_ready()
+
+func _release_exit_door_if_ready() -> void:
+	if not _door_unlock_pending or _guard_active or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return
+	if not combat_room.room_is_cleared or player == null or not is_instance_valid(player) or player.is_dead:
+		return
+	_door_unlock_pending = false
+	if not _run_controller_managed and next_room_scene_path.strip_edges().is_empty():
+		_upgrade_flow_state = UpgradeFlowState.COMPLETED
+		exit_door.call("set_terminal_complete")
+		return
+	exit_door.call("set_room_cleared", true)
+	if _run_controller_managed and _managed_topology != null:
+		_managed_topology.call("set_exit_open", true)
+
+func _notify_run_progression_ready() -> void:
+	if not _run_controller_managed or _run_progression_notified:
+		return
+	_run_progression_notified = true
+	run_progression_ready.emit()
+
+func _begin_input_guard() -> void:
+	_guard_active = true
+	_guard_waiting_for_release = _any_discrete_input_pressed()
+	_guard_quiet_remaining = 0.0 if _guard_waiting_for_release else maxf(post_upgrade_input_guard_seconds, 0.0)
+	if not _guard_waiting_for_release and _guard_quiet_remaining <= 0.0:
+		_end_input_guard()
+
+func _end_input_guard() -> void:
+	_guard_active = false
+	_guard_waiting_for_release = false
+	_guard_quiet_remaining = 0.0
+	_release_exit_door_if_ready()
+
+func _any_discrete_input_pressed() -> bool:
+	for action in DISCRETE_INPUT_ACTIONS:
+		if Input.is_action_pressed(action):
+			return true
+	return false
+
+func _close_owned_offer_pause() -> void:
+	if _owned_offer_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_offer_pause = false
+
+func _on_exit_door_transition_requested(requested_player: Player) -> void:
+	if _door_request_pending or _transition_in_progress or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return
+	_door_request_pending = true
+	_transition_token += 1
+	_transition_player = requested_player
+	_transition_source_scene = get_tree().current_scene if not _run_controller_managed else self
+	call_deferred("_validate_exit_crossing_deferred", requested_player, _transition_token)
+
+func _validate_exit_crossing_deferred(requested_player: Player, token: int) -> void:
+	if token != _transition_token or not _door_request_pending:
+		return
+	var failure := _exit_crossing_validation_error(requested_player)
+	if not failure.is_empty():
+		if _run_controller_managed and _managed_transition_direction.y != 0 and not _death_pending and _is_current_room_source():
+			_rollback_managed_vertical_crossing(requested_player, failure)
+			return
+		_door_request_pending = false
+		if exit_door != null and is_instance_valid(exit_door):
+			exit_door.call("report_transition_failure", failure)
+		if _run_controller_managed and not _death_pending and _is_current_room_source():
+			_report_managed_transition_failure(failure)
+		return
+	var destination_scene: PackedScene
+	if not _run_controller_managed:
+		var destination_path := next_room_scene_path.strip_edges()
+		destination_scene = ResourceLoader.load(destination_path, "PackedScene") as PackedScene
+		if destination_scene == null or destination_scene.resource_path.is_empty() \
+			or not destination_scene.resource_path.begins_with("res://"):
+			_door_request_pending = false
+			exit_door.call("report_transition_failure", "FALHA AO CARREGAR SALA")
+			return
+
+	_door_request_pending = false
+	_transition_in_progress = true
+	_transition_source_scene = get_tree().current_scene if not _run_controller_managed else self
+	_transition_player = requested_player
+	_lock_player_for_transition(requested_player)
+	if _run_controller_managed:
+		_notify_run_progression_ready()
+		return
+
+	_transition_overlay = RoomTransitionOverlayScript.new()
+	_transition_overlay.name = "RoomTransitionOverlay"
+	get_tree().root.add_child(_transition_overlay)
+	var overlay_started := bool(_transition_overlay.call(
+		"begin_transition",
+		self,
+		_transition_source_scene,
+		destination_scene,
+		token
+	))
+	if not overlay_started:
+		transition_overlay_failed(token, "FALHA AO INICIAR TRANSIÇÃO")
+		_transition_overlay.call("cancel_transition")
+		_transition_overlay = null
+
+func _rollback_managed_vertical_crossing(requested_player: Player, message: String) -> void:
+	_transition_in_progress = false
+	_door_request_pending = false
+	if requested_player != null and is_instance_valid(requested_player) \
+		and requested_player == player and not requested_player.is_dead:
+		var rollback_spawn := _get_player_spawn_position()
+		var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+		if _managed_transition_direction == Vector2i(0, 1) and entry_dir != Vector2i(0, -1):
+			var portal_x := float(_managed_room_descriptor.get("exit_offset", 576.0))
+			var safe_x := portal_x + 176.0 if portal_x < 576.0 else portal_x - 176.0
+			rollback_spawn = to_global(Vector2(safe_x, 560.0))
+		requested_player.reset_to_spawn(rollback_spawn)
+		requested_player.velocity = Vector2.ZERO
+	if exit_door != null and is_instance_valid(exit_door):
+		exit_door.call("report_transition_failure", message)
+func _exit_crossing_validation_error(requested_player: Player) -> String:
+	if _transition_in_progress or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
+		return "SAÍDA INDISPONÍVEL"
+	if _guard_active or not _local_reward_resolved or not combat_room.room_is_cleared:
+		return "SAÍDA INDISPONÍVEL"
+	if requested_player == null or not is_instance_valid(requested_player) \
+		or requested_player != player or requested_player.is_dead:
+		return "JOGADOR INDISPONÍVEL"
+	if not _is_current_room_source():
+		return "SALA INDISPONÍVEL"
+	if exit_door == null or not is_instance_valid(exit_door) \
+		or not bool(exit_door.call("has_latched_crossing", requested_player)) \
+		or not bool(exit_door.call("is_player_inside_exit_opening", requested_player)) \
+		or not bool(exit_door.call("is_gate_open")):
+		return "ATRAVESSE A SAÍDA"
+	return ""
+
+func _is_current_room_source() -> bool:
+	if not _run_controller_managed:
+		return is_inside_tree() and get_tree().current_scene == self
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("is_active_room_instance"):
+			return bool(ancestor.call("is_active_room_instance", self))
+		ancestor = ancestor.get_parent()
+	return false
+
+func _lock_player_for_transition(requested_player: Player) -> void:
+	_transition_original_disable_mode = requested_player.disable_mode
+	_transition_original_process_mode = requested_player.process_mode
+	requested_player.disable_mode = CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE
+	requested_player.process_mode = Node.PROCESS_MODE_DISABLED
+	requested_player.velocity = Vector2.ZERO
+	_transition_player_locked = true
+
+func _restore_player_after_transition_failure() -> void:
+	if not _transition_player_locked:
+		return
+	if is_instance_valid(_transition_player):
+		_transition_player.process_mode = _transition_original_process_mode
+		_transition_player.disable_mode = _transition_original_disable_mode
+		_transition_player.velocity = Vector2.ZERO
+	_transition_player_locked = false
+
+func is_standalone_transition_valid(token: int) -> bool:
+	return (
+		token == _transition_token
+		and _transition_in_progress
+		and not _run_controller_managed
+		and not _death_pending
+		and _transition_source_scene == self
+		and _is_current_room_source()
+		and _exit_crossing_validation_error_after_lock(_transition_player).is_empty()
+	)
+
+func _exit_crossing_validation_error_after_lock(requested_player: Player) -> String:
+	if _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED or _guard_active \
+		or not _local_reward_resolved or not combat_room.room_is_cleared:
+		return "SAÍDA INDISPONÍVEL"
+	if requested_player == null or not is_instance_valid(requested_player) \
+		or requested_player != player or requested_player.is_dead:
+		return "JOGADOR INDISPONÍVEL"
+	if exit_door == null or not is_instance_valid(exit_door) \
+		or not bool(exit_door.call("has_latched_crossing", requested_player)) \
+		or not bool(exit_door.call("is_player_inside_exit_opening", requested_player)) \
+		or not bool(exit_door.call("is_gate_open")):
+		return "ATRAVESSE A SAÍDA"
+	return ""
+
+func commit_standalone_room_swap(token: int, destination_scene: PackedScene) -> int:
+	if not is_standalone_transition_valid(token) or destination_scene == null:
+		return ERR_INVALID_DATA
+	if not RoomTransition.prepare_run_snapshot(
+		destination_scene,
+		_transition_player.current_health,
+		_transition_player.maximum_health,
+		run_build
+	):
+		return ERR_INVALID_DATA
+	_standalone_swap_committed = true
+	var result := get_tree().change_scene_to_packed(destination_scene)
+	if result != OK:
+		_standalone_swap_committed = false
+		RoomTransition.clear_pending_snapshot()
+		return result
+	return OK
+
+func transition_overlay_failed(token: int, message: String) -> void:
+	if token != _transition_token or _standalone_swap_committed:
+		return
+	RoomTransition.clear_pending_snapshot()
+	_transition_in_progress = false
+	_door_request_pending = false
+	_restore_player_after_transition_failure()
+	if exit_door != null and is_instance_valid(exit_door):
+		exit_door.call("report_transition_failure", message)
+
+func transition_overlay_source_still_active_after_timeout(token: int, message: String) -> bool:
+	if token != _transition_token or not _standalone_swap_committed \
+		or not _transition_in_progress or _run_controller_managed or _death_pending:
+		return false
+	if _transition_source_scene != self or not is_inside_tree() \
+		or not _is_current_room_source() or get_tree().current_scene != self:
+		return false
+	# A scene swap accepted by Godot did not leave this source scene before the
+	# timeout fade completed. Only this verified path may roll it back.
+	_standalone_swap_committed = false
+	transition_overlay_failed(token, message)
+	return true
+
+func transition_overlay_finished(token: int) -> void:
+	if token == _transition_token:
+		_transition_overlay = null
+
+func _cancel_standalone_transition() -> void:
+	if _run_controller_managed:
+		return
+	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):
+		_transition_token += 1
+	if is_instance_valid(_transition_overlay) and _transition_overlay.has_method("cancel_transition"):
+		_transition_overlay.call("cancel_transition")
+	_transition_overlay = null
+	if not _standalone_swap_committed:
+		RoomTransition.clear_pending_snapshot()
+	_restore_player_after_transition_failure()
+	_door_request_pending = false
+	_transition_in_progress = false
+
+func _report_managed_transition_failure(message: String) -> void:
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("fail_managed_room_transition"):
+			ancestor.call("fail_managed_room_transition", self, message)
+			return
+		ancestor = ancestor.get_parent()
+
+func _update_build_status() -> void:
+	var label := get_node_or_null(build_status_label_path) as Label
+	if label == null:
+		return
+	if run_build == null or run_build.total_count() == 0:
+		label.text = "BUILD: VAZIA"
+		return
+
+	var upgrade_id := run_build.get_upgrade_ids()[0]
+	var display_name := ""
+	for definition in _upgrade_definitions:
+		if definition.upgrade_id == upgrade_id:
+			display_name = definition.title
+			break
+	label.text = "BUILD: %s" % display_name.to_upper()
+
+func _get_player_spawn_position() -> Vector2:
+	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+	if spawn_marker != null:
+		return spawn_marker.global_position
+	return FALLBACK_PLAYER_SPAWN
+
+func _current_scene_path() -> String:
+	if not scene_file_path.is_empty():
+		return scene_file_path
+	var current_scene := get_tree().current_scene
+	if current_scene != null:
+		return current_scene.scene_file_path
+	return ""
+
+func _load_current_packed_scene() -> PackedScene:
+	var current_path := _current_scene_path()
+	if current_path.is_empty():
+		return null
+	return ResourceLoader.load(current_path, "PackedScene") as PackedScene
+===== FILE scripts/world/run_controller.gd =====
+extends Node2D
+
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RewardScreenScript = preload("res://scripts/ui/reward_screen.gd")
+const RoomRunLayout = preload("res://scripts/world/room_run_layout.gd")
+
+@export_range(1, 20) var floors_per_run: int = 8
+@export_range(1, 10) var common_rooms_per_floor: int = 3
+@export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0
+@export var common_room_scene: PackedScene
+@export var boss_room_scene: PackedScene
+@export var run_seed: int = 0
+@export var randomize_run_seed: bool = true
+
+@onready var room_container: Node2D = $RoomContainer
+@onready var progress_label: Label = $HUD/ProgressLabel
+@onready var status_label: Label = $HUD/StatusLabel
+
+var current_floor: int = 1
+var current_room: int = 1
+var current_room_instance: Node
+var transition_pending: bool = false
+var _run_ended: bool = false
+var _damage_multiplier: float = 1.0
+var _speed_multiplier: float = 1.0
+var _radius_multiplier: float = 1.0
+var _run_player_health: int = -1
+var _run_player_max_health: int = -1
+var _run_build: RunBuild = RunBuild.new()
+var _active_reward_screen: Node
+var _owned_reward_pause: bool = false
+var _owned_transition_pause: bool = false
+var _restart_in_progress: bool = false
+var _transition_fade_layer: CanvasLayer
+var _transition_fade_rect: ColorRect
+var _resolved_run_seed: int = 0
+var _floor_room_descriptors: Array[Dictionary] = []
+var _last_room_family: StringName = &""
+
+
+func _ready() -> void:
+	# The run controller must handle overlays and progression while gameplay is paused.
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	RoomTransition.clear_pending_snapshot()
+	if common_room_scene == null:
+		_fail_run("ERRO: cena de sala comum não definida.")
+		return
+	if boss_room_scene == null:
+		_fail_run("ERRO: cena de chefe não definida.")
+		return
+	_resolved_run_seed = RoomRunLayout.resolve_seed(run_seed, randomize_run_seed)
+	_prepare_current_floor_plan()
+	_load_current_encounter()
+
+
+func get_resolved_run_seed() -> int:
+	return _resolved_run_seed
+
+func _prepare_current_floor_plan() -> bool:
+	var result: Dictionary = RoomRunLayout.build_floor(
+		_resolved_run_seed,
+		current_floor,
+		common_rooms_per_floor + 1,
+		_last_room_family
+	)
+	if not bool(result.get("valid", false)):
+		_fail_run("ERRO: não foi possível planejar a sequência de salas: %s" % String(result.get("error", "topologia inválida")))
+		return false
+	_floor_room_descriptors.clear()
+	for descriptor: Dictionary in result.get("rooms", []):
+		_floor_room_descriptors.append(descriptor.duplicate(true))
+	_last_room_family = StringName(result.get("last_family", _last_room_family))
+	return true
+
+func _is_boss_room() -> bool:
+	return current_room > common_rooms_per_floor
+
+
+func _is_final_boss() -> bool:
+	return current_floor == floors_per_run and _is_boss_room()
+
+func is_active_room_instance(room: Node) -> bool:
+	return not _run_ended and is_instance_valid(current_room_instance) and room == current_room_instance
+
+
+func _load_current_encounter() -> void:
+	if _run_ended:
+		return
+
+	var packed_scene: PackedScene = boss_room_scene if _is_boss_room() else common_room_scene
+	var next_room := packed_scene.instantiate()
+	# RunRoot processes while paused; room descendants must still stop with gameplay.
+	next_room.process_mode = Node.PROCESS_MODE_PAUSABLE
+	if not next_room.has_method("configure_run_managed"):
+		next_room.free()
+		_fail_run("ERRO: a cena de sala não oferece integração gerenciada.")
+		return
+	if not next_room.has_signal("run_progression_ready"):
+		next_room.free()
+		_fail_run("ERRO: a sala não oferece o sinal run_progression_ready.")
+		return
+	var should_offer_build_upgrade := _run_build.total_count() == 0
+	if current_room - 1 < 0 or current_room - 1 >= _floor_room_descriptors.size():
+		next_room.free()
+		_fail_run("ERRO: descritor da sala atual ausente.")
+		return
+	var room_descriptor: Dictionary = _floor_room_descriptors[current_room - 1]
+	if not bool(next_room.call("configure_run_managed", _run_build, should_offer_build_upgrade, int(room_descriptor.get("room_seed", 0)), room_descriptor)):
+		var layout_error := ""
+		if next_room.has_method("get_authored_layout_error"):
+			layout_error = String(next_room.call("get_authored_layout_error"))
+		next_room.free()
+		var failure_message := "ERRO: não foi possível configurar a sala para esta run."
+		if not layout_error.is_empty():
+			failure_message += " Layout: " + layout_error
+		_fail_run(failure_message)
+		return
+
+	var progression_callback := Callable(self, "_on_room_progression_ready").bind(next_room)
+	next_room.connect("run_progression_ready", progression_callback, CONNECT_ONE_SHOT)
+	room_container.add_child(next_room)
+	current_room_instance = next_room
+
+	var player := _find_player(next_room)
+	if player == null or player.health == null:
+		_discard_current_room("ERRO: a sala não contém um jogador com PlayerHealth.")
+		return
+
+	if _run_player_health < 0:
+		_run_player_health = player.current_health
+		_run_player_max_health = player.maximum_health
+	else:
+		if _run_player_health <= 0 or _run_player_max_health <= 0:
+			_discard_current_room("ERRO: HP inválido; a run não pode continuar.")
+			return
+		if not player.health.restore_health_for_room_transition(
+			_run_player_health,
+			_run_player_max_health
+		):
+			_discard_current_room("ERRO: não foi possível restaurar o HP da run.")
+			return
+
+	if not player.health_changed.is_connected(_on_player_health_changed):
+		player.health_changed.connect(_on_player_health_changed)
+	if not player.died.is_connected(_on_player_died):
+		player.died.connect(_on_player_died)
+	_on_player_health_changed(player.current_health, player.maximum_health)
+
+	# Main._ready reapplies the shared RunBuild; branch modifiers are installed
+	# afterward and are applied to each derived projectile config at launch.
+	_apply_run_upgrades(next_room)
+	_update_hud("ENCONTRO ATIVO")
+
+
+func _on_room_progression_ready(room: Node) -> void:
+	if _run_ended or transition_pending or room != current_room_instance:
+		return
+	transition_pending = true
+	call_deferred("_advance_after_room", room)
+
+
+func _advance_after_room(completed_room: Node) -> void:
+	if _run_ended or completed_room != current_room_instance:
+		return
+
+	if _is_boss_room():
+		var reward_screen: Variant = RewardScreenScript.new()
+		if reward_screen == null:
+			_fail_run("ERRO: não foi possível abrir a recompensa do chefe.")
+			return
+		_owned_reward_pause = not get_tree().paused
+		if _owned_reward_pause:
+			get_tree().paused = true
+		add_child(reward_screen)
+		_active_reward_screen = reward_screen
+		var selected_reward: String = await reward_screen.reward_chosen
+		_active_reward_screen = null
+		if is_instance_valid(reward_screen):
+			reward_screen.queue_free()
+		_close_owned_reward_pause()
+		if _run_ended or selected_reward.is_empty():
+			return
+		_apply_reward(selected_reward)
+
+	if _is_final_boss():
+		_run_ended = true
+		_show_victory_screen()
+		return
+
+	if transition_delay > 0.0:
+		_update_hud("SALA CONCLUÍDA. PRÓXIMA ETAPA EM %.1f s." % transition_delay)
+		var delay_timer: SceneTreeTimer = get_tree().create_timer(transition_delay)
+		await delay_timer.timeout
+	else:
+		_update_hud("SALA CONCLUÍDA. PREPARANDO PRÓXIMA ETAPA.")
+	if _run_ended or completed_room != current_room_instance:
+		return
+	_owned_transition_pause = not get_tree().paused
+	if _owned_transition_pause:
+		get_tree().paused = true
+	await _fade_managed_transition_to(1.0, 0.18)
+	if _run_ended or completed_room != current_room_instance:
+		_finish_managed_transition(false)
+		return
+
+	current_room_instance = null
+	if is_instance_valid(completed_room):
+		completed_room.queue_free()
+	await get_tree().process_frame
+	if _run_ended:
+		_finish_managed_transition(false)
+		return
+
+	_advance_stage()
+	transition_pending = false
+	_load_current_encounter()
+	if _run_ended:
+		_update_hud("FALHA AO INICIAR A PRÓXIMA SALA")
+		_show_game_over_screen("Não foi possível continuar a run.")
+		_finish_managed_transition(false)
+		return
+	await _fade_managed_transition_to(0.0, 0.22)
+	if _run_ended:
+		_finish_managed_transition(false)
+		return
+	_finish_managed_transition(true)
+
+
+func _advance_stage() -> void:
+	if _is_boss_room():
+		current_floor += 1
+		current_room = 1
+		_prepare_current_floor_plan()
+	else:
+		current_room += 1
+
+
+func _update_hud(status_text: String) -> void:
+	var stage_text := (
+		"CHEFE"
+		if _is_boss_room()
+		else "SALA %d/%d" % [current_room, common_rooms_per_floor]
+	)
+	if progress_label != null:
+		progress_label.text = "ANDAR %02d/%02d | %s | SEED %d" % [
+			current_floor,
+			floors_per_run,
+			stage_text,
+			_resolved_run_seed,
+		]
+	if status_label != null:
+		status_label.text = status_text
+
+
+func _show_victory_screen() -> void:
+	var overlay := CanvasLayer.new()
+	overlay.name = "VictoryOverlay"
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.02, 0.04, 0.08, 0.94)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(720, 300)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#101c2c")
+	panel_style.border_color = Color("#f0b35b")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(14)
+	panel_style.content_margin_left = 32
+	panel_style.content_margin_right = 32
+	panel_style.content_margin_top = 28
+	panel_style.content_margin_bottom = 28
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 20)
+	panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "ENTREGA CONCLUÍDA!"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 34)
+	title.add_theme_color_override("font_color", Color("#f0b35b"))
+	content.add_child(title)
+
+	var message := Label.new()
+	message.text = "O robô chegou ao topo da torre."
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 20)
+	content.add_child(message)
+
+	var restart_button := Button.new()
+	restart_button.text = "JOGAR NOVAMENTE"
+	restart_button.custom_minimum_size = Vector2(260, 54)
+	restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	restart_button.pressed.connect(_restart_run)
+	content.add_child(restart_button)
+	get_tree().paused = true
+
+
+func _show_game_over_screen(message_text: String = "O robô ficou sem energia.") -> void:
+	var overlay := CanvasLayer.new()
+	overlay.name = "GameOverOverlay"
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.02, 0.04, 0.08, 0.94)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(backdrop)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(620, 280)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#101c2c")
+	panel_style.border_color = Color("#e86b69")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(14)
+	panel_style.content_margin_left = 32
+	panel_style.content_margin_right = 32
+	panel_style.content_margin_top = 28
+	panel_style.content_margin_bottom = 28
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 20)
+	panel.add_child(content)
+
+	var title := Label.new()
+	title.text = "RUN ENCERRADA"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", Color("#e86b69"))
+	content.add_child(title)
+
+	var message := Label.new()
+	message.text = message_text
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 20)
+	content.add_child(message)
+
+	var restart_button := Button.new()
+	restart_button.text = "TENTAR NOVAMENTE"
+	restart_button.custom_minimum_size = Vector2(260, 54)
+	restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	restart_button.pressed.connect(_restart_run)
+	content.add_child(restart_button)
+	get_tree().paused = true
+
+func _ensure_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_layer) and is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_layer = CanvasLayer.new()
+	_transition_fade_layer.name = "ManagedRoomTransitionFade"
+	_transition_fade_layer.layer = 100
+	_transition_fade_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_transition_fade_layer)
+	_transition_fade_rect = ColorRect.new()
+	_transition_fade_rect.name = "Fade"
+	_transition_fade_rect.color = Color(0.0, 0.0, 0.0, 0.0)
+	_transition_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_fade_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_fade_layer.add_child(_transition_fade_rect)
+
+func _fade_managed_transition_to(target_alpha: float, duration: float) -> void:
+	_ensure_transition_fade()
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_rect.show()
+	var start_alpha := _transition_fade_rect.color.a
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_method(_set_managed_fade_alpha, start_alpha, target_alpha, duration)
+	await tween.finished
+
+func _set_managed_fade_alpha(alpha: float) -> void:
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	var tint := _transition_fade_rect.color
+	tint.a = clampf(alpha, 0.0, 1.0)
+	_transition_fade_rect.color = tint
+
+func _finish_managed_transition(release_owned_pause: bool) -> void:
+	if is_instance_valid(_transition_fade_layer):
+		_transition_fade_layer.queue_free()
+	_transition_fade_layer = null
+	_transition_fade_rect = null
+	if release_owned_pause and not _run_ended and _owned_transition_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_transition_pause = false
+
+func _hide_managed_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_rect):
+		_set_managed_fade_alpha(0.0)
+		_transition_fade_rect.hide()
+
+func fail_managed_room_transition(room: Node, message: String) -> void:
+	if _run_ended or room != current_room_instance:
+		return
+	_run_ended = true
+	transition_pending = true
+	_update_hud("FALHA NA TRANSIÇÃO: %s" % message)
+	call_deferred("_present_managed_transition_failure")
+
+func _present_managed_transition_failure() -> void:
+	_finish_managed_transition(false)
+	_owned_transition_pause = not get_tree().paused
+	if _owned_transition_pause:
+		get_tree().paused = true
+	if _run_ended:
+		_show_game_over_screen("A transição da sala falhou.")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _run_ended or not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if key_event.pressed and not key_event.echo and key_event.keycode == KEY_R:
+		get_viewport().set_input_as_handled()
+		_restart_run()
+
+func _restart_run() -> void:
+	if not _run_ended or _restart_in_progress:
+		return
+	_restart_in_progress = true
+	_finish_managed_transition(false)
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
+func _apply_reward(reward_name: String) -> void:
+	match reward_name:
+		"Núcleo de impacto":
+			_damage_multiplier *= 1.25
+		"Propulsor":
+			_speed_multiplier *= 1.15
+		"Esfera ampliada":
+			_radius_multiplier *= 1.15
+
+
+func _apply_run_upgrades(node: Node) -> void:
+	if node is BallLauncher:
+		(node as BallLauncher).set_run_reward_multipliers(
+			_damage_multiplier,
+			_speed_multiplier,
+			_radius_multiplier
+		)
+	for child in node.get_children():
+		_apply_run_upgrades(child)
+
+
+func _find_player(node: Node) -> Player:
+	if node is Player:
+		return node as Player
+	for child in node.get_children():
+		var found := _find_player(child)
+		if found != null:
+			return found
+	return null
+
+
+func _on_player_died() -> void:
+	if _run_ended:
+		return
+	_run_ended = true
+	transition_pending = true
+	_finish_managed_transition(false)
+	if is_instance_valid(_active_reward_screen) and _active_reward_screen.has_method("cancel_offer"):
+		_active_reward_screen.call("cancel_offer")
+	call_deferred("_present_game_over_after_physics")
+
+
+func _present_game_over_after_physics() -> void:
+	_close_owned_reward_pause()
+	if _run_ended:
+		_show_game_over_screen()
+
+
+func _close_owned_reward_pause() -> void:
+	if _owned_reward_pause and not _run_ended and get_tree().paused:
+		get_tree().paused = false
+	_owned_reward_pause = false
+
+
+func _on_player_health_changed(current_health: int, maximum_health: int) -> void:
+	_run_player_health = current_health
+	_run_player_max_health = maximum_health
+
+
+func _discard_current_room(message: String) -> void:
+	var room_to_discard := current_room_instance
+	current_room_instance = null
+	_run_ended = true
+	transition_pending = true
+	if is_instance_valid(room_to_discard):
+		room_to_discard.queue_free()
+	_fail_run(message)
+
+
+func _fail_run(message: String) -> void:
+	_run_ended = true
+	transition_pending = true
+	_finish_managed_transition(false)
+	push_error("RunController: " + message)
+	_update_hud(message)
+
+===== FILE scripts/world/room_layout_generator.gd =====
+extends RefCounted
+
+const MIN_PLATFORM_COUNT := 2
+const MAX_PLATFORM_COUNT := 5
+const MIN_RANDOM_WIDTH := 160
+const MIN_FALLBACK_WIDTH := 104
+const MAX_PLATFORM_WIDTH := 216
+const PLATFORM_THICKNESS := 24
+const GAP_MIN := 56
+const GAP_MAX := 96
+const FIRST_LEFT_MIN := 208
+const FIRST_LEFT_MAX := 256
+const RIGHT_LIMIT := 980
+const FIRST_TOP := 440
+const TOP_LIMIT := 376
+const MAX_RISE_PER_STEP := 64
+
+static func generate_managed_layout(
+	family: StringName,
+	requested_seed: int,
+	entry_dir: Vector2i,
+	exit_dir: Vector2i,
+	entry_offset: float,
+	exit_offset: float
+) -> Dictionary:
+	var centers: Array[float] = []
+	var tops: Array[float] = []
+	var widths: Array[float] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1 if requested_seed == 0 else requested_seed
+	var mirror := false
+	if family == &"roof_four":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [448.0, 352.0, 256.0, 160.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+		mirror = entry_offset == 248.0 if entry_dir == Vector2i(0, -1) else exit_offset == 248.0
+	elif family == &"roof_five":
+		centers = [328.0, 472.0, 616.0, 760.0, 904.0]
+		tops = [448.0, 376.0, 304.0, 232.0, 160.0]
+		widths = [104.0, 104.0, 104.0, 104.0, 104.0]
+		mirror = entry_offset == 248.0 if entry_dir == Vector2i(0, -1) else exit_offset == 248.0
+	elif family == &"catwalk":
+		centers = [256.0, 472.0, 688.0]
+		tops = [448.0, 400.0, 448.0]
+		widths = [160.0, 176.0, 160.0]
+		mirror = rng.randi_range(0, 1) == 0
+	elif family == &"ridge":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [448.0, 384.0, 352.0, 416.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+		mirror = rng.randi_range(0, 1) == 0
+	elif family == &"valley":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [400.0, 448.0, 448.0, 400.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+		mirror = rng.randi_range(0, 1) == 0
+	else:
+		return _invalid_result(requested_seed, "família gerenciada desconhecida: %s" % String(family))
+
+	if mirror:
+		for index in centers.size():
+			centers[index] = 1152.0 - centers[index]
+		if family != &"roof_four" and family != &"roof_five":
+			centers.reverse()
+			tops.reverse()
+			widths.reverse()
+	var entries: Array[Dictionary] = []
+	for index in centers.size():
+		var size := Vector2(widths[index], 16.0)
+		var position := Vector2(centers[index], tops[index] + 8.0)
+		var rect := Rect2(position - size * 0.5, size)
+		entries.append({"position": position, "size": size, "rect": rect})
+
+	var primary_index := 0
+	var fallback_index := mini(1, entries.size() - 1)
+	if family == &"roof_four" or family == &"roof_five":
+		primary_index = mini(1, entries.size() - 1)
+		fallback_index = mini(2, entries.size() - 1)
+	if entry_dir == Vector2i(0, -1):
+		primary_index = 0
+		fallback_index = mini(1, entries.size() - 1)
+	return {
+		"valid": _managed_entries_are_safe(entries, family, entry_dir, exit_dir, entry_offset, exit_offset),
+		"platforms": entries,
+		"primary_index": primary_index,
+		"fallback_index": fallback_index,
+		"seed": requested_seed,
+		"used_fallback": false,
+		"family": family,
+	}
+
+static func _managed_entries_are_safe(
+	entries: Array[Dictionary],
+	family: StringName,
+	entry_dir: Vector2i,
+	exit_dir: Vector2i,
+	entry_offset: float,
+	exit_offset: float
+) -> bool:
+	if entries.size() < MIN_PLATFORM_COUNT or entries.size() > MAX_PLATFORM_COUNT:
+		return false
+	if entry_dir == exit_dir or entries.is_empty():
+		return false
+	if exit_dir.x == 0 and absf(exit_offset - 248.0) > 0.01 and absf(exit_offset - 904.0) > 0.01:
+		return false
+	if entry_dir.x == 0 and absf(entry_offset - 248.0) > 0.01 and absf(entry_offset - 904.0) > 0.01:
+		return false
+	if (entry_dir == Vector2i(0, -1) or exit_dir == Vector2i(0, -1)) \
+		and family != &"roof_four" and family != &"roof_five":
+		return false
+	var previous := Rect2()
+	for index in entries.size():
+		var rect: Rect2 = entries[index].get("rect", Rect2())
+		if rect.size.y != 16.0 or rect.size.x < MIN_FALLBACK_WIDTH or rect.size.x > MAX_PLATFORM_WIDTH:
+			return false
+		if rect.position.x < 64.0 or rect.end.x > 1088.0 or fposmod(rect.position.x, 8.0) > 0.01 \
+			or fposmod(rect.size.x, 8.0) > 0.01 or fposmod(rect.position.y, 8.0) > 0.01:
+			return false
+		if rect.position.y < 152.0 or rect.position.y > 448.0 or 560.0 - rect.end.y < 96.0:
+			return false
+		if index > 0:
+			if rect.intersects(previous):
+				return false
+			var gap := maxf(rect.position.x - previous.end.x, previous.position.x - rect.end.x)
+			var rise := previous.position.y - rect.position.y
+			if family == &"roof_four" or family == &"roof_five":
+				if gap < 40.0 or gap > 80.0 or rise < 72.0 or rise > 112.0:
+					return false
+			elif gap < 40.0 or gap > 96.0:
+				return false
+		previous = rect
+	if family == &"roof_four" or family == &"roof_five":
+		var last_rect: Rect2 = entries.back().get("rect", Rect2())
+		var expected := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
+		if (entry_dir == Vector2i(0, -1) or exit_dir == Vector2i(0, -1)) \
+			and absf(last_rect.get_center().x - expected) > 0.01:
+			return false
+	return true
+static func generate_layout(platform_count: int, requested_seed: int, spawn_x: float) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	if requested_seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = requested_seed
+	var seed_used: int = rng.seed
+	if platform_count < MIN_PLATFORM_COUNT or platform_count > MAX_PLATFORM_COUNT:
+		return _invalid_result(seed_used, "quantidade atual de plataformas fora do intervalo suportado (2..5)")
+
+	var minimum_width: int = MIN_RANDOM_WIDTH if platform_count == 3 else MIN_FALLBACK_WIDTH
+	var minimum_footprint := platform_count * minimum_width + (platform_count - 1) * GAP_MIN
+	var spawn_left_min := ceili((spawn_x + 38.0) / 8.0) * 8
+	var first_left_min := maxi(FIRST_LEFT_MIN, spawn_left_min)
+	var first_left_max := mini(
+		FIRST_LEFT_MAX,
+		floori(float(RIGHT_LIMIT - minimum_footprint) / 8.0) * 8
+	)
+	var entries: Array[Dictionary] = []
+	if first_left_min <= first_left_max:
+		var first_left := rng.randi_range(first_left_min / 8, first_left_max / 8) * 8
+		var slack_units := floori(float(RIGHT_LIMIT - first_left - minimum_footprint) / 8.0)
+		var width_capacity_units := int((MAX_PLATFORM_WIDTH - minimum_width) / 8)
+		var gap_capacity_units := int((GAP_MAX - GAP_MIN) / 8)
+		var total_capacity_units := platform_count * width_capacity_units \
+			+ (platform_count - 1) * gap_capacity_units
+		# Reserva uma unidade de 8 px quando a folga permite.
+		var budget_limit := mini(slack_units, total_capacity_units)
+		if budget_limit > 0:
+			budget_limit -= 1
+		var extra_units := rng.randi_range(0, budget_limit)
+		var horizontal_budget := _distribute_horizontal_budget(
+			platform_count,
+			minimum_width,
+			extra_units,
+			rng
+		)
+		var widths: Array[int] = horizontal_budget.get("widths", [])
+		var gaps: Array[int] = horizontal_budget.get("gaps", [])
+		var rises := _distribute_vertical_rise(platform_count, rng)
+		var left := float(first_left)
+		var previous_top := FIRST_TOP
+		for index in platform_count:
+			var top := FIRST_TOP if index == 0 else previous_top - rises[index - 1]
+			previous_top = top
+			var rect := Rect2(Vector2(left, top), Vector2(widths[index], PLATFORM_THICKNESS))
+			entries.append(_entry_from_rect(rect))
+			left = rect.end.x
+			if index < platform_count - 1:
+				left += gaps[index]
+
+	if _entries_are_safe(entries, spawn_x):
+		return _success_result(entries, seed_used, false)
+
+	var fallback_entries := _safe_fallback(platform_count)
+	if not _entries_are_safe(fallback_entries, spawn_x):
+		return _invalid_result(seed_used, "fallback fixo não satisfaz os limites de sala")
+	return _success_result(fallback_entries, seed_used, true)
+
+static func _distribute_horizontal_budget(
+	platform_count: int,
+	minimum_width: int,
+	extra_units: int,
+	rng: RandomNumberGenerator
+) -> Dictionary:
+	var widths: Array[int] = []
+	var gaps: Array[int] = []
+	for index in platform_count:
+		widths.append(minimum_width)
+		if index < platform_count - 1:
+			gaps.append(GAP_MIN)
+
+	var slot_capacities: Array[int] = []
+	var slot_is_gap: Array[bool] = []
+	var slot_target_indices: Array[int] = []
+	var width_capacity_units := int((MAX_PLATFORM_WIDTH - minimum_width) / 8)
+	var gap_capacity_units := int((GAP_MAX - GAP_MIN) / 8)
+	for index in platform_count:
+		slot_capacities.append(width_capacity_units)
+		slot_is_gap.append(false)
+		slot_target_indices.append(index)
+		if index < platform_count - 1:
+			slot_capacities.append(gap_capacity_units)
+			slot_is_gap.append(true)
+			slot_target_indices.append(index)
+
+	var slot_order: Array[int] = []
+	for slot_index in slot_capacities.size():
+		slot_order.append(slot_index)
+	for index in range(slot_order.size() - 1, 0, -1):
+		var swap_index := rng.randi_range(0, index)
+		var previous_index: int = slot_order[index]
+		slot_order[index] = slot_order[swap_index]
+		slot_order[swap_index] = previous_index
+
+	var suffix_capacity: Array[int] = []
+	suffix_capacity.resize(slot_order.size() + 1)
+	suffix_capacity[slot_order.size()] = 0
+	for offset in slot_order.size():
+		var position := slot_order.size() - 1 - offset
+		suffix_capacity[position] = suffix_capacity[position + 1] + slot_capacities[slot_order[position]]
+
+	var remaining_units := extra_units
+	for position in slot_order.size():
+		var slot_index: int = slot_order[position]
+		var minimum_allocation := maxi(0, remaining_units - suffix_capacity[position + 1])
+		var maximum_allocation := mini(slot_capacities[slot_index], remaining_units)
+		var allocation := rng.randi_range(minimum_allocation, maximum_allocation)
+		if slot_is_gap[slot_index]:
+			gaps[slot_target_indices[slot_index]] += allocation * 8
+		else:
+			widths[slot_target_indices[slot_index]] += allocation * 8
+		remaining_units -= allocation
+
+	return {"widths": widths, "gaps": gaps}
+
+static func _distribute_vertical_rise(
+	platform_count: int,
+	rng: RandomNumberGenerator
+) -> Array[int]:
+	var edge_count := platform_count - 1
+	var remaining_units := rng.randi_range(0, MAX_RISE_PER_STEP / 8)
+	var rises: Array[int] = []
+	for index in edge_count:
+		var remaining_edges := edge_count - index - 1
+		var minimum_units := maxi(0, remaining_units - (MAX_RISE_PER_STEP / 8) * remaining_edges)
+		var maximum_units := mini(MAX_RISE_PER_STEP / 8, remaining_units)
+		var rise_units := rng.randi_range(minimum_units, maximum_units)
+		rises.append(rise_units * 8)
+		remaining_units -= rise_units
+	return rises
+
+static func _safe_fallback(platform_count: int) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	if platform_count == 3:
+		var centers := [324.0, 596.0, 860.0]
+		var widths := [200.0, 184.0, 184.0]
+		var tops := [440.0, 400.0, 376.0]
+		for index in platform_count:
+			var width: float = widths[index]
+			var top: float = tops[index]
+			var rect := Rect2(Vector2(centers[index] - width * 0.5, top), Vector2(width, PLATFORM_THICKNESS))
+			entries.append(_entry_from_rect(rect))
+		return entries
+
+	var gap := GAP_MIN
+	var available_width := RIGHT_LIMIT - FIRST_LEFT_MIN - gap * (platform_count - 1)
+	var width := mini(MAX_PLATFORM_WIDTH, floori(float(available_width) / float(platform_count) / 8.0) * 8)
+	if width < MIN_FALLBACK_WIDTH:
+		return entries
+	for index in platform_count:
+		var left := float(FIRST_LEFT_MIN + index * (width + gap))
+		var top := maxi(TOP_LIMIT, FIRST_TOP - mini(index, 2) * 32)
+		var rect := Rect2(Vector2(left, top), Vector2(width, PLATFORM_THICKNESS))
+		entries.append(_entry_from_rect(rect))
+	return entries
+
+static func _entries_are_safe(entries: Array[Dictionary], spawn_x: float) -> bool:
+	if entries.size() < MIN_PLATFORM_COUNT:
+		return false
+	var previous: Rect2
+	for index in entries.size():
+		var rect: Rect2 = entries[index].get("rect", Rect2())
+		if rect.size.y != PLATFORM_THICKNESS or rect.size.x < MIN_FALLBACK_WIDTH or rect.size.x > MAX_PLATFORM_WIDTH:
+			return false
+		if rect.position.x < 64.0 or rect.end.x > RIGHT_LIMIT or fposmod(rect.position.x, 8.0) > 0.01 or fposmod(rect.size.x, 8.0) > 0.01:
+			return false
+		if rect.position.y < TOP_LIMIT or rect.position.y > FIRST_TOP or rect.end.y > 464.0:
+			return false
+		if 560.0 - rect.end.y < 96.0:
+			return false
+		if index == 0:
+			if absf(rect.position.y - FIRST_TOP) > 0.01:
+				return false
+			if rect.position.x < FIRST_LEFT_MIN or rect.position.x > FIRST_LEFT_MAX or rect.position.x - (spawn_x + 14.0) < 24.0:
+				return false
+		else:
+			var gap := maxf(rect.position.x - previous.end.x, previous.position.x - rect.end.x)
+			var rise := previous.position.y - rect.position.y
+			if gap < GAP_MIN or gap > GAP_MAX or rise < 0.0 or rise > MAX_RISE_PER_STEP:
+				return false
+			if rect.intersects(previous):
+				return false
+		previous = rect
+	return true
+
+static func _entry_from_rect(rect: Rect2) -> Dictionary:
+	return {
+		"position": rect.get_center(),
+		"size": rect.size,
+		"rect": rect,
+	}
+
+static func _success_result(entries: Array[Dictionary], seed_used: int, used_fallback: bool) -> Dictionary:
+	return {
+		"valid": true,
+		"platforms": entries,
+		"primary_index": entries.size() - 1,
+		"fallback_index": 0,
+		"seed": seed_used,
+		"used_fallback": used_fallback,
+	}
+
+static func _invalid_result(seed_used: int, message: String) -> Dictionary:
+	return {
+		"valid": false,
+		"platforms": [],
+		"primary_index": -1,
+		"fallback_index": -1,
+		"seed": seed_used,
+		"used_fallback": false,
+		"error": message,
+	}
+
+===== FILE scripts/world/exit_door.gd =====
+extends Area2D
+
+signal transition_requested(player: Player)
+
+@export_enum("Exit", "Entrance") var door_role: int = 0
+@export var player_path: NodePath = NodePath("../Player")
+@export var gate_path: NodePath = NodePath("../WorldCollision/ExitGate")
+@export var portal_direction: Vector2i = Vector2i.RIGHT
+@export var portal_offset: float = 496.0
+
+@onready var _door_visual: Node2D = $SideDoorVisual
+@onready var _door_label: Label = $DoorLabel
+
+var _room_root: Node2D
+var _player: Player
+var _gate: CollisionShape2D
+var _room_is_cleared: bool = false
+var _transition_busy: bool = false
+var _terminal_complete: bool = false
+var _retry_enabled: bool = true
+var _failure_message: String = ""
+var _sample_initialized: bool = false
+var _previous_center_room := Vector2.ZERO
+var _crossing_armed: bool = false
+var _crossing_latched: bool = false
+var _latched_player: Player
+var _managed_orientation_configured: bool = false
+
+func _ready() -> void:
+	_room_root = get_parent() as Node2D
+	_player = get_node_or_null(player_path) as Player
+	_gate = get_node_or_null(gate_path) as CollisionShape2D
+	if door_role == 0 and _gate != null:
+		_gate.set_deferred("disabled", false)
+	_update_presentation()
+
+func configure_managed_orientation(direction: Vector2i, offset: float, is_exit: bool) -> void:
+	_managed_orientation_configured = true
+	portal_direction = direction
+	portal_offset = offset
+	door_role = 0 if is_exit else 1
+	if direction == Vector2i(-1, 0):
+		position = Vector2(32.0, 496.0)
+	elif direction == Vector2i(1, 0):
+		position = Vector2(1120.0, 496.0)
+	elif direction == Vector2i(0, -1):
+		position = Vector2(offset, 32.0)
+	else:
+		position = Vector2(offset, 604.0)
+	var sensor := get_node_or_null("SensorShape") as CollisionShape2D
+	if sensor != null:
+		sensor.position = Vector2.ZERO
+		var rectangle := RectangleShape2D.new()
+		rectangle.resource_local_to_scene = true
+		rectangle.size = Vector2(64.0, 128.0) if direction.x != 0 else Vector2(256.0, 96.0)
+		sensor.shape = rectangle
+	var visual := get_node_or_null("SideDoorVisual") as Node2D
+	if visual != null:
+		visual.position = Vector2(0.0, -16.0) if direction == Vector2i(0, -1) else Vector2.ZERO
+		visual.rotation = 0.0
+		visual.set("aperture_size", Vector2(64.0, 128.0) if direction.x != 0 else Vector2(256.0, 96.0))
+		visual.z_index = 1 if direction.x == 0 else 0
+		visual.set("flip_h", direction == Vector2i(-1, 0))
+	var label := get_node_or_null("DoorLabel") as Label
+	if label != null:
+		label.offset_left = -112.0
+		label.offset_right = 112.0
+		label.offset_top = -112.0 if direction.y >= 0 else 76.0
+		label.offset_bottom = label.offset_top + 48.0
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_update_presentation()
+func _physics_process(_delta: float) -> void:
+	if door_role != 0 or _player == null or not is_instance_valid(_player):
+		return
+	var center_value: Variant = _player_collider_center_in_room(_player)
+	if center_value == null:
+		return
+	var current_center: Vector2 = center_value
+	if not _sample_initialized:
+		_previous_center_room = current_center
+		_sample_initialized = true
+		return
+
+	var current_distance := _signed_distance(current_center)
+	var previous_distance := _signed_distance(_previous_center_room)
+	if not _crossing_armed and current_distance < (-2.0 if _managed_orientation_configured else 0.0) and (_retry_enabled or not _transition_busy):
+		_crossing_armed = true
+		_failure_message = ""
+		_update_presentation()
+
+	if _room_is_cleared and not _transition_busy and not _crossing_latched \
+		and _crossing_armed and previous_distance < 0.0 and current_distance >= 0.0 \
+		and (current_center - _previous_center_room).dot(_normal()) > 0.0 \
+		and _point_is_inside_exit_opening(current_center):
+		_crossing_latched = true
+		_crossing_armed = false
+		_latched_player = _player
+		_transition_busy = true
+		_failure_message = ""
+		_update_presentation()
+		transition_requested.emit(_player)
+
+	_previous_center_room = current_center
+
+func set_room_cleared(cleared: bool) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	_room_is_cleared = cleared
+	if _gate != null:
+		_gate.set_deferred("disabled", cleared)
+	if not cleared:
+		_transition_busy = false
+		_failure_message = ""
+		_crossing_latched = false
+		_latched_player = null
+		_crossing_armed = false
+		_sample_initialized = false
+	elif _player != null and is_instance_valid(_player):
+		var center_value: Variant = _player_collider_center_in_room(_player)
+		if center_value != null:
+			_previous_center_room = center_value
+			_sample_initialized = true
+			_crossing_armed = _signed_distance(_previous_center_room) < (-2.0 if _managed_orientation_configured else 0.0)
+	_update_presentation()
+
+func set_transition_busy(busy: bool) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	if busy and not _room_is_cleared:
+		return
+	_transition_busy = busy
+	if busy:
+		_failure_message = ""
+	_update_presentation()
+
+func set_retry_enabled(enabled: bool) -> void:
+	_retry_enabled = enabled
+
+func report_transition_failure(message: String) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	_failure_message = message.strip_edges()
+	_crossing_latched = false
+	_latched_player = null
+	_crossing_armed = false
+	if _retry_enabled:
+		_transition_busy = false
+	else:
+		_transition_busy = true
+	_update_presentation()
+
+func has_latched_crossing(player: Player) -> bool:
+	return (
+		door_role == 0
+		and _room_is_cleared
+		and _transition_busy
+		and _crossing_latched
+		and player != null
+		and is_instance_valid(player)
+		and player == _latched_player
+		and _player == player
+	)
+
+func is_player_inside_exit_opening(player: Player) -> bool:
+	if player == null or not is_instance_valid(player) or player != _player:
+		return false
+	var center_value: Variant = _player_collider_center_in_room(player)
+	if center_value == null:
+		return false
+	var center: Vector2 = center_value
+	return _signed_distance(center) >= 0.0 and _point_is_inside_exit_opening(center)
+
+func is_gate_open() -> bool:
+	return _gate != null and _gate.disabled
+
+func set_terminal_complete() -> void:
+	_terminal_complete = true
+	_room_is_cleared = false
+	_transition_busy = false
+	_failure_message = ""
+	_crossing_latched = false
+	_latched_player = null
+	_crossing_armed = false
+	if _gate != null:
+		_gate.set_deferred("disabled", false)
+	_update_presentation()
+
+func _player_collider_center_in_room(player: Player) -> Variant:
+	if _room_root == null or not is_instance_valid(_room_root):
+		return null
+	var collision := player.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision == null or collision.shape == null:
+		return null
+	var center_global := collision.global_transform * collision.shape.get_rect().get_center()
+	return _room_root.to_local(center_global)
+
+func _line_point_in_room() -> Vector2:
+	if _room_root == null:
+		return position
+	return _room_root.to_local(global_position)
+
+func _normal() -> Vector2:
+	return Vector2(portal_direction)
+
+func _signed_distance(center_room: Vector2) -> float:
+	return (center_room - _line_point_in_room()).dot(_normal())
+
+func _point_is_inside_exit_opening(center_room: Vector2) -> bool:
+	if _gate == null or _room_root == null or _gate.shape == null:
+		return false
+	var gate_to_room := _room_root.global_transform.affine_inverse() * _gate.global_transform
+	var opening := _transform_rect(_gate.shape.get_rect(), gate_to_room)
+	return opening.has_point(center_room)
+
+func _transform_rect(rect: Rect2, transform: Transform2D) -> Rect2:
+	var a := transform * rect.position
+	var b := transform * Vector2(rect.end.x, rect.position.y)
+	var c := transform * rect.end
+	var d := transform * Vector2(rect.position.x, rect.end.y)
+	var minimum := Vector2(
+		minf(minf(a.x, b.x), minf(c.x, d.x)),
+		minf(minf(a.y, b.y), minf(c.y, d.y))
+	)
+	var maximum := Vector2(
+		maxf(maxf(a.x, b.x), maxf(c.x, d.x)),
+		maxf(maxf(a.y, b.y), maxf(c.y, d.y))
+	)
+	return Rect2(minimum, maximum - minimum)
+
+func _update_presentation() -> void:
+	if not is_instance_valid(_door_visual) or not is_instance_valid(_door_label):
+		return
+	if door_role != 0:
+		_door_visual.call("set_aperture_open", false)
+		_door_label.text = "ENTRADA\nACESSO BLOQUEADO"
+		return
+	if _terminal_complete:
+		_door_visual.call("set_aperture_open", false)
+		_door_label.text = "ETAPA CONCLUÍDA"
+		return
+	var is_open := _room_is_cleared
+	_door_visual.call("set_aperture_open", is_open)
+	if not _failure_message.is_empty():
+		if _retry_enabled:
+			_door_label.text = "%s\nRECUE E TENTE NOVAMENTE" % _failure_message
+		else:
+			_door_label.text = _failure_message
+	elif _transition_busy:
+		_door_label.text = "TRANSIÇÃO EM CURSO"
+	elif not _room_is_cleared:
+		_door_label.text = "SAÍDA BLOQUEADA\nELIMINE OS INIMIGOS"
+	else:
+		_door_label.text = "SAÍDA ABERTA\nATRAVESSE"
+===== FILE scripts/world/side_door_visual.gd =====
+@tool
+extends Node2D
+
+const VOID := Color("#0E0D0E")
+const DEPTH := Color("#1D1B1A")
+const SHADOW := Color("#302D2A")
+const METAL_DARK := Color("#5B5249")
+const METAL := Color("#756957")
+const METAL_LIGHT := Color("#90816A")
+const COPPER := Color("#70432C")
+const AMBER := Color("#B78342")
+
+@export var flip_h: bool = false:
+	set(value):
+		flip_h = value
+		queue_redraw()
+
+@export var is_open: bool = false:
+	set(value):
+		is_open = value
+		queue_redraw()
+
+@export var aperture_size: Vector2 = Vector2(64.0, 128.0):
+	set(value):
+		aperture_size = Vector2(maxf(value.x, 64.0), maxf(value.y, 64.0))
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func set_aperture_open(value: bool) -> void:
+	is_open = value
+
+func _draw() -> void:
+	if aperture_size.is_equal_approx(Vector2(64.0, 128.0)):
+		_draw_legacy_side_door()
+		return
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+	var half := aperture_size * 0.5
+	var border := 4.0
+	var cap := minf(8.0, half.y)
+	draw_rect(Rect2(-half.x, -half.y, aperture_size.x, aperture_size.y), VOID)
+	draw_rect(Rect2(-half.x, -half.y, border, aperture_size.y), SHADOW)
+	draw_rect(Rect2(half.x - border, -half.y, border, aperture_size.y), DEPTH)
+	draw_rect(Rect2(-half.x, -half.y, aperture_size.x, border), METAL_DARK)
+	draw_rect(Rect2(-half.x + border, -half.y + 2.0, aperture_size.x - border * 2.0, 2.0), METAL_LIGHT)
+	draw_rect(Rect2(-half.x, half.y - cap, aperture_size.x, cap), METAL_DARK)
+	draw_rect(Rect2(-half.x + border, half.y - cap, aperture_size.x - border * 2.0, 2.0), METAL_LIGHT)
+	draw_rect(Rect2(-half.x + border, -half.y + border, 2.0, aperture_size.y - border - cap), COPPER)
+	draw_rect(Rect2(half.x - border - 2.0, -half.y + border, 2.0, aperture_size.y - border - cap), METAL_DARK)
+	if is_open:
+		draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, aperture_size.x - 16.0, aperture_size.y - 16.0), VOID)
+		draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, aperture_size.x - 16.0, 2.0), METAL_DARK)
+		draw_rect(Rect2(-half.x + 8.0, half.y - 10.0, aperture_size.x - 16.0, 2.0), SHADOW)
+	else:
+		var bar_count := maxi(3, floori(aperture_size.x / 18.0))
+		var inner_width := aperture_size.x - 24.0
+		for index in bar_count:
+			var fraction := (float(index) + 0.5) / float(bar_count)
+			var bar_x := -inner_width * 0.5 + inner_width * fraction
+			draw_rect(Rect2(bar_x - 2.0, -half.y + 10.0, 4.0, aperture_size.y - 20.0), METAL)
+			draw_rect(Rect2(bar_x - 1.0, -half.y + 10.0, 1.0, aperture_size.y - 20.0), METAL_LIGHT)
+		var rail_y := -half.y + aperture_size.y * 0.33
+		draw_rect(Rect2(-half.x + 10.0, rail_y, aperture_size.x - 20.0, 4.0), METAL_DARK)
+		draw_rect(Rect2(-half.x + 10.0, rail_y + aperture_size.y * 0.36, aperture_size.x - 20.0, 4.0), METAL_DARK)
+		draw_rect(Rect2(half.x - 14.0, -8.0, 6.0, 16.0), METAL_DARK)
+		draw_rect(Rect2(half.x - 12.0, -6.0, 2.0, 12.0), METAL_LIGHT)
+		draw_rect(Rect2(half.x - 14.0, -2.0, 6.0, 4.0), COPPER)
+		draw_rect(Rect2(half.x - 12.0, -2.0, 2.0, 4.0), AMBER)
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_legacy_side_door() -> void:
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+	draw_rect(Rect2(-32, -64, 64, 128), VOID)
+	draw_rect(Rect2(-32, -64, 4, 128), SHADOW)
+	draw_rect(Rect2(28, -64, 4, 128), DEPTH)
+	draw_rect(Rect2(-30, -64, 60, 8), METAL_DARK)
+	draw_rect(Rect2(-28, -62, 56, 2), METAL_LIGHT)
+	draw_rect(Rect2(-28, -58, 56, 2), SHADOW)
+	draw_rect(Rect2(-30, 58, 60, 6), METAL_DARK)
+	draw_rect(Rect2(-28, 58, 56, 2), METAL_LIGHT)
+	draw_rect(Rect2(-30, 62, 60, 2), SHADOW)
+	draw_rect(Rect2(-28, -56, 2, 112), COPPER)
+	draw_rect(Rect2(26, -56, 2, 112), METAL_DARK)
+	draw_rect(Rect2(-26, 42, 2, 4), COPPER)
+	for rivet_y in [-48, -16, 16, 48]:
+		draw_rect(Rect2(-30, rivet_y, 2, 2), AMBER)
+		draw_rect(Rect2(28, rivet_y, 2, 2), METAL_LIGHT)
+	if not is_open:
+		draw_rect(Rect2(-22, -54, 44, 4), METAL_DARK)
+		draw_rect(Rect2(-22, 50, 44, 4), METAL_DARK)
+		for bar_x in [-18, -6, 6, 18]:
+			draw_rect(Rect2(bar_x, -50, 4, 100), METAL)
+			draw_rect(Rect2(bar_x, -50, 2, 100), METAL_LIGHT)
+		for rail_y in [-22, 18]:
+			draw_rect(Rect2(-18, rail_y, 36, 4), METAL_DARK)
+		draw_rect(Rect2(20, -12, 6, 24), METAL_DARK)
+		draw_rect(Rect2(22, -10, 2, 20), METAL_LIGHT)
+		draw_rect(Rect2(20, -2, 6, 4), COPPER)
+		draw_rect(Rect2(22, -2, 2, 4), AMBER)
+	else:
+		draw_rect(Rect2(-24, -54, 48, 108), VOID)
+		draw_rect(Rect2(-24, -54, 48, 2), METAL_DARK)
+		draw_rect(Rect2(-24, 52, 48, 2), SHADOW)
+		draw_rect(Rect2(-24, -52, 2, 104), DEPTH)
+		draw_rect(Rect2(22, -52, 2, 104), COPPER)
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+===== FILE scripts/world/factory_ceiling_visual.gd =====
+@tool
+extends Node2D
+
+const ATLAS_TILE_SIZE := 32
+const DRAW_TILE_SIZE := 64
+const BAND_WIDTH := 1152
+const BAND_HEIGHT := 64
+const ATLAS_COORDINATES := Vector2i(1, 0)
+
+@export var atlas_texture: Texture2D:
+	set(value):
+		atlas_texture = value
+		queue_redraw()
+@export var opening_center_x: float = 0.0:
+	set(value):
+		opening_center_x = value
+		queue_redraw()
+@export var opening_width: float = 0.0:
+	set(value):
+		opening_width = maxf(value, 0.0)
+		queue_redraw()
+@export var opening_enabled: bool = false:
+	set(value):
+		opening_enabled = value
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func _draw() -> void:
+	if atlas_texture == null:
+		return
+	var source := Rect2(
+		ATLAS_COORDINATES.x * ATLAS_TILE_SIZE,
+		ATLAS_COORDINATES.y * ATLAS_TILE_SIZE,
+		ATLAS_TILE_SIZE,
+		ATLAS_TILE_SIZE
+	)
+	draw_set_transform(Vector2(0.0, BAND_HEIGHT), 0.0, Vector2(1.0, -1.0))
+	var opening_left := opening_center_x + BAND_WIDTH * 0.5 - opening_width * 0.5
+	var opening_right := opening_center_x + BAND_WIDTH * 0.5 + opening_width * 0.5
+	for segment_index in range(BAND_WIDTH / DRAW_TILE_SIZE):
+		var x := float(segment_index * DRAW_TILE_SIZE)
+		var destination := Rect2(x, 0.0, DRAW_TILE_SIZE, DRAW_TILE_SIZE)
+		if not opening_enabled or x + DRAW_TILE_SIZE <= opening_left or x >= opening_right:
+			draw_texture_rect_region(atlas_texture, destination, source)
+			continue
+		var left_end := clampf(opening_left, x, x + DRAW_TILE_SIZE)
+		var right_start := clampf(opening_right, x, x + DRAW_TILE_SIZE)
+		if left_end > x:
+			var left_width := left_end - x
+			draw_texture_rect_region(
+				atlas_texture,
+				Rect2(x, 0.0, left_width, DRAW_TILE_SIZE),
+				Rect2(source.position, Vector2(ATLAS_TILE_SIZE * left_width / DRAW_TILE_SIZE, ATLAS_TILE_SIZE))
+			)
+		if right_start < x + DRAW_TILE_SIZE:
+			var right_width := x + DRAW_TILE_SIZE - right_start
+			var source_x := source.position.x + ATLAS_TILE_SIZE * (right_start - x) / DRAW_TILE_SIZE
+			draw_texture_rect_region(
+				atlas_texture,
+				Rect2(right_start, 0.0, right_width, DRAW_TILE_SIZE),
+				Rect2(Vector2(source_x, source.position.y), Vector2(ATLAS_TILE_SIZE * right_width / DRAW_TILE_SIZE, ATLAS_TILE_SIZE))
+			)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+===== FILE scripts/world/factory_wall_visual.gd =====
+@tool
+extends Node2D
+
+const ATLAS_TILE_SIZE := 32
+const DRAW_TILE_SIZE := 64
+const SEGMENT_COUNT := 10
+const FINAL_SOURCE_HEIGHT := 4
+const FINAL_DRAW_HEIGHT := 8
+
+@export var atlas_texture: Texture2D:
+	set(value):
+		atlas_texture = value
+		queue_redraw()
+
+@export var atlas_source_id: int = 0:
+	set(value):
+		atlas_source_id = value
+		queue_redraw()
+
+@export var atlas_coordinates: Vector2i = Vector2i(0, 1):
+	set(value):
+		atlas_coordinates = value
+		queue_redraw()
+
+@export var flip_h: bool = false:
+	set(value):
+		flip_h = value
+		queue_redraw()
+
+# A zero opening height leaves this wall continuous (the default for other callers).
+@export var opening_top: float = -1.0:
+	set(value):
+		opening_top = value
+		queue_redraw()
+
+@export var opening_height: float = 0.0:
+	set(value):
+		opening_height = value
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func _draw() -> void:
+	if atlas_texture == null or atlas_source_id != 0 or atlas_coordinates.x < 0 or atlas_coordinates.y < 0:
+		return
+
+	var source_x := atlas_coordinates.x * ATLAS_TILE_SIZE
+	var source_y := atlas_coordinates.y * ATLAS_TILE_SIZE
+	var full_source := Rect2(source_x, source_y, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE)
+	var has_opening := opening_height > 0.0 and opening_top >= 0.0
+	if flip_h:
+		# Refletir no centro do segmento aponta o acabamento do atlas para dentro.
+		draw_set_transform(Vector2(DRAW_TILE_SIZE, 0.0), 0.0, Vector2(-1.0, 1.0))
+
+	for segment_index in SEGMENT_COUNT:
+		var destination_y := segment_index * DRAW_TILE_SIZE
+		_draw_clipped_segment(
+			Rect2(0.0, destination_y, DRAW_TILE_SIZE, DRAW_TILE_SIZE),
+			full_source,
+			has_opening
+		)
+
+	# A última peça reutiliza os quatro pixels superiores da célula, escalados por dois.
+	_draw_clipped_segment(
+		Rect2(0.0, SEGMENT_COUNT * DRAW_TILE_SIZE, DRAW_TILE_SIZE, FINAL_DRAW_HEIGHT),
+		Rect2(source_x, source_y, ATLAS_TILE_SIZE, FINAL_SOURCE_HEIGHT),
+		has_opening
+	)
+
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_clipped_segment(destination: Rect2, source: Rect2, has_opening: bool) -> void:
+	if not has_opening:
+		draw_texture_rect_region(atlas_texture, destination, source)
+		return
+
+	var segment_top := destination.position.y
+	var segment_bottom := destination.end.y
+	var opening_bottom := opening_top + opening_height
+	var clipped_opening_top := maxf(opening_top, segment_top)
+	var clipped_opening_bottom := minf(opening_bottom, segment_bottom)
+	if clipped_opening_bottom <= segment_top or clipped_opening_top >= segment_bottom:
+		draw_texture_rect_region(atlas_texture, destination, source)
+		return
+
+	var source_per_destination_y := source.size.y / destination.size.y
+	if clipped_opening_top > segment_top:
+		var upper_height := clipped_opening_top - segment_top
+		draw_texture_rect_region(
+			atlas_texture,
+			Rect2(destination.position.x, segment_top, destination.size.x, upper_height),
+			Rect2(source.position.x, source.position.y, source.size.x, upper_height * source_per_destination_y)
+		)
+	if clipped_opening_bottom < segment_bottom:
+		var lower_height := segment_bottom - clipped_opening_bottom
+		var lower_source_y := source.position.y + (clipped_opening_bottom - segment_top) * source_per_destination_y
+		draw_texture_rect_region(
+			atlas_texture,
+			Rect2(destination.position.x, clipped_opening_bottom, destination.size.x, lower_height),
+			Rect2(source.position.x, lower_source_y, source.size.x, lower_height * source_per_destination_y)
+		)
+
+===== FILE scripts/world/factory_surface_visual.gd =====
+@tool
+extends Node2D
+
+const SOURCE_TILE_SIZE: float = 32.0
+const WORLD_SCALE: float = 2.0
+const WORLD_TILE_SIZE: float = SOURCE_TILE_SIZE * WORLD_SCALE
+const MIN_REMAINDER: float = 0.001
+const FACTORY_TILESET: TileSet = preload("res://resources/environment/factory_tileset_v1.tres")
+
+enum SurfaceStyle { PLATFORM, BLOCK }
+
+@export var surface_size: Vector2 = Vector2(220.0, 24.0):
+	set(value):
+		surface_size = Vector2(maxf(value.x, 0.0), maxf(value.y, 0.0))
+		if is_inside_tree():
+			queue_redraw()
+
+@export_enum("Platform", "Block") var surface_style: int = SurfaceStyle.PLATFORM:
+	set(value):
+		surface_style = clampi(value, SurfaceStyle.PLATFORM, SurfaceStyle.BLOCK)
+		if is_inside_tree():
+			queue_redraw()
+
+@export var opening_center_x: float = 0.0:
+	set(value):
+		opening_center_x = value
+		queue_redraw()
+@export var opening_width: float = 0.0:
+	set(value):
+		opening_width = maxf(value, 0.0)
+		queue_redraw()
+@export var opening_enabled: bool = false:
+	set(value):
+		opening_enabled = value
+		queue_redraw()
+
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func _draw() -> void:
+	if surface_size.x <= 0.0 or surface_size.y <= 0.0:
+		return
+	var atlas_source: TileSetAtlasSource = FACTORY_TILESET.get_source(0) as TileSetAtlasSource
+	if atlas_source == null:
+		return
+	var atlas: Texture2D = atlas_source.texture
+	if atlas == null:
+		return
+	if not opening_enabled or opening_width <= 0.0:
+		_draw_interval(atlas, 0.0, surface_size.x)
+		return
+	var half_width := surface_size.x * 0.5
+	var left_edge := clampf(opening_center_x - opening_width * 0.5, -half_width, half_width)
+	var right_edge := clampf(opening_center_x + opening_width * 0.5, -half_width, half_width)
+	var left_width := left_edge + half_width
+	var right_width := half_width - right_edge
+	if left_width > MIN_REMAINDER:
+		_draw_interval(atlas, -half_width + left_width * 0.5, left_width)
+	if right_width > MIN_REMAINDER:
+		_draw_interval(atlas, right_edge + right_width * 0.5, right_width)
+
+func _draw_interval(atlas: Texture2D, center_x: float, width: float) -> void:
+	draw_set_transform(Vector2(center_x, 0.0), 0.0, Vector2.ONE)
+	if surface_style == SurfaceStyle.BLOCK:
+		_draw_block(atlas, width, surface_size.y)
+	else:
+		_draw_platform(atlas, width, surface_size.y)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_platform(atlas: Texture2D, width: float, height: float) -> void:
+	var source_height: float = minf(SOURCE_TILE_SIZE, height / WORLD_SCALE)
+	_draw_triplet(atlas, 96.0, source_height, -height * 0.5, width, 0, 1, 2)
+
+func _draw_block(atlas: Texture2D, width: float, height: float) -> void:
+	var top_height: float = minf(WORLD_TILE_SIZE, height)
+	var top_source_height: float = top_height / WORLD_SCALE
+	var top_y: float = -height * 0.5
+	_draw_triplet(atlas, 0.0, top_source_height, top_y, width, 0, 1, 2)
+	var remaining_height: float = height - top_height
+	if remaining_height <= 0.0:
+		return
+	var bottom_height: float = minf(WORLD_TILE_SIZE, remaining_height)
+	if remaining_height > WORLD_TILE_SIZE:
+		var fill_height: float = remaining_height - WORLD_TILE_SIZE
+		var fill_y: float = top_y + top_height
+		while fill_height > MIN_REMAINDER:
+			var slice_height: float = minf(WORLD_TILE_SIZE, fill_height)
+			_draw_triplet(atlas, 32.0, slice_height / WORLD_SCALE, fill_y, width, 0, 1, 2)
+			fill_y += slice_height
+			fill_height -= slice_height
+		bottom_height = WORLD_TILE_SIZE
+	var bottom_source_height: float = bottom_height / WORLD_SCALE
+	var bottom_source_y: float = 64.0 + SOURCE_TILE_SIZE - bottom_source_height
+	var bottom_y: float = height * 0.5 - bottom_height
+	_draw_triplet(atlas, bottom_source_y, bottom_source_height, bottom_y, width, 0, 1, 2)
+
+func _draw_triplet(
+	atlas: Texture2D,
+	source_y: float,
+	source_height: float,
+	destination_y: float,
+	width: float,
+	left_column: int,
+	middle_column: int,
+	right_column: int
+) -> void:
+	if width <= 0.0 or source_height <= 0.0:
+		return
+	var half_width: float = width * 0.5
+	var source_cap_width: float = minf(SOURCE_TILE_SIZE, width / (WORLD_SCALE * 2.0))
+	var destination_cap_width: float = source_cap_width * WORLD_SCALE
+	var destination_rect: Rect2
+	var source_rect: Rect2
+	if destination_cap_width > 0.0:
+		destination_rect = Rect2(Vector2(-half_width, destination_y), Vector2(destination_cap_width, source_height * WORLD_SCALE))
+		source_rect = Rect2(Vector2(float(left_column) * SOURCE_TILE_SIZE, source_y), Vector2(source_cap_width, source_height))
+		draw_texture_rect_region(atlas, destination_rect, source_rect, Color.WHITE)
+		destination_rect = Rect2(Vector2(half_width - destination_cap_width, destination_y), Vector2(destination_cap_width, source_height * WORLD_SCALE))
+		source_rect = Rect2(Vector2(float(right_column) * SOURCE_TILE_SIZE + SOURCE_TILE_SIZE - source_cap_width, source_y), Vector2(source_cap_width, source_height))
+		draw_texture_rect_region(atlas, destination_rect, source_rect, Color.WHITE)
+	var middle_start: float = -half_width + destination_cap_width
+	var middle_end: float = half_width - destination_cap_width
+	var cursor: float = middle_start
+	while cursor < middle_end - MIN_REMAINDER:
+		var remaining_middle: float = middle_end - cursor
+		var source_middle_width: float = minf(SOURCE_TILE_SIZE, remaining_middle / WORLD_SCALE)
+		if source_middle_width <= 0.0:
+			break
+		var destination_middle_width: float = source_middle_width * WORLD_SCALE
+		destination_rect = Rect2(Vector2(cursor, destination_y), Vector2(destination_middle_width, source_height * WORLD_SCALE))
+		source_rect = Rect2(Vector2(float(middle_column) * SOURCE_TILE_SIZE, source_y), Vector2(source_middle_width, source_height))
+		draw_texture_rect_region(atlas, destination_rect, source_rect, Color.WHITE)
+		cursor += destination_middle_width
+===== FILE scripts/world/room_run_layout.gd =====
+extends RefCounted
+
+## Builds a deterministic, linear room plan before any room scene enters the tree.
+const HORIZONTAL_FAMILIES: Array[StringName] = [&"catwalk", &"ridge", &"valley"]
+const ROOF_FAMILIES: Array[StringName] = [&"roof_four", &"roof_five"]
+const LEFT := Vector2i(-1, 0)
+const RIGHT := Vector2i(1, 0)
+const UP := Vector2i(0, -1)
+const DOWN := Vector2i(0, 1)
+
+static func resolve_seed(requested_seed: int, randomize_seed: bool) -> int:
+	if not randomize_seed:
+		return requested_seed
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	return rng.randi()
+
+static func build_floor(run_seed: int, floor_index: int, room_count: int, previous_family: StringName) -> Dictionary:
+	if room_count < 1:
+		return {"valid": false, "error": "run precisa de ao menos uma sala por andar", "rooms": []}
+	var topology_rng := RandomNumberGenerator.new()
+	topology_rng.seed = _derived_seed([run_seed, floor_index, 0x544F504F])
+	var horizontal := RIGHT if topology_rng.randi_range(0, 1) == 0 else LEFT
+	var link_count := room_count - 1
+	var reserved_vertical := -1
+	if link_count >= 2:
+		var first_candidate := 1 if horizontal == LEFT else 0
+		reserved_vertical = topology_rng.randi_range(first_candidate, link_count - 1)
+	var coords: Array[Vector2i] = [Vector2i.ZERO]
+	var exits: Array[Vector2i] = []
+	var exit_offsets: Array[float] = []
+	var vertical_sign_by_column: Dictionary = {}
+	var vertical_used_by_column: Dictionary = {}
+	var current := Vector2i.ZERO
+	for link_index in link_count:
+		var incoming := LEFT
+		if not exits.is_empty():
+			var last_move: Vector2i = exits.back()
+			incoming = Vector2i(-last_move.x, -last_move.y)
+		var must_vertical := (link_index == reserved_vertical or (link_index == 0 and horizontal == LEFT)) and not bool(vertical_used_by_column.get(str(current.x), false))
+		var candidates: Array[Vector2i] = []
+		var column_key := str(current.x)
+		var fixed_sign := int(vertical_sign_by_column.get(column_key, 0))
+		if must_vertical:
+			if fixed_sign != 0:
+				candidates.append(UP if fixed_sign < 0 else DOWN)
+			else:
+				candidates.append(UP)
+				candidates.append(DOWN)
+		else:
+			candidates.append(horizontal)
+			if not bool(vertical_used_by_column.get(column_key, false)):
+				if fixed_sign == 0:
+					candidates.append(UP)
+					candidates.append(DOWN)
+				else:
+					candidates.append(UP if fixed_sign < 0 else DOWN)
+		var legal: Array[Vector2i] = []
+		for direction in candidates:
+			if direction == incoming:
+				continue
+			if direction.x == 0:
+				var old_sign := int(vertical_sign_by_column.get(column_key, 0))
+				if old_sign != 0 and signi(direction.y) != old_sign:
+					continue
+			legal.append(direction)
+		if legal.is_empty():
+			return {"valid": false, "error": "não foi possível escolher ligação sem retorno na coordenada %s" % str(current), "rooms": []}
+		var chosen: Vector2i = legal[topology_rng.randi_range(0, legal.size() - 1)]
+		if chosen.x == 0:
+			vertical_sign_by_column[column_key] = signi(chosen.y)
+			vertical_used_by_column[column_key] = true
+		var offset := 496.0 if chosen.x != 0 else (248.0 if topology_rng.randi_range(0, 1) == 0 else 904.0)
+		exits.append(chosen)
+		exit_offsets.append(offset)
+		current += chosen
+		coords.append(current)
+
+	var rooms: Array[Dictionary] = []
+	var prior := previous_family
+	for room_index in room_count:
+		var entry: Vector2i = LEFT if room_index == 0 else Vector2i(-exits[room_index - 1].x, -exits[room_index - 1].y)
+		var exit_dir: Vector2i
+		var exit_offset: float
+		if room_index < link_count:
+			exit_dir = exits[room_index]
+			exit_offset = exit_offsets[room_index]
+		else:
+			var terminal_candidates: Array[Vector2i] = [horizontal, UP, DOWN]
+			for candidate in terminal_candidates:
+				if candidate != entry:
+					exit_dir = candidate
+					break
+			if exit_dir == Vector2i.ZERO:
+				exit_dir = LEFT if entry != LEFT else RIGHT
+			exit_offset = 496.0 if exit_dir.x != 0 else (248.0 if topology_rng.randi_range(0, 1) == 0 else 904.0)
+		if exit_dir == DOWN and entry.x != 0:
+			exit_offset = 904.0 if entry == LEFT else 248.0
+			if room_index < link_count:
+				exit_offsets[room_index] = exit_offset
+		if exit_dir == entry:
+			return {"valid": false, "error": "saída coincide com entrada na sala %d" % (room_index + 1), "rooms": []}
+		var needs_roof := entry == UP or exit_dir == UP
+		var family_candidates: Array[StringName] = ROOF_FAMILIES if needs_roof else HORIZONTAL_FAMILIES
+		var available: Array[StringName] = []
+		for family in family_candidates:
+			if family != prior:
+				available.append(family)
+		if available.is_empty():
+			available = family_candidates.duplicate()
+		var family_rng := RandomNumberGenerator.new()
+		family_rng.seed = _derived_seed([run_seed, floor_index, room_index, 0x46414D49])
+		var family: StringName = available[family_rng.randi_range(0, available.size() - 1)]
+		prior = family
+		var room_seed := _derived_seed([run_seed, floor_index, room_index, 0x524F4F4D])
+		var entry_offset := 496.0 if entry.x != 0 else exit_offsets[room_index - 1]
+		if room_index == 0:
+			entry_offset = 496.0
+		rooms.append({
+			"room_seed": room_seed,
+			"family": family,
+			"entry_dir": entry,
+			"exit_dir": exit_dir,
+			"coord": coords[room_index],
+			"entry_offset": entry_offset,
+			"exit_offset": exit_offset,
+		})
+	return {"valid": true, "rooms": rooms, "last_family": prior, "horizontal_direction": horizontal}
+
+static func opposite(direction: Vector2i) -> Vector2i:
+	return Vector2i(-direction.x, -direction.y)
+
+static func _derived_seed(parts: Array) -> int:
+	var seed_value := int(hash(parts))
+	return 1 if seed_value == 0 else seed_value
+
+===== FILE scripts/world/managed_room_topology.gd =====
+extends RefCounted
+
+const LEFT := Vector2i(-1, 0)
+const RIGHT := Vector2i(1, 0)
+const UP := Vector2i(0, -1)
+const DOWN := Vector2i(0, 1)
+const PORTAL_WIDTH := 256.0
+const FLOOR_SLOT_TOP := 560.0
+const FLOOR_SLOT_BOTTOM := 648.0
+
+var _room: Node2D
+var _world: StaticBody2D
+var _floor: SolidPlatform
+var _floor_shape: CollisionShape2D
+var _exit_gate: CollisionShape2D
+var _floor_segments: Array[CollisionShape2D] = []
+var _floor_exit: bool = false
+var _exit_dir := RIGHT
+var _exit_offset: float = 496.0
+var _is_open: bool = false
+
+func configure(room: Node2D, descriptor: Dictionary) -> Dictionary:
+	_room = room
+	_world = room.get_node_or_null("WorldCollision") as StaticBody2D
+	_floor = room.get_node_or_null("Floor") as SolidPlatform
+	if _world == null or _floor == null:
+		return {"valid": false, "error": "limites gerenciados precisam de WorldCollision e Floor"}
+	_floor_shape = _floor.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if _floor_shape == null or not _floor_shape.shape is RectangleShape2D:
+		return {"valid": false, "error": "Floor precisa manter seu CollisionShape2D retangular único"}
+	_exit_dir = descriptor.get("exit_dir", RIGHT)
+	_exit_offset = float(descriptor.get("exit_offset", 496.0))
+	_floor_exit = _exit_dir == DOWN
+	_is_open = false
+
+	var gate_name := &"ExitGate"
+	if _exit_dir == RIGHT:
+		_exit_gate = _world.get_node_or_null("ExitGate") as CollisionShape2D
+		if _exit_gate == null:
+			return {"valid": false, "error": "ExitGate lateral direita ausente"}
+	elif _exit_dir == LEFT:
+		var left_wall := _world.get_node_or_null("LeftWall") as CollisionShape2D
+		if left_wall == null:
+			return {"valid": false, "error": "LeftWall ausente para abertura lateral"}
+		left_wall.disabled = true
+		_add_shape("ManagedLeftUpper", Vector2(32.0, 216.0), Vector2(64.0, 432.0))
+		_add_shape("ManagedLeftLower", Vector2(32.0, 604.0), Vector2(64.0, 88.0))
+		_exit_gate = _add_shape("ManagedExitGate", Vector2(32.0, 496.0), Vector2(64.0, 128.0))
+		_add_shape("ManagedLeftOuterGuard", Vector2(-4.0, 324.0), Vector2(8.0, 648.0))
+		gate_name = &"ManagedExitGate"
+	elif _exit_dir == UP:
+		for node_name in [&"Ceiling", &"CeilingBand"]:
+			var full_band := _world.get_node_or_null(NodePath(String(node_name))) as CollisionShape2D
+			if full_band == null:
+				return {"valid": false, "error": "limite superior ausente: %s" % String(node_name)}
+			full_band.disabled = true
+		var left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+		var right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+		if left_edge > 0.0:
+			_add_shape("ManagedCeilingUpperLeft", Vector2(left_edge * 0.5, -16.0), Vector2(left_edge, 32.0))
+			_add_shape("ManagedCeilingBandLeft", Vector2(left_edge * 0.5, 32.0), Vector2(left_edge, 64.0))
+		if right_edge < 1152.0:
+			var right_width := 1152.0 - right_edge
+			_add_shape("ManagedCeilingUpperRight", Vector2(right_edge + right_width * 0.5, -16.0), Vector2(right_width, 32.0))
+			_add_shape("ManagedCeilingBandRight", Vector2(right_edge + right_width * 0.5, 32.0), Vector2(right_width, 64.0))
+		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 16.0), Vector2(PORTAL_WIDTH, 96.0))
+		_add_shape("ManagedTopOuterGuard", Vector2(576.0, -52.0), Vector2(1152.0, 8.0))
+		gate_name = &"ManagedExitGate"
+	elif _exit_dir == DOWN:
+		var left_edge := _exit_offset - PORTAL_WIDTH * 0.5
+		var right_edge := _exit_offset + PORTAL_WIDTH * 0.5
+		var left_shape := _add_shape("ManagedFloorLeft", Vector2(left_edge * 0.5, 604.0), Vector2(left_edge, 88.0), true)
+		var right_width := 1152.0 - right_edge
+		var right_shape := _add_shape("ManagedFloorRight", Vector2(right_edge + right_width * 0.5, 604.0), Vector2(right_width, 88.0), true)
+		_floor_segments = [left_shape, right_shape]
+		_exit_gate = _add_shape("ManagedExitGate", Vector2(_exit_offset, 604.0), Vector2(PORTAL_WIDTH, 88.0))
+		_add_shape("ManagedBottomCatch", Vector2(_exit_offset, 664.0), Vector2(PORTAL_WIDTH, 8.0))
+		gate_name = &"ManagedExitGate"
+	else:
+		return {"valid": false, "error": "direção de saída gerenciada inválida: %s" % str(_exit_dir)}
+
+	_set_visual_open(false)
+	var exit_door := room.get_node_or_null("ExitDoor")
+	if exit_door == null or not exit_door.has_method("configure_managed_orientation"):
+		return {"valid": false, "error": "ExitDoor não suporta orientação gerenciada"}
+	exit_door.set("gate_path", NodePath("../WorldCollision/" + String(gate_name)))
+	exit_door.call("configure_managed_orientation", _exit_dir, _exit_offset, true)
+	var entrance_door := room.get_node_or_null("EntranceDoor")
+	if entrance_door != null and entrance_door.has_method("configure_managed_orientation"):
+		entrance_door.call("configure_managed_orientation", descriptor.get("entry_dir", LEFT), float(descriptor.get("entry_offset", 496.0)), false)
+	return {"valid": true, "gate": _exit_gate}
+
+func set_exit_open(value: bool) -> void:
+	_is_open = value
+	if _exit_gate != null and is_instance_valid(_exit_gate):
+		_exit_gate.set_deferred("disabled", value)
+	if _floor_exit:
+		if value:
+			_floor_shape.set_deferred("disabled", true)
+			for segment in _floor_segments:
+				if is_instance_valid(segment):
+					segment.set_deferred("disabled", false)
+		else:
+			for segment in _floor_segments:
+				if is_instance_valid(segment):
+					segment.set_deferred("disabled", true)
+			_floor_shape.set_deferred("disabled", false)
+	_set_visual_open(value)
+
+func get_exit_gate() -> CollisionShape2D:
+	return _exit_gate
+
+func is_exit_open() -> bool:
+	return _is_open
+
+func _set_visual_open(value: bool) -> void:
+	var ceiling := _room.get_node_or_null("WallVisuals/CeilingVisual")
+	if ceiling != null:
+		ceiling.set("opening_center_x", _exit_offset - 576.0)
+		ceiling.set("opening_width", PORTAL_WIDTH)
+		ceiling.set("opening_enabled", value and _exit_dir == UP)
+	var floor_visual := _room.get_node_or_null("Floor/Visuals/FactorySurfaceVisual")
+	if floor_visual != null:
+		floor_visual.set("opening_center_x", _exit_offset - 576.0)
+		floor_visual.set("opening_width", PORTAL_WIDTH)
+		floor_visual.set("opening_enabled", value and _floor_exit)
+	var left_visual := _room.get_node_or_null("WallVisuals/LeftWallVisual")
+	var right_visual := _room.get_node_or_null("WallVisuals/RightWallVisual")
+	if left_visual != null:
+		left_visual.set("opening_top", 432.0 if value and _exit_dir == LEFT else -1.0)
+		left_visual.set("opening_height", 128.0 if value and _exit_dir == LEFT else 0.0)
+	if right_visual != null:
+		right_visual.set("opening_top", 432.0 if value and _exit_dir == RIGHT else -1.0)
+		right_visual.set("opening_height", 128.0 if value and _exit_dir == RIGHT else 0.0)
+
+func _add_shape(node_name: String, position_value: Vector2, size_value: Vector2, initially_disabled: bool = false) -> CollisionShape2D:
+	var collision := CollisionShape2D.new()
+	collision.name = node_name
+	collision.position = position_value
+	var rectangle := RectangleShape2D.new()
+	rectangle.resource_local_to_scene = true
+	rectangle.size = size_value
+	collision.shape = rectangle
+	collision.disabled = initially_disabled
+	_world.add_child(collision)
+	return collision
+===== PROTECTED CONTEXT scripts/world/solid_platform.gd =====
+@tool
+class_name SolidPlatform
+extends StaticBody2D
+
+## Seed compartilhada por todas as plataformas da sala.
+## 0 = totalmente aleatório. Defina ANTES de instanciar a sala para reproduzir uma geração.
+static var room_seed: int = 0
+
+const FIXED_NAME := &"Floor"
+const PLACED_META := &"_placement_done"
+
+@export var size: Vector2 = Vector2(220.0, 24.0):
+	set(value):
+		size = Vector2(maxf(value.x, 1.0), maxf(value.y, 1.0))
+		_sync_geometry()
+
+@export var fill_color: Color = Color("#263545"):
+	set(value):
+		fill_color = value
+		_sync_geometry()
+
+@export var factory_skin_enabled: bool = false:
+	set(value):
+		factory_skin_enabled = value
+		_sync_surface_skin()
+
+@export_enum("Platform", "Block") var factory_surface_style: int = 0:
+	set(value):
+		factory_surface_style = clampi(value, 0, 1)
+		_sync_surface_skin()
+
+@export_group("Random Placement")
+## Desmarque para manter esta plataforma exatamente onde está na cena.
+## O node chamado "Floor" nunca é randomizado.
+@export var randomize_position: bool = true
+## Área útil da sala (nas coordenadas do node pai).
+@export var room_rect: Rect2 = Rect2(0.0, 0.0, 1280.0, 720.0)
+## Alinha comprimento e posições a uma grade (0 = desliga). Use o tamanho do tile da textura.
+@export var grid_snap: float = 16.0
+## Distância mínima das bordas da sala.
+@export var wall_margin: float = 16.0
+@export var max_attempts: int = 80
+
+@export_group("Random Size")
+## Sorteia só o comprimento. A espessura (size.y) é sempre a definida no editor.
+@export var randomize_width: bool = true
+## Largura mínima = área de pouso confortável; máxima = limite de uma plataforma larga.
+@export var width_range: Vector2 = Vector2(96.0, 288.0)
+## Nenhuma plataforma passa dessa fração da largura da sala (evita paredões que bloqueiam o fluxo).
+@export_range(0.1, 1.0) var max_width_ratio: float = 0.4
+
+@export_group("Jump Reach")
+## Quanto o jogador consegue subir com um pulo (use um valor conservador).
+@export var max_jump_height: float = 120.0
+## Distância horizontal máxima entre as bordas de duas plataformas.
+@export var max_jump_gap: float = 180.0
+## Quanto uma plataforma pode ficar abaixo da plataforma de referência.
+@export var max_drop_height: float = 200.0
+## Espaço livre vertical acima e abaixo (altura do jogador + folga).
+@export var vertical_clearance: float = 70.0
+## Espaço livre horizontal mínimo entre plataformas.
+@export var horizontal_clearance: float = 24.0
+
+func _ready() -> void:
+	_sync_geometry()
+	if Engine.is_editor_hint():
+		return
+	add_to_group(&"solid_platform")
+	if _is_fixed_platform(self):
+		set_meta(PLACED_META, true)
+		return
+	_place_randomly()
+	set_meta(PLACED_META, true)
+
+static func _is_fixed_platform(platform: SolidPlatform) -> bool:
+	return platform.name == FIXED_NAME or not platform.randomize_position
+
+func _get_rect() -> Rect2:
+	return Rect2(position - size * 0.5, size)
+
+func _place_randomly() -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+
+	# Plataformas já posicionadas (e as fixas, como o Floor) servem de âncora:
+	# cada nova plataforma nasce ao alcance de uma delas, então a sala fica alcançável.
+	var anchors: Array[Rect2] = []
+	for sibling in parent.get_children():
+		var other := sibling as SolidPlatform
+		if other == null or other == self:
+			continue
+		if _is_fixed_platform(other) or other.has_meta(PLACED_META):
+			anchors.append(other._get_rect())
+
+	if anchors.is_empty():
+		push_warning("%s: nenhuma plataforma de referência (Floor) encontrada." % name)
+		return
+
+	var rng := RandomNumberGenerator.new()
+	if room_seed == 0:
+		rng.randomize()
+	else:
+		rng.seed = hash([room_seed, get_index()])
+
+	for _attempt in max_attempts:
+		var new_size := _roll_size(rng) if randomize_width else size
+		var anchor: Rect2 = anchors[rng.randi_range(0, anchors.size() - 1)]
+
+		# Altura do topo em relação ao topo da âncora (negativo = mais alto).
+		var rise := rng.randf_range(-max_jump_height, max_drop_height)
+		var top := anchor.position.y + rise
+
+		var gap_limit := _allowed_gap(rise)
+		var center_x := rng.randf_range(
+			anchor.position.x - gap_limit - new_size.x * 0.5,
+			anchor.end.x + gap_limit + new_size.x * 0.5
+		)
+
+		var candidate := Rect2(Vector2(center_x - new_size.x * 0.5, top), new_size)
+		candidate.position = Vector2(
+			snappedf(candidate.position.x, grid_snap),
+			snappedf(candidate.position.y, grid_snap)
+		)
+
+		# O snap pode mexer alguns pixels, então revalida o alcance depois dele.
+		if not _is_reachable(candidate, anchor):
+			continue
+		if not _is_valid(candidate, anchors):
+			continue
+
+		size = new_size
+		position = candidate.position + new_size * 0.5
+		return
+
+	push_warning("%s: não achou posição válida; mantendo a posição original." % name)
+
+## Sorteia só a largura; a espessura continua a do editor.
+func _roll_size(rng: RandomNumberGenerator) -> Vector2:
+	var max_width := minf(width_range.y, room_rect.size.x * max_width_ratio)
+	var min_width := minf(width_range.x, max_width)
+
+	# Média de dois sorteios: favorece larguras médias em vez dos extremos.
+	var t := (rng.randf() + rng.randf()) * 0.5
+	var width := lerpf(min_width, max_width, t)
+
+	return Vector2(maxf(snappedf(width, grid_snap), min_width), size.y)
+
+## Vão horizontal permitido: quanto mais alto o pulo, menor o vão.
+func _allowed_gap(rise: float) -> float:
+	var rise_ratio := clampf(-rise / maxf(max_jump_height, 1.0), 0.0, 1.0)
+	return max_jump_gap * (1.0 - 0.6 * rise_ratio)
+
+func _is_reachable(candidate: Rect2, anchor: Rect2) -> bool:
+	var rise := candidate.position.y - anchor.position.y
+	if rise < -max_jump_height or rise > max_drop_height:
+		return false
+	var gap := maxf(0.0, maxf(candidate.position.x - anchor.end.x, anchor.position.x - candidate.end.x))
+	return gap <= _allowed_gap(rise)
+
+func _is_valid(candidate: Rect2, anchors: Array[Rect2]) -> bool:
+	var bounds := room_rect.grow(-wall_margin)
+
+	# Precisa sobrar espaço acima da plataforma para o jogador pular sem bater no teto.
+	var with_headroom := Rect2(
+		candidate.position - Vector2(0.0, vertical_clearance),
+		candidate.size + Vector2(0.0, vertical_clearance)
+	)
+	if not bounds.encloses(with_headroom):
+		return false
+
+	var padded := candidate.grow_individual(
+		horizontal_clearance, vertical_clearance,
+		horizontal_clearance, vertical_clearance
+	)
+	for obstacle in anchors:
+		if padded.intersects(obstacle):
+			return false
+	return true
+
+func _sync_geometry() -> void:
+	var collision_shape := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision_shape != null:
+		var rectangle := collision_shape.shape as RectangleShape2D
+		if rectangle != null:
+			if not rectangle.resource_local_to_scene:
+				rectangle = rectangle.duplicate() as RectangleShape2D
+				rectangle.resource_local_to_scene = true
+				collision_shape.shape = rectangle
+			rectangle.size = size
+
+	var half_size := size * 0.5
+	var visual_fill := get_node_or_null("Visuals/Fill") as Polygon2D
+	if visual_fill != null:
+		visual_fill.color = fill_color
+		visual_fill.polygon = PackedVector2Array([
+			Vector2(-half_size.x, -half_size.y),
+			Vector2(half_size.x, -half_size.y),
+			Vector2(half_size.x, half_size.y),
+			Vector2(-half_size.x, half_size.y),
+		])
+
+	var top_edge := get_node_or_null("Visuals/TopEdge") as Line2D
+	if top_edge != null:
+		top_edge.points = PackedVector2Array([
+			Vector2(-half_size.x, -half_size.y),
+			Vector2(half_size.x, -half_size.y),
+		])
+
+	var floor_detail := get_node_or_null("FloorDetail") as Line2D
+	if floor_detail != null:
+		floor_detail.position = Vector2(0.0, -half_size.y + 32.0)
+		floor_detail.points = PackedVector2Array([
+			Vector2(-half_size.x, 0.0),
+			Vector2(half_size.x, 0.0),
+		])
+
+	_sync_surface_skin()
+
+func _sync_surface_skin() -> void:
+	var surface_visual := get_node_or_null("Visuals/FactorySurfaceVisual") as Node2D
+	var visual_fill := get_node_or_null("Visuals/Fill") as Polygon2D
+	var top_edge := get_node_or_null("Visuals/TopEdge") as Line2D
+	var floor_detail := get_node_or_null("FloorDetail") as Line2D
+	var use_factory_skin: bool = factory_skin_enabled and surface_visual != null
+	if surface_visual != null:
+		surface_visual.set("surface_size", size)
+		surface_visual.set("surface_style", factory_surface_style)
+		surface_visual.visible = use_factory_skin
+	if visual_fill != null:
+		visual_fill.visible = not use_factory_skin
+	if top_edge != null:
+		top_edge.visible = not use_factory_skin
+	if floor_detail != null:
+		floor_detail.visible = not use_factory_skin
+
+===== PROTECTED CONTEXT scripts/player/movement_controller.gd =====
+class_name MovementController
+extends Node
+
+## Componente de fisica do jogador. Ele recebe comandos simples e nao conhece
+## mira, combate ou regras de build, mantendo essas extensoes desacopladas.
+
+enum DashState { READY, ACTIVE, COOLDOWN }
+
+var _body: CharacterBody2D
+var _config: MovementConfig
+var _coyote_timer: float = 0.0
+var _jump_buffer_timer: float = 0.0
+var _dash_timer: float = 0.0
+var _dash_cooldown_timer: float = 0.0
+var _dash_direction: Vector2 = Vector2.ZERO
+var _facing_direction: int = 1
+var _dash_state: int = DashState.READY
+var _air_dashes_remaining: int = 0
+var _dash_input_armed: bool = true
+
+var is_dashing: bool:
+	get:
+		return _dash_state == DashState.ACTIVE
+
+var can_dash: bool:
+	get:
+		if _body == null or _config == null or not _config.dash_enabled or _dash_state != DashState.READY:
+			return false
+		return _body.is_on_floor() or _air_dashes_remaining > 0
+
+var facing_direction: int:
+	get:
+		return _facing_direction
+
+var dash_cooldown_remaining: float:
+	get:
+		return _dash_cooldown_timer
+
+func configure(body: CharacterBody2D, config: MovementConfig) -> void:
+	_body = body
+	_config = config
+	_air_dashes_remaining = _config.max_air_dashes
+
+func physics_step(
+	input_axis: float,
+	jump_pressed: bool,
+	jump_released: bool,
+	dash_pressed: bool,
+	dash_released: bool,
+	delta: float
+) -> void:
+	if _body == null or _config == null:
+		return
+
+	_update_timers(delta)
+	_update_jump_windows(jump_pressed, delta)
+
+	if dash_released:
+		_dash_input_armed = true
+	if dash_pressed and _dash_input_armed and can_dash:
+		_start_dash(input_axis)
+		_dash_input_armed = false
+		# Dash e pulo no mesmo frame: o dash tem prioridade explicita.
+		_jump_buffer_timer = 0.0
+
+	if is_dashing:
+		_process_dash(delta)
+		return
+
+	_apply_gravity(delta)
+	_try_consume_jump()
+	if jump_released:
+		_apply_jump_cut()
+	_apply_horizontal(input_axis, delta)
+	_body.move_and_slide()
+
+func reset() -> void:
+	_coyote_timer = 0.0
+	_jump_buffer_timer = 0.0
+	_dash_timer = 0.0
+	_dash_cooldown_timer = 0.0
+	_dash_direction = Vector2.ZERO
+	_dash_state = DashState.READY
+	_dash_input_armed = true
+	_facing_direction = 1
+	_air_dashes_remaining = _config.max_air_dashes if _config != null else 0
+	if _body != null:
+		_body.velocity = Vector2.ZERO
+
+func get_status() -> Dictionary:
+	return {
+		"is_dashing": is_dashing,
+		"can_dash": can_dash,
+		"dash_cooldown_remaining": dash_cooldown_remaining,
+		"air_dashes_remaining": _air_dashes_remaining,
+		"dash_state": _dash_state,
+		"facing_direction": facing_direction,
+	}
+
+func _update_timers(delta: float) -> void:
+	_dash_cooldown_timer = maxf(_dash_cooldown_timer - delta, 0.0)
+	if _dash_state == DashState.COOLDOWN and _dash_cooldown_timer <= 0.0:
+		_dash_state = DashState.READY
+
+func _update_jump_windows(jump_pressed: bool, delta: float) -> void:
+	if _body.is_on_floor():
+		_coyote_timer = _config.coyote_time
+		_air_dashes_remaining = _config.max_air_dashes
+	else:
+		_coyote_timer = maxf(_coyote_timer - delta, 0.0)
+
+	if jump_pressed:
+		_jump_buffer_timer = _config.jump_buffer_time
+	else:
+		_jump_buffer_timer = maxf(_jump_buffer_timer - delta, 0.0)
+
+func _apply_horizontal(input_axis: float, delta: float) -> void:
+	var axis := clampf(input_axis, -1.0, 1.0)
+	if not is_zero_approx(axis):
+		_facing_direction = 1 if axis > 0.0 else -1
+
+	var target_speed := axis * _config.move_speed
+	var change_rate := _config.acceleration if not is_zero_approx(axis) else _config.deceleration
+	_body.velocity.x = move_toward(_body.velocity.x, target_speed, change_rate * delta)
+
+func _apply_gravity(delta: float) -> void:
+	if not _body.is_on_floor():
+		_body.velocity.y = minf(_body.velocity.y + _config.gravity * delta, _config.max_fall_speed)
+	elif _body.velocity.y > 0.0:
+		_body.velocity.y = 0.0
+
+func _apply_jump_cut() -> void:
+	if _body.velocity.y < 0.0:
+		_body.velocity.y *= _config.jump_cut_multiplier
+
+func _try_consume_jump() -> void:
+	if _jump_buffer_timer <= 0.0 or _coyote_timer <= 0.0:
+		return
+
+	_body.velocity.y = -_config.jump_velocity
+	_jump_buffer_timer = 0.0
+	_coyote_timer = 0.0
+
+func _start_dash(input_axis: float) -> void:
+	var direction := float(_facing_direction)
+	if input_axis > 0.0:
+		direction = 1.0
+	elif input_axis < 0.0:
+		direction = -1.0
+	if not _body.is_on_floor():
+		_air_dashes_remaining = maxi(_air_dashes_remaining - 1, 0)
+
+	_dash_direction = Vector2(direction, 0.0)
+	_facing_direction = int(direction)
+	_dash_timer = _config.dash_duration
+	_dash_cooldown_timer = 0.0
+	_dash_state = DashState.ACTIVE
+
+func _process_dash(delta: float) -> void:
+	_body.velocity = _dash_direction * _config.dash_speed
+	_body.move_and_slide()
+
+	if _has_horizontal_blocking_collision():
+		_dash_timer = 0.0
+	else:
+		_dash_timer = maxf(_dash_timer - delta, 0.0)
+
+	if _dash_timer <= 0.0:
+		_finish_dash()
+
+func _has_horizontal_blocking_collision() -> bool:
+	for index in range(_body.get_slide_collision_count()):
+		var collision := _body.get_slide_collision(index)
+		if collision.get_normal().dot(_dash_direction) < -0.5:
+			return true
+	return false
+
+func _finish_dash() -> void:
+	_dash_timer = 0.0
+	_dash_direction = Vector2.ZERO
+	_body.velocity.x = 0.0
+	_dash_cooldown_timer = _config.dash_cooldown
+	_dash_state = DashState.COOLDOWN if _dash_cooldown_timer > 0.0 else DashState.READY
+
+===== PROTECTED CONTEXT scripts/player/player.gd =====
+class_name Player
+extends CharacterBody2D
+
+const MOTOR_ACELERADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/motor_acelerado.tres")
+
+signal health_changed(current_health: int, maximum_health: int)
+signal died
+
+@export var movement_config: MovementConfig
+
+@onready var movement_controller: MovementController = $MovementController
+@onready var aim_controller: AimController = $AimController
+@onready var player_visual: PlayerVisual = $PlayerVisual
+@onready var reticle_visual: ReticleVisual = $ReticleVisual
+@onready var shot_origin: Node2D = $ShotOrigin
+@onready var ball_launcher: BallLauncher = $BallLauncher
+@onready var trajectory_preview: Node2D = $TrajectoryPreview
+@onready var health: PlayerHealth = $Health
+@onready var racket_controller: RacketController = $RacketController
+@onready var racket_visual: RacketVisual = $PlayerVisual/RacketVisual
+
+var is_dead: bool:
+	get:
+		return health != null and health.is_dead
+var current_health: int:
+	get:
+		return health.current_health if health != null else 0
+var maximum_health: int:
+	get:
+		return health.maximum_health if health != null else 0
+
+var aim_direction: Vector2:
+	get:
+		return aim_controller.aim_direction
+
+var aim_target_position: Vector2:
+	get:
+		return aim_controller.aim_target_position
+
+var _base_movement_config: MovementConfig
+var _death_presentation_applied: bool = false
+
+func _ready() -> void:
+	add_to_group("player")
+	if movement_config == null:
+		movement_config = MovementConfig.new()
+	_base_movement_config = movement_config.duplicate(true) as MovementConfig
+	movement_controller.configure(self, _base_movement_config.duplicate(true) as MovementConfig)
+	movement_controller.reset()
+	health.health_changed.connect(_on_health_changed)
+	health.damage_accepted.connect(_on_damage_accepted)
+	health.died.connect(_on_died)
+	_on_health_changed(health.current_health, health.maximum_health)
+	aim_controller.aim_changed.connect(reticle_visual.set_aim)
+	reticle_visual.set_aim(aim_controller.aim_direction, aim_controller.aim_target_position)
+	racket_controller.set_aim_direction(aim_controller.aim_direction)
+	ball_launcher.configure(self, aim_controller, shot_origin, _find_projectile_parent())
+	ball_launcher.launch_accepted.connect(racket_visual.start_shot)
+	racket_controller.swing_started.connect(racket_visual.start_parry)
+	racket_controller.swing_cancelled.connect(racket_visual.clear_transient)
+	racket_controller.swing_cancelled.connect(_on_swing_cancelled)
+	trajectory_preview.call("configure", aim_controller, shot_origin, ball_launcher)
+
+func apply_run_build(build: RunBuild) -> void:
+	if _base_movement_config == null:
+		return
+	var derived_config := _base_movement_config.duplicate(true) as MovementConfig
+	if build != null and build.has_upgrade(MOTOR_ACELERADO_DEFINITION.upgrade_id):
+		derived_config.dash_cooldown = MOTOR_ACELERADO_DEFINITION.dash_cooldown_override
+	movement_controller.configure(self, derived_config)
+	movement_controller.reset()
+	ball_launcher.apply_run_build(build)
+
+func _physics_process(delta: float) -> void:
+	if is_dead:
+		velocity = Vector2.ZERO
+		return
+
+	var move_axis := Input.get_axis("move_left", "move_right")
+	var jump_blocked := is_discrete_input_blocked(&"jump")
+	var dash_blocked := is_discrete_input_blocked(&"dash")
+	var launch_blocked := is_discrete_input_blocked(&"launch_ball")
+	var jump_pressed := not jump_blocked and Input.is_action_just_pressed("jump")
+	var jump_released := not jump_blocked and Input.is_action_just_released("jump")
+	var dash_pressed := not dash_blocked and Input.is_action_just_pressed("dash")
+	var dash_released := not dash_blocked and Input.is_action_just_released("dash")
+	var launch_pressed := not launch_blocked and Input.is_action_just_pressed("launch_ball")
+
+	movement_controller.physics_step(
+		move_axis,
+		jump_pressed,
+		jump_released,
+		dash_pressed,
+		dash_released,
+		delta
+	)
+	player_visual.set_facing_direction(movement_controller.facing_direction)
+	player_visual.set_dashing(movement_controller.is_dashing)
+	player_visual.set_grounded(is_on_floor(), velocity.y)
+	var is_walking := is_on_floor() \
+		and not movement_controller.is_dashing \
+		and absf(velocity.x) > 8.0
+	player_visual.set_walking(is_walking, absf(velocity.x))
+	player_visual.set_parry_state(
+		racket_controller.is_swing_active(),
+		racket_controller.get_swing_progress(),
+		racket_controller.get_swing_direction()
+	)
+	ball_launcher.try_launch(launch_pressed)
+
+func _process(_delta: float) -> void:
+	if is_dead:
+		return
+	player_visual.set_invulnerable(health.is_invulnerable)
+	racket_controller.set_aim_direction(aim_controller.aim_direction)
+
+func take_damage(amount: int, source: Node = null) -> bool:
+	return health.take_damage(amount, source)
+
+func is_discrete_input_blocked(action: StringName) -> bool:
+	var room_root := get_parent()
+	return room_root != null \
+		and room_root.has_method("is_gameplay_action_blocked") \
+		and bool(room_root.call("is_gameplay_action_blocked", action))
+
+func reset_to_spawn(spawn_position: Vector2) -> void:
+	global_position = spawn_position
+	velocity = Vector2.ZERO
+	movement_controller.reset()
+	player_visual.reset_air_state()
+	player_visual.set_facing_direction(movement_controller.facing_direction)
+	player_visual.set_dashing(false)
+	player_visual.set_walking(false)
+	racket_controller.reset()
+	racket_visual.clear_transient()
+	ball_launcher.reset()
+	if not is_dead:
+		player_visual.set_dead(false)
+		reticle_visual.show()
+		trajectory_preview.show()
+		trajectory_preview.set_physics_process(true)
+
+func get_movement_status() -> Dictionary:
+	return movement_controller.get_status()
+
+func get_aim_target_position() -> Vector2:
+	return aim_controller.aim_target_position
+
+func _on_health_changed(current: int, maximum: int) -> void:
+	health_changed.emit(current, maximum)
+
+func _on_damage_accepted(_amount: int, _current: int, _maximum: int) -> void:
+	if health.is_dead:
+		return
+	player_visual.play_hurt()
+
+func _on_swing_cancelled() -> void:
+	player_visual.set_parry_state(false, 0.0, Vector2.ZERO)
+
+func _on_died() -> void:
+	# take_damage may be called from a projectile sweep; only request a stop here.
+	racket_visual.clear_transient()
+	ball_launcher.request_stop_active_sweep()
+	died.emit()
+
+func finish_death_after_physics() -> void:
+	if _death_presentation_applied:
+		return
+	_death_presentation_applied = true
+	velocity = Vector2.ZERO
+	movement_controller.reset()
+	racket_controller.cancel()
+	trajectory_preview.hide()
+	trajectory_preview.set_physics_process(false)
+	reticle_visual.hide()
+	player_visual.set_dead(true)
+
+func _find_projectile_parent() -> Node:
+	var player_parent := get_parent()
+	if player_parent != null:
+		var ball_container := player_parent.get_node_or_null("BallContainer")
+		if ball_container != null:
+			return ball_container
+	return player_parent
+
+===== PROTECTED CONTEXT scripts/world/combat_room.gd =====
+class_name CombatRoom
+extends Node
+
+## Controlador mínimo de encontro. O grupo e os labels são configuráveis para
+## que a sala possa ser reutilizada com outros inimigos e HUDs.
+
+signal room_cleared
+
+@export var enemy_group: StringName = &"combat_enemy"
+@export var counter_label_path: NodePath = NodePath("")
+@export var status_label_path: NodePath = NodePath("")
+@export var health_label_path: NodePath = NodePath("")
+@export var player_path: NodePath = NodePath("../Player")
+
+var _counter_label: Label
+var _status_label: Label
+var _health_label: Label
+var _player: Player
+var _remaining_enemies: Dictionary = {}
+var _room_was_cleared: bool = false
+var _player_was_defeated: bool = false
+
+var room_is_cleared: bool:
+	get:
+		return _room_was_cleared
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _player_was_defeated or not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if key_event.pressed and not key_event.echo and key_event.keycode == KEY_R:
+		get_tree().reload_current_scene()
+
+func _ready() -> void:
+	add_to_group("combat_room")
+	_counter_label = get_node_or_null(counter_label_path) as Label
+	_status_label = get_node_or_null(status_label_path) as Label
+	_health_label = get_node_or_null(health_label_path) as Label
+	_player = get_node_or_null(player_path) as Player
+	if _player != null:
+		_player.health_changed.connect(_on_player_health_changed)
+		_player.died.connect(_on_player_died)
+		_on_player_health_changed(_player.current_health, _player.maximum_health)
+	_register_enemies()
+	_update_hud()
+	if _remaining_enemies.is_empty():
+		_clear_room()
+
+func _register_enemies() -> void:
+	for enemy in get_tree().get_nodes_in_group(enemy_group):
+		if not is_instance_valid(enemy):
+			continue
+		if not enemy.has_signal("defeated"):
+			push_warning(
+				"CombatRoom: ignorando %s no grupo '%s'; o nó não possui o sinal 'defeated'."
+				% [enemy.get_path(), enemy_group]
+			)
+			continue
+
+		_remaining_enemies[enemy] = true
+		enemy.connect("defeated", _on_enemy_defeated.bind(enemy), CONNECT_ONE_SHOT)
+
+func _on_enemy_defeated(enemy: Node) -> void:
+	if _player_was_defeated or _room_was_cleared or not _remaining_enemies.has(enemy):
+		return
+
+	_remaining_enemies.erase(enemy)
+	_update_hud()
+	if _remaining_enemies.is_empty():
+		_clear_room()
+
+func _clear_room() -> void:
+	if _player_was_defeated or _room_was_cleared:
+		return
+
+	_room_was_cleared = true
+	_request_hostile_projectile_stops()
+	room_cleared.emit()
+
+func _on_player_health_changed(current: int, maximum: int) -> void:
+	if _health_label != null:
+		_health_label.text = "VIDA: %d / %d" % [current, maximum]
+
+func _on_player_died() -> void:
+	if _player_was_defeated:
+		return
+	_player_was_defeated = true
+	_request_hostile_projectile_stops()
+
+## Callback-safe request only; projectiles are removed by Main after the flush.
+func _request_hostile_projectile_stops() -> void:
+	for projectile in get_tree().get_nodes_in_group("hostile_projectile"):
+		if is_instance_valid(projectile) and projectile.has_method("request_stop_sweep"):
+			projectile.call("request_stop_sweep")
+
+## Post-flush cleanup. This includes parried rivets, which remain in the group.
+func cleanup_hostile_projectiles_after_flush() -> void:
+	for projectile in get_tree().get_nodes_in_group("hostile_projectile"):
+		if is_instance_valid(projectile) and projectile.has_method("cancel"):
+			projectile.call("cancel")
+
+func refresh_status_after_physics() -> void:
+	_update_hud()
+
+func _update_hud() -> void:
+	var remaining := _remaining_enemies.size()
+	if _counter_label != null:
+		_counter_label.text = "INIMIGOS RESTANTES: %d" % remaining
+	if _status_label == null:
+		return
+	if _player_was_defeated:
+		_status_label.text = "DERROTA — PRESSIONE R PARA REINICIAR"
+	elif _room_was_cleared:
+		_status_label.text = "ÁREA LIMPA — SALA CONCLUÍDA"
+	else:
+		_status_label.text = "ENCONTRO ATIVO"
+

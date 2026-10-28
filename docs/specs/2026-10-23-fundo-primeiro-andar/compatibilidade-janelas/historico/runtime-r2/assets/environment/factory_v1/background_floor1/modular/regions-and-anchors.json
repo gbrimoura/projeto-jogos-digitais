@@ -1,0 +1,15 @@
+{
+  "shared_window_aperture_native_px":[344,56,38,78],
+  "module_atlas": {"file":"factory-floor1-modules-atlas.png","width_px":553,"height_px":385},
+  "modules": [
+    {"id":"left_boiler","label":"Left: boiler and complete steam circuit","region_px":[2,199,292,157],"anchor_native_px":[20,12]},
+    {"id":"left_cabinets","label":"Left: service cabinets and connected controls","region_px":[298,199,176,184],"anchor_native_px":[18,36]},
+    {"id":"right_service","label":"Right: service column, lamp and META sign","region_px":[346,2,205,127],"anchor_native_px":[313,24]},
+    {"id":"right_press","label":"Right: truss, press and complete feed circuit","region_px":[2,2,340,193],"anchor_native_px":[223,25]}
+  ],
+  "base_variants": [
+    {"id":"base_boiler","region_px":[0,0,576,324],"anchor_native_px":[0,0]},
+    {"id":"base_maintenance","region_px":[0,324,576,324],"anchor_native_px":[0,0]}
+  ],
+  "selection":"base bit 0, left module bit 1, right module bit 2; all derived from prepared room seed"
+}

@@ -1,0 +1,74 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "EE2E15174D308941708842556E3340DFD3EF9E95A929FB66157EB41FDE876C93"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "sha256": "DD15D923CC0663F400405710085890A5A68B841DBBFE8804235883B1D8EA252F"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_pursuit.gd",
+    "sha256": "6C652B9AD17927BCC4A416F927087985C11F144723DE1109D94FC84DF9B300E5"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "5D64FFBE2C4686F33276178E59F4CDF0AC9D45BAE0673A18D1E6252403D8827A"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "sha256": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0"
+  },
+  {
+    "path": "scenes/training_target.tscn",
+    "sha256": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "56A72953CCEAEAFB811AE30D81435E5FD79AC8600FB16C27207229D0A4138D0C"
+  },
+  {
+    "path": "scripts/enemy/rivet_warning_visual.gd",
+    "sha256": "1BC816F411F208DB518CF3BC0A4CFF65ED9C191472052FC305D535F9B3AA1209"
+  },
+  {
+    "path": "scenes/rivet_worker.tscn",
+    "sha256": "D6E598DB796FF38B1350AC5D8FE7036502655ABEB34843635091DB81018B0479"
+  },
+  {
+    "path": "scenes/hostile_rivet.tscn",
+    "sha256": "4E537D042A713944EDB6C31721AAA402D36D143812B1041EFCC580CB33F1C41C"
+  },
+  {
+    "path": "project.godot",
+    "sha256": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD"
+  },
+  {
+    "path": "scripts/world/factory_floor1_background.gd",
+    "sha256": "B18EF04DD82FF1CC4F9A57A1603A8FCB0833EE052EEF34B397CD97AEAC4625D4"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target-atlas.png",
+    "sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+  },
+  {
+    "path": "assets/projectile/cospe_rebite/cospe_rebite.png",
+    "sha256": "5C59886A864E6658AA4698D3100E1DA702048A652170E57ABD6EF8F9B10B21C7"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "sha256": "FA03F262AC5F92AD4537D5A1468C0758DE5C66031CA397F4854BB3908FCEC755"
+  }
+]

@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/projectile/hostile_rivet.gd" id="1_hostile_rivet"]
+[ext_resource type="Texture2D" path="res://resources/enemy/cospe_rebite_projectile_texture.tres" id="2_projectile_texture"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_hostile_rivet"]
 radius = 6.0
@@ -18,21 +19,8 @@ shape = SubResource("CircleShape2D_hostile_rivet")
 
 [node name="Visuals" type="Node2D" parent="."]
 
-[node name="Trail" type="Line2D" parent="Visuals"]
-position = Vector2(-4.0, 0.0)
-width = 4.0
-default_color = Color(0.439216, 0.172549, 0.211765, 1)
-points = PackedVector2Array(-11.0, 0.0, 0.0, 0.0)
-
-[node name="RivetOutline" type="Polygon2D" parent="Visuals"]
-color = Color(0.129412, 0.098039, 0.137255, 1)
-polygon = PackedVector2Array(-8.0, 0.0, -5.657, -5.657, 0.0, -8.0, 5.657, -5.657, 8.0, 0.0, 5.657, 5.657, 0.0, 8.0, -5.657, 5.657)
-
-[node name="RivetFill" type="Polygon2D" parent="Visuals"]
-color = Color(0.85098, 0.294118, 0.294118, 1)
-polygon = PackedVector2Array(-5.5, 0.0, -3.889, -3.889, 0.0, -5.5, 3.889, -3.889, 5.5, 0.0, 3.889, 3.889, 0.0, 5.5, -3.889, 3.889)
-
-[node name="Highlight" type="Line2D" parent="Visuals"]
-width = 1.5
-default_color = Color(1.0, 0.701961, 0.627451, 1)
-points = PackedVector2Array(-3.0, -2.0, 0.0, -4.0, 3.0, -2.0)
+[node name="Sprite2D" type="Sprite2D" parent="Visuals"]
+texture_filter = 1
+texture = ExtResource("2_projectile_texture")
+centered = true
+offset = Vector2(-4.0, 0.0)

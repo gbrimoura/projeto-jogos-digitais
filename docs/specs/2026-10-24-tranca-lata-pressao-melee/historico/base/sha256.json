@@ -1,0 +1,50 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "EE2E15174D308941708842556E3340DFD3EF9E95A929FB66157EB41FDE876C93"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "sha256": "DD15D923CC0663F400405710085890A5A68B841DBBFE8804235883B1D8EA252F"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_pursuit.gd",
+    "sha256": "6C652B9AD17927BCC4A416F927087985C11F144723DE1109D94FC84DF9B300E5"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "5D64FFBE2C4686F33276178E59F4CDF0AC9D45BAE0673A18D1E6252403D8827A"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "sha256": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A"
+  },
+  {
+    "path": "scenes/training_target.tscn",
+    "sha256": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "sha256": "FA03F262AC5F92AD4537D5A1468C0758DE5C66031CA397F4854BB3908FCEC755"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "56A72953CCEAEAFB811AE30D81435E5FD79AC8600FB16C27207229D0A4138D0C"
+  },
+  {
+    "path": "scripts/enemy/rivet_warning_visual.gd",
+    "sha256": "1BC816F411F208DB518CF3BC0A4CFF65ED9C191472052FC305D535F9B3AA1209"
+  },
+  {
+    "path": "project.godot",
+    "sha256": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD"
+  },
+  {
+    "path": "scenes/player.tscn",
+    "sha256": "D1D2707899A8CB3DEDFF8311A8FF46998C6D55E561580F421C935C30BAF6B46D"
+  }
+]

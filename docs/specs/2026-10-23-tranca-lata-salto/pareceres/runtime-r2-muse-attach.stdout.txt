@@ -1,0 +1,7 @@
+Revisão R2 somente-leitura — analisando entrada imutável.
+STATUS: done
+SUMMARY: R2 estável sem defeitos. Física usa g*step_time/impact_time, TOI0 executa resto do tick via _advance_escape_tangent com contagem única, pouso fora de bounds vira estacionário em X real, interlocks ataque/jump e pouso só SolidPlatform UP preservados, onda 1.25 só visual.
+CHANGED_FILES: none
+TESTS: none
+RISKS: none — sem defeitos P1/P2. Franja 35px decorativa aceita, não reportada como defeito.
+NEXT_STEP: Congelar e seguir para próxima frente.

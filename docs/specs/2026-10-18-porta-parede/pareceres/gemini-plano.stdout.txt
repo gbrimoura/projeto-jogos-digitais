@@ -1,0 +1,10 @@
+STATUS: done
+SUMMARY: Revisão estática de geometria, layering e estados da porta horizontal embutida concluída sem apontamento impeditivo fatal, mas com 4 inconsistências concretas identificadas na transição visual/funcional.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+1. **Descompasso entre vão visual e sensor de interação (`ExitDoor`)**: O vão visual tem 256 px de largura (`x=832..1088`), enquanto o sensor baseline preservado tem apenas 96 px (`x=992..1088`). Um jogador posicionado entre `x=832` e `x=992` estará visualmente dentro do vão aberto da porta, porém fora do raio de alcance do gatilho `[E]`.
+2. **Emenda vertical exposta no fundo da sala (`z_index = -2`)**: Enquanto a borda externa do módulo (16 px nativos / 32 px mundo) fica perfeitamente embutida atrás da parede lateral (`z = -1`), a borda interna (`x=800` na saída e `x=352` na entrada) termina a descoberto no meio da parede de fundo. Se o painel tiver moldura lateral ou descontinuidade de textura, criará uma costura artificial visível no espaço jogável.
+3. **Mecânica de recolhimento da folha no frame nativo de 160 px**: A abertura mede 128 px nativos, mas a margem lateral do módulo tem apenas 16 px nativos. Para a folha recolher lateralmente sem estourar o canvas de 160×80 px nem sumir abruptamente na borda, a arte precisa representar visualmente um trilho/nicho embutido (pocket door) que entra na parede ou lâminas telescópicas/segmentadas.
+4. **Margem de ancoragem do `DoorLabel`**: Com a raiz em `x=1040` e a face da parede física em `x=1088`, restam apenas 48 px à direita da raiz. Qualquer texto de prompt não fixado com alinhamento à esquerda/centro-esquerda poderá sobrepor os tiles da parede lateral.
+NEXT_STEP: Ajustar no plano a especificação visual do recolhimento (pocket door/painéis telescópicos) e a regra de ancoragem do `DoorLabel`, e avaliar no momento oportuno se o sensor de `ExitDoor` deve expandir para cobrir todo o vão visual (`x=832..1088`).

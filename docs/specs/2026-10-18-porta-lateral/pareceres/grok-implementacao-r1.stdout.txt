@@ -1,0 +1,17 @@
+STATUS: done
+SUMMARY: Visual-only side-wall cut is internally consistent with gap `[432,560)` and 64px thickness, provided the unchanged door Area2D origins stay at `(112, 522)` / `(1040, 522)`. Confirmed concrete flaws: `scenes/main.tscn` `load_steps` not incremented; Lua preview bottom lintel is 2px off runtime; Lua wall tile at world y=576 overflows the 224px preview row.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1 alignment dependency (not in the diffs): `SideDoorVisual` world center is parent origin + `(±80, -26)`. Packed exit child is `(80, -26)`; entrance override is `(-80, -26)`. That equals the required centers `(32, 496)` and `(1120, 496)` only if `EntranceDoor` / `ExitDoor` remain at `(112, 522)` / `(1040, 522)` (inner face 64/1088 ± sensor half-width 48). If those instance origins still sit on a back-wall placement, the 64×128 void misses the clipped slots at x `0..64` / `1088..1152`.
+- P1 preview mismatch: `side_door_visual.gd` bottom bar is `Rect2(-30, 60, 60, 2)` → image y=124. `preview-side-opening.lua` uses `rect(..., 2, 122, 60, 2)`. Top lintel, jambs, rivets `{16,48,80,112}`, grate, and open-state rects convert 1:1 (`local + (32,64)`). Only the closed/open shared bottom shadow is wrong, so the static board does not match runtime.
+- P2 syntax: `scenes/main.tscn` hunk starts at line 10; `load_steps` is unchanged while a new `ext_resource` `id="12_side_door_visual"` is added. `second_room.tscn` correctly goes 20→21. Godot still parses the extra resource, but the main header is stale. Both room scenes also carry that script resource unused (script lives on `scenes/exit_door.tscn`).
+- P2 preview composition: `drawSceneRow` blits wall tiles at world y=576 into a 224px strip (`dest y = y0 + worldY - 376`). Tile top is `y0+200`, height 64 → `y0+264`, past `y0+224`, so the first row overwrites the second caption/row. Runtime is unaffected (Lua is inspection-only).
+- Residual, not contradicted by authorized text: wall `z_index` / `z_as_relative` are not in the excerpts. Child `z_index = -1` with default relative z is `ExitDoor.z + -1`; equal-to-wall holds only if that effective value is the wall’s effective z. Backdrop `-10` / actors `1` are untouched here.
+- No collider/sensor/E regression in the authorized set: wall shapes not in the diffs; `SensorShape` still `96×108`; entrance still `interaction_enabled = false` and sensor `disabled`; `exit_door.gd` only replaces `$DoorArt` / `.frame` with `$SideDoorVisual` / `call("set_aperture_open", ...)`. Frontal `DoorArt` is gone from the packed scene (asset inactivity is outside this bundle).
+NEXT_STEP:
+1. P1 — Statically confirm `EntranceDoor.position` / `ExitDoor.position` in both room scenes are `(112, 522)` and `(1040, 522)`. If not, change those origins or the `(±80, -26)` child offsets so `_draw` origin is `(32, 496)` / `(1120, 496)`; do not move sensor size or E logic.
+2. P1 — In `preview-side-opening.lua`, set the bottom shadow to `rect(img, 2, 124, 60, 2, C.shadow)` so it matches `Rect2(-30, 60, 60, 2)`.
+3. P2 — Increment `load_steps` in `scenes/main.tscn` by 1, or drop the unused room-level `side_door_visual.gd` ext_resource from both rooms if the packed scene remains the only script owner.
+4. P2 — Clip or omit the world-y=576 wall blit in the Lua row (`y0+200` must not exceed the 224px band), or clip `drawImage` to `y0 .. y0+224`.
+5. P3 — If wall nodes are not `z_index = -1` (or `ExitDoor` is not z=0 with relative child `-1`), set `SideDoorVisual` so effective z equals the wall, still above backdrop `-10` and below actors `1`.

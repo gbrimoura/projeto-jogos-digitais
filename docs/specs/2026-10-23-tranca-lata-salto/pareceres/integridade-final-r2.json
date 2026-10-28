@@ -1,0 +1,42 @@
+{
+  "runtime": [
+    {
+      "path": "scripts/world/training_target.gd",
+      "expected": "C230AF166B5724A1DF822DB7C824B13561DCB6C49FD82A2C2CC0D31CB22F00B0",
+      "actual": "C230AF166B5724A1DF822DB7C824B13561DCB6C49FD82A2C2CC0D31CB22F00B0",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/enemy/tranca_lata_jump.gd",
+      "expected": "DF9F643F2A4A645873489F0CE0C454CB61DD30EDD0B596E6D2F35537A452C7B3",
+      "actual": "DF9F643F2A4A645873489F0CE0C454CB61DD30EDD0B596E6D2F35537A452C7B3",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/enemy/containment_attack_visual.gd",
+      "expected": "4D5A836FD2EE66838CFC9805392AC1C9B952F2776D9CFFF473C46439AC77B92A",
+      "actual": "4D5A836FD2EE66838CFC9805392AC1C9B952F2776D9CFFF473C46439AC77B92A",
+      "unchanged": true
+    },
+    {
+      "path": "resources/enemy/training_target_sprite_frames.tres",
+      "expected": "5086D7AEC4D667468DCF842E821069C93A433484E4AFA8760121D950EAE50660",
+      "actual": "5086D7AEC4D667468DCF842E821069C93A433484E4AFA8760121D950EAE50660",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png",
+      "expected": "5400F8E39359CC069139EB5D94C4F969B1A2F56C2328F5149AEE07C6A4DDF001",
+      "actual": "5400F8E39359CC069139EB5D94C4F969B1A2F56C2328F5149AEE07C6A4DDF001",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/jump/tranca-lata-jump-v1.aseprite",
+      "expected": "2AB56588F198F8AB922A93D88BAF36ACB3231C400FB5A6DD06D65EBC7FC64A62",
+      "actual": "2AB56588F198F8AB922A93D88BAF36ACB3231C400FB5A6DD06D65EBC7FC64A62",
+      "unchanged": true
+    }
+  ],
+  "input_sha256": "8A84E0108643D8933E97F650A11E6A8B51B6D976D52F3A66F655B796D4BF494E",
+  "input_unchanged": true
+}

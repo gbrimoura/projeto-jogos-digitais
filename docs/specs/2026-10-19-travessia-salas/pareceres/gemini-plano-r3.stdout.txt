@@ -1,0 +1,38 @@
+STATUS: done
+SUMMARY: Parecer R3 delta concluído com êxito em modo somente leitura (sem execução de ferramentas ou comandos). A revisão valida o fechamento integral e consistente de todos os apontamentos críticos P1/P2 identificados nas rodadas R1/R2, preservando o escopo estrito da arquitetura sem adição de novas dependências ou complexidade desnecessária.
+
+### Avaliação de Fechamento dos Pontos Arquiteturais R3:
+
+1. **Ordem de Verificação, Lock e Física do Player (P1 Fechado)**:
+   - A sequência determinística (*pre-checks* de fonte, sala limpa, oferta local resolvida, guarda, vivo e travessia geométrica antes de travar o jogador) elimina estados fantasmas de travamento prematuro.
+   - O uso explícito de `CollisionObject2D.DISABLE_MODE_KEEP_ACTIVE` antes de aplicar `PROCESS_MODE_DISABLED`, aliado à preservação e restauração dos modos originais em rollback, resolve em definitivo a remoção involuntária do corpo da simulação física 2D do Godot (comportamento padrão `DISABLE_MODE_REMOVE`).
+   - A revalidação puramente geométrica (posição/bounding box) em vez de lista de *overlaps* de Area2D previne inconsistências de *flush* de queries no servidor de física.
+   - O cálculo de centralização no eixo Y utilizando o centro do colisor (`local (0, -38)` a partir da origem nos pés a Y=560, resultando em Y=522) assegura permanência sólida e precisa dentro da abertura do túnel (432..560), eliminando rejeição de borda no piso.
+
+2. **Amostragem de Travessia e Desarme/Rearme (P1 Fechado)**:
+   - A amostragem direta no `_physics_process` em coordenadas locais da sala/porta desacopla a detecção de *drop* de eventos de `Area2D.body_entered` em alta velocidade.
+   - A condição de cruze por passo temporal (`previousX < 1120 <= currentX` e `currentX > previousX`) resolve o falso negativo causado pelo `OuterGuard`, que pode zerar a velocidade vetorial no mesmo frame da colisão.
+   - A inicialização segura `previous = current` ao destravar e o desarme explícito até recuo para `center.x < 1120` evitam re-acionamento acidental em *standalone*, sem nunca resetar `previous` para 0.
+
+3. **Ciclo de Vida da Transição, CanvasLayer e Snapshot (P1/P2 Fechados)**:
+   - O pré-carregamento da `PackedScene` antes do fade-out garante transição atômica.
+   - O snapshot restrito ao momento de tela preta (*blackout*), imediatamente pré-swap e condicionado a `source == tree.current_scene` mais revalidação de token/vida/gate, elimina clones órfãos ou dados obsoletos.
+   - A atribuição da posse de corrotinas/continuações exclusivamente a um nó utilitário persistente (`CanvasLayer` na raiz) extingue falhas críticas de nós desalocados (`await` sobre nós liberados de `Main`/sala antiga).
+   - Cancelamento estrito e idempotente em morte/restart, confirmação de `is_node_ready()` na nova cena antes do fade-in, reversão limpa com restauração de trava/rearme na falha e contenção de input (`mouse_filter = MOUSE_FILTER_IGNORE`) fecham todo o ciclo de robustez.
+
+4. **Isolamento de Pausa (P2 Fechado)**:
+   - Proibição cabal de alteração em `SceneTree.paused` no modo *standalone* (apenas trava de player), com bloqueio/invalidação explícita em pausas de sistema, impede nós auxiliares órfãos.
+   - No modo gerenciado (`RunController`), o controle de propriedade da pausa (*pause ownership*) garante que telas de GameOver ou Vitória jamais sejam despausadas indevidamente pela transição.
+
+5. **Fluxo e Unicidade de Recompensas (P2 Fechado)**:
+   - Desacoplamento estrito: a liberação do portão exige unicamente a resolução da oferta local da sala atual mais eliminação de inimigos/guardas.
+   - O fluxo existente de `bossRewardScreen` no controlador após a travessia é rigorosamente preservado, sem duplicações de concessão e sem retentativa de recompensa no modo gerenciado.
+
+6. **Correção Factual de Instanciação e Modo Terminal (P1 Fechado)**:
+   - Esclarecido em definitivo o equívoco fático do parecer R2 de Grok: o `RunController` atual opera por instanciação de nova sala empacotada e novo Player a cada estágio, sem reutilização de nós do Player anterior. O descarte do Player antigo ocorre organicamente junto com a sala antiga via `queue_free()`.
+   - Modos claramente delimitados: *standalone* sem próximo destino encerra elegantemente com portão sólido, desarme e exibição de "ETAPA CONCLUÍDA"; o modo gerenciado prossegue a rotação de fases ou tela de vitória.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco impeditivo residual no contrato arquitetural R3. O alinhamento das condições geométricas, estados do Godot 4 e regras de fluxo gerenciado vs standalone está completamente estabilizado e blindado contra regressões.
+NEXT_STEP: Persistir as correções autorizadas do contrato R3 nos documentos de especificação/plano (`spec.md` e `plano.md`) e aguardar liberação explícita do agente principal para início da implementação via subagente com o preflight de ferramentas/revisores obrigatórios.

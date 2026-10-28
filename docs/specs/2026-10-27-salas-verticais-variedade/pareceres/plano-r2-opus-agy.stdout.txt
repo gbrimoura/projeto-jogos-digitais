@@ -1,0 +1,53 @@
+**Revisão delta do plano R2** (somente leitura, feita apenas com o texto enviado)
+
+**Premissas cinemáticas usadas:** pulo 640 e gravidade 1600 dão ápice de 128 px e 0,8 s no ar. O corpo tem 76 px de altura, com o centro 38 px acima dos pés e meia-largura 14. Usei y para baixo e viewport de 1152×648.
+
+### P1-A — Topologia: no começo do andar, entrada e saída podem ficar na mesma parede
+A sala inicial de cada andar sempre entra por LEFT. Se o sentido sorteado para o andar for LEFT, o primeiro link pode ser LEFT. Nesse caso, entrada e saída ficam na parede esquerda, e o spawn (160,560) fica ao lado da saída. Isso viola a regra "não pode haver entrada e saída na mesma direção" que o próprio R2 usa.
+
+A reserva vertical só existe com N−1≥2, então nada impede o caso. Ele também acontece com N−1=1 e com o link terminal quando N=1.
+
+**Correção proposta:** colocar no texto o invariante `exit_dir != entry_dir` para todas as salas, inclusive a primeira e a terminal. Quando o sentido for LEFT, o link 0 deve ser vertical, consumindo a reserva. Isso preserva a entrada padrão LEFT.
+
+### P1-B — Último degrau UP contradiz a regra "arco fora do teto"
+O último degrau sai do penúltimo apoio, que fica no topo 256 (roof_four) ou 232 (roof_five), e vai até 160.
+
+- **Com o arco completo, a cabeça entra no teto:** com o gate fechado, a cabeça chega a 52 (roof_four) ou 28 (roof_five), ou seja, dentro da faixa 0..64.
+- **O degrau só funciona com a batida de cabeça:** a velocidade vertical zera e os pés ficam no máximo 20 px acima de 160. Ainda dá para alcançar, mas a janela é estreita. Na roof_four, a decolagem em corrida plena fica entre x≈711 e 758.
+- **Com o gate aberto, há saída:** existem decolagens viáveis dentro do hatch. Na roof_four, x≈718–758; na roof_five, x≈741–803.
+
+Um validador que siga o texto ao pé da letra rejeita as duas famílias UP com o gate fechado. Aí a reserva vertical vira erro ou fallback permanente. Se o validador ignorar o teto, aprova sem modelar o caso real.
+
+**Correção proposta:** definir em que estado do gate cada aresta é validada. Por exemplo: subida para a saída com o hatch aberto, porque só se sai depois do clear. Também é preciso admitir explicitamente o arco truncado por batida de cabeça, com folga mínima de pouso, ou então baixar o penúltimo apoio para manter folga.
+
+### P2 — Inconsistências menores, mas concretas
+1. **Grade de 8:** com largura 104 e centros em múltiplos de 8, as bordas caem em 4 mod 8 (por exemplo, 276 e 852). Falta dizer se a grade se aplica aos centros ou às bordas.
+2. **Gap:** as famílias horizontais aceitam gap de 40 a 96, mas o validador limita a 80 nas arestas ascendentes. É preciso alinhar os dois limites.
+3. **Origem da rota:** a conectividade "a partir de floor" está errada quando a entrada é UP, porque o spawn fica no topo 160. A rota precisa ser direcionada, do spawn até a saída. Descidas são livres e subidas seguem os limites.
+4. **Sala do boss:** o boss está incluído em N, mas o R2 não diz se a sala dele aceita entrada ou saída vertical, nem qual família usa. Entrada UP exige um apoio em 160.
+5. **Offset de portais LEFT/RIGHT:** falta o valor canônico do `entry_offset`/`exit_offset` (por exemplo, y=496) para o validador de descritor.
+6. **Governança:** o texto cita "Grok4.6"; o AGENTS.md do repositório exige `grok-4.7-xhigh-fast`. É preciso fixar o identificador exato.
+
+### Pontos aceitos
+- **Rejeições do root:** a rejeição do freeze em callback de física e do seed0 está bem justificada.
+- **Geometria:**
+  - Primeiro salto de 112 e corredor de 96.
+  - Nenhum apoio n+2 sobre a decolagem.
+  - Linha UP em 32: subida de 90 e cabeça em −6 no cruzamento. No ápice ela vai a −44, com 4 px de folga até a guarda em −48.
+  - O penúltimo apoio chega no máximo a 66 e não cruza a linha 32 por acidente.
+  - Espelho 904↔248 e hatch 120..376 conferem.
+  - A linha DOWN em 604 vem antes do catch em 660.
+- **Topologia:** o algoritmo não se encurrala.
+- **Tranca:** cabe nos 104 px (72+16, patrol 16).
+
+---
+STATUS: done. Veredito: R2 **não aprovado ainda**; faltam 2 P1 de especificação. Nenhum deles exige código escrito antes de autorizar.
+SUMMARY: o R2 resolve os conflitos do R1 (n+2, corredor, rollback DOWN, contratos). Restam o conflito de parede no início do andar com sentido LEFT e a contradição do teto no último degrau UP.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Sem a correção do P1-B, as salas UP falham na validação ou são aprovadas sem o modelo real.
+- A janela do último degrau UP é estreita para o jogador.
+- Pode ser que reiniciar a run, com o seed resolvido "uma vez no ready", reutilize o mesmo seed, dependendo da arquitetura.
+- Sala do boss sem família definida.
+NEXT_STEP: emitir o delta R3 só com P1-A, P1-B e os itens P2 de 1 a 6, e pedir uma rodada delta curta aos quatro revisores antes de autorizar o writer.

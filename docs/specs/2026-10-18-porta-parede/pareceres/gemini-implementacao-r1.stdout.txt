@@ -1,0 +1,58 @@
+STATUS: done
+SUMMARY: Análise estática da porta horizontal embutida na parede (sheet 320x80, dois estados 160x80, recorte interno 128x64, vão livre nativo 48 px, paleta opaca de 20 cores). A sintaxe do Godot 4 (.tscn / GDScript) e do Aseprite Lua está correta, os alinhamentos espaciais e de camadas (z = -2 entre backdrop -10 e sidewalls -1) batem exatamente com as dimensões de sala (paredes x=0..64 e 1088..1152, chão y=560), e os sensores (96x108) e interação [E] foram preservados. Identificada regressão visual menor na transição GDScript (porta fecha visualmente ao transicionar) e inconsistências de path/montagem no script Lua.
+CHANGED_FILES: none
+TESTS: none
+
+### 1. Sintaxe Concreta e Integração de Cenas
+- **`scenes/exit_door.tscn`**:
+  - `load_steps=4 format=3` está estritamente correto (2 `ExtResource`, 1 `SubResource` `RectangleShape2D_exit_sensor`, mais a raiz).
+  - Configuração do `Area2D` preserva `collision_layer = 0` e `collision_mask = 2` (Player).
+  - `DoorArt` (`Sprite2D`) com `texture_filter = 1` (Nearest), `scale = Vector2(2, 2)`, `hframes = 2`, `frame = 0` e `z_index = -2`.
+  - Dimensões do sensor: `Vector2(96.0, 108.0)` centrado em `(0, 0)`.
+- **`scenes/main.tscn` e `scenes/second_room.tscn`**:
+  - Substituição limpa dos 4 nós procedurais antigos (`DoorPanel`, `PortalGlow`, `DoorRim`, `DoorSeal`) pelo nó único `DoorArt`.
+  - A ordem de índices das instâncias herdadas em `EntranceDoor` (`index="1"` para `DoorArt`, `index="2"` para `DoorLabel`) bate com a árvore de `exit_door.tscn`.
+- **Geometria e Alinhamento Espacial**:
+  - **Saída**: Raiz em `(1040, 522)`. `DoorArt` em `(-80, -26)`. Centro global do Sprite em `(960, 496)`. Com frame 160x80 a 2x (320x160), a arte ocupa $X \in [800, 1120]$ e $Y \in [416, 576]$. Como a parede direita fica em $X \in [1088, 1152]$, a porta entra exatamente 32 px (16 px nativos) sob a parede lateral. O fundo da porta em $Y=576$ fica 16 px abaixo da linha de chão ($Y=560$), assentando a base.
+  - **Entrada**: Raiz em `(112, 522)`. `DoorArt` em `(80, -26)` com `flip_h = true`. Centro global em `(192, 496)`. Ocupa $X \in [32, 352]$ e $Y \in [416, 576]$. Entra 32 px sob a parede esquerda ($X \in [0, 64]$). O espelhamento posiciona o bolso telescópico contra a ombreira da parede externa.
+  - **Z-Ordering**: `DoorArt` em $z = -2$ posiciona a arte na frente do backdrop ($z = -10$), atrás das paredes laterais ($z = -1$), com `DoorLabel` em $z = 0$ e atores em $z = 1$, eliminando z-fighting.
+
+---
+
+### 2. Regressões contra o Baseline
+- **Sensor e Interação (Preservados)**:
+  - `SensorShape` de 96x108 mantido ativo em `ExitDoor` e desativado em `EntranceDoor`.
+  - Detecção de tecla `interact` e emissão de `transition_requested(player)` inalteradas.
+- **Regressão Visual GDScript (`scripts/world/exit_door.gd`)**:
+  - Em `_update_presentation()`:
+    ```gdscript
+    var is_open := _room_is_cleared and not _transition_busy
+    _door_art.frame = 1 if is_open else 0
+    if _transition_busy:
+        _door_label.text = "ABRINDO SAÍDA..."
+    ```
+    Quando a sala é limpa, a porta abre (`frame = 1`) e exibe `"SAÍDA ABERTA\n[E] ENTRAR"`. Ao pressionar [E], `_transition_busy` vai para `true`. Como `is_open` exige `not _transition_busy`, `_door_art.frame` reverte imediatamente para `0` (porta fechada) enquanto o texto exibe `"ABRINDO SAÍDA..."`. No baseline procedural isso reativava o selo; na arte física, a porta bate fechada na cara do jogador enquanto transiciona.
+
+---
+
+### 3. Análise da Geração Lua (Aseprite)
+- **Paleta e Estrutura de Camadas**:
+  - 20 cores hexadecimais opacas estritas (todas com canal alfa em 255).
+  - Vão livre nativo de 48 px de altura ($Y \in [16, 63]$), recorte interno de 128x64 ($X \in [16, 143]$, $Y \in [8, 71]$) em folha 320x80.
+  - As 3 camadas Aseprite (`Wall panel...`, `Closed leaf`, `Open leaf...`) não se sobrepõem horizontalmente (folha fechada em $X \in [0, 159]$ e aberta em $X \in [160, 319]$). O flatten do `saveCopyAs` gera o atlas bifásico 320x80 utilizável diretamente com `hframes = 2`.
+- **Fragilidades e Inconsistências no Script**:
+  - **Inconsistência de path padrão**: `local out` usa string relativa (`"assets/environment/..."`), enquanto `atlasPath` e `playerPath` concatenam `root .. "/assets/..."`. Se o script for executado sem `-script-param out=...` a partir de outro diretório de trabalho, o arquivo será gravado no CWD do processo ou falhará.
+  - **Incoerência na montagem de preview**: Em `drawSceneRow(board, 268, nil, openFrame, ...)`, a checagem ternária `leftState = closedFrame == nil and leftOpen or leftClosed` força a porta de entrada a renderizar aberta na linha 2, contradizendo o cabeçalho `"OPEN SAMPLE - GAME ENTRY STAYS CLOSED"`.
+  - **Dependência rígida de assets de referência**: Carregamentos de `atlas` e `playerAtlas` ao final não possuem tratamento para ausência de arquivo. Se os PNGs forem movidos, a geração falha na montagem final.
+
+---
+
+RISKS:
+1. **[Prioridade Alta - Runtime Visual]**: Porta bate fechada no momento da interação: ao pressionar [E], `_transition_busy = true` faz o sprite alternar de `frame = 1` para `frame = 0` enquanto o texto informa `"ABRINDO SAÍDA..."`.
+2. **[Prioridade Média - Pipeline de Assets]**: Script Lua com resolução de caminho mista (`root` vs caminho relativo para `out`), podendo gerar assets fora da árvore do projeto caso executado fora da raiz do repositório.
+3. **[Prioridade Baixa - Artefato de Revisão]**: Na imagem gerada de montagem estática (`porta-fabrica-horizontal-v2-montagem-estatica.png`), a entrada aparece aberta na linha 2, divergindo do comportamento real em jogo onde a entrada permanece sempre trancada.
+
+NEXT_STEP:
+1. Em `scripts/world/exit_door.gd`, desacoplar o quadro da arte da trava transitória, mantendo `_door_art.frame = 1` durante `_transition_busy` (ou definindo `var is_open := _room_is_cleared`).
+2. Em `porta-fabrica-horizontal-v2.lua`, padronizar `local out = p.out or (root .. "/assets/environment/factory_v1/door/porta-fabrica-horizontal-v2")`.
+3. Na linha 308 do script Lua, passar `closedFrame` como 3º argumento de `drawSceneRow` na linha 2 para que a entrada apareça fechada na prancha de visualização, honrando a legenda.

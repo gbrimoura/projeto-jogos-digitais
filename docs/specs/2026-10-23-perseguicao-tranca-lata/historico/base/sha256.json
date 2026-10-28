@@ -1,0 +1,62 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "C230AF166B5724A1DF822DB7C824B13561DCB6C49FD82A2C2CC0D31CB22F00B0"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "sha256": "DF9F643F2A4A645873489F0CE0C454CB61DD30EDD0B596E6D2F35537A452C7B3"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "2D6587661C7559BD067AE24A3D49D2AB62DF2561607A7FB187A55EF8A96B1FD3"
+  },
+  {
+    "path": "scenes/rivet_worker.tscn",
+    "sha256": "B6980093E6A33281DF78B99098E44671B5D64091498B53CBA0FDDBC150EF7174"
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "sha256": "5086D7AEC4D667468DCF842E821069C93A433484E4AFA8760121D950EAE50660"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+    "sha256": "E451F265002FD1B0D66D97712B16DDBD6AF37416CF7D303517022B67405D02D9"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D"
+  },
+  {
+    "path": "project.godot",
+    "sha256": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target-atlas.png",
+    "sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target.aseprite",
+    "sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8"
+  },
+  {
+    "path": "assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png",
+    "sha256": "5400F8E39359CC069139EB5D94C4F969B1A2F56C2328F5149AEE07C6A4DDF001"
+  },
+  {
+    "path": "assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png",
+    "sha256": "64D797D413875B0192886D42A89368A75118DCF2E7C06D8F78EE4C39F3CA823B"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "sha256": "4D5A836FD2EE66838CFC9805392AC1C9B952F2776D9CFFF473C46439AC77B92A"
+  }
+]

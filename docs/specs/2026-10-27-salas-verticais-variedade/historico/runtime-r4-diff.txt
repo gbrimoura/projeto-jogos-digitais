@@ -1,0 +1,28 @@
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/main.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/main.gd
+index d41d0c4..2669136 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/main.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/main.gd
+@@ -225,12 +225,12 @@ func prepare_authored_layout() -> bool:
+ 			if fallback_platforms.size() != authored_platform_names.size():
+ 				return _fail_authored_layout("fallback da família %s diverge da quantidade de apoios" % String(family))
+ 			var fallback_primary := int(fallback_generation.get("primary_index", -1))
+-			var fallback_index := int(fallback_generation.get("fallback_index", -1))
++			var canonical_fallback_index := int(fallback_generation.get("fallback_index", -1))
+ 			if fallback_primary < 0 or fallback_primary >= authored_platform_names.size() \
+-				or fallback_index < 0 or fallback_index >= authored_platform_names.size():
++				or canonical_fallback_index < 0 or canonical_fallback_index >= authored_platform_names.size():
+ 				return _fail_authored_layout("fallback da família %s não definiu suportes de Tranca-Lata" % String(family))
+ 			target.fixed_support_path = NodePath("../" + String(authored_platform_names[fallback_primary]))
+-			target.fallback_support_path = NodePath("../" + String(authored_platform_names[fallback_index]))
++			target.fallback_support_path = NodePath("../" + String(authored_platform_names[canonical_fallback_index]))
+ 			for platform_index in authored_platform_names.size():
+ 				var platform_name: StringName = authored_platform_names[platform_index]
+ 				var platform := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
+@@ -986,7 +986,6 @@ func _validate_authored_target(platform_rects: Dictionary) -> bool:
+ 	_authored_target_patrol_max_x = to_global(Vector2(float(selected.get("maximum_center_x", 0.0)), 0.0)).x
+ 	_authored_target_patrol_enabled = not selected_patrol.is_empty()
+ 	if _run_controller_managed:
+-		var player_body := get_node_or_null("Player") as CollisionObject2D
+ 		var player_spawn := get_node_or_null("PlayerSpawnMarker") as Marker2D
+ 		var player_bounds_result := _body_aabb(player_body, false) if player_body != null else {}
+ 		if player_spawn == null or not bool(player_bounds_result.get("valid", false)):

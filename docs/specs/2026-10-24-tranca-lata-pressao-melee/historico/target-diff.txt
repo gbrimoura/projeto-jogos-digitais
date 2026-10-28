@@ -1,0 +1,138 @@
+diff --git a/docs/specs/2026-10-24-tranca-lata-pressao-melee/historico/base/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index cb3c1c9..1dfbcc9 100644
+--- a/docs/specs/2026-10-24-tranca-lata-pressao-melee/historico/base/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -17,6 +17,9 @@ const PATROL_MASK: int = PLAYER_MASK | WORLD_MASK
+ const MAX_QUERY_RESULTS: int = 32
+ const CLAIMED_META := &"_target_claimed"
+ const PATROL_SPEED: float = 48.0
++const PURSUIT_SPEED: float = 120.0
++const PREFERRED_MELEE_DISTANCE: float = 96.0
++const PURSUIT_STOP_PADDING: float = 8.0
+ const PATROL_PAUSE: float = 0.25
+ const MIN_PATROL_DISTANCE: float = 8.0
+ const MOVEMENT_EPSILON: float = 0.01
+@@ -30,7 +33,7 @@ const JUMP_MAX_SEGMENT: float = 8.0
+ const JUMP_SAFE_MARGIN: float = 0.08
+ const PLAYER_ESCAPE_SPEED: float = 48.0
+ const PURSUIT_REPLAN_INTERVAL: float = 0.45
+-const PURSUIT_STOP_PADDING: float = 8.0
++
+ const PURSUIT_DIRECTION_DEADZONE: float = 5.0
+ const PURSUIT_EDGE_CLEARANCE: float = 96.0
+ const PURSUIT_STUCK_TIMEOUT: float = 0.65
+@@ -238,7 +241,7 @@ func _physics_process(delta: float) -> void:
+ 			_pursuit_replan_remaining = 0.0
+ 	match _attack_state:
+ 		AttackState.IDLE:
+-			var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
++			var detected_player := _find_melee_engagement_player(global_position + attack_center_offset)
+ 			if detected_player != null:
+ 				_known_player = detected_player
+ 				_begin_windup(detected_player)
+@@ -424,31 +427,40 @@ func _pursue_on_current_support(
+ 	var delta_y := player_center.y - attack_center.y
+ 	if absf(delta_x) > PURSUIT_DIRECTION_DEADZONE:
+ 		_patrol_direction = 1 if delta_x > 0.0 else -1
+-	var radius := _effective_attack_radius()
+-	var horizontal_attack_reach := sqrt(maxf(radius * radius - delta_y * delta_y, 0.0))
+-	var stop_distance := maxf(horizontal_attack_reach - PURSUIT_STOP_PADDING, PURSUIT_DIRECTION_DEADZONE)
++	var preferred_distance := minf(PREFERRED_MELEE_DISTANCE, _effective_attack_radius())
++	var preferred_horizontal_reach := sqrt(maxf(
++		preferred_distance * preferred_distance - delta_y * delta_y,
++		0.0
++	))
+ 	var desired_x := global_position.x
+ 	var clear_shot := _has_clear_line_of_sight(player, attack_center)
+-	var needs_horizontal_approach := absf(delta_x) > stop_distance \
++	var center_distance := attack_center.distance_to(player_center)
++	var needs_horizontal_approach := center_distance > preferred_distance \
+ 		or (not clear_shot and absf(delta_x) > PURSUIT_DIRECTION_DEADZONE)
+ 	if needs_horizontal_approach:
+ 		var direction := signf(delta_x)
+ 		if absf(delta_x) <= PURSUIT_DIRECTION_DEADZONE or is_zero_approx(direction):
+ 			direction = float(_patrol_direction)
+-		var stop_reach := horizontal_attack_reach - PURSUIT_STOP_PADDING if clear_shot else 0.0
+-		desired_x = player_center.x - direction * maxf(stop_reach, 0.0) - attack_center_offset.x
++		var stop_reach := maxf(preferred_horizontal_reach - PURSUIT_STOP_PADDING, 0.0) if clear_shot else 0.0
++		desired_x = player_center.x - direction * stop_reach - attack_center_offset.x
+ 	var moved_x := _move_toward_pursuit_x(desired_x, delta, _bound_support)
+-	if not allow_detour:
+-		_pursuit_stuck_remaining = 0.0
+-	elif absf(moved_x) >= 0.1:
++	if absf(moved_x) >= 0.1:
+ 		_pursuit_stuck_remaining = 0.0
+ 	elif needs_horizontal_approach:
+ 		_pursuit_stuck_remaining += delta
+ 	else:
+ 		_pursuit_stuck_remaining = 0.0
+-	if allow_detour and _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT \
++	if _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT \
+ 		and _pursuit_replan_remaining <= 0.0:
+-		_try_begin_pursuit_detour(_bound_support, player, supports)
++		var stalled_player := _find_melee_engagement_player(attack_center, true)
++		if stalled_player != null:
++			_known_player = stalled_player
++			_begin_windup(stalled_player)
++			return
++		if allow_detour:
++			_try_begin_pursuit_detour(_bound_support, player, supports)
++		else:
++			_pursuit_replan_remaining = PURSUIT_REPLAN_INTERVAL
+ 	if _attack_state == AttackState.IDLE:
+ 		_update_visuals()
+ 
+@@ -718,7 +730,7 @@ func _move_toward_pursuit_x(target_x: float, delta: float, support: SolidPlatfor
+ 	var direction := signf(dx)
+ 	if absf(dx) > PURSUIT_DIRECTION_DEADZONE:
+ 		_patrol_direction = int(direction)
+-	var requested_dx := direction * minf(absf(dx), PATROL_SPEED * delta)
++	var requested_dx := direction * minf(absf(dx), PURSUIT_SPEED * delta)
+ 	var collision: KinematicCollision2D = move_and_collide(Vector2(requested_dx, 0.0), true, 0.0)
+ 	var safe_dx := requested_dx
+ 	if collision != null:
+@@ -781,7 +793,7 @@ func _start_jump_prepare(plan: Dictionary) -> void:
+ 	velocity = Vector2.ZERO
+ 	_update_visuals()
+ func _update_jump_prepare(delta: float) -> void:
+-	var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
++	var detected_player := _find_melee_engagement_player(global_position + attack_center_offset)
+ 	if detected_player != null:
+ 		_abort_jump_prepare()
+ 		_known_player = detected_player
+@@ -794,7 +806,7 @@ func _update_jump_prepare(delta: float) -> void:
+ 	if _state_remaining > 0.0:
+ 		_update_visuals()
+ 		return
+-	detected_player = _find_player_in_attack_area(global_position + attack_center_offset)
++	detected_player = _find_melee_engagement_player(global_position + attack_center_offset)
+ 	if detected_player != null:
+ 		_abort_jump_prepare()
+ 		_known_player = detected_player
+@@ -1044,6 +1056,18 @@ func _configure_physics_queries() -> void:
+ func _effective_attack_radius() -> float:
+ 	return clampf(attack_radius, 16.0, 400.0)
+ 
++func _find_melee_engagement_player(
++	area_center: Vector2,
++	allow_stuck_fallback: bool = false
++) -> PhysicsBody2D:
++	var player := _find_player_in_attack_area(area_center)
++	if player == null or allow_stuck_fallback:
++		return player
++	var preferred_distance := minf(PREFERRED_MELEE_DISTANCE, _effective_attack_radius())
++	if area_center.distance_to(_get_player_collider_center(player)) <= preferred_distance:
++		return player
++	return null
++
+ func _find_player_in_attack_area(area_center: Vector2) -> PhysicsBody2D:
+ 	if _area_query == null or _area_shape == null:
+ 		return null
+@@ -1096,6 +1120,7 @@ func _get_player_collider_center(player_body: PhysicsBody2D) -> Vector2:
+ 
+ func _begin_windup(player_body: PhysicsBody2D) -> void:
+ 	_shockwave_tail_remaining = 0.0
++	_pursuit_stuck_remaining = 0.0
+ 	velocity = Vector2.ZERO
+ 	_patrol_moving = false
+ 	_locked_player = player_body

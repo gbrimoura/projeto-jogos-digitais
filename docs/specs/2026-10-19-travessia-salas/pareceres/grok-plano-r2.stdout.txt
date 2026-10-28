@@ -1,0 +1,38 @@
+STATUS: done  
+SUMMARY: O contrato geométrico (split de parede, gate, OuterGuard, cruzamento em x=1120, sem E) é internamente coerente e basta para aceite estático. A arquitetura ainda **não está pronta para runtime**: há bloqueios concretos em terminal vs predicado do gate, posição/lock do Player no fluxo managed, snapshot vs Player reutilizado, rearme após falha, e ciclo de vida do overlay na raiz (sem autoload).  
+CHANGED_FILES: none  
+TESTS: none  
+
+## O que está sólido
+
+- Split direito + OuterGuard fecha o vão sem mexer na parede esquerda nem no piso. O jogador (cápsula raio 14) no disparo em x=1120 ainda está dentro do túnel; a faixa de 8 px em x=[1152,1160) é mais estreita que o corpo, então não há “corredor” para o vazio.
+- Sensor só no túnel + `previous_x < 1120` e `velocity.x > 0` elimina E/proximidade/recuo como avanço. Validação diferida (não trocar cena no callback de física) é a restrição correta de engine, sem exigir teste.
+- Um fade owner por fluxo, `RoomTransition` só HP/build, `project.godot` intocado (helper na raiz, não autoload) e recusa de QA/Godot estão alinhados ao escopo.
+
+## Bloqueios P0 (fechar no plano antes de implementar)
+
+1. **SecondRoom terminal vs abertura do gate.** Gate abre com “clear + recompensa resolvida + guard encerrado”. Sala vazia tende a já estar clear/sem guard; isso abriria o vão e o cruzamento no destino que deve permanecer fechado com `ETAPA CONCLUÍDA`. O terminal precisa **supersedir** o predicado de clear (flag/destino nulo), não depender de “não haver inimigos”.
+
+2. **Player managed após a troca.** Standalone com `change_scene_to_packed` instancia outro Player no spawn autorado. Managed que **reutiliza** o mesmo Player deixa-o congelado em x≥1120, ou seja, na saída da sala nova (gate dessa sala ainda fechado + OuterGuard). O plano só manda restaurar `process_mode` no rollback, não no sucesso managed. Sem reset explícito ao spawn de chegada já existente e restore do lock, o run fica preso na soleira.
+
+3. **Snapshot one-shot vs estado vivo.** Se o Player é reutilizado, gravar/aplicar `RoomTransition` pode reaplicar HP/build ou limpar o snapshot da sala seguinte. Snapshot só no swap packed standalone; managed não deve passar pelo mesmo one-shot.
+
+4. **Rearme após falha com centro já ≥ 1120.** Rollback “rearma” se zerar `previous_x` permite novo `passage_crossed` no próximo frame com `velocity.x > 0` (empurrão no OuterGuard), sem recuar. Rearme tem de exigir novo cruzamento real: manter `previous_x >= 1120` ou só armar de novo depois de `center.x < 1120` / `body_exited`.
+
+5. **Overlay na raiz sem autoload.** `reload_current_scene` / morte **não** destroem filho de `SceneTree.root`. Sem protocolo idempotente create/reuse e teardown em sucesso, erro, morte, restart e `_run_ended`, ficam fade, pause e lock — exatamente o que o aceite proíbe. `project.godot` fora de escopo impede resolver isso como autoload.
+
+6. **Recompensa de chefe em dois momentos.** Objetivo/gate: recompensa **antes** de andar. Spec managed: “resolve eventual RewardScreen primeiro” **depois** do cruzamento. Isso ou duplica a tela ou congela o Player no túnel durante UI. No cruzamento a recompensa já está resolvida; se a tela ainda existir, abortar/esperar, não disparar outra.
+
+## Bloqueios P1 (ciclo de vida)
+
+- **Pause vs freeze.** Happy path só desliga `process_mode` do Player; pause aparece só na recuperação. Se a árvore não pausa, dano/timers seguem nos ~180 ms (HP diferente do snapshot, morte com Player DISABLED). Se pausa, falta dono único de `paused=false` em todos os desfechos. Guardar o `process_mode` original; não forçar um valor.
+- **GameOver sob o fade.** “Revelar GameOver/restart **antes** de remover overlay” deixa a tela preta por cima, a menos que GameOver tenha CanvasLayer acima. Ordem: tirar/opacar overlay, depois UI, depois unpause.
+- **Await em Main.** Callbacks pós-await em Main só são válidos **antes** de `change_scene` / remoção da sala. Depois disso o dono é o helper raiz (standalone) ou o RunController (managed). Main não pode `await` a troca.
+- **Gate no validador.** Abrir = desligar shape/camada, **não** `queue_free`. Senão `_validate_authored_room_boundaries()` / `_collect_authored_world_obstacles()` quebram com a sala ainda montada.
+
+## Não bloquear / não inventar
+
+Não exigir spawn novo, extensão de piso, câmera, combate, movimento, gerador, arte, `project.godot`, Git nem testes/Godot. Chegada managed deve só **reafirmar o spawn já autorado** da sala destino. `room_transition.gd` só entra se `clear_pending_snapshot()` não existir.
+
+RISKS: Revisão só contra o contrato inline (sem diff do runtime da branch). O furo mais grave é managed+Player reutilizado + overlay na raiz + sala terminal “já clear”. Standalone packed + OuterGuard + cruzamento +X está bem especificado se o rearme não zerar `previous_x`.  
+NEXT_STEP: Emendar o plano/spec nos P0 (predicado terminal, spawn/lock managed, snapshot só standalone, rearme por recross, teardown do overlay raiz, RewardScreen não reentra na travessia) e só então autorizar implementação nos arquivos já listados.

@@ -1,0 +1,246 @@
+READ-ONLY static resource reviewer, timeout10min. All content inline immutable R2. NO tools/files/commands/tests/engine/writes. Check scene and SpriteFrames binding to approved 960x64 atlas15cels. Keep class/nodeTrainingTarget CharacterBody2D layer8 mask3 FLOATING, collider72x96, shader local, label sibling; direction flips Sprite only. Idle14, walk3..6 .12each; windup7..9 .18/.22/.25;active10..11 .07each; recovery12..14 .12/.18/1.1 seconds. Manual attackframes paused selected cumulatively by timer. Legacyimpact1 .12s disabled2 .25s retained. Attacktimers .65/.14/1.4 independent hitflash.12 shaderflash_amount. Code already supplied separate fullsource; focus actual resources/UIDs/name/pivot64x64 scale2 sole56. Return STATUS SUMMARY CHANGED_FILES none TESTS none RISKS P1/P2 cause NEXT_STEP. No execution claims.
+SOURCE scenes/training_target.tscn
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
+[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+[ext_resource type="Script" path="res://scripts/enemy/containment_attack_visual.gd" id="4_attack_visual"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+size = Vector2(72.0, 96.0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_target_hit_flash"]
+resource_local_to_scene = true
+shader = ExtResource("3_hit_flash_shader")
+
+[node name="TrainingTarget" type="CharacterBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 3
+motion_mode = 1
+z_index = 1
+script = ExtResource("1_training_target")
+display_name = "Tranca-Lata"
+max_health = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_training_target")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+material = SubResource("ShaderMaterial_target_hit_flash")
+sprite_frames = ExtResource("2_target_frames")
+animation = &"idle"
+autoplay = &"idle"
+centered = true
+
+[node name="NameLabel" type="Label" parent="Visuals"]
+offset_left = -48.0
+offset_top = -84.0
+offset_right = 48.0
+offset_bottom = -66.0
+theme_override_colors/font_color = Color(0.82, 0.91, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.07, 0.11, 1)
+theme_override_constants/outline_size = 3
+text = "Tranca-Lata"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+
+[node name="Visor" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+
+[node name="UpperStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+
+[node name="LowerStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+
+[node name="FootLine" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-38.0, -60.0)
+color = Color(0.894118, 0.435294, 0.345098, 1)
+polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)
+
+[node name="AttackAreaVisual" type="Node2D" parent="."]
+visible = false
+z_index = 1
+script = ExtResource("4_attack_visual")
+
+
+SOURCE resources/enemy/training_target_sprite_frames.tres
+[gd_resource type="SpriteFrames" format=3 uid="uid://npjlmss8ot51"]
+
+[ext_resource type="Texture2D" uid="uid://j41jcj06ctmm" path="res://assets/enemy/training_target/training_target-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_disabled"]
+atlas = ExtResource("1_atlas")
+region = Rect2(128, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle"]
+atlas = ExtResource("1_atlas")
+region = Rect2(896, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact"]
+atlas = ExtResource("1_atlas")
+region = Rect2(64, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(192, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(256, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(320, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_walk_3"]
+atlas = ExtResource("1_atlas")
+region = Rect2(384, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_windup_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(448, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_windup_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(512, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_windup_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(576, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_active_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(640, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_active_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(704, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(768, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(832, 0, 64, 64)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_recovery_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(896, 0, 64, 64)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_disabled")
+}],
+"loop": 1,
+"name": &"disabled",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_idle")
+}],
+"loop": 1,
+"name": &"idle",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_impact")
+}],
+"loop": 1,
+"name": &"impact",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_0")
+}, {
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_1")
+}, {
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_2")
+}, {
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_walk_3")
+}],
+"loop": 1,
+"name": &"walk",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.18,
+"texture": SubResource("AtlasTexture_windup_0")
+}, {
+"duration": 0.22,
+"texture": SubResource("AtlasTexture_windup_1")
+}, {
+"duration": 0.25,
+"texture": SubResource("AtlasTexture_windup_2")
+}],
+"loop": 0,
+"name": &"windup",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.07,
+"texture": SubResource("AtlasTexture_active_0")
+}, {
+"duration": 0.07,
+"texture": SubResource("AtlasTexture_active_1")
+}],
+"loop": 0,
+"name": &"active",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 0.12,
+"texture": SubResource("AtlasTexture_recovery_0")
+}, {
+"duration": 0.18,
+"texture": SubResource("AtlasTexture_recovery_1")
+}, {
+"duration": 1.1,
+"texture": SubResource("AtlasTexture_recovery_2")
+}],
+"loop": 0,
+"name": &"recovery",
+"speed": 1.0
+}]

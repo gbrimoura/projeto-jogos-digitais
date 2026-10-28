@@ -1,0 +1,7 @@
+READ ONLY, NO TOOLS, timeout10min. Review FINAL R2 delta only against your R1 on horizontal wall door. All data inline. No edits/commands. R1 single concrete accepted defect: Lua local out relative while root absolute. FINAL:
+local p = app.params or {}
+local root = p.root or "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais"
+local out = p.out or (root .. "/assets/environment/factory_v1/door/porta-fabrica-horizontal-v2")
+local atlasPath = root .. "/assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"
+local playerPath = root .. "/assets/player/player-animations.png"
+Only that out line and matching manifest hash/docs changed. Existing PNGs exported in correct repo CWD; no rerender because pixels unchanged. Root has inspected runtime PNG and4x/montage: intact opaque panels. drawImage alpha hypothesis not observed. Both-end-open sample is explicitly legend sample, entry in game remains closed. Busy closed frame preserves baseline and approved plan, no gameplay change. Source root positions confirmed exit1040,522 entrance112,522; backdrop-10, sidewall ranges0..64/1088..1152 z-1, actors1; grep no legacy node refs. Output STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP. Identify any remaining concrete defect in delta; do not expand scope.

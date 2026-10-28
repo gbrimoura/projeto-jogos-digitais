@@ -1,0 +1,43 @@
+STATUS: done
+SUMMARY: Análise estática do pacote congelado `review-input.txt` concluída com sucesso. A implementação da validação pré-árvore de layouts autorais, do suporte determinístico com fallback do `TrainingTarget`, da nova geometria das paredes internas (64×648) e da renderização procedural em `factory_wall_visual.gd` está sólida, sem defeitos P1 bloqueantes. Foram identificados apenas pontos de atenção P2 preventivos (acoplamento de shape herdado em `PlatformA` e convenção de retorno de posição de fallback).
+CHANGED_FILES: none
+TESTS: none
+RISKS: 
+- P2: Em `scenes/main.tscn`, `PlatformA` não possui `CollisionShape2D` com subresource local serializado (ao contrário de `Floor`, `PlatformB` e `PlatformC`), herdando diretamente os 220×24 padrão de `solid_platform.tscn`. Embora a validação em `_validate_authored_platform()` passe atualmente porque o template padrão coincide com os 220 px esperados, qualquer alteração futura no tamanho default de `solid_platform.tscn` invalidará a sala 01 silenciosamente.
+- P2: Em `scripts/world/training_target.gd` (L2082-2089), se `get_prepared_authored_target_position` retornar `Vector2.ZERO` (caso um nó alvo não corresponda ao `_authored_target_node`), o inimigo assume `position = Vector2.ZERO` (canto superior esquerdo) sem log de erro específico, pois `Vector2.ZERO` é um `TYPE_VECTOR2` válido. Atualmente é protegido pelo gate `_parent_room_allows_enemy_activation()`, mas é uma vulnerabilidade de contrato caso haja instâncias adicionais.
+- Sprites invisíveis: Conforme delimitado no frozen packet, a invisibilidade de sprites permanece sem evidência de reprodução/causa conclusiva; barras de vida e ataques continuam operacionais.
+NEXT_STEP: Prosseguir com o fluxo de consolidação dos pareceres da rodada r1 pelo agente principal.
+
+---
+
+### Avaliação Detalhada por Eixo
+
+#### 1. Fixture Viability e Conformidade dos Layouts Autorais
+- **Sala 01 (`scenes/main.tscn`)**:
+  - Plataformas: `PlatformA` (290, 480, 220×24), `PlatformB` (615, 468, 190×24), `PlatformC` (915, 452, 190×24), `Floor` (576, 604, 1152×88).
+  - Vãos e saltos: A subida do chão (y=560) para `PlatformA` (y=468) tem desnível de 92 px (limite 120 px); o vão para `PlatformB` é de 120 px (limite 180 px); o vão para `PlatformC` é de 110 px. Todas as plataformas são plenamente alcançáveis pelo pulo do jogador.
+  - Reposicionamento da `ExitDoor`: Deslocada de x=1080 para x=1040, garantindo que seu sensor de 96 px de largura (meia-largura 48 px) termine exatamente em x=1088, sem penetrar a colisão da parede direita (x=1088 a 1152).
+- **Sala 02 (`scenes/second_room.tscn`)**:
+  - Plataformas: `WestPlatform` (340, 480, 240×24), `UpperPlatform` (615, 385, 190×24), `EastPlatform` (900, 452, 170×24).
+  - Alcance e progressão: `EastPlatform` recuada para x=900 e `WorkerPatrolArea` ajustada para bounds [760, 1040]. A varredura do worker com margens de corpo fica em [737, 1063], respeitando com folga a face interna da parede direita em 1088.
+
+#### 2. Ordem de Execução e Ciclo de Vida (`_enter_tree` vs `_ready`)
+- **Modo Gerenciado (`RunController`)**:
+  - `configure_run_managed()` executa antes do nó entrar na árvore (`is_inside_tree() == false`), chamando `prepare_authored_layout()`.
+  - Se a sala for inválida, `configure_run_managed()` retorna `false`, o `RunController` extrai o erro via `get_authored_layout_error()`, descarta a sala com `free()` sem chamar `add_child()`, e aborta a run de forma segura, impedindo progressão e sem disparar `_ready()` em nós filhos inválidos.
+- **Modo Standalone**:
+  - Em `Main._enter_tree()`, `prepare_authored_layout()` é chamado no pré-processamento da raiz, antes dos filhos executarem `_ready()`.
+  - Quando `TrainingTarget._ready()` e `RivetWorker._ready()` executam, consultam `is_authored_layout_valid()`. Se inválido, definem `process_mode = PROCESS_MODE_DISABLED` imediatamente.
+  - Em `Main._ready()`, caso inválido, desativa jogador, combat room, alvos e worker, oculta/bloqueia portas e exibe o overlay `AuthoredLayoutError` na camada 20 com botão de reinício, neutralizando inputs discretos.
+
+#### 3. Orientação Visual das Paredes (`factory_wall_visual.gd`)
+- As paredes internas ocupam x=[0, 64] (esquerda) e x=[1088, 1152] (direita), com altura 648 px (10 segmentos de 64 px + remate de 8 px).
+- Ambas estão configuradas com `flip_h = true`:
+  - `LeftWallVisual` (x=0, coord atlas `(0, 1)`): O ladrilho original possui acabamento/borda na esquerda (u=0) e preenchimento na direita (u=1). Com a transformação de espelhamento horizontal (`scale.x = -1`, `origin.x = 64`), o u=0 é desenhado em x=64 (voltado para o interior da sala) e o preenchimento em x=0 (externo/borda da tela).
+  - `RightWallVisual` (x=1088, coord atlas `(2, 1)`): O ladrilho original possui preenchimento na esquerda (u=0) e acabamento na direita (u=1). Com o espelhamento horizontal, o acabamento u=1 é projetado em x=0 local (global x=1088, voltado para o interior da sala) e o preenchimento em x=64 local (global x=1152).
+- Ambas as paredes apresentam suas faces de acabamento corretamente voltadas para o interior da área jogável, com `z_index = -1` renderizando atrás das plataformas (`z_index = 0`).
+
+#### 4. Suporte Autoral e Fallback do `TrainingTarget`
+- `_validate_authored_target()` valida suporte fixo primário e suporte de fallback por caminhos relativos normalizados (`fixed_support_path` e `fallback_support_path`).
+- Verifica tolerância de contato vertical (`AUTHORED_CONTACT_TOLERANCE = 0.5`), margem de borda horizontal (`AUTHORED_EDGE_MARGIN = 8.0`) e ausência de sobreposição com outros corpos de World camada 1.
+- Calcula a posição exata da base do alvo sobre a plataforma (`target_origin`) e armazena em `_authored_target_position`, repassando ao alvo no seu `_ready()` e desativando a rotina estocástica `_place_on_platform()`.

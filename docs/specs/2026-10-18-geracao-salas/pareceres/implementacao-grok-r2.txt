@@ -1,0 +1,10 @@
+Revisor: Cursor Agent / Cursor Grok 4.6 (sessão atual; pedido era `grok-4.7-xhigh-fast` — sem substituição silenciosa). Esforço: xhigh, timeout 10 min. Escopo: somente o delta inline. Muse/Opus ausentes, não substituídos.
+
+```text
+STATUS: done
+SUMMARY: Delta R2 sem P1. Os 2 P2 do Grok R1 aparecem no trecho: rise inclusive em 0 (randi_range(0, MAX_RISE_PER_STEP/8)*8, logo 0 e 8px e demais múltiplos de 8 até o teto do passo) e _success_result(..., false) com flag de floor explícita. first top permanece FIRST_TOP; passos seguintes sobem com previous_top - rise e maxi(TOP_LIMIT, ...), o que mantém Y >= 376 e rise total <= 64 se FIRST_TOP=440 e TOP_LIMIT=376. Gaps continuam GAP_MIN..GAP_MAX em passos de 8. Alturas iguais (rise=0) são coerentes com helpers rise>=0, suporte primário no último índice e desempate por X. Sem outras mudanças de runtime visíveis neste recorte.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Comentário/doc de rise 0 não está neste recorte (não dá para auditar o texto, só o comportamento). O recorte do fallback para em _entries_are_safe; flag de floor nesse ramo não é visível aqui. Plataformas consecutivas no mesmo Y ficam mais comuns; não viola o contrato citado se o validador já aceita rise>=0.
+NEXT_STEP: Encerrar R2 deste delta; não reabrir R1 nem substituir parecer Muse/Opus.
+```

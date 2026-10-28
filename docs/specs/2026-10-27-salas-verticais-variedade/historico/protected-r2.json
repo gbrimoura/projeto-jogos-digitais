@@ -1,0 +1,126 @@
+[
+  {
+    "path": "scripts/world/solid_platform.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/main.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/exit_door.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/world/training_target.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/rivet_warning_visual.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/player.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/movement_controller.gd",
+    "unchanged": true
+  },
+  {
+    "path": "resources/player_movement_config.tres",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/world/combat_room.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/world/room_transition.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/progression/run_build.gd",
+    "unchanged": true
+  },
+  {
+    "path": "run_root.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "project.godot",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/player.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/rivet_worker.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/training_target.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/hostile_rivet.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/world/factory_floor1_background.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_pursuit.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_dust.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/racket_controller.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/racket_visual.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/player/ball_launcher.gd",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/tranca_lata_jump_texture.tres",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_texture.tres",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/cospe_rebite_projectile_texture.tres",
+    "unchanged": true
+  }
+]

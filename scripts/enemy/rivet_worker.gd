@@ -1,11 +1,14 @@
 class_name RivetWorker
 extends CharacterBody2D
 
+const RIVET_WARNING_VISUAL_SCRIPT = preload("res://scripts/enemy/rivet_warning_visual.gd")
+
 ## Inimigo terrestre que patrulha, se reposiciona, trava a mira e dispara.
 signal defeated
 
 enum AttackState { APPROACH, WINDUP, RECOVERY, RETREAT }
 
+@export var display_name: String = "Cospe-Rebite"
 @export_range(1, 100, 1) var max_health: int = 3
 @export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
 @export_range(1.0, 400.0, 1.0) var move_speed: float = 150.0
@@ -34,6 +37,7 @@ const REPOSITION_SEARCH_STEP: float = 16.0
 const REPOSITION_SEARCH_DISTANCE: float = 128.0
 const POSITION_EPSILON: float = 3.0
 
+@onready var _name_label: Label = $NameLabel
 @onready var _body_fill: Polygon2D = $Visuals/BodyFill
 @onready var _body_sprite: AnimatedSprite2D = $Visuals/BodySprite
 @onready var _health_fill: Polygon2D = $Visuals/HealthFill
@@ -42,6 +46,7 @@ const POSITION_EPSILON: float = 3.0
 @onready var _warning_mark: Node2D = $WarningMark
 @onready var _warning_sound: AudioStreamPlayer2D = $WarningSound
 
+var _warning_visual: Node2D
 var health: int
 var _player: Node2D
 var _state: AttackState = AttackState.APPROACH
@@ -72,9 +77,14 @@ var _locked_muzzle_position: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
 	health = maxi(max_health, 1)
-	_configure_patrol_bounds()
+	_name_label.text = display_name
 	add_to_group("damageable")
 	add_to_group("combat_enemy")
+	var room := get_parent()
+	if room != null and room.has_method("is_authored_layout_valid") and not bool(room.call("is_authored_layout_valid")):
+		process_mode = Node.PROCESS_MODE_DISABLED
+		return
+	_configure_patrol_bounds()
 	_player = get_tree().get_first_node_in_group("player") as Node2D
 	_query = PhysicsRayQueryParameters2D.new()
 	_query.collision_mask = WORLD_MASK
@@ -93,6 +103,7 @@ func _ready() -> void:
 	_rivet_query.collide_with_areas = false
 	_rivet_query.margin = 0.08
 	_prepare_warning_sound()
+	_setup_warning_visual()
 	_update_visuals()
 	_apply_facing_direction()
 	_set_warning_visible(false)
@@ -478,6 +489,18 @@ func _set_warning_visible(value: bool) -> void:
 		_warning_line.visible = value
 	if is_instance_valid(_warning_mark):
 		_warning_mark.visible = value
+	if not value and is_instance_valid(_warning_visual):
+		_warning_visual.call("set_progress", 0.0)
+
+func _setup_warning_visual() -> void:
+	if not is_instance_valid(_warning_line) or not is_instance_valid(_warning_mark):
+		return
+	_warning_visual = RIVET_WARNING_VISUAL_SCRIPT.new() as Node2D
+	if _warning_visual == null:
+		return
+	_warning_visual.name = "WarningVisual"
+	_warning_line.add_child(_warning_visual)
+	_warning_visual.call("configure", _warning_line, _warning_mark)
 
 func _update_warning_line() -> void:
 	if _state != AttackState.WINDUP or _warning_line == null:
@@ -491,7 +514,10 @@ func _update_warning_line() -> void:
 	if fractions.size() >= 2 and fractions[0] < 1.0:
 		end = start + motion * fractions[0]
 	_warning_line.points = PackedVector2Array([to_local(start), to_local(end)])
-	_warning_mark.modulate.a = 0.65 + 0.35 * (0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.025))
+	if is_instance_valid(_warning_visual):
+		var windup_total := maxf(windup_duration, 0.05)
+		var progress := 1.0 - clampf(_windup_remaining / windup_total, 0.0, 1.0)
+		_warning_visual.call("set_progress", progress, true)
 
 func _is_clear_rivet_spawn(muzzle: Vector2, direction: Vector2) -> bool:
 	var space_state := get_world_2d().direct_space_state

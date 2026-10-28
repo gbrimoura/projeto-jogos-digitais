@@ -1,0 +1,11 @@
+Revisão read-only R1 — lendo entrada imutável e avaliando perseguição sem alterar arquivos.
+Lendo entrada R1 em blocos para cobrir contrato e fontes completas.
+STATUS: done
+SUMMARY: Revisão R1 read-only do incremento perseguição Tranca-Lata + Cospe-Rebite concluída sem execução. Preload explícito corrige TrancaLataJump desconhecido sem novo class_name; ImageTexture nativo 384x64/960x160 com SpriteFrames apontando para .tres elimina dependência de import PNG; perseguição em mesmo suporte e por rotas com replanejamento 0,45s, validação física só do primeiro salto e Floor como destino com pouso fora da projeção; Cospe-Rebite com display_name e NameLabel em root fora de Visuals espelhável.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1: none identificado na inspeção estática. Interlocks PREPARO/VOO/POUSO/ataque, cooldown 2,5s, suspensão por cena/sala, limpeza de rota ao morrer/sair e casts+overlaps preservados.
+- P2: none bloqueante. Detour exclui Floor como intermediário e histerese de choose_player_support mantém apoio anterior com player aéreo — conservador, sem queda/teleporte, apenas cobertura reduzida segura.
+- Limitação: payload numérico RGBA omitido nesta entrada 98304/614400 bytes; integridade pixel a pixel depende de historico/runtime-r1 e hashes listados linhas 3072-3111, não verificáveis sem comandos. Revisão estática não confirma runtime/import Godot 4.7.2.
+NEXT_STEP: Congelar estado e submeter a Gemini/Grok/Opus R1 somente leitura; sem Godot/testes até autorização.

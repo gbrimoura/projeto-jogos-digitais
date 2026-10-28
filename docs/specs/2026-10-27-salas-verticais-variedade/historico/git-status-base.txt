@@ -1,0 +1,77 @@
+ M addons/godot-git-plugin/THIRDPARTY.md
+ M assets/enemy/training_target/training_target-atlas.png
+ M assets/enemy/training_target/training_target.aseprite
+ M docs/README.md
+ M project.godot
+ M resources/enemy/training_target_sprite_frames.tres
+ M scenes/exit_door.tscn
+ M scenes/hostile_rivet.tscn
+ M scenes/main.tscn
+ M scenes/rivet_worker.tscn
+ M scenes/second_room.tscn
+ M scenes/training_target.tscn
+ M scripts/enemy/containment_attack_visual.gd
+ M scripts/enemy/rivet_worker.gd
+ M scripts/world/exit_door.gd
+ M scripts/world/main.gd
+ M scripts/world/run_controller.gd
+ M scripts/world/training_target.gd
+?? Godot/
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF3b7df52.TMP
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF565732f.TMP
+?? assets/enemy/training_target/jump/
+?? assets/enemy/training_target/shockwave/
+?? assets/environment/factory_v1/background_floor1/
+?? assets/environment/factory_v1/door/
+?? assets/projectile/
+?? docs/specs/2026-10-16-sprites-paredes-plataformas/
+?? docs/specs/2026-10-18-geracao-salas/
+?? docs/specs/2026-10-18-porta-lateral/
+?? docs/specs/2026-10-18-porta-parede/
+?? docs/specs/2026-10-19-tranca-lata-animacoes/
+?? docs/specs/2026-10-19-travessia-salas/
+?? docs/specs/2026-10-20-tranca-lata-onda-impacto/
+?? docs/specs/2026-10-20-tranca-lata-poeira/
+?? docs/specs/2026-10-21-tranca-lata-integracao-onda/
+?? docs/specs/2026-10-23-descida-onda-rebite/
+?? docs/specs/2026-10-23-fullscreen-hud/
+?? docs/specs/2026-10-23-fundo-primeiro-andar/
+?? docs/specs/2026-10-23-perseguicao-tranca-lata/
+?? docs/specs/2026-10-23-tranca-lata-salto/
+?? docs/specs/2026-10-24-cospe-rebite-aviso/
+?? docs/specs/2026-10-24-subida-geracao/
+?? docs/specs/2026-10-24-tranca-lata-pressao-melee/
+?? docs/specs/2026-10-27-salas-verticais-variedade/
+?? resources/enemy/cospe_rebite_projectile_texture.tres
+?? resources/enemy/tranca_lata_jump_texture.tres
+?? resources/enemy/tranca_lata_shockwave_sprite_frames.tres
+?? resources/enemy/tranca_lata_shockwave_texture.tres
+?? resources/environment/factory_floor1_base_atlas_texture.tres
+?? resources/environment/factory_floor1_base_boiler_texture.tres
+?? resources/environment/factory_floor1_base_maintenance_texture.tres
+?? resources/environment/factory_floor1_left_boiler_texture.tres
+?? resources/environment/factory_floor1_left_cabinets_texture.tres
+?? resources/environment/factory_floor1_modules_atlas_texture.tres
+?? resources/environment/factory_floor1_right_press_texture.tres
+?? resources/environment/factory_floor1_right_service_texture.tres
+?? scripts/enemy/rivet_warning_visual.gd
+?? scripts/enemy/rivet_warning_visual.gd.uid
+?? scripts/enemy/tranca_lata_dust.gd
+?? scripts/enemy/tranca_lata_dust.gd.uid
+?? scripts/enemy/tranca_lata_jump.gd
+?? scripts/enemy/tranca_lata_jump.gd.uid
+?? scripts/enemy/tranca_lata_pursuit.gd
+?? scripts/enemy/tranca_lata_pursuit.gd.uid
+?? scripts/world/factory_ceiling_visual.gd
+?? scripts/world/factory_ceiling_visual.gd.uid
+?? scripts/world/factory_floor1_background.gd
+?? scripts/world/factory_floor1_background.gd.uid
+?? scripts/world/factory_wall_visual.gd
+?? scripts/world/factory_wall_visual.gd.uid
+?? scripts/world/room_layout_generator.gd
+?? scripts/world/room_layout_generator.gd.uid
+?? scripts/world/room_transition_overlay.gd
+?? scripts/world/room_transition_overlay.gd.uid
+?? scripts/world/side_door_visual.gd
+?? scripts/world/side_door_visual.gd.uid

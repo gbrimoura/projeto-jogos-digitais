@@ -1,0 +1,19 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: needs-input
+SUMMARY: V2 resolve R1 (parede sólida 0..64/1088..1152, porta 1040/sensor 992..1088/painel 1016..1064, fórmula centroX/topo-48, largura≥88 sem RNG). Não autoriza runtime. Impedem execução futura: nomes de exports abertos, base de NodePath indefinida, ordem/dono da validação, LOS sem posições/raios, rollback com baseline único sobre arquivos sobrepostos.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- 3 Paredes/ExitDoor: sensor 992..1088 encosta na face x=1088 sem overhang — correto, mas spec não define como Area detecta jogador parado no limite (overlap vs centro) nem y de spawn do Player para provar entrada em 468..576. Executor terá que arbitrar critério de acionamento.
+- 3 WallVisuals/helper: Node2D z=-1 entre -10 e 0 e recorte 640..648 coerentes, mas helper `sem class_name` sem API congelada (funções, parâmetros TileSet/sourceRect, chamada por Left/RightVisual). Risco de executor criar global class ou acesso divergente ao TileSet.
+- 4 Porta sem abertura: “sem recorte” + “parede sólida por toda altura em frente ao sensor” consistente com transição por Area/E, mas spec não fixa se DoorPanel tem colisão própria ou é só visual. Se painel ganhar body no futuro, contradiz parede única.
+- 5 Plataformas: tabela determinística e flags off por instância OK; nomes `randomize_position/randomize_width` citados sem proveniência em `solid_platform.gd`. Se exports tiverem outro nome/tipo/default, implementação trava.
+- 5 Passagens: B=80 “não considerar passagem” e C/East=96 “prevista” corretos para cápsula 76, mas worker sob A/West=68 vs corpo 64 (folga 4) só é seguro porque patrulhas atuais evitam A/West. Spec não trava essa relação patrulha x plataforma baixa; ajuste futuro de markers quebra sem erro.
+- 6 Suporte alvo: matemática confere (C 915,392; Upper 615,325; fallbacks 290,420 / 340,420; 72+2×8=88). Bloqueante: exports “por exemplo fixed_support_path/fallback_support_path” não congelados; base `../PlatformC` indefinida (irmão direto seria `PlatformC`, `../` implica container intermediário não declarado). Sem hierarquia exata, executor não resolve paths.
+- 6 Validação/fallback: “restaurar tabela autoral antes de criar inimigos, senão rejeitar sala” sem dono/ordem (Main._ready vs TrainingTarget._ready vs RunRoot), sem definição de “bounds sem interseção” (contra o quê: piso, paredes, outras plataformas, door sensor?) e sem formato do erro explícito. Risco de race e de fallback recursivo não determinístico.
+- 7 Worker/LOS: bounds 397..943 e 737..1063 dentro de 64..1088 OK; LOS exige “ao menos uma linha válida” e “não atacar através de bloqueio” sem fixar posições de jogador/alvo, raio de consulta TrainingTarget, distância/orientação RivetWorker. Critério de aceite não verificável objetivamente.
+- 1-2 Sprites: pipeline 6 estágios bem ordenado e `disabled` fora do aceite correto, mas sem ramo “se todos os 6 passarem e seguir invisível”. Primeira divergência sem fallback deixa Etapa 1 sem saída definida.
+- Rollback: SHA-256 por arquivo + baseline 90b2e59 por etapa, mas main.tscn/second_room.tscn são tocados em Etapa 2 e 3. Reverter “apenas arquivos da etapa” após Etapa 3 desfaz Etapa 2. Falta snapshot por etapa e regra de avanço de baseline.
+NEXT_STEP: Congelar antes de qualquer implementação: 1) nomes exatos dos 2 exports e base de NodePath com hierarquia; 2) dono/ordem da validação e definição de interseção + erro; 3) confirmar nomes de flags randomize; 4) fixar 1 posição de LOS por inimigo com raio/distância; 5) snapshot por etapa; 6) ramo se pipeline de sprites não achar causa. Sem isso, não liberar frente de execução.

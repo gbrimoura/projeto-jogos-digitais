@@ -1,0 +1,8 @@
+Revisão R2 em curso — lendo entrada delta para checar fallback e detour.
+Primeira parte revisada — buscando o restante para concluir o parecer.
+STATUS: done
+SUMMARY: R2 corrige paralisia R1: fallback sem detour quando helpers/selected/rota nulos ou plano impossível, limpa `_pursuit_detour_active/_pursuit_path` em todos os exits novos, `size<2` impede índice inválido, `allow_detour=false` sem recursão, `stop_distance` com piso e clamp via `_move_toward_pursuit_x`; standoff escolhe mais próximo (diff>1px) sem cruzar sob plataforma. Sem regressão P1; MAX_RISE/histerese/tipagem conforme escopo.
+CHANGED_FILES: none
+TESTS: none
+RISKS: P1: none. P2-1: `_pursue_via_route` (source/dest inválido, stuck, `plan_jump_to` vazio) ainda faz `_stop_patrol` de 1 tick em vez de fallback imediato — auto-recupera no próximo replan, sem flag presa. P2-2: bloqueado com `|dx|<=5` não aproxima nem acumula stuck — evita jitter, pode estacionar sem LOS. P2-3: guarda do `_pursue_fallback` dá `_stop_patrol` sem limpar — auto-limpo por `_refresh_live_player`/`_clear_pursuit_route` no pouso.
+NEXT_STEP: manter R2; se quiser, trocar os 3 `_stop_patrol` internos do `via_route` por fallback imediato.

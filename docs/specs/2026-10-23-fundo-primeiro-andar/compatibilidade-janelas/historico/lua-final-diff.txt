@@ -1,0 +1,187 @@
+diff --git a/docs/specs/2026-10-23-fundo-primeiro-andar/historico/runtime-r1/assets/environment/factory_v1/background_floor1/background_floor1.lua b/assets/environment/factory_v1/background_floor1/background_floor1.lua
+index 0df0053..8ffa999 100644
+--- a/docs/specs/2026-10-23-fundo-primeiro-andar/historico/runtime-r1/assets/environment/factory_v1/background_floor1/background_floor1.lua
++++ b/assets/environment/factory_v1/background_floor1/background_floor1.lua
+@@ -1,7 +1,10 @@
+ -- First-floor factory backgrounds, hand-authored as crisp native pixels in Aseprite Lua.
+--- Re-run: Aseprite.exe -b --script background_floor1.lua --script-param root=<repo>
++-- Re-run from the repository root; parameters must precede --script:
++-- Aseprite.exe -b --script-param "root=<repo>" --script-param "mode=bases-only" --script "assets/environment/factory_v1/background_floor1/background_floor1.lua"
++-- Use mode=full to regenerate the studies, modular assets, and all eight static contexts.
+ local p = app.params or {}
+ local ROOT = p.root or "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais"
++local MODE = p.mode or "full"
+ local OUT = ROOT .. "/assets/environment/factory_v1/background_floor1"
+ local ATLAS_PATH = ROOT .. "/assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"
+ local PLAYER_PATH = ROOT .. "/assets/player/player-animations.png"
+@@ -140,7 +143,7 @@ local function topFrame(img)
+     bolt(img,x+4,9,K.steelDark); bolt(img,x+13,9,K.steelDark)
+   end
+ end
+-local function distantBuilding(arch,windows,variant)
++local function distantBuilding(arch,windows,variant,sharedWindowBay)
+   rect(arch,0,0,W,H,K.ink)
+   rect(arch,0,0,W,18,K.void); rect(arch,0,3,W,2,K.coal)
+   rect(arch,0,15,W,3,K.ink)
+@@ -149,15 +152,25 @@ local function distantBuilding(arch,windows,variant)
+     bolt(arch,x+1,8,K.steel)
+   end
+   rect(arch,0,20,W,2,K.void)
+-  local cols=variant==1 and {20,177,354,548} or {28,139,300,548}
++  local cols
++  if sharedWindowBay then
++    cols=variant==1 and {20,177,420,548} or {28,139,300,548}
++  else
++    cols=variant==1 and {20,177,354,548} or {28,139,300,548}
++  end
+   for _,x in ipairs(cols) do
+     rect(arch,x,24,5,130,K.void); rect(arch,x+1,27,1,118,K.wall)
+     rect(arch,x+5,31,3,118,K.ink)
+     rect(arch,x-3,28,12,4,K.void); rect(arch,x-1,29,8,1,K.coal)
+     bolt(arch,x+1,35,K.steelDark); bolt(arch,x+1,145,K.steelDark)
+   end
+-  local ws=variant==1 and {{178,40,38,96},{260,44,38,92},{345,39,38,97},{430,48,34,88}}
+-    or {{92,45,38,91},{203,41,38,95},{311,47,38,89},{492,44,32,92}}
++  local ws
++  if sharedWindowBay then
++    ws={{344,56,38,78}}
++  else
++    ws=variant==1 and {{178,40,38,96},{260,44,38,92},{345,39,38,97},{430,48,34,88}}
++      or {{92,45,38,91},{203,41,38,95},{311,47,38,89},{492,44,32,92}}
++  end
+   for _,v in ipairs(ws) do steppedWindow(windows,v[1],v[2],v[3],v[4]) end
+   rect(arch,166,140,247,2,K.void)
+   rect(arch,181,145,2,11,K.void); rect(arch,401,145,2,11,K.void)
+@@ -443,7 +456,7 @@ end
+ local MOD = OUT .. "/modular"
+ local function makeModuleBase(variant)
+   local arch,windows=image(),image()
+-  distantBuilding(arch,windows,variant)
++  distantBuilding(arch,windows,variant,true)
+   topFrame(arch)
+   if variant==1 then
+     rect(arch,0,219,66,2,K.ink); rect(arch,0,221,62,45,K.void)
+@@ -592,7 +605,7 @@ local function saveMetadataAndTres(base0,base1,baseAtlas,moduleAtlas,mods,atlasW
+       "factory_floor1_modules_atlas_texture.tres",m.x,m.y,m.image.width,m.image.height)
+   end
+   local f=assert(io.open(MOD.."/regions-and-anchors.json","w"))
+-  f:write('{\n  "module_atlas": {"file":"factory-floor1-modules-atlas.png","width_px":',tostring(atlasW),
++  f:write('{\n  "shared_window_aperture_native_px":[344,56,38,78],\n  "module_atlas": {"file":"factory-floor1-modules-atlas.png","width_px":',tostring(atlasW),
+     ',"height_px":',tostring(atlasH),'},\n  "modules": [\n')
+   for i,m in ipairs(mods) do
+     f:write('    {"id":"',m.id,'","label":"',m.label,'","region_px":[',tostring(m.x),',',tostring(m.y),',',
+@@ -671,6 +684,72 @@ local function generateModularAssets()
+   captions:close()
+   print("Aseprite generated native modular backgrounds, atlas, ImageTexture resources, and four static seed contexts.")
+ end
++local function generateWindowRevisionBases()
++  local base0,base1=makeModuleBase(1),makeModuleBase(2)
++  base0:saveAs(MOD.."/factory-floor1-base-boiler.png")
++  base1:saveAs(MOD.."/factory-floor1-base-maintenance.png")
++  local baseAtlas=Image(W,H*2)
++  baseAtlas:drawImage(base0,0,0); baseAtlas:drawImage(base1,0,H)
++  baseAtlas:saveAs(MOD.."/factory-floor1-bases-atlas.png")
++  saveBaseSource(base0,base1)
++  writeImageTextureTres(ROOT.."/resources/environment/factory_floor1_base_atlas_texture.tres",
++    "Image_floor1_bases",baseAtlas)
++
++  -- Existing transparent module exports and anchors are read-only inputs here.
++  local leftBoiler=Image{fromFile=MOD.."/factory-floor1-module-left_boiler.png"}
++  local leftCabinets=Image{fromFile=MOD.."/factory-floor1-module-left_cabinets.png"}
++  local rightService=Image{fromFile=MOD.."/factory-floor1-module-right_service.png"}
++  local rightPress=Image{fromFile=MOD.."/factory-floor1-module-right_press.png"}
++  local combos={}
++  for seed=0,7 do
++    local baseBit=seed%2
++    local leftBit=math.floor(seed/2)%2
++    local rightBit=math.floor(seed/4)%2
++    combos[#combos+1]={
++      seed=seed,
++      bits=tostring(baseBit)..tostring(leftBit)..tostring(rightBit),
++      base=baseBit,
++      left=leftBit,
++      right=rightBit
++    }
++  end
++  local contact=Image(4608,1296)
++  local baseImages={base0,base1}
++  local leftImages={leftBoiler,leftCabinets}
++  local rightImages={rightService,rightPress}
++  local leftAnchors={{20,12},{18,36}}
++  local rightAnchors={{313,24},{223,25}}
++  for i,c in ipairs(combos) do
++    local bg=Image(W,H)
++    bg:drawImage(baseImages[c.base+1],0,0)
++    local la,ra=leftAnchors[c.left+1],rightAnchors[c.right+1]
++    bg:drawImage(leftImages[c.left+1],la[1],la[2])
++    bg:drawImage(rightImages[c.right+1],ra[1],ra[2])
++    local previewPath=MOD.."/context-seed-"..c.bits..".png"
++    contextPreview(bg,previewPath)
++    local preview=Image{fromFile=previewPath}
++    local cx=((i-1)%4)*1152
++    local cy=math.floor((i-1)/4)*648
++    contact:drawImage(preview,cx,cy)
++  end
++  contact:saveAs(MOD.."/factory-floor1-procedural-contact.png")
++  local captions=assert(io.open(MOD.."/context-captions.txt","w"))
++  captions:write("Factory floor 1 — static hierarchy/contact preview, shared clear window bay\n")
++  captions:write("Every cell is a fixed 1152x648 composition; sample platforms and character are static context props, not runtime captures.\n")
++  captions:write("Bit order is base-left-right. Seed = base + 2*left + 4*right; this sheet enumerates the eight cosmetic combinations.\n\n")
++  for _,c in ipairs(combos) do
++    local baseName=c.base==0 and "boiler wall" or "maintenance wall"
++    local leftName=c.left==0 and "boiler circuit" or "service cabinets"
++    local rightName=c.right==0 and "service sign" or "press"
++    local column=(c.seed%4)+1
++    local row=math.floor(c.seed/4)+1
++    captions:write("Seed ",tostring(c.seed)," / ",c.bits," — contact row ",tostring(row),", column ",tostring(column),": ",
++      baseName," / ",leftName," / ",rightName,".\n")
++  end
++  captions:write("All seeds keep the shared recessed window at native Rect2(344,56,38,78); modules stay complete and unmirrored.\n")
++  captions:close()
++  print("Aseprite bases-only mode updated the two wall bases, native base ImageTexture, and eight static contexts; modules were read without modification.")
++end
+ local function makeLayerSet()
+   return {
+     {name="Far wall and ceiling structure",image=image()},
+@@ -680,18 +759,25 @@ local function makeLayerSet()
+     {name="Wear, gauges, signage and lamps",image=image()}
+   }
+ end
+-local a,b=makeLayerSet(),makeLayerSet()
+-drawBoilerRoom({arch=a[1].image,windows=a[2].image,pipes=a[3].image,machine=a[4].image,details=a[5].image})
+-drawMaintenanceRoom({arch=b[1].image,windows=b[2].image,pipes=b[3].image,machine=b[4].image,details=b[5].image})
+-saveScene("factory-floor1-boiler-room",a)
+-saveScene("factory-floor1-maintenance-room",b)
+-local room1=Image{fromFile=OUT.."/factory-floor1-boiler-room.png"}
+-local room2=Image{fromFile=OUT.."/factory-floor1-maintenance-room.png"}
+-scaled(room1,2):saveAs(OUT.."/factory-floor1-boiler-room-preview-2x.png")
+-scaled(room1,4):saveAs(OUT.."/factory-floor1-boiler-room-preview-4x.png")
+-scaled(room2,2):saveAs(OUT.."/factory-floor1-maintenance-room-preview-2x.png")
+-scaled(room2,4):saveAs(OUT.."/factory-floor1-maintenance-room-preview-4x.png")
+-contextPreview(room1,OUT.."/factory-floor1-boiler-room-context-v2.png")
+-contextPreview(room2,OUT.."/factory-floor1-maintenance-room-context-v2.png")
+-generateModularAssets()
+-print("Generated V2 study backgrounds and procedural modular previews/resources.")
++if MODE=="bases-only" then
++  generateWindowRevisionBases()
++elseif MODE=="full" then
++  local a,b=makeLayerSet(),makeLayerSet()
++  drawBoilerRoom({arch=a[1].image,windows=a[2].image,pipes=a[3].image,machine=a[4].image,details=a[5].image})
++  drawMaintenanceRoom({arch=b[1].image,windows=b[2].image,pipes=b[3].image,machine=b[4].image,details=b[5].image})
++  saveScene("factory-floor1-boiler-room",a)
++  saveScene("factory-floor1-maintenance-room",b)
++  local room1=Image{fromFile=OUT.."/factory-floor1-boiler-room.png"}
++  local room2=Image{fromFile=OUT.."/factory-floor1-maintenance-room.png"}
++  scaled(room1,2):saveAs(OUT.."/factory-floor1-boiler-room-preview-2x.png")
++  scaled(room1,4):saveAs(OUT.."/factory-floor1-boiler-room-preview-4x.png")
++  scaled(room2,2):saveAs(OUT.."/factory-floor1-maintenance-room-preview-2x.png")
++  scaled(room2,4):saveAs(OUT.."/factory-floor1-maintenance-room-preview-4x.png")
++  contextPreview(room1,OUT.."/factory-floor1-boiler-room-context-v2.png")
++  contextPreview(room2,OUT.."/factory-floor1-maintenance-room-context-v2.png")
++  generateModularAssets()
++  generateWindowRevisionBases()
++  print("Generated V2 studies, procedural modular resources, and all eight static contexts.")
++else
++  error("Unsupported mode: "..tostring(MODE))
++end
+\ No newline at end of file

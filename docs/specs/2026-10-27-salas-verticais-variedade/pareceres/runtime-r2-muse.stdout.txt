@@ -1,0 +1,11 @@
+Revisão R2 em curso — lendo fonte estável integral para julgar P1/P2 sem repetir R1.
+Fonte parcial lida — continuando a leitura integral da fonte estável.
+STATUS: blocked
+SUMMARY: R2 corrige centro-grid8, gate-legacy, seed-local, early-false/target-obstáculo e fallback canônico validado; porém `managed_room_topology.configure` quebrou UP/DOWN com identificadores indefinidos.
+CHANGED_FILES: none
+TESTS: none
+RISKS: UP/DOWN não instanciam — run cai em fail de layout/contrato; variedade vertical bloqueada; HP/rewards/movimento preservados no estático.
+NEXT_STEP: corrigir vars em `configure`, snap de centro grade8, re-rodar R2 somente leitura.
+
+P1-1 — `scripts/world/managed_room_topology.gd:configure` usa `ceiling_left_edge/ceiling_right_edge/right_width` indefinidos nos ramos UP `~4574` e DOWN `~4587`. Impacto: erro de compilação/execução, sem `ManagedCeiling/Floor` corretos, `validate_contract` falha. Correção: usar `left_edge/right_edge` e `right_width=1152.0-right_edge`.
+P2-1 — `scripts/world/room_layout_generator.gd:_build_managed_entries` vs `_managed_entries_are_safe`: `widths 152/168/184/2=76/84/92` deixam `centers` em `+4 mod8`, rejeitado por `fposmod(center,8)`, forçando fallback canônico e reduzindo variação. Correção: `snappedf(center,8.0)` após passo ou restringir `widths` managed a múltiplos de 16.

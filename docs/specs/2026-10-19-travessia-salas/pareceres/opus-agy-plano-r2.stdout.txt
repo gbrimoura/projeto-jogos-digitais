@@ -1,0 +1,81 @@
+STATUS: done
+
+SUMMARY: Revisei a versão inline do plano e do spec. Não verifiquei nenhuma afirmação no repositório. A arquitetura se sustenta e a geometria fecha:
+- O túnel tem 128 px de altura e a cápsula do jogador 76 px.
+- Com raio 14 e a contenção exterior em x=1152, o centro do jogador para em x≤1138, ainda sobre o piso, que vai até 1152. Ele não cai nem escapa.
+- Há só um responsável pelo fade em cada modo (gerenciado e standalone), e o Main não fica esperando depois de descarregado.
+
+Mesmo assim, há três bloqueios P1 que precisam entrar no spec antes do runtime. Veredito: **aprovar com mudanças obrigatórias**.
+
+CHANGED_FILES: none
+
+TESTS: none (revisão estática, sem Godot e sem ferramentas)
+
+RISKS:
+
+**P1 — bloqueiam o runtime**
+
+1. **Desativar o Player pelo `process_mode` tira o corpo da física.** No Godot 4, o `disable_mode` padrão de um CollisionObject é REMOVE. Ao ser desativado, o Player sai do espaço físico e o ExitDoor recebe `body_exited`. Consequências:
+   - A checagem "ainda dentro da área" na validação diferida falha se rodar depois da trava.
+   - Ao destravar, o `body_entered` dispara de novo e pode bagunçar o rearme.
+   - O spec é ambíguo sobre a ordem entre trava e validação.
+   
+   Correção:
+   - Ordem fixa: validar, depois travar.
+   - A checagem de "dentro do túnel" deve ser geométrica: centro com x em [1120,1152) e y em [432,560), sem depender da lista de corpos sobrepostos.
+   - Ou o Main define `disable_mode = DISABLE_MODE_KEEP_ACTIVE` no Player antes de desativar. Isso não exige editar o Player.
+   - Guardar e restaurar o `process_mode` original. Aplicar a trava dentro da chamada diferida, não num callback de física.
+
+2. **Snapshot criado antes do fade e reinício durante o fade.** No standalone, o snapshot do `RoomTransition` é preparado antes dos ~180 ms de fade. Se houver morte ou reinício nesse intervalo:
+   - A cena recarregada consome o snapshot e herda HP e build indevidamente.
+   - O helper pendurado na raiz ainda chama `change_scene_to_packed` por cima do reinício.
+   
+   Correção:
+   - Criar o snapshot só no momento da troca, com a tela já preta.
+   - Antes de trocar, o helper confere se `get_tree().current_scene` ainda é a cena de origem e se o token da sala continua válido.
+   - O caminho de reinício e morte chama `clear_pending_snapshot()`, cancela o tween e remove o overlay.
+
+3. **O tratamento de falha no modo gerenciado é contraditório.** O spec diz ao mesmo tempo:
+   - "Erro de carga restaura… mantém sala aberta para retry", de forma genérica;
+   - "Managed failure revela GameOver/restart".
+   
+   Isso define caminhos diferentes para destravar e para a recompensa de chefe. Se o gerenciado permitir nova tentativa depois que a RewardScreen do chefe foi resolvida, recruzar dispara a recompensa de novo e ela é concedida duas vezes. Correção:
+   - Declarar retry só no standalone e GameOver no gerenciado.
+   - Ou, se houver retry no gerenciado, exigir uma marca idempotente "recompensa de chefe resolvida" guardada no RunController.
+   - Declarar também que a condição do gate ("recompensa resolvida") vale só para a recompensa local do Main. A recompensa de chefe acontece depois do cruzamento, então o gate não pode esperar por ela, senão nunca abre.
+
+**P2**
+
+4. **Amostragem do cruzamento:**
+   - Se a primeira amostra dentro da área já estiver com x≥1120, o cruzamento não é registrado. Isso acontece com dash acima de cerca de 2760 px/s a 60 Hz, ou pelo atraso de um frame na sobreposição. O jogador fica preso entre 1120 e a contenção exterior e precisa recuar.
+   - O rearme pode usar um `previous_x` antigo (menor que 1120) e emitir sem um recruzamento real.
+   
+   Correção:
+   - Com o gate aberto, amostrar o x do Player a cada frame de física, independente da área. Ou inicializar `previous_x = x - velocity.x*delta` na entrada.
+   - No rearme, reamostrar `previous_x` com o valor atual.
+
+5. **Pausa:**
+   - `change_scene_to_packed` não reseta `SceneTree.paused`.
+   - Se algum menu ou tela de pausa pausar a árvore durante o fade, o overlay (que roda com `PROCESS_MODE_ALWAYS`) troca a cena, o menu é liberado junto com a cena e a árvore fica pausada sem menu: softlock.
+   
+   Correção:
+   - Bloquear a entrada de pausa enquanto a transição estiver ocupada.
+   - Quem pausa é quem despausa. No standalone, não pausar a árvore, basta travar o Player.
+
+6. **A troca de cena é diferida.** O fade-in deve começar só quando `current_scene` não for nulo e for diferente da origem. Usar o sinal `scene_changed` apenas se a versão do Godot do projeto tiver esse sinal (só existe em versões recentes). Caso contrário, aguardar `process_frame` em loop. Erros imediatos devolvidos por `change_scene_to_packed` acionam o rollback, porque a origem ainda existe.
+
+7. **Gate e validador:**
+   - Abrir o gate com `set_deferred("disabled", true)`.
+   - O validador e o coletor devem identificar o gate pelo nó, não pelo shape estar ativo. Senão, uma nova coleta depois da abertura acusa a parede como faltando.
+   - O corpo do gate precisa usar a mesma layer/mask do `WorldCollision`.
+
+**P3**
+
+8. **Contenção exterior no coletor:** a `RightOuterGuard` fica fora dos limites da sala. Ela deve ser excluída dos obstáculos usados para spawn e posicionamento, ou entrar numa lista explícita de exceções no coletor.
+9. **Restos da interação por E:**
+   - Remover dicas e textos de "E" no ExitDoor e no HUD; a mensagem de etapa concluída não deve citar E.
+   - O overlay deve ser único (reutilizar ou liberar, sem empilhar), ficar acima do HUD e usar `mouse_filter` IGNORE quando estiver transparente.
+
+Nada aqui pede gameplay novo, testes ou Godot. As correções cabem nos arquivos já propostos, sem tocar Player nem `movement_controller`.
+
+NEXT_STEP: Corrigir o spec e o plano com P1.1–P1.3 e P2.4–P2.7, preservando a versão atual em `historico/`. Depois, abrir a rodada de revisão do plano revisado e, só então, implementar com o subagente `gpt-6-luna` em `xhigh`, como exige o repositório, seguido das revisões por incremento.

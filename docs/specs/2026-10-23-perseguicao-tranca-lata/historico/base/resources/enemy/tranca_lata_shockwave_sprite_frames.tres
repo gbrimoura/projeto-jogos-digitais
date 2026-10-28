@@ -1,0 +1,53 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(0, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(160, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(320, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_3"]
+atlas = ExtResource("1_atlas")
+region = Rect2(480, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_4"]
+atlas = ExtResource("1_atlas")
+region = Rect2(640, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_5"]
+atlas = ExtResource("1_atlas")
+region = Rect2(800, 0, 160, 160)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_0")
+}, {
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_1")
+}, {
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_2")
+}, {
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_3")
+}, {
+"duration": 0.03,
+"texture": SubResource("AtlasTexture_impact_4")
+}, {
+"duration": 0.03,
+"texture": SubResource("AtlasTexture_impact_5")
+}],
+"loop": 0,
+"name": &"impact",
+"speed": 1.0
+}]

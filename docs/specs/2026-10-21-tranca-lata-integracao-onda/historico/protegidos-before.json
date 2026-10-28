@@ -1,0 +1,134 @@
+[
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "E2274C171A5E55C6ACCE003A61EC4FC12D25EF7969F0AE72C2EA9A96160361A0"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "sha256": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A"
+  },
+  {
+    "path": "scripts/world/room_transition_overlay.gd",
+    "sha256": "0CFB9E90D671E9DC6B821E802B2065D0358B94AD8852527FEC2E50516F69C0F5"
+  },
+  {
+    "path": "scripts/world/side_door_visual.gd",
+    "sha256": "2C5E4369B9184C09ACDF55BC33248886FD6F652D029989F29CA9F92DFABE2389"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D"
+  },
+  {
+    "path": "scripts/world/solid_platform.gd",
+    "sha256": "2F6233E4B67C3598B4F4E4C044E53475FC55EB4289FBA709F2E8BFE34DADE115"
+  },
+  {
+    "path": "scripts/world/combat_room.gd",
+    "sha256": "87F8FB4CC6F920554EC3DD6C3B101327963C54EF60F6FB5262B574A97784B003"
+  },
+  {
+    "path": "scripts/player/player.gd",
+    "sha256": "E294502C526A80601B27C620EAC1B9301FEFA5E4A523496454DE8F39B62E2520"
+  },
+  {
+    "path": "scripts/player/trajectory_preview.gd",
+    "sha256": "2B97000976C2B522040353FA8EC8425D83C5D5EDC5593213A548B28E4243C3EA"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "2D6587661C7559BD067AE24A3D49D2AB62DF2561607A7FB187A55EF8A96B1FD3"
+  },
+  {
+    "path": "scripts/enemy/enemy_hit_flash.gdshader",
+    "sha256": "A6AC520261B85CA442467FEC131F111CD26DB6090E271D09C8EFEB490C1BDCB7"
+  },
+  {
+    "path": "assets/enemy/rivet_worker/rivet_worker-atlas.png",
+    "sha256": "9028C991C29F072E4AA41C85FCFD7648F0650BB80AE4C41658BC056E26E75DD1"
+  },
+  {
+    "path": "assets/enemy/rivet_worker/rivet_worker.aseprite",
+    "sha256": "DD0747F3FD159CB78397B31F417734F54EC6CDA014C951397CB812D7F0E24450"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D"
+  },
+  {
+    "path": "scenes/player.tscn",
+    "sha256": "D1D2707899A8CB3DEDFF8311A8FF46998C6D55E561580F421C935C30BAF6B46D"
+  },
+  {
+    "path": "run_root.tscn",
+    "sha256": "B04067D9C02C3B3A2E80653C9FBB1187AEE82D27A41BF67E95DB9FF29318CD50"
+  },
+  {
+    "path": "project.godot",
+    "sha256": "03CCF4541ED2B21FDBB63DE735B35984FE706A4DA11FFD3A768184FA9B71A4CC"
+  },
+  {
+    "path": "addons/godot-git-plugin/THIRDPARTY.md",
+    "sha256": "D6F97DF007248867ABD7371DB54295FEDC6A77A496B8BFD7A9A86C4B7C1426F7"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target-atlas.png.import",
+    "sha256": "0232677B1AFF3817C28F0754DFD1A07FA07091BF94FF53508395A70B830D0DE2"
+  },
+  {
+    "path": "scripts/world/training_target.gd.uid",
+    "sha256": "C03CAE51F24B4E3B559AD5FFE59D133B1E096FBCEBCEFD52AFD2A795E4C2CB5D"
+  },
+  {
+    "path": "assets/player/player-animations.png",
+    "sha256": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC"
+  },
+  {
+    "path": "assets/player/source/player-animations.aseprite",
+    "sha256": "4C8311F9F37AC1362EEA2E884F7D79C7F7D3F7A61B83A3A3D033559CC9BD5FBC"
+  },
+  {
+    "path": "resources/enemy/rivet_worker_sprite_frames.tres",
+    "sha256": "CB4139D41D0E6640D8AFF45E7814B909B6AFA50181DDC5338740CB23B318DAAA"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA"
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "sha256": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target-atlas.png",
+    "sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target.aseprite",
+    "sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_dust.gd",
+    "sha256": "F79B1DF592A517C80BE0959DD56CBAC5E7229DE0ED08537E2EDBBD5FD00B77D7"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_dust.gd.uid",
+    "sha256": "6F242CC1D50EDF9869FF6385F7E9B999FC6B778E4946650521B8DD3D7B292444"
+  },
+  {
+    "path": "assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png",
+    "sha256": "64D797D413875B0192886D42A89368A75118DCF2E7C06D8F78EE4C39F3CA823B"
+  },
+  {
+    "path": "assets/enemy/training_target/shockwave/tranca-lata-shockwave.aseprite",
+    "sha256": "72651DC20F936B172CF725570D4EF8BA203DDBECA437D07238BFF0BB4CCB364A"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+    "sha256": "E451F265002FD1B0D66D97712B16DDBD6AF37416CF7D303517022B67405D02D9"
+  }
+]

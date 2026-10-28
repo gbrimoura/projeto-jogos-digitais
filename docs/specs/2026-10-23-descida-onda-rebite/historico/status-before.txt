@@ -1,0 +1,55 @@
+## corrigir-sprites-salas-plataformas
+ M addons/godot-git-plugin/THIRDPARTY.md
+ M assets/enemy/training_target/training_target-atlas.png
+ M assets/enemy/training_target/training_target.aseprite
+ M docs/README.md
+ M project.godot
+ M resources/enemy/training_target_sprite_frames.tres
+ M scenes/exit_door.tscn
+ M scenes/main.tscn
+ M scenes/rivet_worker.tscn
+ M scenes/second_room.tscn
+ M scenes/training_target.tscn
+ M scripts/enemy/containment_attack_visual.gd
+ M scripts/enemy/rivet_worker.gd
+ M scripts/world/exit_door.gd
+ M scripts/world/main.gd
+ M scripts/world/run_controller.gd
+ M scripts/world/training_target.gd
+?? Godot/
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF3b7df52.TMP
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF565732f.TMP
+?? assets/enemy/training_target/jump/
+?? assets/enemy/training_target/shockwave/
+?? assets/environment/factory_v1/door/
+?? docs/specs/2026-10-16-sprites-paredes-plataformas/
+?? docs/specs/2026-10-18-geracao-salas/
+?? docs/specs/2026-10-18-porta-lateral/
+?? docs/specs/2026-10-18-porta-parede/
+?? docs/specs/2026-10-19-tranca-lata-animacoes/
+?? docs/specs/2026-10-19-travessia-salas/
+?? docs/specs/2026-10-20-tranca-lata-onda-impacto/
+?? docs/specs/2026-10-20-tranca-lata-poeira/
+?? docs/specs/2026-10-21-tranca-lata-integracao-onda/
+?? docs/specs/2026-10-23-descida-onda-rebite/
+?? docs/specs/2026-10-23-fullscreen-hud/
+?? docs/specs/2026-10-23-perseguicao-tranca-lata/
+?? docs/specs/2026-10-23-tranca-lata-salto/
+?? resources/enemy/tranca_lata_jump_texture.tres
+?? resources/enemy/tranca_lata_shockwave_sprite_frames.tres
+?? resources/enemy/tranca_lata_shockwave_texture.tres
+?? scripts/enemy/tranca_lata_dust.gd
+?? scripts/enemy/tranca_lata_dust.gd.uid
+?? scripts/enemy/tranca_lata_jump.gd
+?? scripts/enemy/tranca_lata_pursuit.gd
+?? scripts/world/factory_ceiling_visual.gd
+?? scripts/world/factory_ceiling_visual.gd.uid
+?? scripts/world/factory_wall_visual.gd
+?? scripts/world/factory_wall_visual.gd.uid
+?? scripts/world/room_layout_generator.gd
+?? scripts/world/room_layout_generator.gd.uid
+?? scripts/world/room_transition_overlay.gd
+?? scripts/world/room_transition_overlay.gd.uid
+?? scripts/world/side_door_visual.gd
+?? scripts/world/side_door_visual.gd.uid

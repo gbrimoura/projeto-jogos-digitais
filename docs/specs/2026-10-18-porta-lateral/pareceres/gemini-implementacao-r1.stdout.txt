@@ -1,0 +1,55 @@
+STATUS: done
+SUMMARY: Revisão estática documental da implementação das portas laterais concluída. O alinhamento geométrico (`[432, 560)` em `Y`, centros em `(32, 496)` e `(1120, 496)`), a preservação de colisão sólida, a lógica de interação/sensores e o z-index `-1` estão matematicamente corretos no runtime. Foram identificadas apenas inconsistências menores de higiene de cena nos `.tscn` e duas divergências no script de preview estático Lua.
+CHANGED_FILES: none
+TESTS: none
+
+---
+
+### Achados da Revisão Estática (por prioridade)
+
+#### Prioridade 1 (Média) — Recursos externos não utilizados e contagem de passos em cenas
+- **Dangling `ext_resource` em [`main.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/main.tscn#L13) e [`second_room.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/second_room.tscn#L12)**:
+  Ambas as cenas injetam `[ext_resource type="Script" path="res://scripts/world/side_door_visual.gd" id="12_side_door_visual"]`, porém nenhuma propriedade ou nó nas cenas referencia `ExtResource("12_side_door_visual")`. O nó instanciado `SideDoorVisual` dentro de `EntranceDoor` já herda seu script diretamente de [`exit_door.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/exit_door.tscn#L14).
+- **Descompasso de `load_steps` em [`main.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/main.tscn#L1)**:
+  Enquanto [`second_room.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/second_room.tscn#L1) incrementou `load_steps` de 20 para 21 ao adicionar a linha, [`main.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/main.tscn) não ajustou seu cabeçalho.
+  *Recomendação*: Remover o `ext_resource id="12_side_door_visual"` não utilizado de ambos os arquivos de cena e restaurar `load_steps` original em `second_room.tscn`.
+
+#### Prioridade 2 (Baixa) — Incoerência visual na 2ª fileira do preview estático Lua
+- **Porta de entrada renderizada como aberta no preview**:
+  Em [`preview-side-opening.lua`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/door/side-opening/preview-side-opening.lua#L75-L87), o rótulo declara `"OPEN SAMPLE - GAME ENTRY STAYS CLOSED"`, porém `drawSceneRow(board, 268, true)` usa a mesma instância `door = makeDoor(true)` tanto para a saída quanto para a entrada (`dst:drawImage(flipHorizontal(door), 0, y0 + 56)`).
+  Isso faz com que o preview desenhe a entrada aberta (sem grade), contradizendo o texto da prancha e a regra de runtime de [`exit_door.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L120) onde `door_role != 0` mantém a abertura permanentemente fechada (`_door_visual.call("set_aperture_open", false)`).
+  *Recomendação*: Em `drawSceneRow`, desenhar a entrada sempre com `makeDoor(false)`.
+
+#### Prioridade 3 (Baixa) — Desalinhamento de 2px no soleira inferior no script Lua
+- **Divergência de coordenada `Y` da soleira**:
+  Em [`side_door_visual.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/side_door_visual.gd#L34), o filete inferior de sombra é desenhado em `Rect2(-30, 60, 60, 2), SHADOW` (2 px acima do rodapé em `+64`, simétrico aos 2 px do lintel superior em `-62`).
+  Em [`preview-side-opening.lua`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/door/side-opening/preview-side-opening.lua#L46), foi codificado como `rect(img, 2, 122, 60, 2, C.shadow)` (4 px acima da borda `128`, equivalente a `y = 58` centrado).
+  *Recomendação*: Ajustar a linha 46 do script Lua para `rect(img, 2, 124, 60, 2, C.shadow)` para paridade visual pixel-a-pixel exata com o runtime.
+
+---
+
+### Verificações Positivas de Regressão e Alinhamento
+
+1. **Alinhamento e Geometria**:
+   - Vão nas paredes em `factory_wall_visual.gd`: `opening_top = 432.0`, `opening_height = 128.0` alcança exatamente `Y = 560.0` (nível do piso).
+   - Recorte de textura: `_draw_clipped_segment` calcula proporção `source_per_destination_y = 0.5`, desenhando o segmento superior `[384, 432)` (24 px de atlas) e inferior `[560, 576)` (8 px de atlas) sem estiramento ou descontinuidade de UV.
+   - Posição global dos visuais:
+     - Entrada: `EntranceDoor` em `(112, 522)` + offset `(-80, -26)` = centro exato em `(32, 496)`.
+     - Saída: `ExitDoor` em `(1040, 522)` + offset `(80, -26)` = centro exato em `(1120, 496)`.
+2. **Profundidade e Camadas**:
+   - `SideDoorVisual` possui `z_index = -1`, coincidindo com a profundidade das paredes (`equalwall`), atrás de atores (`z=1`) e à frente do backdrop (`z=-10`).
+3. **Gameplay e Colisão Intacta**:
+   - As formas estáticas de colisão física das paredes continuam fechadas e sólidas.
+   - O sensor `SensorShape` de [`exit_door.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/exit_door.tscn#L9) (`96 x 108`) permanece centrado no alcance correto de gameplay `[992, 1088]` sem alterações.
+4. **Substituição da Arte Frontal**:
+   - [`exit_door.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L11) substituiu completamente as referências a `$DoorArt` por `$SideDoorVisual`, usando `.call("set_aperture_open", ...)` sem quebras em runtime.
+
+---
+
+RISKS:
+- Risco baixo: Manter `[ext_resource]` dangling em [`main.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/main.tscn) com `load_steps` desatualizado pode causar advertências de serialização pelo Godot ao salvar a cena pelo editor.
+- Risco nulo para gameplay: Nenhum collider ou lógica de transição foi quebrado.
+
+NEXT_STEP:
+- Remover as entradas não utilizadas `12_side_door_visual` de [`main.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/main.tscn) e [`second_room.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/second_room.tscn).
+- Ajustar em [`preview-side-opening.lua`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/environment/factory_v1/door/side-opening/preview-side-opening.lua) a soleira (`y=124`) e manter a entrada fechada na fileira de amostra aberta.

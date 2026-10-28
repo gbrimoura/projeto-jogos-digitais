@@ -1,0 +1,801 @@
+{
+  "title": "First-floor factory procedural background",
+  "status": "integrated visual-only composition",
+  "canvas_native": {
+    "width_px": 576,
+    "height_px": 324,
+    "viewport_px": {
+      "width": 1152,
+      "height": 648
+    },
+    "scale": 2
+  },
+  "composition": {
+    "base_variants": [
+      "boiler windows",
+      "maintenance windows"
+    ],
+    "left_variants": [
+      "boiler and complete steam circuit",
+      "service cabinets and connected controls"
+    ],
+    "right_variants": [
+      "service column and META sign",
+      "complete truss-mounted press and feed circuit"
+    ],
+    "combinations": 8,
+    "selection": "prepared room seed bit 0 chooses base, bit 1 chooses left module, bit 2 chooses right module",
+    "editor": "exported fallback variants; no room getter call",
+    "second_room_fallback": "maintenance base + service cabinets + press (editor preview or unavailable-getter fallback; runtime reads prepared room seed)",
+    "repetition": "visual combinations may repeat; no rotation guarantee"
+  },
+  "alpha": "Production bases use palette colors at alpha 255; transparent modules use alpha 0 or 255.",
+  "palette": [
+    "#0E0D0E",
+    "#171719",
+    "#1D1B1A",
+    "#25292A",
+    "#302D2A",
+    "#353B3B",
+    "#433E39",
+    "#4A2D21",
+    "#563829",
+    "#5B5249",
+    "#70432C",
+    "#756957",
+    "#925A36",
+    "#90816A",
+    "#8F7059",
+    "#B78342",
+    "#D2A75C"
+  ],
+  "source": "assets/environment/factory_v1/background_floor1/background_floor1.lua, executed by the Aseprite batch engine",
+  "reference": "assets/environment/factory_v1/background_floor1/reference-imagegen.png retained byte-for-byte",
+  "gdd_sources": [
+    "https://app.notion.com/p/3cf695c14e2780668784f80479cd0f9d",
+    "https://app.notion.com/p/3cf695c14e2781619978cd3ba62c5f94"
+  ],
+  "visual_context": "Industrial maintenance, steam, restrained rust and amber, propaganda, 1930s–40s noir. GDD final palette, typography, and slogans remain pending.",
+  "static_context_previews": "Eight fixed 1152x648 previews enumerate every base/left/right visual combination; sample platforms and a character show hierarchy only, not runtime captures or procedural gameplay validation.",
+  "window_compatibility": {
+    "shared_aperture_native_px": [344, 56, 38, 78],
+    "variant_1_column_move": {"base_variant": "boiler", "from_x": 354, "to_x": 420},
+    "verification": "All eight fixed base/left/right contexts were visually inspected; modules stay complete and do not cross the shared clear window."
+  },
+  "atlas_regions": {
+    "module_atlas": {
+      "file": "factory-floor1-modules-atlas.png",
+      "width_px": 553,
+      "height_px": 385
+    },
+    "modules": [
+      {
+        "id": "left_boiler",
+        "label": "Left: boiler and complete steam circuit",
+        "region_px": [
+          2,
+          199,
+          292,
+          157
+        ],
+        "anchor_native_px": [
+          20,
+          12
+        ]
+      },
+      {
+        "id": "left_cabinets",
+        "label": "Left: service cabinets and connected controls",
+        "region_px": [
+          298,
+          199,
+          176,
+          184
+        ],
+        "anchor_native_px": [
+          18,
+          36
+        ]
+      },
+      {
+        "id": "right_service",
+        "label": "Right: service column, lamp and META sign",
+        "region_px": [
+          346,
+          2,
+          205,
+          127
+        ],
+        "anchor_native_px": [
+          313,
+          24
+        ]
+      },
+      {
+        "id": "right_press",
+        "label": "Right: truss, press and complete feed circuit",
+        "region_px": [
+          2,
+          2,
+          340,
+          193
+        ],
+        "anchor_native_px": [
+          223,
+          25
+        ]
+      }
+    ],
+    "base_variants": [
+      {
+        "id": "base_boiler",
+        "region_px": [
+          0,
+          0,
+          576,
+          324
+        ],
+        "anchor_native_px": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "base_maintenance",
+        "region_px": [
+          0,
+          324,
+          576,
+          324
+        ],
+        "anchor_native_px": [
+          0,
+          0
+        ]
+      }
+    ],
+    "selection": "base bit 0, left module bit 1, right module bit 2; all derived from prepared room seed"
+  },
+  "aseprite_run": {
+    "mode": "bases-only",
+    "exit_code": 0,
+    "stdout": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-correct-order.stdout.log",
+    "stderr": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-correct-order.stderr.log"
+  },
+  "files": [
+    {
+      "path": "assets/environment/factory_v1/background_floor1/aseprite-modular.stderr.log",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "bytes": 0
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/aseprite-modular.stdout.log",
+      "sha256": "937E706636E0927B7360636975B74812D01AFD2A66D49DAD433DC4177D2F770D",
+      "bytes": 185
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/aseprite-v2-generation.log.txt",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "bytes": 0
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/background_floor1.lua",
+      "sha256": "F4B7FB9ED8375C059B2AD4D2867AFEBB6EC0D19A2CA84295ACDDBF11D375640F",
+      "bytes": 39506
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/baseline/main.tscn",
+      "sha256": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7",
+      "bytes": 17684
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/baseline/second_room.tscn",
+      "sha256": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D",
+      "bytes": 11693
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/baseline/tileset-fabrica-v1-atlas.png",
+      "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+      "bytes": 10030,
+      "width_px": 128,
+      "height_px": 128,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-context-static.png",
+      "sha256": "B9C448E7C3C33E9D9451E108EFADD8524A36801699F081A0927C809782BF809B",
+      "bytes": 24824,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-context-v2.png",
+      "sha256": "B9C448E7C3C33E9D9451E108EFADD8524A36801699F081A0927C809782BF809B",
+      "bytes": 24824,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-preview-2x.png",
+      "sha256": "E938D030925A77405DD8644683D89817C8F5E4D4459F1BAF4638EA9A7C40C369",
+      "bytes": 12614,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-preview-4x.png",
+      "sha256": "586C98135D14A37E2706B9C0BAE8B6A735C39C11A4B835604468C2CD2994F3D7",
+      "bytes": 27546,
+      "width_px": 2304,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room.aseprite",
+      "sha256": "1A03B9286EDAEC1B53AFA23EF20A45250BC87A66BC5A67D9C0CADD4D39A2E976",
+      "bytes": 13338
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room.png",
+      "sha256": "815D374342932CD852A27AD51C3A38912E1964CE70EC2F49E976EBE7064A9D68",
+      "bytes": 8313,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-context-static.png",
+      "sha256": "1B94F9ED6DB44FA30A88CA34BA42956602195839514460839FCE10910B8E4123",
+      "bytes": 23011,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-context-v2.png",
+      "sha256": "1B94F9ED6DB44FA30A88CA34BA42956602195839514460839FCE10910B8E4123",
+      "bytes": 23011,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-preview-2x.png",
+      "sha256": "F0C14C58B43030ADF89547F785F624B9DE6509DA1DDAF23069320B3F6B409053",
+      "bytes": 10849,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-preview-4x.png",
+      "sha256": "7BF63E19CBCAAC3397CD17B2C39FF80112650569413693E045E1D8143ABBB938",
+      "bytes": 23081,
+      "width_px": 2304,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room.aseprite",
+      "sha256": "2CBB15EAC3D2CFC1C5081A2A5022C47CED523BF8C4CE7AF03A7A5799AA37C3C8",
+      "bytes": 13679
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room.png",
+      "sha256": "73B5C674D9EFB5DA524402F3818BAF3C39E12CB22AA3BAE3E20CF90FEAF196D8",
+      "bytes": 6609,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-captions.txt",
+      "sha256": "11EAC69523E22F26515724A38648D0563A7E59D899DE83365BD85FF1ACAAFFAD",
+      "bytes": 1139
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-000.png",
+      "sha256": "CA4251A9C9B1CFA33C5F011AB8DE7F496AEA677D3A5F86707202DE076D34C5EF",
+      "bytes": 23616,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-011.png",
+      "sha256": "3C060D08B7996EC5B9339831FEBF5F0B47AE4AD22B5A34E79CA9EA8569AD3285",
+      "bytes": 22621,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-101.png",
+      "sha256": "A919221CE8452E43030F1495075B68DEFCD1B6992446CD49A2B57CC9C4DF7183",
+      "bytes": 25479,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-110.png",
+      "sha256": "034D5BF4806822FC93EC196D0ECC754D3360FC1E52BED94885812E37875EA302",
+      "bytes": 20645,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-base-boiler.png",
+      "sha256": "6C88BE5162DBE3A2C994FFFFB7760E9ED46AEB3F5F5580F9F1B4463202019A2A",
+      "bytes": 2611,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-base-maintenance.png",
+      "sha256": "48F67F8C4D617BE6E263B0249162AF126C0533AD4095BB92DD2231924EF0C21A",
+      "bytes": 2631,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-bases-atlas.png",
+      "sha256": "97CBE30DDCB5A932E372676AEBC1826B90B0B8275C0D8F6F587EB340C0CA481B",
+      "bytes": 5100,
+      "width_px": 576,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-bases.aseprite",
+      "sha256": "D6A0B7709257DC521796CBEB32B69CC36C95D0285D782A8B3EB2ED7F0AEF13A3",
+      "bytes": 7678
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-left_boiler.png",
+      "sha256": "432EE902E192AA7214C594291FAA7992BFE7C26B7185CBF37B3B506EA4DACB0E",
+      "bytes": 4793,
+      "width_px": 292,
+      "height_px": 157,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-left_cabinets.png",
+      "sha256": "8C87030D66E16BD7E71028FE096E2591332BCA3BE74654EFB9B816E4272B9BF3",
+      "bytes": 2253,
+      "width_px": 176,
+      "height_px": 184,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-right_press.png",
+      "sha256": "1B239E257A27E609E118BED1FEFA627199F047348E36C1C0F17E921C3B56F462",
+      "bytes": 3350,
+      "width_px": 340,
+      "height_px": 193,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-right_service.png",
+      "sha256": "A9B969F2732F22C413C8DF47667F15746C480203B342480AB1D82D596B766903",
+      "bytes": 1356,
+      "width_px": 205,
+      "height_px": 127,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-modules-atlas.png",
+      "sha256": "8B4A8A317184B8EB341F107E5DCE8FD002399DD276AEE35FBFFE7D79BF96349B",
+      "bytes": 11393,
+      "width_px": 553,
+      "height_px": 385,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-modules.aseprite",
+      "sha256": "64D8CE9D22D86F964F175D92B01DCE2E39333517D8875FC90B5C1A2C2347602D",
+      "bytes": 13303
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-procedural-contact.png",
+      "sha256": "0EDA84518C5AB1B6A0687C9FEEFA08359F00D4A2D92501E014CC48B5543C6C64",
+      "bytes": 101132,
+      "width_px": 4608,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/regions-and-anchors.json",
+      "sha256": "6F05C9F327B1D6C0C98A532C40FCBDFB5F8AE9B6ECF0CD4A4F2A33A4A488626B",
+      "bytes": 1017
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/README.md",
+      "sha256": "56565B559DE90821DA4C3BE212BFCC80169E6F46BF688D4EACC01AA4F7D87F63",
+      "bytes": 3903
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/reference-imagegen.png",
+      "sha256": "27C586A5A3C8493ED8ABBD907FED58DC32A370966032C3D219A95B2D376ED69E",
+      "bytes": 1566238,
+      "width_px": 1672,
+      "height_px": 941,
+      "png_color_type": 2
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/context-captions.txt",
+      "sha256": "8857D4611DBD9DE66A4A4FCFF2963FAC2189D3E63677AD422FD2F1B6006988B3",
+      "bytes": 955
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/context-seed-000.png",
+      "sha256": "F9184B29E701B87F9565A594307C161FB4E744202A0D1D54D1B9A141B4B5FF53",
+      "bytes": 24276,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/context-seed-011.png",
+      "sha256": "6088C026003222007C93A4ED7795590333B98B0DB6C30715E5B896DB86E08D63",
+      "bytes": 23054,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/context-seed-101.png",
+      "sha256": "2FA87FB462C5751A0585E0484B4AA9710C2AD0B7F3C494B4AA99D0FF41387592",
+      "bytes": 25686,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/context-seed-110.png",
+      "sha256": "0D782F675ABADD6E369296B370A96688D6CEE5B858020358F47B71CDEFB4E049",
+      "bytes": 20925,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-base-boiler.png",
+      "sha256": "4B74B76857B65B8EFDD77F601F53E9378E4653AB150A3CAD24778C2E96DD8116",
+      "bytes": 2883,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-base-maintenance.png",
+      "sha256": "ABCD31840C1107322F6C7AF4234227EAC3A3A62D6D9BBFEAC4DA1AE5BE90E60F",
+      "bytes": 2887,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-bases-atlas.png",
+      "sha256": "0A6F61B3E00C2C2FA055752A3923EC1274DD534EFFE612FF457FB3E8F60CED6D",
+      "bytes": 5635,
+      "width_px": 576,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-bases.aseprite",
+      "sha256": "262754045F695FCCC2D2E9FE7F00E9A388DA1BBF59FDB25CFA5820199DE60E2C",
+      "bytes": 8660
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-module-left_boiler.png",
+      "sha256": "432EE902E192AA7214C594291FAA7992BFE7C26B7185CBF37B3B506EA4DACB0E",
+      "bytes": 4793,
+      "width_px": 292,
+      "height_px": 157,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-module-left_cabinets.png",
+      "sha256": "8C87030D66E16BD7E71028FE096E2591332BCA3BE74654EFB9B816E4272B9BF3",
+      "bytes": 2253,
+      "width_px": 176,
+      "height_px": 184,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-module-right_press.png",
+      "sha256": "1B239E257A27E609E118BED1FEFA627199F047348E36C1C0F17E921C3B56F462",
+      "bytes": 3350,
+      "width_px": 340,
+      "height_px": 193,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-module-right_service.png",
+      "sha256": "A9B969F2732F22C413C8DF47667F15746C480203B342480AB1D82D596B766903",
+      "bytes": 1356,
+      "width_px": 205,
+      "height_px": 127,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-modules-atlas.png",
+      "sha256": "8B4A8A317184B8EB341F107E5DCE8FD002399DD276AEE35FBFFE7D79BF96349B",
+      "bytes": 11393,
+      "width_px": 553,
+      "height_px": 385,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-modules.aseprite",
+      "sha256": "64D8CE9D22D86F964F175D92B01DCE2E39333517D8875FC90B5C1A2C2347602D",
+      "bytes": 13303
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/factory-floor1-procedural-contact.png",
+      "sha256": "C5AC40131418A031681B39839C1A82938CD61C38BD445621B48BB03849CF2003",
+      "bytes": 77506,
+      "width_px": 2304,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/modular-contact-before-base-fix/regions-and-anchors.json",
+      "sha256": "08E68F9059D2BDF1015D9E41A72DD2C473BEDC80679CF62DAFF9940F5ACF98A3",
+      "bytes": 964
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/background_floor1.lua",
+      "sha256": "3814DECE6B41164C130BF5958C7525C51DC6D5BECEFEE0D39B189D59A59B000C",
+      "bytes": 19928
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-boiler-room-context-static.png",
+      "sha256": "C2291A6EAF1D6A5CC7A797453EFB705E2CE5416967DD9CAE4E6CBD762C860ADB",
+      "bytes": 26258,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-boiler-room-preview-2x.png",
+      "sha256": "C8F8B09FD3B84F334A508792C08478F70B73E78D47508D18FC6A8F2B2B872941",
+      "bytes": 14143,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-boiler-room-preview-4x.png",
+      "sha256": "4A119A1D4963E784C8B20E15B071186832A8D8497EA889054EF761B36B17C518",
+      "bytes": 31241,
+      "width_px": 2304,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-boiler-room.aseprite",
+      "sha256": "704AA21AE831A7CC6627647CF62229829042D3B9FC41E96B2D47BD38740493C0",
+      "bytes": 13074
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-boiler-room.png",
+      "sha256": "DB0F3AE4586808B0E8F77E7ED395A7EFE286B7E1496D2BC69404D7F30357952D",
+      "bytes": 9603,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-maintenance-room-context-static.png",
+      "sha256": "7A090271C54BCB65C5BDC841658CC6C50C4747B42B941663F0637D7217099FCD",
+      "bytes": 22779,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-maintenance-room-preview-2x.png",
+      "sha256": "E316B2604C563A26F1904BCAC7BB1CEE6C0ED515EC52F5CCCFE71FA404F08A4A",
+      "bytes": 10669,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-maintenance-room-preview-4x.png",
+      "sha256": "D55DE52530DF727D78EC7585D83F0F779BC87A2034754BF11A02829D3A515522",
+      "bytes": 22832,
+      "width_px": 2304,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-maintenance-room.aseprite",
+      "sha256": "BAE50ED6E5041EFB2D36B7D2E34E4240D3A9A08948835C7199C46FE40F70E655",
+      "bytes": 13029
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v1/factory-floor1-maintenance-room.png",
+      "sha256": "FAF351A92EA46C3FFE352F1EB5A3122EF24CFCC34C0512F6CB441DB99D0943D5",
+      "bytes": 6423,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/background_floor1.lua",
+      "sha256": "6D2FD8214B5965CED60065CF63501FFFCBFCE362DA8700BFFF8054D3AC736B3A",
+      "bytes": 22584
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-boiler-room-context-v2.png",
+      "sha256": "B9C448E7C3C33E9D9451E108EFADD8524A36801699F081A0927C809782BF809B",
+      "bytes": 24824,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-boiler-room-preview-2x.png",
+      "sha256": "E938D030925A77405DD8644683D89817C8F5E4D4459F1BAF4638EA9A7C40C369",
+      "bytes": 12614,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-boiler-room-preview-4x.png",
+      "sha256": "586C98135D14A37E2706B9C0BAE8B6A735C39C11A4B835604468C2CD2994F3D7",
+      "bytes": 27546,
+      "width_px": 2304,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-boiler-room.aseprite",
+      "sha256": "1A03B9286EDAEC1B53AFA23EF20A45250BC87A66BC5A67D9C0CADD4D39A2E976",
+      "bytes": 13338
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-boiler-room.png",
+      "sha256": "815D374342932CD852A27AD51C3A38912E1964CE70EC2F49E976EBE7064A9D68",
+      "bytes": 8313,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-maintenance-room-context-v2.png",
+      "sha256": "1B94F9ED6DB44FA30A88CA34BA42956602195839514460839FCE10910B8E4123",
+      "bytes": 23011,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-maintenance-room-preview-2x.png",
+      "sha256": "F0C14C58B43030ADF89547F785F624B9DE6509DA1DDAF23069320B3F6B409053",
+      "bytes": 10849,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-maintenance-room-preview-4x.png",
+      "sha256": "7BF63E19CBCAAC3397CD17B2C39FF80112650569413693E045E1D8143ABBB938",
+      "bytes": 23081,
+      "width_px": 2304,
+      "height_px": 1296,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-maintenance-room.aseprite",
+      "sha256": "2CBB15EAC3D2CFC1C5081A2A5022C47CED523BF8C4CE7AF03A7A5799AA37C3C8",
+      "bytes": 13679
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/variants/v2-complete/factory-floor1-maintenance-room.png",
+      "sha256": "73B5C674D9EFB5DA524402F3818BAF3C39E12CB22AA3BAE3E20CF90FEAF196D8",
+      "bytes": 6609,
+      "width_px": 576,
+      "height_px": 324,
+      "png_color_type": 6
+    },
+    {
+      "path": "resources/environment/factory_floor1_base_atlas_texture.tres",
+      "sha256": "CBC71CF838E348A61CBF5ED0B8BD8E8A25D96443E2F9E9679E972E127796E4BE",
+      "bytes": 4875828
+    },
+    {
+      "path": "resources/environment/factory_floor1_base_boiler_texture.tres",
+      "sha256": "BD37ECDBFEA99050306EF9E77F2E2EAAC221ACFC8E62F3C17C621721A1FBA6F0",
+      "bytes": 257
+    },
+    {
+      "path": "resources/environment/factory_floor1_base_maintenance_texture.tres",
+      "sha256": "F9241611FA55FC19F7FCB270D6DA0F6A37C5AF946305893B815AF5497B2BDDA8",
+      "bytes": 259
+    },
+    {
+      "path": "resources/environment/factory_floor1_left_boiler_texture.tres",
+      "sha256": "CBF28C82AAA5B1943DCA2FBBEF9B279FD69C0754082953BB348A8221CA46915D",
+      "bytes": 262
+    },
+    {
+      "path": "resources/environment/factory_floor1_left_cabinets_texture.tres",
+      "sha256": "6238A041FBA1C0F5CE2BFFB8DD6D176762AEE08E4A9589DCD48F8FB9E624174C",
+      "bytes": 264
+    },
+    {
+      "path": "resources/environment/factory_floor1_modules_atlas_texture.tres",
+      "sha256": "BB4F276FBED99A420A5FFE55746B5A2B36B6E5224A340D1A67EB71531723A4D3",
+      "bytes": 1995655
+    },
+    {
+      "path": "resources/environment/factory_floor1_right_press_texture.tres",
+      "sha256": "816AD0FFF4D3F453E665D2D20CDE59079370E9F1F39CC2E949F1AF331B6F8DDB",
+      "bytes": 260
+    },
+    {
+      "path": "resources/environment/factory_floor1_right_service_texture.tres",
+      "sha256": "06627C32FB044FAC2935B957DE6EA6C5F1ABB728E9849C40380A2A73F0C6D2CD",
+      "bytes": 262
+    },
+    {
+      "path": "scenes/main.tscn",
+      "sha256": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905",
+      "bytes": 16320
+    },
+    {
+      "path": "scenes/second_room.tscn",
+      "sha256": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0",
+      "bytes": 10395
+    },
+    {
+      "path": "scripts/world/factory_floor1_background.gd",
+      "sha256": "B18EF04DD82FF1CC4F9A57A1603A8FCB0833EE052EEF34B397CD97AEAC4625D4",
+      "bytes": 2546
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-001.png",
+      "sha256": "0EA0550CBAC440567F86F0DDB53E74AA6F0DCF634FCFF81429A6ECFA4A889BDD",
+      "bytes": 25350,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-010.png",
+      "sha256": "91A681079DBAB6D2A53F1457F3DD8BCDAD132B95B331925C2DAB0651C065E566",
+      "bytes": 20627,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-100.png",
+      "sha256": "1B0415C7A3BF68FF0EDA6BD077CFFCC6C55494620CF7775E81A36833893195DA",
+      "bytes": 23820,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    },
+    {
+      "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-111.png",
+      "sha256": "6970E380D422ADE79F62045E0CBF31947AC466188A720C438683454C54FB40BF",
+      "bytes": 22644,
+      "width_px": 1152,
+      "height_px": 648,
+      "png_color_type": 6
+    }
+  ]
+}

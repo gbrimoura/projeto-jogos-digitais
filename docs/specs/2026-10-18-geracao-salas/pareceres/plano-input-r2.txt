@@ -1,0 +1,74 @@
+Papel revisor de plano R2, READ ONLY. Timeout10min. SOMENTE inline abaixo; sem tools, comandos, arquivos, Godot, testes ou alteracoes. Revisao anterior solicitou clareza standalone _enter_tree, sizepreReady, subidamax/desempate, recuperacaoporetardeferred, snapshotHP/buildstandalone, teto1linha e fallbackinvalido; propostas atuais incorporam. Confira apenas problemas concretos remanescentes. Nao trate estimativas como testes. Retorne stdout STATUS/SUMMARY/CHANGED_FILES none/TESTS none/RISKS/NEXT_STEP.
+PLANO
+# Geração coordenada de salas
+
+**Data:** 18/10/2026  
+**Estado:** implementação autorizada; validação de runtime não autorizada nesta etapa.  
+**Branch:** `corrigir-sprites-salas-plataformas`; preservar a branch e o trabalho local existente.
+
+## Objetivo
+
+Substituir a tabela fixa da proposta de 16/10 por uma geração aleatória coordenada das plataformas presentes nas fixtures atuais, sem determinar a quantidade final de plataformas do jogo. Manter uma faixa contínua de chão, incluir teto visível e conservar portas distintas de entrada e saída.
+
+O usuário confirmou em 18/10 que os sprites voltaram a funcionar. Esta tarefa não reabre a investigação nem a importação dos sprites de inimigos. A leitura de `GDD_Dieselpunk_Noir/04-combate-e-builds.md` confirma o papel da porta e a integração futura da geração no controlador da sala; algoritmo, quantidade final e regras procedurais continuam pendentes. Os limites desta alteração não são regras gerais do jogo.
+
+## Contrato geométrico e algoritmo
+
+Manter viewport 1152×648, paredes sólidas/visuais em x=0..64 e x=1088..1152 e piso 1152×88 com topo y=560. A primeira plataforma tem topo y=440, espessura 24 e fica ao menos 24 px além do bounds horizontal do spawn. As plataformas seguintes formam uma rota em x ordenada e não descendente: vãos de 56–96 px e subidas de 0–64 px por etapa. A rota inteira pode subir no máximo 64 px, de y=440 a y=376. Todas terminam até y=464, deixando pelo menos 96 px entre plataformas e piso; isso mantém o corredor de chão contínuo. O alcance real dos saltos não é garantido sem runtime.
+
+O helper local, sem `class_name`, mantém um `RandomNumberGenerator` por layout. Seed zero randomiza uma vez por instância; seed explícita diferente de zero reproduz posição, largura e altura. As instâncias de plataforma desativam seus sorteios independentes. O gerador faz até 32 tentativas e retorna fallback explícito validado; uma falha final invalida a sala antes do combate. As fixtures atuais contêm três plataformas cada; o helper aceita layouts de 2..5 como limite técnico de suporte, sem fechar a contagem de design.
+
+Main prepara o layout em `_enter_tree` standalone ou por `configure_run_managed` antes de `add_child`/`_ready`. Aplica `size`, que sincroniza o shape local, e posição antes de os filhos entrarem em `_ready`; o preparo é idempotente ao entrar depois em modo managed. A validação inspeciona retângulos das formas físicas aplicadas, limites, vãos, subidas, sobreposição positiva, corredor, spawns, patrulha, teto e suporte primário/fallback do `TrainingTarget`. O alvo permanece em um suporte gerado: o da direita é o mais alto pela ordem vertical não descendente; em empate, usa-se o último da rota. O fallback é o da esquerda. Ambos preservam posicionamento determinístico, sem RNG deferido.
+
+## Portas e teto
+
+Main e SecondRoom contêm entrada visual em (112,522), bloqueada, sem sensor e sem interação, e saída reutilizável em (1040,522), com sensor x=992..1088. A parede continua fechada. A saída managed permanece na sala e só emite `run_progression_ready` uma vez após limpeza e recompensa, com guarda de input encerrada, jogador correto e vivo e alcance confirmado na requisição e no deferred. Se a validação deferred falhar por alcance, limpa o estado ocupado e permite nova tentativa sem emitir sinal; morte/limpeza inválida mantém a saída trancada.
+
+Main standalone mantém `RoomTransition` e snapshot explícito de HP/build ao ir para SecondRoom. SecondRoom standalone conclui visualmente com `ETAPA CONCLUÍDA` e não tenta carregar caminho vazio. Managed deixa a progressão e preservação de HP/build sob responsabilidade do RunController. Nenhuma porta escreve diretamente HP, build ou recompensa.
+
+O teto usa o tile `terrain_top_mid` do atlas da fábrica, nearest, em uma única faixa de 18 colunas de 64 px por 32 fontes; o tile é ampliado para cobrir x=0..1152 e espelhado verticalmente, sem repetição vertical, terminando com a face acabada para baixo. A forma visível e física ocupa y=0..64 e toca o teto existente y=-32..0. A faixa é desenhada após os visuais de parede para fechar os cantos.
+
+## Escopo e validação
+
+Runtime permitido: `scripts/world/main.gd`, `scripts/world/run_controller.gd`, `scripts/world/training_target.gd`, `scripts/world/exit_door.gd`, `scenes/main.tscn`, `scenes/second_room.tscn`, `scenes/exit_door.tscn` e helpers locais de geração/teto. Preservar `solid_platform.gd`, spawns, patrulha, combate, movimento, recursos, assets/imports e `run_root.tscn`.
+
+Antes das edições de runtime, foram guardados snapshots locais e hashes SHA-256 dos arquivos existentes, incluindo as alterações sem commit já presentes. A versão inicial deste plano/spec também foi copiada para `historico/plano-v1.md` e `historico/spec-v1.md` antes dos esclarecimentos após revisão.
+
+Nenhum Godot, import, teste ou QA será executado nesta entrega. O resultado fica sem confirmação de alcance real de salto, leitura das portas/teto em jogo e integração final em runtime.
+SPEC
+# Especificação — geração coordenada de salas
+
+**Estado:** implementação autorizada em 18/10/2026; runtime não verificado.  
+**Base de trabalho:** estado local de `corrigir-sprites-salas-plataformas`, incluindo alterações sem commit da tarefa anterior.
+
+## Contrato de layout
+
+- Viewport: 1152×648. Paredes físicas e visuais: x=0..64 e x=1088..1152. Piso: centro (576,604), tamanho 1152×88, topo y=560.
+- Teto: uma única linha de 18 colunas de 64 px (32 px da fonte) cobre x=0..1152, y=0..64. Usa `terrain_top_mid` do atlas da fábrica em nearest e espelhado verticalmente, com a face acabada para baixo. `CeilingBand` usa shape físico 1152×64 em (576,32), encostado ao teto existente y=-32..0. O visual é desenhado depois das duas paredes para fechar os cantos.
+- As fixtures atuais mantêm três plataformas, sem instituir contagem final. O helper aceita tecnicamente 2..5 plataformas. Largura por plataforma é múltipla de 8, limitada a 104..216; espessura 24. Na fixture atual, os sorteios buscam 160..216; o fallback visual de três plataformas usa posições (320,452)/(590,412)/(860,388) e dimensões 200×24/184×24/184×24.
+- A rota é ordenada por X. A primeira plataforma tem topo y=440. Cada etapa pode manter a altura ou subir até 64 px; portanto a subida total disponível é 64 px, até y=376. Vãos entre bordas são 56..96 px. A primeira borda fica entre x=208..256 e pelo menos 24 px depois do limite direito do collider do spawn. A última borda termina até x=980, antes da área da saída. Nenhuma plataforma cruza paredes x=64..1088 ou se sobrepõe positivamente a outra.
+- Bottom de todas as plataformas é no máximo y=464; a folga até o piso é pelo menos 96 px. A primeira plataforma fica 120 px acima do piso. A cápsula do Player tem 76 px de altura e o bounds de patrulha móvel do RivetWorker tem 64 px conforme as cenas atuais; a folga é margem geométrica, não promessa de navegação. A rota sem dash é uma intenção de layout, não um teste de salto: a primeira subida de 120 px fica 8 px abaixo do limite teórico de salto 128, sem garantia de alcançabilidade real.
+
+## Seed, aplicação e validação
+
+`room_layout_seed = 0` cria um RNG local randomizado uma vez por instância. Um valor diferente de zero define a seed diretamente e reproduz posições, larguras e alturas. O helper mantém um único RNG para todo o layout. O preparo acontece em `_enter_tree` standalone ou por `configure_run_managed` antes de adicionar a sala ao container; posições, `size` e shapes locais são aplicados antes de `_ready`. Quando a sala managed entra na árvore, o preparo idempotente não sorteia novamente. O seed usado fica registrado no Main.
+
+O gerador limita tentativas a 32 e então retorna fallback seguro declarado. As três posições de fallback são as posições do preview acima. Se ainda não houver layout válido, managed recebe falha de configuração antes de adicionar a sala; standalone desativa gameplay e mostra overlay de erro, preservando os gates existentes.
+
+A validação lê os shapes físicos e AABBs após a aplicação, inclusive a forma local sincronizada pelo `size`. Confere limites, margens de spawn, corredor do chão, gaps, subida máxima, ausência de sobreposição, spawns do Player e RivetWorker, patrulha, teto e suporte do alvo. O primário do `TrainingTarget` é a plataforma direita (mais alta pela rota não descendente; em empate, último elemento da ordem X); fallback é a primeira à esquerda. Ambos são conferidos quanto a contato e margem lateral de 8 px. O posicionamento continua determinístico e não usa o RNG deferido do alvo.
+
+## Portas
+
+Cada fixture contém `EntranceDoor` e `ExitDoor`. A entrada reutiliza `exit_door.tscn`, fica em (112,522), possui sensor desativado, não interage e não conecta sinal de transição; sua apresentação informa entrada bloqueada. A saída reutiliza a mesma cena em (1040,522), conserva o sensor em x=992..1088 e não abre a parede.
+
+`ExitDoor` libera apenas após sala limpa e recompensa concluída. A guarda pós-recompensa mantém a saída fechada até terminar; seleção de recompensa E não aciona porta. Main valida E com estado liberado, clear, jogador correto/vivo, guarda encerrada e jogador no sensor, e repete as condições no deferred. Falha deferred limpa a ocupação para nova interação, sem emitir progressão; se o jogador morreu ou a sala deixou de estar limpa, a porta volta a trancar.
+
+Em modo managed, Main mantém a porta visível e emite `run_progression_ready` no máximo uma vez depois das validações; RunController avança a run preservando HP/build. Não remover a porta nem trocar a cena diretamente. Em Main standalone, manter `RoomTransition` e snapshot explícito de HP/build ao ir para SecondRoom. Em SecondRoom standalone, a saída finaliza a etapa e apresenta `ETAPA CONCLUÍDA`, sem destino vazio, estado `ABRINDO SAÍDA...` permanente ou loop; em managed, segue a progressão normal do controlador.
+
+## Compatibilidade e limites
+
+Preservar spawns, patrulha, parede contínua, colisões/layers/masks, fluxo de recompensa, HP/build, lançamento/parry/movimento e RoomController. O atlas não é alterado. O usuário confirmou em 18/10 que os sprites voltaram a funcionar; import de sprites de inimigos permanece fora da tarefa.
+
+A especificação do GDD em `GDD_Dieselpunk_Noir/04-combate-e-builds.md` §§1, 3, 9 e 11 descreve o papel de portas, fluxo e integração futura da geração no controlador; não define algoritmo nem quantidade final. A proposta de 16/10 permanece histórica, sem reescrita.
+
+Nenhum Godot, import, teste ou QA foi executado. Permanecem sem comprovação: alcance real dos saltos, leitura do teto/portas em jogo e comportamento integrado no runtime.

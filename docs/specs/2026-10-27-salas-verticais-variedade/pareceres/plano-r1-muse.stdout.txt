@@ -1,0 +1,41 @@
+Revisão read-only do plano vertical — conferindo proposta contra base estável.
+Índice lido. Vou inspecionar a base atual do mundo para fundamentar os achados.
+Base lida. Vou checar porta lateral e plataforma para fechar os achados.
+STATUS: blocked
+SUMMARY: Plano prospectivo vertical/sequência linear revisado read-only a partir do texto estável + `main.gd`/`room_layout_generator.gd`/`exit_door.gd`/`run_controller.gd`/visuais. Intenção (menos repetição, sobe/desce linear sem branches) é coerente, mas há 7 lacunas P1 que impedem implementação segura sem correção: lifecycle de seed/descritor, orçamento de salto, topologia em grid, porta orientada, segmentação de limites, spawns verticais e validação/standalone.
+CHANGED_FILES: none
+TESTS: none
+
+## P1 (bloqueiam implementação)
+
+- **P1-1 — Descritor/seed sem contrato e colide com `_enter_tree`.** `main.gd:99-107,644-657`: `_enter_tree` prepara layout e `configure_run_managed` também prepara (guardado por `_authored_layout_prepared`). Plano pede “seed explicitável + descritor antes de instanciar” e “`_enter_tree/ready` não sorteiam”, mas não define struct, dono do RNG, derivação `seed 0 → run_seed → room_seed`, separação stream topologia vs combate, assinatura de `configure`, ordem vs `add_child`, nem idempotência/divergência. `SolidPlatform.room_seed` estático (`solid_platform.gd:7,100-104`) ainda vaza entre runs.
+  - *Correção:* definir `RoomDescriptor{run_seed,room_seed,família,entry_dir,exit_dir,coord}`; `RunController` gera `run_seed` uma vez (randomiza se 0) e deriva `room_seed=hash([run_seed,floor,room])` com RNG local; `configure_run_managed(build,offer,descriptor)` antes de `add_child`; `Main` armazena, `prepare` usa só descriptor, recusa managed-sem-descritor ou descriptor-divergente; `_enter_tree` não prepara caminho managed; segunda chamada mesmo descriptor = no-op; proibir `room_seed` estático no caminho gerenciado (`randomize_*=false`).
+
+- **P1-2 — Degraus 96/120 incompatíveis com envelope atual e sem margem de corpo.** `room_layout_generator.gd:16` + `main.gd:261-264`: `rise ≤64`; spec propõe `560→440 (120)` + `96` restantes com ápice 128, corpo 76, centro `114→32 (+82)`. `120` já é o salto piso→P0 atual sem checagem explícita; `96` cabe no ápice só no papel, sem aproximação lateral fora da underside, pouso com margem, headroom e anti-sobreposição.
+  - *Correção:* manter `rise ≤64` exceto piso→P0 `≤120` só com corredor livre + largura/edge explícitos, ou justificar novo envelope com folgas numéricas; validador de rota parametrizado por `entry/exit` (≥4 apoios quando topo necessário, headroom ≥ corpo+folga, sem sobreposição vertical sem deslocamento x).
+
+- **P1-3 — “Link vertical” e fallback construtivo indefinidos.** Item 1: “ao menos um link vertical quando houver dois ou mais links” — link não definido (transição? sala do andar?) — mais “sem exigir subida+descida em run curta” e “sem reocupar coordenadas”. Sem bounds do grid, tentativas/determinismo, oposição `next_entry=oposto(prev_exit)` e quota por andar/run. Risco de deadlock/cerco.
+  - *Correção:* definir `RunPlan{coord:Vector2i,occupied:Set,prev_exit}`; candidatos `UP/DOWN/LEFT/RIGHT` com pesos por família, `N` tentativas limitadas + fallback horizontal determinístico; quota ex.: “andar com ≥3 transições tem ≥1 vertical”; contagem de salas/andares inalterada, só direções mudam.
+
+- **P1-4 — Porta Y sem máquina de armar/latch.** `exit_door.gd:48-67,168-173` é só X (`line_x`, `gate.rect.has_point`). Plano generaliza para “X ou Y, só saída configurada” sem `axis/sign/line/opening`, histerese, re-arme, projeção do movimento, contratos `has_latched_crossing/is_player_inside_exit_opening/is_gate_open` usados em `main.gd:1020-1024`, labels e “spawn nunca arma”.
+  - *Correção:* `ExitDescriptor{axis,normal,line,opening}`; `armed=false` inicial; arma só do lado de entrada além de histerese e dentro da faixa perpendicular; latch só em cruzamento positivo com movimento positivo dentro da abertura; reset/retry mesma projeção; `Main` valida pelos mesmos helpers pós-flush.
+
+- **P1-5 — Hatch sem esquema de split físico/visual.** `main.gd:295-329` exige `Ceiling/CeilingBand/Floor/ExitGate` exatos; `factory_ceiling_visual.gd` desenha banda cheia `1152`; `factory_surface_visual.gd` piso cheio; `side_door_visual.gd` é túnel lateral `64×128`. Plano não define segmentação (ex. teto em 2 rects ± hatch `128px`, piso em 2 + gate), cobertura total−hatch, gate fechado=sólido contínuo no combate (Cospe-Rebite) vs aberto=vão, guardas fora da rota, shapes locais por instância.
+  - *Correção:* `build_limits(descriptor)` retorna segmentos com rects exatos, `duplicate()` com `local_to_scene`, visuais recortados no mesmo intervalo por orientação/recorte sem novo bitmap; validador novo checa cobertura e hatch livre.
+
+- **P1-6 — Spawns/patrulha/target verticais sem regras numéricas.** `main.gd:380-498`: spawn/patrulha/target só horizontais (`primary=last,fallback=first`). Spec exige UP com spawn apoiado sob hatch, DOWN sobre piso fechado, LEFT/RIGHT com recuo, patrulha em piso contínuo, Tranca-Lata primário/fallback — sem larguras, edges, distâncias do hatch, escolha de apoio em rota de 4+ nem caso “sem apoio → recusar com erro”.
+  - *Correção:* parametrizar suporte do target por família/rota (nunca só topo `152` sem fallback válido), patrol `≥8px` útil + edge `8px` existentes, spawn AABB clear + fora da abertura + distância do hatch, gate fechado sustenta DOWN sem queda; ausência = erro preciso/fallback validado.
+
+- **P1-7 — Validação Main e standalone sem mapeamento.** Item 5 lista “bounds, corredor, apoios, spawns, gate/guard” sem mapear substitutas de `_validate_generated_route/_boundaries/_obstacles/_spawns/_target`, ordem `configure→add_child(_enter_tree)→_ready`, nem mecanismo “standalone nunca recebe descriptor”.
+  - *Correção:* `validate_managed_descriptor()` em `configure` + revalidado em `_ready`; falha → `_disable_invalid_authored_room` + `RunController._discard_current_room`; assinatura nova com default que recusa managed-sem-descritor; standalone mantém `room_layout_seed` antigo intacto.
+
+## P2 (devem ser explicitados antes de codar)
+
+- **P2-1 — Famílias horizontais só com outra seed.** Definir assinatura por família (patamares/vale/crista/ziguezague: monotonicidade, faixa de gaps/rises, alternância x) + variação interna via sub-RNG, não só jitter.
+- **P2-2 — Quarto apoio.** Listar fixtures (`main/second_room`?) ou helper que instancia `SolidPlatform` idêntico; atualizar `MIN/MAX_PLATFORM_COUNT` e `KNOWN_AUTHORED_PLATFORM_NAMES`; contagem por sala explícita no descriptor.
+- **P2-3 — Independência de streams.** Stream A topologia vs stream B larguras/rises/spawns; combate não consome A.
+- **P2-4 — Visual vertical.** Reuso por rotação/recorte do skin code-native + labels `SAÍDA SUPERIOR/INFERIOR`, sem bitmap novo.
+- **P2-5 — Fatiamento/tempo.** 8 arquivos + helpers + 3 cenas em 30min Luna é arriscado; fatiar em incrementos (topologia → layouts → porta/limites/validação) com revisões 10min cada.
+
+RISKS: subida `96` perto do ápice sem folga validada; deadlock de grid sem fallback determinístico; regressão de `Ceiling/CeilingBand/Floor/Gate` e patrulha se split parcial; contaminação managed→standalone via `_enter_tree`/seed estática; quota de revisores (Grok/Opus) já registrada no plano.
+NEXT_STEP: revisar plano/spec com os 7 P1 corrigidos (contratos, números e ordem de lifecycle explícitos), congelar baseline com hashes, só então delegar incremento 1 a Luna xhigh com áreas autorizadas já listadas.

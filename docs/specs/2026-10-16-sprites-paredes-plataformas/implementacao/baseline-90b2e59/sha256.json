@@ -1,0 +1,39 @@
+{
+  "baseline": "prospectivo-pre-implementacao",
+  "branch": "corrigir-sprites-salas-plataformas",
+  "head": "90b2e592bd70e1b2ff3e5828af8a9029031e1c66",
+  "created_at": "2026-10-16T16:13:30.9287385-03:00",
+  "helper_path_was_absent": true,
+  "files": [
+    {
+      "path": "scenes/main.tscn",
+      "sha256": "ae15c6afad877eb385e50fac17ca2da6f3b2aad4944d8bf665c797df86c794b4",
+      "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-90b2e59/scenes/main.tscn"
+    },
+    {
+      "path": "scenes/second_room.tscn",
+      "sha256": "088c610da44521a127a160db783336a42556e6dfd1bddd05d8a608d7c8765c63",
+      "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-90b2e59/scenes/second_room.tscn"
+    },
+    {
+      "path": "scripts/world/main.gd",
+      "sha256": "fcceac344d208856690fa028ac8c5266f4c193a15d4fc146fe59b7ffe8545e20",
+      "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-90b2e59/scripts/world/main.gd"
+    },
+    {
+      "path": "scripts/world/run_controller.gd",
+      "sha256": "8afe57f89712b9ac6c22bae0ff27d16ff8ebce8f61e571126d4e756b27c9c80c",
+      "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-90b2e59/scripts/world/run_controller.gd"
+    },
+    {
+      "path": "scripts/world/training_target.gd",
+      "sha256": "188176a2a6215c2e4238a3bfe6ce41b31db9e2faccd2e35e824b96f77678b708",
+      "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-90b2e59/scripts/world/training_target.gd"
+    },
+    {
+      "path": "scripts/enemy/rivet_worker.gd",
+      "sha256": "1690f938480f50fbf44e3da506ddf484768983421171fcebe6d11de7b825d9a8",
+      "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-90b2e59/scripts/enemy/rivet_worker.gd"
+    }
+  ]
+}

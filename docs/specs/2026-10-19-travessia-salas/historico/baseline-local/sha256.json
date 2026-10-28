@@ -1,0 +1,96 @@
+{
+  "captured_local_state": "2026-10-19T03:10:48Z",
+  "note": "Cópia exata do estado local observado antes de qualquer alteração de runtime desta tarefa; sem comparação com HEAD e sem alteração de arquivos de runtime.",
+  "files": [
+    {
+      "source": "scripts/world/exit_door.gd",
+      "snapshot": "scripts/world/exit_door.gd",
+      "bytes": 3999,
+      "sha256": "f99819ffe052b0fb7973b457c00c1c9aafc1d6cfd5c2ebfe80340ae94a1d4c5a"
+    },
+    {
+      "source": "scripts/world/main.gd",
+      "snapshot": "scripts/world/main.gd",
+      "bytes": 42318,
+      "sha256": "e818cfed456b7700530c382c3326387c7b5317190e97cbb908f36c752e172f13"
+    },
+    {
+      "source": "scripts/world/run_controller.gd",
+      "snapshot": "scripts/world/run_controller.gd",
+      "bytes": 12399,
+      "sha256": "7a3648986f07e3a72fc0e6b56a8fc703ad298ab79b56b6f3c6539f01c1977b82"
+    },
+    {
+      "source": "scripts/world/room_transition.gd",
+      "snapshot": "scripts/world/room_transition.gd",
+      "bytes": 3534,
+      "sha256": "2a0eda364faeeeee7ba06b349a8f1aeaf37407f3c29907543e52b8d075a08461"
+    },
+    {
+      "source": "scripts/world/factory_wall_visual.gd",
+      "snapshot": "scripts/world/factory_wall_visual.gd",
+      "bytes": 3499,
+      "sha256": "1b67320689fdc71c76913f7a38c697b3914481d4226908076063f69320980f73"
+    },
+    {
+      "source": "scripts/world/side_door_visual.gd",
+      "snapshot": "scripts/world/side_door_visual.gd",
+      "bytes": 2778,
+      "sha256": "2c5e4369b9184c09acdf55bc33248886fd6f652d029989f29ca9f92dfabe2389"
+    },
+    {
+      "source": "scenes/exit_door.tscn",
+      "snapshot": "scenes/exit_door.tscn",
+      "bytes": 1062,
+      "sha256": "5cd9bcae6286e2e1d3c1dc50a39a958c6b536fc0b321060fdc2371dcfb88246b"
+    },
+    {
+      "source": "scenes/main.tscn",
+      "snapshot": "scenes/main.tscn",
+      "bytes": 16912,
+      "sha256": "67fff6889cae9369b089348a64b662183d01e3e2c20d0ce55f280bdc472d2986"
+    },
+    {
+      "source": "scenes/second_room.tscn",
+      "snapshot": "scenes/second_room.tscn",
+      "bytes": 10921,
+      "sha256": "062d590ce48877ddc954dca5037ac36c7a6b2e24ba73eb6a716381dfb9c25f7f"
+    },
+    {
+      "source": "scenes/player.tscn",
+      "snapshot": "scenes/player.tscn",
+      "bytes": 7798,
+      "sha256": "d1d2707899a8cb3dedff8311a8ff46998c6d55e561580f421c935c30baf6b46d"
+    },
+    {
+      "source": "scripts/player/player.gd",
+      "snapshot": "scripts/player/player.gd",
+      "bytes": 6966,
+      "sha256": "e294502c526a80601b27c620eac1b9301fefa5e4a523496454de8f39b62e2520"
+    },
+    {
+      "source": "scripts/player/movement_controller.gd",
+      "snapshot": "scripts/player/movement_controller.gd",
+      "bytes": 5229,
+      "sha256": "59c8987f01c769c40f6657e09bc6e69a1eeb6fefe98220d84f15d6c9a9f6e6ec"
+    },
+    {
+      "source": "resources/player_movement_config.tres",
+      "snapshot": "resources/player_movement_config.tres",
+      "bytes": 530,
+      "sha256": "72bfb502c5069fcfa3cb0681ffcece9586ef7a807658720a88b85b99d6267202"
+    },
+    {
+      "source": "run_root.tscn",
+      "snapshot": "run_root.tscn",
+      "bytes": 1450,
+      "sha256": "b04067d9c02c3b3a2e80653c9fbb1187aee82d27a41bf67e95db9ff29318cd50"
+    },
+    {
+      "source": "scripts/ui/reward_screen.gd",
+      "snapshot": "scripts/ui/reward_screen.gd",
+      "bytes": 3203,
+      "sha256": "add08561acc80467d7541be4cdb0593510148d62d3d369e3d61e94c50b622ff1"
+    }
+  ]
+}

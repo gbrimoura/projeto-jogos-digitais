@@ -1,0 +1,30 @@
+STATUS: done
+SUMMARY: Revisão final delta R4 (somente leitura) concluída com sucesso. O delta R4 elimina estritamente as duas colisões de identificadores locais em escopo de bloco no GDScript 4 (`canonical_fallback_index` em `prepare_authored_layout` e a remoção da redeclaração de `player_body` em `_validate_authored_target`), sem introduzir regressões ou efeitos colaterais. Os contextos canônicos e de execução fornecidos fecham plenamente as duas pendências remanescentes do Muse R3: (1) aterrissagens cinemáticas confirmadas dentro das faixas seguras reais [846, 962] (`roof_four`) e [874, 934] (`roof_five`) com inset de 22 px já descontado; (2) verificação explícita de que `prepare_authored_layout` rejeita layouts com `fallback_generation.valid == false` antes de alterar qualquer nó/geometria e revalida fisicamente a rota final, inexistindo qualquer bypass de `invalid`. Nenhum P1/P2 restante.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco impeditivo (P1/P2) identificado no runtime R4. As trajetórias parabólicas e de queda respeitam os envelopes de movimento e as janelas úteis de colisão.
+NEXT_STEP: Prosseguir com o congelamento da especificação/código da frente e integração do runtime R4 na árvore principal conforme o fluxo do projeto.
+
+---
+
+### Análise Detalhada dos Pontos de Revisão
+
+#### 1. Fechamento das Pendências R3 (Muse R3)
+- **Testemunha de Pouso e Bounds dos Apoios:**
+  - Com o esclarecimento canônico de que as faixas informadas já contemplavam o inset de 22 px (`[x + 22, end.x - 22]`):
+    - **`roof_four` (topo dest: 160):** A plataforma real possui `center = 904`, `width = 160`, gerando bounds `[824, 984]`. A faixa útil com margem de segurança é `[846, 962]`. O lançamento a partir da plataforma anterior (`center = 688`, `top = 256`) em `launch_x = 744` com `vx = 260` atinge aterrissagem em $x \approx 908$, perfeitamente contido na zona segura.
+    - **`roof_five` (topo dest: 160):** A plataforma real possui `center = 904`, `width = 104`, gerando bounds `[852, 956]`. A faixa útil com margem de segurança é `[874, 934]`. O lançamento a partir da plataforma anterior (`center = 760`, `top = 232`) em `launch_x = 752` com `vx = 100` atinge aterrissagem interpolada em $x \approx 924$, perfeitamente contido na zona segura.
+  - A física discreta confirma a viabilidade sem necessidade de dupla aplicação de inset.
+- **Contexto do Chamador e Tratamento de `invalid`:**
+  - Em `prepare_authored_layout()`, caso a rota candidata falhe, o fallback é gerado via `RoomLayoutGenerator.generate_managed_layout(..., true)`.
+  - A verificação `if not bool(fallback_generation.get("valid", false)): return _fail_authored_layout(...)` ocorre **antes** de qualquer mutação de tamanho ou posição dos nós de plataforma.
+  - Adicionalmente, após aplicar as geometrias do fallback, `_validate_managed_generated_route()` revalida rigorosamente a rota. Não há caminho de execução que aplique ou tolere um layout marcado como inválido.
+
+#### 2. Avaliação do Delta R4 (Correção de Colisão de Nomes)
+- **`prepare_authored_layout` (`canonical_fallback_index`):**
+  - No escopo superior da função, `fallback_index` já era declarado na linha 71 (`var fallback_index := int(...)`). No bloco de recuperação de erro gerenciado (`if not candidate_route_valid:`), havia uma redeclaração idêntica.
+  - No analisador do GDScript 4 (`gdscript_parser.cpp`), a verificação de identificadores locais consulta o bloco pai (`get_local` percorrendo `parent_block`), causando erro de parse por sombreamento em mesmo escopo funcional.
+  - A renomeação para `canonical_fallback_index` e a atualização coerente de seus usos (validação de limites e atribuição de `target.fallback_support_path`) sanam o sombreamento sem alterar o comportamento lógico.
+- **`_validate_authored_target` (remoção da redeclaração de `player_body`):**
+  - A variável `var player_body := get_node_or_null("Player") as CollisionObject2D` já havia sido declarada e validada no escopo principal do método.
+  - A remoção da linha duplicada dentro de `if _run_controller_managed:` evita novo sombreamento e reutiliza com segurança a referência já tipada e verificada, mantendo o cálculo de AABB e sobreposição com o spawn inalterados.

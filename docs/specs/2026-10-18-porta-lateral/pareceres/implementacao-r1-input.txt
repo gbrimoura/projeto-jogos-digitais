@@ -1,0 +1,585 @@
+STATIC IMPLEMENTATION REVIEW. READ ONLY; NO TOOLS/COMMANDS. All authorized source inline. Timeout10min. User explicitly corrected doors must be holes IN SIDE WALLS, not backwall panels. Visual-only correction: wall gap[432,560), thickness64 at x0..64 /1088..1152. Collider intentionally remains solid; E/sensor gameplay unchanged. Visuals centered at32,496 entrance and1120,496 exit. z=-1 equalwall, backdrop-10 actors1. Need concrete syntax/regression/alignment flaws only. Prior frontalart retained but inactive. Review Lua only for matching staticpreview, not runtime. No engine/import/tests/QA authorized. Return STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP with priorities. 
+LOCAL BASELINE DIFF scenes/main.tscn
+diff --git a/docs/specs/2026-10-18-porta-lateral/historico/baseline-local/main.tscn b/scenes/main.tscn
+index 81ad8dc..35a768f 100644
+--- a/docs/specs/2026-10-18-porta-lateral/historico/baseline-local/main.tscn
++++ b/scenes/main.tscn
+@@ -10,6 +10,7 @@
+ [ext_resource type="PackedScene" path="res://scenes/exit_door.tscn" id="8_exit_door"]
+ [ext_resource type="Texture2D" uid="uid://7opqxpeloevh" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="9_factory_atlas"]
+ [ext_resource type="Script" path="res://scripts/world/factory_wall_visual.gd" id="10_factory_wall_visual"]
++[ext_resource type="Script" path="res://scripts/world/side_door_visual.gd" id="12_side_door_visual"]
+ [ext_resource type="Script" path="res://scripts/world/factory_ceiling_visual.gd" id="11_factory_ceiling_visual"]
+ 
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
+@@ -56,6 +57,8 @@ atlas_texture = ExtResource("9_factory_atlas")
+ atlas_source_id = 0
+ atlas_coordinates = Vector2i(0, 1)
+ flip_h = true
++opening_top = 432.0
++opening_height = 128.0
+ 
+ [node name="RightWallVisual" type="Node2D" parent="WallVisuals"]
+ position = Vector2(1088, 0)
+@@ -64,6 +67,8 @@ atlas_texture = ExtResource("9_factory_atlas")
+ atlas_source_id = 0
+ atlas_coordinates = Vector2i(2, 1)
+ flip_h = true
++opening_top = 432.0
++opening_height = 128.0
+ 
+ [node name="CeilingVisual" type="Node2D" parent="WallVisuals"]
+ script = ExtResource("11_factory_ceiling_visual")
+@@ -361,8 +366,8 @@ interaction_enabled = false
+ [node name="SensorShape" parent="EntranceDoor" index="0"]
+ disabled = true
+ 
+-[node name="DoorArt" parent="EntranceDoor" index="1"]
+-position = Vector2(80, -26)
++[node name="SideDoorVisual" parent="EntranceDoor" index="1"]
++position = Vector2(-80, -26)
+ flip_h = true
+ 
+ [node name="DoorLabel" parent="EntranceDoor" index="2"]
+LOCAL BASELINE DIFF scenes/second_room.tscn
+diff --git a/docs/specs/2026-10-18-porta-lateral/historico/baseline-local/second_room.tscn b/scenes/second_room.tscn
+index 58b6484..6e76d7b 100644
+--- a/docs/specs/2026-10-18-porta-lateral/historico/baseline-local/second_room.tscn
++++ b/scenes/second_room.tscn
+@@ -1,4 +1,4 @@
+-[gd_scene load_steps=20 format=3]
++[gd_scene load_steps=21 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/world/main.gd" id="1_main"]
+ [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="2_player"]
+@@ -9,6 +9,7 @@
+ [ext_resource type="Script" path="res://scripts/world/enemy_patrol_area.gd" id="7_enemy_patrol_area"]
+ [ext_resource type="Texture2D" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="8_factory_atlas"]
+ [ext_resource type="Script" path="res://scripts/world/factory_wall_visual.gd" id="9_factory_wall_visual"]
++[ext_resource type="Script" path="res://scripts/world/side_door_visual.gd" id="12_side_door_visual"]
+ [ext_resource type="PackedScene" path="res://scenes/exit_door.tscn" id="10_exit_door"]
+ [ext_resource type="Script" path="res://scripts/world/factory_ceiling_visual.gd" id="11_factory_ceiling_visual"]
+ 
+@@ -61,6 +62,8 @@ atlas_texture = ExtResource("8_factory_atlas")
+ atlas_source_id = 0
+ atlas_coordinates = Vector2i(0, 1)
+ flip_h = true
++opening_top = 432.0
++opening_height = 128.0
+ 
+ [node name="RightWallVisual" type="Node2D" parent="WallVisuals"]
+ position = Vector2(1088, 0)
+@@ -69,6 +72,8 @@ atlas_texture = ExtResource("8_factory_atlas")
+ atlas_source_id = 0
+ atlas_coordinates = Vector2i(2, 1)
+ flip_h = true
++opening_top = 432.0
++opening_height = 128.0
+ 
+ [node name="CeilingVisual" type="Node2D" parent="WallVisuals"]
+ script = ExtResource("11_factory_ceiling_visual")
+@@ -210,8 +215,8 @@ interaction_enabled = false
+ [node name="SensorShape" parent="EntranceDoor" index="0"]
+ disabled = true
+ 
+-[node name="DoorArt" parent="EntranceDoor" index="1"]
+-position = Vector2(80, -26)
++[node name="SideDoorVisual" parent="EntranceDoor" index="1"]
++position = Vector2(-80, -26)
+ flip_h = true
+ 
+ [node name="DoorLabel" parent="EntranceDoor" index="2"]
+LOCAL BASELINE DIFF scripts/world/exit_door.gd
+diff --git a/docs/specs/2026-10-18-porta-lateral/historico/baseline-local/exit_door.gd b/scripts/world/exit_door.gd
+index 2a4e29d..81294e0 100644
+--- a/docs/specs/2026-10-18-porta-lateral/historico/baseline-local/exit_door.gd
++++ b/scripts/world/exit_door.gd
+@@ -8,7 +8,7 @@ signal transition_requested(player: Player)
+ @export_enum("Exit", "Entrance") var door_role: int = 0
+ @export var interaction_enabled: bool = true
+ 
+-@onready var _door_art: Sprite2D = $DoorArt
++@onready var _door_visual: Node2D = $SideDoorVisual
+ @onready var _door_label: Label = $DoorLabel
+ 
+ var _players_in_range: Dictionary = {}
+@@ -108,19 +108,19 @@ func set_terminal_complete() -> void:
+ 	_update_presentation()
+ 
+ func _update_presentation() -> void:
+-	if not is_instance_valid(_door_art) or not is_instance_valid(_door_label):
++	if not is_instance_valid(_door_visual) or not is_instance_valid(_door_label):
+ 		return
+ 	if door_role != 0:
+-		_door_art.frame = 0
++		_door_visual.call("set_aperture_open", false)
+ 		_door_label.text = "ENTRADA\nACESSO BLOQUEADO"
+ 		return
+ 	if _terminal_complete:
+-		_door_art.frame = 1
++		_door_visual.call("set_aperture_open", true)
+ 		_door_label.text = "ETAPA CONCLUÍDA"
+ 		return
+ 
+ 	var is_open := _room_is_cleared and not _transition_busy
+-	_door_art.frame = 1 if is_open else 0
++	_door_visual.call("set_aperture_open", is_open)
+ 	if _transition_busy:
+ 		_door_label.text = "ABRINDO SAÍDA..."
+ 	elif not _room_is_cleared:
+FILE scripts/world/factory_wall_visual.gd
+@tool
+extends Node2D
+
+const ATLAS_TILE_SIZE := 32
+const DRAW_TILE_SIZE := 64
+const SEGMENT_COUNT := 10
+const FINAL_SOURCE_HEIGHT := 4
+const FINAL_DRAW_HEIGHT := 8
+
+@export var atlas_texture: Texture2D:
+	set(value):
+		atlas_texture = value
+		queue_redraw()
+
+@export var atlas_source_id: int = 0:
+	set(value):
+		atlas_source_id = value
+		queue_redraw()
+
+@export var atlas_coordinates: Vector2i = Vector2i(0, 1):
+	set(value):
+		atlas_coordinates = value
+		queue_redraw()
+
+@export var flip_h: bool = false:
+	set(value):
+		flip_h = value
+		queue_redraw()
+
+# A zero opening height leaves this wall continuous (the default for other callers).
+@export var opening_top: float = -1.0:
+	set(value):
+		opening_top = value
+		queue_redraw()
+
+@export var opening_height: float = 0.0:
+	set(value):
+		opening_height = value
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func _draw() -> void:
+	if atlas_texture == null or atlas_source_id != 0 or atlas_coordinates.x < 0 or atlas_coordinates.y < 0:
+		return
+
+	var source_x := atlas_coordinates.x * ATLAS_TILE_SIZE
+	var source_y := atlas_coordinates.y * ATLAS_TILE_SIZE
+	var full_source := Rect2(source_x, source_y, ATLAS_TILE_SIZE, ATLAS_TILE_SIZE)
+	var has_opening := opening_height > 0.0 and opening_top >= 0.0
+	if flip_h:
+		# Refletir no centro do segmento aponta o acabamento do atlas para dentro.
+		draw_set_transform(Vector2(DRAW_TILE_SIZE, 0.0), 0.0, Vector2(-1.0, 1.0))
+
+	for segment_index in SEGMENT_COUNT:
+		var destination_y := segment_index * DRAW_TILE_SIZE
+		_draw_clipped_segment(
+			Rect2(0.0, destination_y, DRAW_TILE_SIZE, DRAW_TILE_SIZE),
+			full_source,
+			has_opening
+		)
+
+	# A última peça reutiliza os quatro pixels superiores da célula, escalados por dois.
+	_draw_clipped_segment(
+		Rect2(0.0, SEGMENT_COUNT * DRAW_TILE_SIZE, DRAW_TILE_SIZE, FINAL_DRAW_HEIGHT),
+		Rect2(source_x, source_y, ATLAS_TILE_SIZE, FINAL_SOURCE_HEIGHT),
+		has_opening
+	)
+
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_clipped_segment(destination: Rect2, source: Rect2, has_opening: bool) -> void:
+	if not has_opening:
+		draw_texture_rect_region(atlas_texture, destination, source)
+		return
+
+	var segment_top := destination.position.y
+	var segment_bottom := destination.end.y
+	var opening_bottom := opening_top + opening_height
+	var clipped_opening_top := maxf(opening_top, segment_top)
+	var clipped_opening_bottom := minf(opening_bottom, segment_bottom)
+	if clipped_opening_bottom <= segment_top or clipped_opening_top >= segment_bottom:
+		draw_texture_rect_region(atlas_texture, destination, source)
+		return
+
+	var source_per_destination_y := source.size.y / destination.size.y
+	if clipped_opening_top > segment_top:
+		var upper_height := clipped_opening_top - segment_top
+		draw_texture_rect_region(
+			atlas_texture,
+			Rect2(destination.position.x, segment_top, destination.size.x, upper_height),
+			Rect2(source.position.x, source.position.y, source.size.x, upper_height * source_per_destination_y)
+		)
+	if clipped_opening_bottom < segment_bottom:
+		var lower_height := segment_bottom - clipped_opening_bottom
+		var lower_source_y := source.position.y + (clipped_opening_bottom - segment_top) * source_per_destination_y
+		draw_texture_rect_region(
+			atlas_texture,
+			Rect2(destination.position.x, clipped_opening_bottom, destination.size.x, lower_height),
+			Rect2(source.position.x, lower_source_y, source.size.x, lower_height * source_per_destination_y)
+		)
+
+FILE scripts/world/side_door_visual.gd
+@tool
+extends Node2D
+
+const VOID := Color("#0E0D0E")
+const DEPTH := Color("#1D1B1A")
+const SHADOW := Color("#302D2A")
+const METAL_DARK := Color("#5B5249")
+const METAL := Color("#756957")
+const METAL_LIGHT := Color("#90816A")
+const COPPER := Color("#70432C")
+const AMBER := Color("#B78342")
+
+@export var flip_h: bool = false:
+	set(value):
+		flip_h = value
+		queue_redraw()
+
+@export var is_open: bool = false:
+	set(value):
+		is_open = value
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func set_aperture_open(value: bool) -> void:
+	is_open = value
+
+func _draw() -> void:
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+
+	# The 64×128 dark void occupies the actual wall thickness and ends at the floor.
+	draw_rect(Rect2(-32, -64, 64, 128), VOID)
+	# Recess facets and a narrow lintel read as cut metal, not as a panel on the back wall.
+	draw_rect(Rect2(-30, -62, 60, 2), METAL_DARK)
+	draw_rect(Rect2(-30, 60, 60, 2), SHADOW)
+	draw_rect(Rect2(-32, -64, 4, 128), SHADOW)
+	draw_rect(Rect2(28, -64, 4, 128), DEPTH)
+	draw_rect(Rect2(-28, -58, 2, 116), COPPER)
+	draw_rect(Rect2(26, -58, 2, 116), METAL_DARK)
+	# Warm rivets stay on the exposed jambs and use the factory's existing palette.
+	for rivet_y in [-48, -16, 16, 48]:
+		draw_rect(Rect2(-30, rivet_y, 2, 2), AMBER)
+		draw_rect(Rect2(28, rivet_y, 2, 2), METAL_LIGHT)
+
+	if not is_open:
+		# A simple grate sits inside the tunnel; the opening remains visibly lateral.
+		draw_rect(Rect2(-22, -54, 44, 2), METAL_DARK)
+		draw_rect(Rect2(-22, 52, 44, 2), METAL_DARK)
+		for bar_x in [-20, -8, 4, 16]:
+			draw_rect(Rect2(bar_x, -52, 2, 104), METAL)
+		for rail_y in [-28, 0, 28]:
+			draw_rect(Rect2(-20, rail_y, 38, 2), METAL_DARK)
+		draw_rect(Rect2(16, -4, 4, 8), AMBER)
+	else:
+		# Open state keeps the through-hole dark and leaves only the inner-edge cut reveal.
+		draw_rect(Rect2(-24, -54, 48, 108), VOID)
+		draw_rect(Rect2(-30, -60, 2, 120), METAL_DARK)
+		draw_rect(Rect2(-28, -58, 2, 116), METAL_LIGHT)
+
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+FILE scripts/world/exit_door.gd
+extends Area2D
+
+## Porta reutilizável: controla alcance, apresentação e pedido de interação.
+## A cena de sala que contém a porta decide se e para onde a transição ocorre.
+
+signal transition_requested(player: Player)
+
+@export_enum("Exit", "Entrance") var door_role: int = 0
+@export var interaction_enabled: bool = true
+
+@onready var _door_visual: Node2D = $SideDoorVisual
+@onready var _door_label: Label = $DoorLabel
+
+var _players_in_range: Dictionary = {}
+var _room_is_cleared: bool = false
+var _transition_busy: bool = false
+var _terminal_complete: bool = false
+var _failure_message: String = ""
+var _room_root: Node
+
+func _ready() -> void:
+	_room_root = get_parent()
+	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
+	_update_presentation()
+
+func set_room_cleared(cleared: bool) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	_room_is_cleared = cleared
+	if not cleared:
+		_transition_busy = false
+		_failure_message = ""
+	_update_presentation()
+
+func set_transition_busy(busy: bool) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	if busy and not _room_is_cleared:
+		return
+	_transition_busy = busy
+	if busy:
+		_failure_message = ""
+	_update_presentation()
+
+func report_transition_failure(message: String) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	_transition_busy = false
+	_failure_message = message.strip_edges()
+	_update_presentation()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if door_role != 0 or not interaction_enabled or _terminal_complete:
+		return
+	if not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if key_event.echo or not key_event.is_action_pressed("interact"):
+		return
+	if _room_root != null \
+		and _room_root.has_method("is_gameplay_action_blocked") \
+		and bool(_room_root.call("is_gameplay_action_blocked", &"interact")):
+		get_viewport().set_input_as_handled()
+		return
+	if _transition_busy or not _room_is_cleared:
+		return
+	if not Input.is_action_just_pressed("interact"):
+		return
+
+	var player := _get_live_player_in_range()
+	if player == null:
+		return
+
+	_transition_busy = true
+	_update_presentation()
+	transition_requested.emit(player)
+	get_viewport().set_input_as_handled()
+
+func _on_body_entered(body: Node2D) -> void:
+	if body is Player and body.is_in_group("player"):
+		_players_in_range[body] = true
+
+func _on_body_exited(body: Node2D) -> void:
+	_players_in_range.erase(body)
+
+func is_player_in_range(player: Player) -> bool:
+	if door_role != 0 or not interaction_enabled or _terminal_complete:
+		return false
+	if player == null or not is_instance_valid(player) or not _players_in_range.has(player):
+		return false
+	return get_overlapping_bodies().has(player)
+
+func _get_live_player_in_range() -> Player:
+	for candidate in _players_in_range.keys():
+		if not is_instance_valid(candidate):
+			continue
+		var player := candidate as Player
+		if player != null and player.is_in_group("player") and not player.is_dead and is_player_in_range(player):
+			return player
+	return null
+
+func set_terminal_complete() -> void:
+	_terminal_complete = true
+	_room_is_cleared = false
+	_transition_busy = false
+	_failure_message = ""
+	_update_presentation()
+
+func _update_presentation() -> void:
+	if not is_instance_valid(_door_visual) or not is_instance_valid(_door_label):
+		return
+	if door_role != 0:
+		_door_visual.call("set_aperture_open", false)
+		_door_label.text = "ENTRADA\nACESSO BLOQUEADO"
+		return
+	if _terminal_complete:
+		_door_visual.call("set_aperture_open", true)
+		_door_label.text = "ETAPA CONCLUÍDA"
+		return
+
+	var is_open := _room_is_cleared and not _transition_busy
+	_door_visual.call("set_aperture_open", is_open)
+	if _transition_busy:
+		_door_label.text = "ABRINDO SAÍDA..."
+	elif not _room_is_cleared:
+		_door_label.text = "SAÍDA BLOQUEADA\nELIMINE OS INIMIGOS"
+	elif not _failure_message.is_empty():
+		_door_label.text = "%s\nE TENTAR DE NOVO" % _failure_message
+	else:
+		_door_label.text = "SAÍDA ABERTA\n[E] ENTRAR"
+
+FILE scenes/exit_door.tscn
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/exit_door.gd" id="1_exit_door"]
+[ext_resource type="Script" path="res://scripts/world/side_door_visual.gd" id="2_side_door_visual"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit_sensor"]
+size = Vector2(96.0, 108.0)
+
+[node name="ExitDoor" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_exit_door")
+
+[node name="SensorShape" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_exit_sensor")
+
+[node name="SideDoorVisual" type="Node2D" parent="."]
+position = Vector2(80, -26)
+z_index = -1
+script = ExtResource("2_side_door_visual")
+flip_h = false
+is_open = false
+
+[node name="DoorLabel" type="Label" parent="."]
+offset_left = -224.0
+offset_top = -146.0
+offset_right = 0.0
+offset_bottom = -106.0
+theme_override_colors/font_color = Color(0.827451, 0.764706, 0.654902, 1)
+theme_override_font_sizes/font_size = 10
+text = "SAÍDA BLOQUEADA\nELIMINE OS INIMIGOS"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+FILE assets/environment/factory_v1/door/side-opening/preview-side-opening.lua
+-- Static inspection composition for the side-wall cut. It does not export runtime art.
+local p = app.params or {}
+local root = p.root or "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais"
+local out = p.out or (root .. "/assets/environment/factory_v1/door/side-opening/porta-lateral-preview.png")
+local atlasPath = root .. "/assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"
+local playerPath = root .. "/assets/player/player-animations.png"
+local pc = app.pixelColor
+local function rgba(hex)
+  return pc.rgba(tonumber(hex:sub(1, 2), 16), tonumber(hex:sub(3, 4), 16), tonumber(hex:sub(5, 6), 16), 255)
+end
+local C = {
+  void = rgba("0E0D0E"), depth = rgba("1D1B1A"), shadow = rgba("302D2A"),
+  metalDark = rgba("5B5249"), metal = rgba("756957"), metalLight = rgba("90816A"),
+  copper = rgba("70432C"), amber = rgba("B78342"), cream = rgba("D3C3A7")
+}
+local function rect(img, x, y, w, h, color)
+  for py = y, y + h - 1 do
+    for px = x, x + w - 1 do
+      if px >= 0 and py >= 0 and px < img.width and py < img.height then img:drawPixel(px, py, color) end
+    end
+  end
+end
+local function extract(src, sx, sy, w, h)
+  local dst = Image(w, h)
+  for y = 0, h - 1 do for x = 0, w - 1 do dst:drawPixel(x, y, src:getPixel(sx + x, sy + y)) end end
+  return dst
+end
+local function nearestScale(src, scale)
+  local dst = Image(src.width * scale, src.height * scale)
+  for y = 0, src.height - 1 do
+    for x = 0, src.width - 1 do
+      local pixel = src:getPixel(x, y)
+      for dy = 0, scale - 1 do for dx = 0, scale - 1 do dst:drawPixel(x * scale + dx, y * scale + dy, pixel) end end
+    end
+  end
+  return dst
+end
+local function flipHorizontal(src)
+  local dst = Image(src.width, src.height)
+  for y = 0, src.height - 1 do for x = 0, src.width - 1 do dst:drawPixel(src.width - 1 - x, y, src:getPixel(x, y)) end end
+  return dst
+end
+local function makeDoor(open)
+  local img = Image(64, 128)
+  rect(img, 0, 0, 64, 128, C.void)
+  rect(img, 2, 2, 60, 2, C.metalDark)
+  rect(img, 2, 122, 60, 2, C.shadow)
+  rect(img, 0, 0, 4, 128, C.shadow)
+  rect(img, 60, 0, 4, 128, C.depth)
+  rect(img, 4, 6, 2, 116, C.copper)
+  rect(img, 58, 6, 2, 116, C.metalDark)
+  for _, y in ipairs({16, 48, 80, 112}) do
+    rect(img, 2, y, 2, 2, C.amber)
+    rect(img, 60, y, 2, 2, C.metalLight)
+  end
+  if not open then
+    rect(img, 10, 10, 44, 2, C.metalDark)
+    rect(img, 10, 116, 44, 2, C.metalDark)
+    for _, x in ipairs({12, 24, 36, 48}) do rect(img, x, 12, 2, 104, C.metal) end
+    for _, y in ipairs({36, 64, 92}) do rect(img, 12, y, 38, 2, C.metalDark) end
+    rect(img, 48, 60, 4, 8, C.amber)
+  else
+    rect(img, 8, 10, 48, 108, C.void)
+    rect(img, 2, 4, 2, 120, C.metalDark)
+    rect(img, 4, 6, 2, 116, C.metalLight)
+  end
+  return img
+end
+local function glyph(img, x, y, pattern, color, scale)
+  for py, row in ipairs(pattern) do for px = 1, #row do if row:sub(px, px) == "1" then rect(img, x + (px - 1) * scale, y + (py - 1) * scale, scale, scale, color) end end end
+end
+local FONT = {
+  A={"010","101","111","101","101"}, B={"110","101","110","101","110"}, C={"011","100","100","100","011"},
+  D={"110","101","101","101","110"}, E={"111","100","110","100","111"}, G={"011","100","101","101","011"},
+  H={"101","101","111","101","101"}, I={"111","010","010","010","111"}, L={"100","100","100","100","111"},
+  M={"101","111","111","101","101"}, N={"101","111","111","111","101"}, O={"010","101","101","101","010"},
+  P={"110","101","110","100","100"}, R={"110","101","110","101","101"}, S={"011","100","010","001","110"},
+  T={"111","010","010","010","010"}, U={"101","101","101","101","111"}, Y={"101","101","010","010","010"},
+  ["-"]={"000","000","111","000","000"}, [" "]={"000","000","000","000","000"}
+}
+local function drawText(img, x, y, text, color, scale)
+  local cursor = x
+  for i = 1, #text do glyph(img, cursor, y, FONT[text:sub(i, i)] or FONT[" "], color, scale); cursor = cursor + 4 * scale end
+end
+local function drawSceneRow(dst, y0, open)
+  rect(dst, 0, y0, 1152, 224, C.void)
+  local atlas = Image{fromFile = atlasPath}
+  local leftWall = flipHorizontal(nearestScale(extract(atlas, 0, 32, 32, 32), 2))
+  local rightWall = flipHorizontal(nearestScale(extract(atlas, 64, 32, 32, 32), 2))
+  for _, globalY in ipairs({384, 448, 512, 576}) do
+    dst:drawImage(leftWall, 0, y0 + globalY - 376)
+    dst:drawImage(rightWall, 1088, y0 + globalY - 376)
+  end
+  -- The cut is painted as a clear through-hole over the tiled wall, at the same 64x128 geometry as runtime.
+  local door = makeDoor(open)
+  dst:drawImage(flipHorizontal(door), 0, y0 + 56)
+  dst:drawImage(door, 1088, y0 + 56)
+  for x = 0, 1087, 64 do
+    local tileCol = (x == 0) and 0 or 1
+    dst:drawImage(nearestScale(extract(atlas, tileCol * 32, 0, 32, 32), 2), x, y0 + 184)
+  end
+  dst:drawImage(nearestScale(extract(atlas, 64, 0, 32, 32), 2), 1088, y0 + 184)
+  local playerAtlas = Image{fromFile = playerPath}
+  dst:drawImage(nearestScale(extract(playerAtlas, 0, 0, 64, 64), 2), 920, y0 + 70)
+end
+local board = Image(1152, 492)
+rect(board, 0, 0, 1152, 492, C.void)
+rect(board, 0, 0, 1152, 18, C.depth)
+drawText(board, 16, 4, "BOTH ENDS CLOSED", C.cream, 2)
+drawSceneRow(board, 18, false)
+rect(board, 0, 246, 1152, 18, C.depth)
+drawText(board, 16, 250, "OPEN SAMPLE - GAME ENTRY STAYS CLOSED", C.cream, 2)
+drawSceneRow(board, 268, true)
+board:saveAs(out)
+print("Static side-wall opening preview saved: " .. out)

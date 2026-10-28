@@ -3,12 +3,15 @@ extends Node2D
 const RunBuild = preload("res://scripts/progression/run_build.gd")
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const RewardScreenScript = preload("res://scripts/ui/reward_screen.gd")
+const RoomRunLayout = preload("res://scripts/world/room_run_layout.gd")
 
 @export_range(1, 20) var floors_per_run: int = 8
 @export_range(1, 10) var common_rooms_per_floor: int = 3
-@export_range(0.2, 10.0, 0.1) var transition_delay: float = 1.5
+@export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0
 @export var common_room_scene: PackedScene
 @export var boss_room_scene: PackedScene
+@export var run_seed: int = 0
+@export var randomize_run_seed: bool = true
 
 @onready var room_container: Node2D = $RoomContainer
 @onready var progress_label: Label = $HUD/ProgressLabel
@@ -27,7 +30,13 @@ var _run_player_max_health: int = -1
 var _run_build: RunBuild = RunBuild.new()
 var _active_reward_screen: Node
 var _owned_reward_pause: bool = false
+var _owned_transition_pause: bool = false
 var _restart_in_progress: bool = false
+var _transition_fade_layer: CanvasLayer
+var _transition_fade_rect: ColorRect
+var _resolved_run_seed: int = 0
+var _floor_room_descriptors: Array[Dictionary] = []
+var _last_room_family: StringName = &""
 
 
 func _ready() -> void:
@@ -40,8 +49,29 @@ func _ready() -> void:
 	if boss_room_scene == null:
 		_fail_run("ERRO: cena de chefe não definida.")
 		return
+	_resolved_run_seed = RoomRunLayout.resolve_seed(run_seed, randomize_run_seed)
+	_prepare_current_floor_plan()
 	_load_current_encounter()
 
+
+func get_resolved_run_seed() -> int:
+	return _resolved_run_seed
+
+func _prepare_current_floor_plan() -> bool:
+	var result: Dictionary = RoomRunLayout.build_floor(
+		_resolved_run_seed,
+		current_floor,
+		common_rooms_per_floor + 1,
+		_last_room_family
+	)
+	if not bool(result.get("valid", false)):
+		_fail_run("ERRO: não foi possível planejar a sequência de salas: %s" % String(result.get("error", "topologia inválida")))
+		return false
+	_floor_room_descriptors.clear()
+	for descriptor: Dictionary in result.get("rooms", []):
+		_floor_room_descriptors.append(descriptor.duplicate(true))
+	_last_room_family = StringName(result.get("last_family", _last_room_family))
+	return true
 
 func _is_boss_room() -> bool:
 	return current_room > common_rooms_per_floor
@@ -49,6 +79,9 @@ func _is_boss_room() -> bool:
 
 func _is_final_boss() -> bool:
 	return current_floor == floors_per_run and _is_boss_room()
+
+func is_active_room_instance(room: Node) -> bool:
+	return not _run_ended and is_instance_valid(current_room_instance) and room == current_room_instance
 
 
 func _load_current_encounter() -> void:
@@ -68,9 +101,20 @@ func _load_current_encounter() -> void:
 		_fail_run("ERRO: a sala não oferece o sinal run_progression_ready.")
 		return
 	var should_offer_build_upgrade := _run_build.total_count() == 0
-	if not bool(next_room.call("configure_run_managed", _run_build, should_offer_build_upgrade)):
+	if current_room - 1 < 0 or current_room - 1 >= _floor_room_descriptors.size():
 		next_room.free()
-		_fail_run("ERRO: não foi possível configurar a sala para esta run.")
+		_fail_run("ERRO: descritor da sala atual ausente.")
+		return
+	var room_descriptor: Dictionary = _floor_room_descriptors[current_room - 1]
+	if not bool(next_room.call("configure_run_managed", _run_build, should_offer_build_upgrade, int(room_descriptor.get("room_seed", 0)), room_descriptor)):
+		var layout_error := ""
+		if next_room.has_method("get_authored_layout_error"):
+			layout_error = String(next_room.call("get_authored_layout_error"))
+		next_room.free()
+		var failure_message := "ERRO: não foi possível configurar a sala para esta run."
+		if not layout_error.is_empty():
+			failure_message += " Layout: " + layout_error
+		_fail_run(failure_message)
 		return
 
 	var progression_callback := Callable(self, "_on_room_progression_ready").bind(next_room)
@@ -144,9 +188,20 @@ func _advance_after_room(completed_room: Node) -> void:
 		_show_victory_screen()
 		return
 
-	_update_hud("SALA CONCLUÍDA. PRÓXIMA ETAPA EM %.1f s." % transition_delay)
-	await get_tree().create_timer(maxf(transition_delay, 0.0)).timeout
+	if transition_delay > 0.0:
+		_update_hud("SALA CONCLUÍDA. PRÓXIMA ETAPA EM %.1f s." % transition_delay)
+		var delay_timer: SceneTreeTimer = get_tree().create_timer(transition_delay)
+		await delay_timer.timeout
+	else:
+		_update_hud("SALA CONCLUÍDA. PREPARANDO PRÓXIMA ETAPA.")
 	if _run_ended or completed_room != current_room_instance:
+		return
+	_owned_transition_pause = not get_tree().paused
+	if _owned_transition_pause:
+		get_tree().paused = true
+	await _fade_managed_transition_to(1.0, 0.18)
+	if _run_ended or completed_room != current_room_instance:
+		_finish_managed_transition(false)
 		return
 
 	current_room_instance = null
@@ -154,17 +209,29 @@ func _advance_after_room(completed_room: Node) -> void:
 		completed_room.queue_free()
 	await get_tree().process_frame
 	if _run_ended:
+		_finish_managed_transition(false)
 		return
 
 	_advance_stage()
 	transition_pending = false
 	_load_current_encounter()
+	if _run_ended:
+		_update_hud("FALHA AO INICIAR A PRÓXIMA SALA")
+		_show_game_over_screen("Não foi possível continuar a run.")
+		_finish_managed_transition(false)
+		return
+	await _fade_managed_transition_to(0.0, 0.22)
+	if _run_ended:
+		_finish_managed_transition(false)
+		return
+	_finish_managed_transition(true)
 
 
 func _advance_stage() -> void:
 	if _is_boss_room():
 		current_floor += 1
 		current_room = 1
+		_prepare_current_floor_plan()
 	else:
 		current_room += 1
 
@@ -176,10 +243,11 @@ func _update_hud(status_text: String) -> void:
 		else "SALA %d/%d" % [current_room, common_rooms_per_floor]
 	)
 	if progress_label != null:
-		progress_label.text = "ANDAR %02d/%02d | %s" % [
+		progress_label.text = "ANDAR %02d/%02d | %s | SEED %d" % [
 			current_floor,
 			floors_per_run,
 			stage_text,
+			_resolved_run_seed,
 		]
 	if status_label != null:
 		status_label.text = status_text
@@ -240,7 +308,7 @@ func _show_victory_screen() -> void:
 	get_tree().paused = true
 
 
-func _show_game_over_screen() -> void:
+func _show_game_over_screen(message_text: String = "O robô ficou sem energia.") -> void:
 	var overlay := CanvasLayer.new()
 	overlay.name = "GameOverOverlay"
 	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -281,7 +349,7 @@ func _show_game_over_screen() -> void:
 	content.add_child(title)
 
 	var message := Label.new()
-	message.text = "O robô ficou sem energia."
+	message.text = message_text
 	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message.add_theme_font_size_override("font_size", 20)
 	content.add_child(message)
@@ -293,6 +361,69 @@ func _show_game_over_screen() -> void:
 	restart_button.pressed.connect(_restart_run)
 	content.add_child(restart_button)
 	get_tree().paused = true
+
+func _ensure_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_layer) and is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_layer = CanvasLayer.new()
+	_transition_fade_layer.name = "ManagedRoomTransitionFade"
+	_transition_fade_layer.layer = 100
+	_transition_fade_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_transition_fade_layer)
+	_transition_fade_rect = ColorRect.new()
+	_transition_fade_rect.name = "Fade"
+	_transition_fade_rect.color = Color(0.0, 0.0, 0.0, 0.0)
+	_transition_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_fade_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_fade_layer.add_child(_transition_fade_rect)
+
+func _fade_managed_transition_to(target_alpha: float, duration: float) -> void:
+	_ensure_transition_fade()
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_rect.show()
+	var start_alpha := _transition_fade_rect.color.a
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_method(_set_managed_fade_alpha, start_alpha, target_alpha, duration)
+	await tween.finished
+
+func _set_managed_fade_alpha(alpha: float) -> void:
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	var tint := _transition_fade_rect.color
+	tint.a = clampf(alpha, 0.0, 1.0)
+	_transition_fade_rect.color = tint
+
+func _finish_managed_transition(release_owned_pause: bool) -> void:
+	if is_instance_valid(_transition_fade_layer):
+		_transition_fade_layer.queue_free()
+	_transition_fade_layer = null
+	_transition_fade_rect = null
+	if release_owned_pause and not _run_ended and _owned_transition_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_transition_pause = false
+
+func _hide_managed_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_rect):
+		_set_managed_fade_alpha(0.0)
+		_transition_fade_rect.hide()
+
+func fail_managed_room_transition(room: Node, message: String) -> void:
+	if _run_ended or room != current_room_instance:
+		return
+	_run_ended = true
+	transition_pending = true
+	_update_hud("FALHA NA TRANSIÇÃO: %s" % message)
+	call_deferred("_present_managed_transition_failure")
+
+func _present_managed_transition_failure() -> void:
+	_finish_managed_transition(false)
+	_owned_transition_pause = not get_tree().paused
+	if _owned_transition_pause:
+		get_tree().paused = true
+	if _run_ended:
+		_show_game_over_screen("A transição da sala falhou.")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -307,6 +438,7 @@ func _restart_run() -> void:
 	if not _run_ended or _restart_in_progress:
 		return
 	_restart_in_progress = true
+	_finish_managed_transition(false)
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
@@ -347,6 +479,7 @@ func _on_player_died() -> void:
 		return
 	_run_ended = true
 	transition_pending = true
+	_finish_managed_transition(false)
 	if is_instance_valid(_active_reward_screen) and _active_reward_screen.has_method("cancel_offer"):
 		_active_reward_screen.call("cancel_offer")
 	call_deferred("_present_game_over_after_physics")
@@ -359,7 +492,7 @@ func _present_game_over_after_physics() -> void:
 
 
 func _close_owned_reward_pause() -> void:
-	if _owned_reward_pause and get_tree().paused:
+	if _owned_reward_pause and not _run_ended and get_tree().paused:
 		get_tree().paused = false
 	_owned_reward_pause = false
 
@@ -382,5 +515,6 @@ func _discard_current_room(message: String) -> void:
 func _fail_run(message: String) -> void:
 	_run_ended = true
 	transition_pending = true
+	_finish_managed_transition(false)
 	push_error("RunController: " + message)
 	_update_hud(message)

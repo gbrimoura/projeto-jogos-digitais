@@ -1,0 +1,132 @@
+--- a/scripts/world/main.gd
++++ b/scripts/world/main.gd
+@@ -80,6 +80,11 @@
+ var _authored_layout_error: String = ""
+ var _authored_target_position: Vector2 = Vector2.ZERO
+ var _authored_target_node: Node
++var _authored_target_support: SolidPlatform
++var _authored_target_support_path: NodePath = NodePath("")
++var _authored_target_patrol_enabled: bool = false
++var _authored_target_patrol_min_x: float = 0.0
++var _authored_target_patrol_max_x: float = 0.0
+ var _authored_world_obstacles: Array[Dictionary] = []
+ var _prepared_room_layout_seed: int = 0
+ var _prepared_platform_rects: Dictionary = {}
+@@ -106,6 +111,11 @@
+ 	_authored_layout_error = ""
+ 	_authored_target_position = Vector2.ZERO
+ 	_authored_target_node = null
++	_authored_target_support = null
++	_authored_target_support_path = NodePath("")
++	_authored_target_patrol_enabled = false
++	_authored_target_patrol_min_x = 0.0
++	_authored_target_patrol_max_x = 0.0
+ 	_authored_world_obstacles.clear()
+ 	_prepared_platform_rects.clear()
+ 
+@@ -179,6 +189,19 @@
+ 		return null
+ 	return _authored_target_position
+ 
++func get_prepared_authored_target_binding(target: Node) -> Dictionary:
++	if not authored_layout_enabled or not _authored_layout_prepared or not _authored_layout_valid or target != _authored_target_node:
++		return {}
++	return {
++		"position": _authored_target_position,
++		"support": _authored_target_support,
++		"support_path": _authored_target_support_path,
++		"patrol_enabled": _authored_target_patrol_enabled,
++		"patrol_min_x": _authored_target_patrol_min_x,
++		"patrol_max_x": _authored_target_patrol_max_x,
++		"edge_margin": AUTHORED_EDGE_MARGIN,
++	}
++
+ func get_prepared_room_layout_seed() -> int:
+ 	return _prepared_room_layout_seed
+ 
+@@ -403,6 +426,8 @@
+ 		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+ 	if target.collision_layer != 8:
+ 		return _fail_authored_layout("TrainingTarget deve permanecer na collision layer 8")
++	if target.collision_mask != 3:
++		return _fail_authored_layout("TrainingTarget deve manter collision_mask 3 para World e Player")
+ 	var player_body := get_node_or_null("Player") as CollisionObject2D
+ 	if player_body == null or player_body.collision_mask != 9:
+ 		return _fail_authored_layout("Player deve manter collision_mask 9 para World e TrainingTarget vivo")
+@@ -414,10 +439,13 @@
+ 		return _fail_authored_layout("caminho de suporte autoral vazio")
+ 
+ 	var support_paths: Array[NodePath] = [target.fixed_support_path, target.fallback_support_path]
++	var first_safe_position: Dictionary = {}
++	var selected_patrol: Dictionary = {}
+ 	for support_path in support_paths:
+ 		var support := _resolve_authored_support(target, support_path)
+ 		if support == null or not platform_rects.has(support.name):
+ 			continue
++		var support_is_compatible := _is_target_support_compatible(support)
+ 		var support_rect: Rect2 = platform_rects[support.name]
+ 		if support_rect.size.x < target_local_bounds.size.x + AUTHORED_EDGE_MARGIN * 2.0:
+ 			continue
+@@ -434,12 +462,58 @@
+ 			continue
+ 		if not _find_world_layer_overlap(target_bounds, support).is_empty():
+ 			continue
+-		_authored_target_position = target_origin
+-		_authored_target_node = target
+-		return true
++		var minimum_center_x := support_rect.position.x + AUTHORED_EDGE_MARGIN - target_local_bounds.position.x
++		var maximum_center_x := support_rect.end.x - AUTHORED_EDGE_MARGIN - target_local_bounds.end.x
++		var route_is_useful := support_is_compatible and maximum_center_x - minimum_center_x >= 8.0
++		var route_is_clear := false
++		if route_is_useful:
++			var sweep_bounds := Rect2(
++				Vector2(minimum_center_x + target_local_bounds.position.x, target_origin.y + target_local_bounds.position.y),
++				Vector2(maximum_center_x - minimum_center_x + target_local_bounds.size.x, target_local_bounds.size.y)
++			)
++			route_is_clear = _find_world_layer_overlap(sweep_bounds, support).is_empty()
++		var candidate: Dictionary = {
++			"position": target_origin,
++			"support": support,
++			"support_path": support_path,
++			"minimum_center_x": minimum_center_x,
++			"maximum_center_x": maximum_center_x,
++		}
++		if first_safe_position.is_empty():
++			first_safe_position = candidate
++		if route_is_clear:
++			selected_patrol = candidate
++			break
+ 
+-	return _fail_authored_layout("suportes primário e fallback do TrainingTarget são inválidos")
++	var selected: Dictionary = selected_patrol if not selected_patrol.is_empty() else first_safe_position
++	if selected.is_empty():
++		return _fail_authored_layout("suportes primário e fallback do TrainingTarget são inválidos ou sem posição segura")
++	_authored_target_position = selected.get("position", Vector2.ZERO)
++	_authored_target_node = target
++	_authored_target_support = selected.get("support") as SolidPlatform
++	_authored_target_support_path = selected.get("support_path", NodePath(""))
++	_authored_target_patrol_min_x = to_global(Vector2(float(selected.get("minimum_center_x", 0.0)), 0.0)).x
++	_authored_target_patrol_max_x = to_global(Vector2(float(selected.get("maximum_center_x", 0.0)), 0.0)).x
++	_authored_target_patrol_enabled = not selected_patrol.is_empty()
++	return true
+ 
++func _is_target_support_compatible(support: SolidPlatform) -> bool:
++	if support == null or not is_instance_valid(support):
++		return false
++	if absf(support.global_rotation) > 0.001 or not support.global_scale.is_equal_approx(Vector2.ONE):
++		return false
++	var shape_count := 0
++	for child in support.get_children():
++		var collision := child as CollisionShape2D
++		if collision == null:
++			continue
++		shape_count += 1
++		if collision.disabled or not collision.shape is RectangleShape2D:
++			return false
++		if collision.position.length() > 0.01 or absf(collision.rotation) > 0.001 or not collision.scale.is_equal_approx(Vector2.ONE):
++			return false
++	return shape_count == 1
++
+ func _resolve_authored_support(target: TrainingTarget, path: NodePath) -> SolidPlatform:
+ 	if target.get_parent() != self:
+ 		return null

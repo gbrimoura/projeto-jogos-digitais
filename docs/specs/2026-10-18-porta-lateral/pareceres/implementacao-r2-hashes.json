@@ -1,0 +1,34 @@
+[
+  {
+    "path": "scripts/world/factory_wall_visual.gd",
+    "sha256": "1B67320689FDC71C76913F7A38C697B3914481D4226908076063F69320980F73"
+  },
+  {
+    "path": "scripts/world/side_door_visual.gd",
+    "sha256": "F7ED64B224B868B0934E7C83F320ACE419F2B01F71C7978A3C7659399F5BFD2E"
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "F99819FFE052B0FB7973B457C00C1C9AAFC1D6CFD5C2EBFE80340AE94A1D4C5A"
+  },
+  {
+    "path": "scenes/exit_door.tscn",
+    "sha256": "5CD9BCAE6286E2E1D3C1DC50A39A958C6B536FC0B321060FDC2371DCFB88246B"
+  },
+  {
+    "path": "assets/environment/factory_v1/door/side-opening/preview-side-opening.lua",
+    "sha256": "25471E50E8835D58AA47E89EAE5D5B82CFFA3DD3E05042289D3411C43E89E33C"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "67FFF6889CAE9369B089348A64B662183D01E3E2C20D0CE55F280BDC472D2986"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "062D590CE48877DDC954DCA5037AC36C7A6B2E24BA73EB6A716381DFB9C25F7F"
+  },
+  {
+    "path": "assets/environment/factory_v1/door/side-opening/porta-lateral-preview.png",
+    "sha256": "11599BC614AAFF71CF582AA0472871165D1B7B38B2373A5C66CF48FEE989A9AA"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "9007F455C8C72414EC2786C2F54D81F2274918F4F13FBB6154A4731B0FB9CCE1"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "sha256": "58FCECB98564C1C04A5DC81FAF1C454CB6AFAB38DA60FDC13C61E3C834C71DA5"
+  },
+  {
+    "path": "scenes/training_target.tscn",
+    "sha256": "5EF3E546BD0DF4732D9D38F4A4D358CF6715917427AC64E452F30D936BA7F4E6"
+  }
+]

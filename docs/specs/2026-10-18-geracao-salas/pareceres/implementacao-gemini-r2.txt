@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática R2 do delta final concluída sem apontamentos de severidade P1 ou P2. O ajuste no cálculo de subida (`rng.randi_range(0, MAX_RISE_PER_STEP / 8) * 8`) permite degraus nivelados (`rise == 0`) de forma segura, mantendo a monotonicidade não decrescente em altura, a contenção estrita no intervalo `[TOP_LIMIT, FIRST_TOP]` (376 a 440, variação total <= 64) e o alinhamento à grade de 8px. A validação de suporte primário com desempate por ordem em X acomoda corretamente alturas iguais adjacentes sem quebrar os helpers. A chamada `_success_result(entries, seed_used, false)` explicita a flag esperada para geração bem-sucedida (sem fallback), preservando o fluxo determinístico e o fallback subsequente.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco crítico ou regressão funcional detectado no delta revisado. Invariantes de RNG, gaps (56..96), espessura e limites verticais permanecem respeitados.
+NEXT_STEP: Prosseguir com a consolidação da etapa no runtime conforme o plano estabelecido.

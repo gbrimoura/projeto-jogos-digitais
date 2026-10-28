@@ -1,0 +1,77 @@
+[
+  {
+    "path": "resources/environment/factory_floor1_base_atlas_texture.tres",
+    "before": "1096DC07C27FD218F72F3159D4A3702A6EF0B0660AC9217F2AF0D301836FEBB7",
+    "after": "CBC71CF838E348A61CBF5ED0B8BD8E8A25D96443E2F9E9679E972E127796E4BE"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/background_floor1.lua",
+    "before": "1EE33DDF0F78DB069533D97D6B196F235FB2DEE15456996AB56DF95FB9434974",
+    "after": "FE596F429C183FA77A227E6B89614C7AF361B72E9F873930D5A3E6A40C63FE9E"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/manifest.json",
+    "before": "DE386B27B101841CB02AE937A2FA49E3F3C9E859E5F862EC3BC1B96BB128A838",
+    "after": "EF4B2F1EE5DB12E4946BD4C413DC0A4A4DD6297207BC1CBD130E4754A19C2C1D"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/README.md",
+    "before": "C5BBEDEDF1FC3E785C6A09AD4B1B1E11629BFF61E63519513188BCA747633C34",
+    "after": "60B9C85EB7A1E39A51DB77673E3ECE33C4E7BE142FA6E597D0E814923DF86117"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-captions.txt",
+    "before": "9DC8C27688BDEC268E5C0F23471AB240C313BF4D8310B04A5C71DFF6F519B242",
+    "after": "11EAC69523E22F26515724A38648D0563A7E59D899DE83365BD85FF1ACAAFFAD"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-000.png",
+    "before": "F9184B29E701B87F9565A594307C161FB4E744202A0D1D54D1B9A141B4B5FF53",
+    "after": "CA4251A9C9B1CFA33C5F011AB8DE7F496AEA677D3A5F86707202DE076D34C5EF"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-011.png",
+    "before": "6088C026003222007C93A4ED7795590333B98B0DB6C30715E5B896DB86E08D63",
+    "after": "3C060D08B7996EC5B9339831FEBF5F0B47AE4AD22B5A34E79CA9EA8569AD3285"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-101.png",
+    "before": "2FA87FB462C5751A0585E0484B4AA9710C2AD0B7F3C494B4AA99D0FF41387592",
+    "after": "A919221CE8452E43030F1495075B68DEFCD1B6992446CD49A2B57CC9C4DF7183"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-110.png",
+    "before": "B8C05745EE7179F5F57BD06BD1573652393405954C1ECE8B7859330C7438B65A",
+    "after": "034D5BF4806822FC93EC196D0ECC754D3360FC1E52BED94885812E37875EA302"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-base-boiler.png",
+    "before": "4B74B76857B65B8EFDD77F601F53E9378E4653AB150A3CAD24778C2E96DD8116",
+    "after": "6C88BE5162DBE3A2C994FFFFB7760E9ED46AEB3F5F5580F9F1B4463202019A2A"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-base-maintenance.png",
+    "before": "ABCD31840C1107322F6C7AF4234227EAC3A3A62D6D9BBFEAC4DA1AE5BE90E60F",
+    "after": "48F67F8C4D617BE6E263B0249162AF126C0533AD4095BB92DD2231924EF0C21A"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-bases-atlas.png",
+    "before": "0A6F61B3E00C2C2FA055752A3923EC1274DD534EFFE612FF457FB3E8F60CED6D",
+    "after": "97CBE30DDCB5A932E372676AEBC1826B90B0B8275C0D8F6F587EB340C0CA481B"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-bases.aseprite",
+    "before": "262754045F695FCCC2D2E9FE7F00E9A388DA1BBF59FDB25CFA5820199DE60E2C",
+    "after": "D6A0B7709257DC521796CBEB32B69CC36C95D0285D782A8B3EB2ED7F0AEF13A3"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-procedural-contact.png",
+    "before": "9B2469CB55EB6FD216729DE9DB84E4526277BEFD2A2CB51886968FAAA11AC630",
+    "after": "0EDA84518C5AB1B6A0687C9FEEFA08359F00D4A2D92501E014CC48B5543C6C64"
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/regions-and-anchors.json",
+    "before": "08E68F9059D2BDF1015D9E41A72DD2C473BEDC80679CF62DAFF9940F5ACF98A3",
+    "after": "6F05C9F327B1D6C0C98A532C40FCBDFB5F8AE9B6ECF0CD4A4F2A33A4A488626B"
+  }
+]

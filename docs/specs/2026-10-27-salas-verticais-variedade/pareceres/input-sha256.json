@@ -1,0 +1,42 @@
+[
+  {
+    "file": "plano-r1-input.txt",
+    "bytes": 8156,
+    "sha256": "F6CB1B79B265D677C8A872B19AEBA380EBF23EDB26F27746BEF6A678231FCEF1"
+  },
+  {
+    "file": "plano-r2-input.txt",
+    "bytes": 10983,
+    "sha256": "D918BF25E8496A4D469E1AD9706145227FE543FD061654BD34C7420D5B8F1334"
+  },
+  {
+    "file": "plano-r3-grok-input.txt",
+    "bytes": 1086,
+    "sha256": "8DA774F9D3D294D4B6C028185F62A991AAE8EEFE84F8B19626A7CC11206AACC6"
+  },
+  {
+    "file": "plano-r3-input.txt",
+    "bytes": 4065,
+    "sha256": "AE3CC25DC6ABFA8F2EFD6F31CBCAEFB7CBAD916C84922DB06582FC656787BFE1"
+  },
+  {
+    "file": "runtime-r1-input.txt",
+    "bytes": 168243,
+    "sha256": "6624EED3F20182638A0E179A6BC0E808F77B2DBA70935656CA8E8281D581F31D"
+  },
+  {
+    "file": "runtime-r2-input.txt",
+    "bytes": 274076,
+    "sha256": "969A1023D8935746FC6F9EB14391C59CA38EE1453C76DC53C9C5894BDE78EB0B"
+  },
+  {
+    "file": "runtime-r3-input.txt",
+    "bytes": 28164,
+    "sha256": "F3C532B851FC38212284151D9AE67CE71CC301FBA87883238C768F05DFC0F384"
+  },
+  {
+    "file": "runtime-r4-input.txt",
+    "bytes": 29035,
+    "sha256": "5D5EDF5A186C4A7E24A7169862FF31B4E5456B77AFD6B12C6A104BF8E4A7C9CC"
+  }
+]

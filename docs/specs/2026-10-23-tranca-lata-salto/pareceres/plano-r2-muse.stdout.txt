@@ -1,0 +1,14 @@
+STATUS: done
+SUMMARY: Plano R1 + Delta R2 prospectivos são implementáveis sem mudar gerador/Main/combate; R2 resolve interlock ataque×salto, GROUNDED/velocity, exclusão origem/destino, pouso por contato real e cooldown. Restam 3×P1 e 5×P2 de precisão pré-código, sem defeito runtime existente (nada modificado).
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+P1-1 Epsilon origem 0,1px insuficiente: com safe_margin padrão CharacterBody2D o corpo ainda toca origem e retrunca salto/colide. Precisar `bottom<=top-safe_margin-epsilon` + `not is_on_floor` antes de remover exceção física; retirar antes de qualquer descida.
+P1-2 Contradição Floor×SolidPlatform: item 4 exige bind só SolidPlatform compatível, item 5 diz Floor é apoio real válido p/ recuperação/origem. Precisar: Floor permite queda/recuperação e ataque estacionário sem patrulha, ou definir Floor como bindável com bounds; senão inimigo cai no Floor e fica sem regra de bind/repatrulha.
+P1-3 Segunda porta após PREPARO 160ms sem prioridade de ataque explícita: revalidar geometria+Player/ocupação não basta. Precisar mesma ordem do tick — se aquisição válida, aborta salto sem mover, entra WINDUP e reseta cooldown 2,5s.
+P2-1 Máscaras de query indefinidas: corpo mask3 não vê outros inimigos, mas pouso deve evitar corpo com outro inimigo. Precisar queries de arco/overlap final com mask World+Player+Enemy (exclui self), separadas de body mask; origem filtrada só no trecho de subida, destino nunca excluído, query-exclude ≠ exceção física.
+P2-2 Congelamento cooldown incompleto: R2 congela em VOO/ataque, omite PREPARO/POUSO. Precisar decrementar só em CHÃO, reset único 2,5s após abortar/pousar/sem-rota.
+P2-3 Alvo da escala visual: `shockwave_visual_scale=1.25` só em `containment_attack_visual.gd` em `_sync_shockwave` como `_radius/70*scale`. Precisar aplicar só no Sprite2D, nunca em Area2D/CollisionShape, `_radius` segue 140, timers/LOS/dano inalterados, windup/recovery sem onda.
+P2-4 Âncora atlas salto: 64×64 fonte separada, 6 poses, 15 cels antigos byte-idênticos. Precisar mesmo pivot/offset/escala2x da fonte atual p/ troca PREPARO/VOO/POUSO sem teleporte visual; subida/ápice/queda por `velY` (ápice `absVy<=80`), impulso 60ms, flip congelado do impulso.
+P2-5 Cancelamento ataque em queda + tolerância pouso: perda de suporte em WINDUP/ACTIVE/RECOVERY precisa reset visual/timers da onda; pouso exige `normal.dot(UP)>=0.7`, `feet-bottom<=1px`, cabe 72+2×16 com headroom do collider inteiro; fora disso continuar gravidade, sem snap grande, sem patrulha suspensa.
+NEXT_STEP: Principal consolidar 8 precisões acima no spec antes de liberar Luna arte (Aseprite separado + contact visual) e depois runtime; sem Godot/testes nesta frente.

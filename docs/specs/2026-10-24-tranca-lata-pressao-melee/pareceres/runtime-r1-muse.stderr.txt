@@ -1,0 +1,5 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/specs/2026-10-24-tranca-lata-pressao-melee/pareceres/runtime-r1-input.txt
+→ Read docs/specs/2026-10-24-tranca-lata-pressao-melee/pareceres/runtime-r1-input.txt [offset=1173]

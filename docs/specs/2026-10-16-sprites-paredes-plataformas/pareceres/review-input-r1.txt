@@ -1,0 +1,195 @@
+Papel revisor de PLANO Godot, somente leitura. Não implementar, não editar arquivos, não executar comandos/testes/Godot. Timeout10min. Usuário pediu branch e plano para sprites inimigos invisíveis, paredes faltantes e melhor distribuição plataformas. Branch já criada corrigir-sprites-salas-plataformas em90b2e59, nenhuma implementação runtime autorizada nestaentrega. Analise o plano/spec completos a seguir: fatos/hypóteses honestos (causa invisibilidade não comprovada), geometria paredescollider/skin/bounds/porta, alcançabilidade/folgas/rotas/spawns/LOS, preservaçãoRunRoot/Main/Combate/arte/proceduralprovisório, fases/aceite/riscos/rollback. Defeitos concretos do PLANO com path/seção, não hipóteses externas ou exigir implementação/testes hoje. CondiçãoAGENTS: runtimeGodot/testes apenas seusuario pedirverificar/testar, não autoexecutarimplementação. Salto teórico configs640impulso/1600gravidade/260vel; medirfornecidos, margem ideal não garantiaruntime. Saída stdout STATUSdone|blocked|needs-input SUMMARY CHANGED_FILESnone TESTSnone RISKSachadospriorizados NEXT_STEP. Nenhum relatórioextra. 
+FILE: docs/specs/2026-10-16-sprites-paredes-plataformas/plano.md
+# Sprites dos inimigos, paredes laterais e plataformas
+
+**Estado:** plano documental congelado para revisão; ainda não aprovado para implementação.  
+**Branch preparada pelo agente principal:** corrigir-sprites-salas-plataformas, baseada em main (90b2e59).  
+**Escopo desta entrega:** diagnóstico estático e documentação. Nenhum arquivo de runtime, arte, importação ou teste foi alterado/executado.
+
+## Objetivo
+
+Atender ao relato do usuário de que os sprites dos inimigos estão invisíveis, faltam paredes nas salas e a distribuição das plataformas precisa melhorar. O plano cobre as duas salas de combate existentes, sem tratar seus layouts de demonstração como cânone do GDD. Para os sprites, primeiro localizar a causa observável antes de propor correção. Para as salas, tornar as laterais legíveis e coerentes com a colisão, e trocar a distribuição aleatória plataforma a plataforma dessas fixtures por um arranjo autoral alcançável e que preserve os pontos de combate.
+
+## Diagnóstico estático
+
+O usuário relatou os três problemas visuais/de layout. Na inspeção dos arquivos, não foi possível provar a causa da invisibilidade. TrainingTarget e RivetWorker têm AnimatedSprite2D visível por padrão, escala 2, animação idle configurada e material com o shader de flash; seus SpriteFrames referenciam atlases de 64×64 por pose (scenes/training_target.tscn:27–34, scenes/rivet_worker.tscn:44–52, resources/enemy/training_target_sprite_frames.tres:3–18, resources/enemy/rivet_worker_sprite_frames.tres:3–26). Os PNGs dos atlases contêm pixels não transparentes (assets/enemy/training_target/training_target-atlas.png e assets/enemy/rivet_worker/rivet_worker-atlas.png), mas isso não confirma carregamento/importação nem renderização em jogo. O shader compartilha a implementação com os dois inimigos (scripts/enemy/enemy_hit_flash.gdshader:1–16); comparação do estado atual com o snapshot Git anterior não mostrou alteração textual. Essa dependência comum merece ser isolada, mas não prova causa.
+
+As salas têm colliders laterais e teto, porém não têm faixas visuais laterais correspondentes. Em ambas, os colliders atuais são 32×648, centrados em x=-16 e x=1168, tangenciando os limites da viewport em x=0 e x=1152, portanto ficam fora do quadro visível (scenes/main.tscn:13–20,244–254, scenes/second_room.tscn:12–19,110–120; viewport project.godot:21–25). O piso começa em y=560. Esse arranjo explica visualmente a ausência de paredes sem implicar ausência de colisão. O teto também fica acima do quadro; o GDD não exige fechar visualmente a parte superior, então o plano não adiciona um teto aparente.
+
+As seis plataformas das fixtures herdam randomize_position=true e randomize_width=true. O gerador usa room_rect=Rect2(0,0,1280,720) embora a viewport seja 1152×648, sorteia cada plataforma com base em âncoras já colocadas e limita saltos por uma heurística (scripts/world/solid_platform.gd:32–62,81–179). Com room_seed=0, posição e largura mudam em cada instanciação (solid_platform.gd:5–7,100–108). O gerador não valida a rota completa, o spawn do jogador/inimigo, linha de tiro ou uma plataforma de suporte específica do alvo. Além disso, vertical_clearance=70 é menor que a cápsula de colisão do jogador, de 76 unidades (scenes/player.tscn:19–25), e bem menor que o corpo visual ampliado; sobreposição ou oclusão é uma hipótese geométrica a verificar, não causa já demonstrada.
+
+O nó serializado de TrainingTarget não é seu spawn final: por padrão ele escolhe aleatoriamente uma plataforma livre que comporte sua colisão e alinha a base ao topo, com o piso apenas como fallback (scripts/world/training_target.gd:27–29,329–375). Assim, editar somente as coordenadas gravadas em main.tscn ou second_room.tscn não fixa o posicionamento efetivo. O alvo também usa a camada World para linha de visão (training_target.gd:11,112); o RivetWorker usa a mesma máscara para consultas de mundo e projéteis (scripts/enemy/rivet_worker.gd:29,80–94).
+
+As configurações atuais do jogador indicam velocidade 260, gravidade 1600, impulso 640 e dash 720 por 0,14 s (resources/player_movement_config.tres:7–20). A altura balística ideal aproximada do salto é 128 unidades (640²/(2×1600)), antes de cortes de salto e colisões. As distâncias propostas abaixo ficam dentro da faixa nominal e não exigem dash; o teste de controle real ainda é obrigatório.
+
+## Decisão de proposta
+
+1. **Diagnosticar os sprites em ambos os inimigos** com a mesma sequência controlada da especificação. Corrigir apenas a primeira divergência demonstrada, preservar comportamento e assets existentes e repetir nos estados relevantes.
+2. **Trazer as paredes laterais para dentro do quadro sem duplicar colisores.** Reutilizar LeftWall e RightWall, tornando cada collider 64×648 e centrando-os em x=32 e x=1120. As regiões físicas passam a ser x=0..64 e x=1088..1152. Reutilizar peças laterais/preenchimento do atlas atual, escala 2× e filtro nearest, produzindo faixas visuais de 64 unidades alinhadas aos colliders. Não acrescentar colisores paralelos. Preservar o teto atual, sem impor parede visual superior.
+3. **Usar layout fixo autoral nas duas fixtures atuais**, desligando o sorteio de posição/largura dessas seis instâncias. O gerador geral continua disponível, mas qualquer futura sala gerada precisa de seed reproduzível e validação completa antes de uso. Isso evita que a fixture mude ao abrir a sala e respeita o estado provisório da geração procedural no GDD.
+4. **Ordenar a integração de layout**: paredes e retângulo técnico; superfícies/colliders; plataformas e rota alcançável; suporte definido do alvo; spawn do jogador/inimigo e patrulha; linha de tiro, porta, câmera/viewport e ricochetes. O alvo deve referenciar explicitamente uma plataforma de suporte válida em cada sala (PlatformC em main, UpperPlatform em second_room) ou uma allowlist autoral equivalente, em vez de sorteio por todas as plataformas. Recalcular o spawn final sobre esse suporte, sem depender da posição placeholder do nó.
+
+As posições de referência e os critérios geométricos detalhados estão em [spec.md](spec.md). São valores locais de validação para main.tscn e second_room.tscn, não leis globais de movimento ou desenho de fases.
+
+## Etapas futuras e dependências
+
+**Fase 1 — reproduzir e localizar a falha visual.** Somente se o usuário pedir explicitamente verificação/testes no Godot, comparar os dois inimigos na mesma sala e enquadramento. Pedido para implementar, isoladamente, não autoriza abrir/importar/executar o Godot. Seguir a ordem de isolamento na spec; registrar o primeiro estágio em que pixels deixam de aparecer. Só então escolher um ajuste localizado de cena/recurso/script/shader ou posicionamento.
+
+**Fase 2 — laterais visíveis e alinhadas.** Reutilizar os colliders das duas cenas, aplicar a faixa do atlas existente em camada atrás dos atores e ajustar apenas bounds/gerador de plataformas que dependam do retângulo anterior. A saída standalone de main.tscn continua utilizável como porta na parede. O modo gerenciado remove ExitDoor antes de carregar a sala; suas mesmas laterais permanecem (scripts/world/main.gd:63–73). A fixture second_room.tscn continua sem saída seguinte.
+
+**Fase 3 — layout fixo e suportes.** Aplicar as posições da spec com dimensões das cenas atuais, desativar somente a aleatoriedade das seis instâncias e fixar o suporte do TrainingTarget por sala. Manter plataformas, floor e pontos de spawn com as skins existentes. Não alterar HP, ritmo de combate, cadência de ataque, controles ou regras de progressão.
+
+**Fase 4 — validação de geração, se necessária depois.** Não é requisito para corrigir as fixtures atuais. Antes de reativar geração procedural, criar um validador que receba uma seed e valide o conjunto completo: limites da sala e dos corpos, rota de pulo sem dash obrigatório, plataformas de suporte, distância/área de patrulha, espaço de cabeça, linhas de tiro, câmera e saída. Tentativas inválidas devem ser rejeitadas com fallback determinístico, nunca deixar fixture parcialmente montada. Procedural continua pendente no GDD.
+
+## Arquivos previstos para uma implementação autorizada
+
+- scenes/main.tscn, scenes/second_room.tscn: colliders laterais, arte/skin e coordenadas/dimensões das plataformas; flags de aleatoriedade por instância.
+- scripts/world/solid_platform.gd: somente se a aplicação do retângulo e a validação exigirem ajuste; preservar geração geral até ser validada.
+- scripts/world/training_target.gd e cenas/recursos do TrainingTarget: selecionar e validar suporte autoral sem deixar alvo flutuando ou sem fallback diagnóstico.
+- assets/enemy/*/*-atlas.png, .import, resources/enemy/*_sprite_frames.tres, cenas/scripts dos inimigos e scripts/enemy/enemy_hit_flash.gdshader: somente os arquivos que a reprodução demonstrar serem a causa dos sprites invisíveis. Não redesenhar atlas como primeira resposta.
+- resources/environment/factory_tileset_v1.tres: referência de arte existente; não editar/regenerar o tileset para esta proposta.
+
+## Invariantes
+
+- Preservar CombatRoom, entrada/saída standalone, remoção da porta em salas gerenciadas e estado de vida/build do loop.
+- Preservar movimento, pulo, parry, bola, ricochete físico, retorno, área de dano, layers/masks de combate e tempos/estados dos inimigos; qualquer colisão nova de parede deve continuar refletindo os ricochetes previstos.
+- Preservar personagens cartoon, atlases e o tamanho/cadência das animações salvo ajuste mínimo provado no diagnóstico.
+- Desenhar paredes atrás de jogador, inimigos e bola; nenhuma peça visual nova pode encobrir sprites ou o HUD.
+- Manter second_room como fixture fixa e main como fixture repetida atual do RunRoot. Não canonizar floors, salas comuns, chefes ou geração procedural ainda placeholders.
+
+## Critérios de aceite
+
+- TrainingTarget e RivetWorker aparecem integralmente e sem cintilação em idle e nos estados/animações efetivamente usados; mudança de direção, hit/flash, disparo e ataque do alvo não escondem o corpo. A validação cobre ambos nas duas fixtures, com retorno/relato da primeira causa observada e ajuste aplicado.
+- As duas laterais são visíveis dentro de 0..1152, cobrem a altura visível, alinham faces internas dos colliders ao desenho e impedem atravessamento de jogador, inimigos e bola. Há ricochete coerente e VFX no impacto. O topo permanece sem parede visual, mas continua fisicamente bloqueado pelo collider de teto existente.
+- Todas as plataformas ficam dentro do retângulo útil, não cobrem spawns ou sprites, mantêm gaps/saltos atravessáveis sem dash obrigatório e nenhuma rota primária se fecha. Os alvos surgem apoiados apenas nos suportes declarados. Worker e patrulha permanecem no piso e seus projéteis podem encontrar linha de tiro pelo menos em uma janela de combate por sala.
+- A porta standalone segue alcançável e funcional junto à parede lateral; a sala gerenciada não ganha uma porta removida de volta. second_room mantém a ausência de saída seguinte.
+- Sem alterações em regras de combate/progressão ou assets fora do escopo justificado.
+
+## Validação futura
+
+Em uma implementação futura, validar estaticamente dimensões, referências, layers/masks e limites. Abrir/importar o Godot, executar gameplay ou testes somente se o usuário pedir explicitamente verificação/testes; o pedido de implementação, por si só, não autoriza esses passos. O roteiro futuro cobrirá enquadramento; alvo em suporte; worker/patrulha; saltos; porta; colisão/ricochete e retorno da bola; visibilidade de atores e efeitos. Esta entrega não executou Godot, importação, testes ou QA.
+
+## Riscos e questões abertas
+
+- Causa da invisibilidade permanece sem prova estática; a hipótese de dependência compartilhada no shader deve ser testada sem atribuir culpa antes da observação.
+- A nova faixa de parede usa 64 unidades (duas vezes uma célula de 32 px); é uma escolha local para alinhar visual e collider, não exigência do GDD. Repetição e recorte final de 8 unidades na altura 648 precisam ser conferidos em nearest no jogo.
+- O ponto da porta está em x=1080, com painel visual de 48 px e sensor de 96 px (scenes/main.tscn:287–288, scenes/exit_door.tscn:5–28). A faixa direita x=1088..1152 deve tratá-la visualmente como abertura/portal e preservar o alcance. Se o painel ou o jogador colidir com a parede, resolver a moldura/abertura sem duplicar ou enfraquecer o limite físico fora do necessário.
+- A escolha aleatória atual do alvo pode ocultar o alvo atrás de plataformas ou criar linha de tiro ruim; selecionar suporte fixo melhora reprodutibilidade, mas o LOS ainda precisa de teste em runtime.
+- O worker patrulha x=420..920 em main e x=760..1040 em second_room (scenes/main.tscn:299–315, scenes/second_room.tscn:170–190). Confirmar que as novas plataformas não bloqueiam a única linha de tiro nem a circulação.
+- main.tscn mantém overrides serializados factory_skin_enabled = null e factory_surface_style = null nas plataformas (main.tscn:256–285); isso não demonstra falha, mas a revisão da visibilidade de skin precisa confirmar o valor efetivo no editor.
+- Para arte nova, se peças atuais não servirem após composição, seguir o procedimento aprovado ImageGen como referência, ajustes/reprodução no Aseprite e revisão antes da integração; primeiro esgotar o tileset disponível.
+
+## Rollback
+
+Aplicação futura deve manter snapshot dos arquivos de runtime tocados antes de alterar. Reverter apenas o conjunto desta implementação caso aceite falhe; preservar todo estado alheio e manter documentadas as evidências da causa. Nenhum rollback de runtime foi necessário nesta etapa documental.
+FILE: docs/specs/2026-10-16-sprites-paredes-plataformas/spec.md
+# Especificação: sprites, paredes e distribuição de plataformas
+
+**Natureza:** proposta concreta, provisória e limitada às fixtures atuais. Não altera GDD nem autoriza implementação runtime.
+
+## Fatos e pendências
+
+### Confirmado estaticamente
+
+- Viewport: 1152×648 e canvas stretch (project.godot:21–25). Piso das duas cenas: 1152×88 centrado em (576,604), logo topo y=560 (scenes/main.tscn:256–258, scenes/second_room.tscn:122–124).
+- Colliders laterais atuais: shape 32×648 nos centros x=-16 e x=1168; faces interiores estão exatamente nos limites visíveis e toda a largura fica fora da viewport. Teto 1152×32 centrado em y=-16 (main.tscn:13–20,244–254, second_room.tscn:12–19,110–120).
+- Atlases dos inimigos têm SpriteFrames de regiões 64×64 e UID/path correspondente; as cenas configuram sprites em escala 2 e idle automático. O worker tem offset visual y=-48; os dois sprites usam o shader de flash compartilhado (scenes/training_target.tscn:11–34, scenes/rivet_worker.tscn:11–52, resources/enemy/training_target_sprite_frames.tres:3–18, resources/enemy/rivet_worker_sprite_frames.tres:3–26).
+- TrainingTarget escolhe uma plataforma em runtime após a criação dos nós; sua posição gravada é placeholder, não ponto final (scripts/world/training_target.gd:329–375). O alvo e o worker fazem consulta de linha de tiro contra layer1; o worker também usa a mesma máscara para projétil (training_target.gd:11,112, scripts/enemy/rivet_worker.gd:29,80–94).
+- Configuração do player: move 260, gravity 1600, jump velocity 640, dash speed 720 por 0,14 s (resources/player_movement_config.tres:7–20). Estimativa física de salto ideal: 128 unidades na vertical e duração de subida+descida até mesmo nível de 0,8 s. À velocidade máxima constante, a distância horizontal teórica em voo no mesmo nível é 208 unidades; aceleração, input, corte e colisões reduzem o alcance jogável.
+- Layout atual é mutável por aleatoriedade aplicada plataforma a plataforma e condicionada às âncoras já posicionadas; default room_rect é 1280×720 e o viewport é 1152×648. O gerador valida cada plataforma contra âncoras já posicionadas, não a cadeia global completa, spawns, LOS ou suporte autoral (scripts/world/solid_platform.gd:32–62,81–179).
+
+### Não confirmado
+
+- Ainda não há causa observada para os sprites invisíveis. Não se conclui que atlas, regiões, UID, shader, modulação, escala, animação, z-index, camada ou posicionamento estejam errados.
+- Não se sabe se a parede ausente é percebida por recorte visual, expectativa de design ou outro estado de cena. A inspeção estática mostra colisão lateral sem faixa visual dentro da viewport.
+- O GDD não define sala superiormente fechada, layout final de plataformas ou geração procedural final. main e second_room são fixtures de demonstração (../GDD_Dieselpunk_Noir/04-combate-e-builds.md:37–43,65).
+
+## A. Isolamento reprodutível dos sprites
+
+Reproduzir separadamente TrainingTarget e RivetWorker, primeiro no estado idle e depois nas poses/estados acionados no combate. Registrar o primeiro estágio que falha nesta ordem, inspecionando A e B lado a lado quando o passo for compartilhado:
+
+1. **PNG:** dimensões e bounding box de alfa; abrir atlas sem conversão e conferir pixels nos frames realmente usados.
+2. **Regiões:** confirmar UID resolvido, textura de cada AtlasTexture, coordenadas e tamanho da região de todas as poses; verificar que frame idle contém os pixels esperados.
+3. **Animação:** confirmar SpriteFrames carregado, nome do clip, seleção do frame/idle, autoplay, chamadas posteriores a play, e que o frame selecionado não é vazio.
+4. **CanvasItem:** observar visible, modulate, self_modulate, scale, z_index, show_behind_parent, canvas/layer e bounds reais do sprite, inclusive o offset do worker. Conferir transform/global position do pai e spawn final do alvo.
+5. **Material:** bypassar o material/shader localmente em ambiente de diagnóstico; comparar render sem alterar o recurso compartilhado global. Se isso recuperar a imagem, isolar o parâmetro/código do shader antes de propor correção.
+6. **Oclusão/posicionamento:** conferir ordem de desenho das paredes, plataformas e atores; posição em relação à viewport/câmera; clipping e sobreposição com cenário; repetir em cada fixture e com plataformas finais.
+
+Corrigir apenas o primeiro estágio que demonstrar divergência. O shader atual guarda COLOR em vertex e combina textura/fator de modulação no fragment (scripts/enemy/enemy_hit_flash.gdshader:1–16); ele é fator compartilhado a investigar, não culpado presumido. Não redesenhar sprites nem substituir arte enquanto o fluxo de render não for localizado.
+
+## B. Geometria e arte das paredes laterais
+
+### Proposta de coordenadas
+
+O retângulo visível da viewport é [0,1152] × [0,648]. Em ambas as salas, substituir as transformações dos nós LeftWall/RightWall (sem criar outros corpos):
+
+| Parede | Centro | Shape | Faixa física e visual | Face interna |
+|---|---:|---:|---:|---:|
+| Esquerda | (32, 324) | 64×648 | x=0..64, y=0..648 | x=64 |
+| Direita | (1120, 324) | 64×648 | x=1088..1152, y=0..648 | x=1088 |
+
+Colocar preenchimento/laterais do atlas de fábrica existente alinhado à mesma faixa; célula fonte 32×32 px em escala 2× representa 64 unidades (docs/specs/2026-10-14-tileset-fases/spec.md:7–15). Repetir verticalmente e ajustar o último recorte para cobrir 648 unidades (10 células de 64 + 8 unidades). Priorizar a borda de fábrica já desenhada; não criar nova textura para esta proposta. Renderizar atrás das plataformas, inimigos, jogador e bola. O skin não adiciona colisão.
+
+### Limites espaciais distintos
+
+- **Retângulo técnico da sala para geração futura:** Rect2(64, 0, 1024, 648), área entre as faces internas. Se SolidPlatform._is_valid usar esse rect, aplicar wall_margin às dimensões completas e não deixar uma plataforma invadir a faixa de parede.
+- **Centro seguro do player (cápsula atual):** com raio horizontal 14 e faces em 64/1088, centro entre x=78 e x=1074. É limite de corpo, não retângulo de geração das plataformas. A cápsula atual tem raio 14 e altura 76 (scenes/player.tscn:19–25); sprites/colisores maiores exigem bounds próprios.
+- **Spawns:** manter os spawns atuais x=160 na main e x=128 em second_room dentro do espaço seguro. Manter worker/patrulha atual e verificar bounds do alvo após posicionamento final.
+- **Teto:** não adicionar uma faixa visual ou collider novo. Manter o collider de teto atual. O topo continua sem parede visual, mas permanece fisicamente bloqueado; não afirmar que o nível precisa de teto visual fechado.
+
+### Porta
+
+ExitDoor está em (1080,522); sensor 96×108, máscara Player; o painel tem 48 unidades de largura (scenes/main.tscn:287–288, scenes/exit_door.tscn:5–28). A parede visual deve formar moldura/portal nesse trecho, sem desenhar opaco por cima do portal. A geometria física lateral continua sólida acima/abaixo e preserva a face limite do quarto. Verificar o sensor com o jogador junto à face x=1088; mover porta ou abrir collider somente se teste revelar bloqueio, preservando limite lateral sem duplicar collider. No modo gerenciado, Main.configure_run_managed remove a saída antes de entrar na árvore (scripts/world/main.gd:63–73); manter as mesmas paredes sem porta.
+
+## C. Layout autoral para fixtures existentes
+
+Usar dimensões e plataformas já existentes. Desligar randomize_position e randomize_width nas seis instâncias. Preservar espessura 24 e manter o piso. A tabela mostra centro, tamanho e topo (Y diminui para cima):
+
+| Sala/plataforma | Centro proposto | Tamanho | Topo | Relação de salto nominal |
+|---|---:|---:|---:|---|
+| main / Floor | (576,604) | 1152×88 | 560 | início |
+| main / PlatformA | (290,480) | 220×24 | 468 | sobe 92; spawn player x=160, vão horizontal até a borda 20 |
+| main / PlatformB | (615,468) | 190×24 | 456 | sobe 12; vão entre bordas 120 |
+| main / PlatformC | (915,452) | 190×24 | 440 | sobe 16; vão entre bordas 110; suporte autoral do alvo |
+| second_room / Floor | (576,604) | 1152×88 | 560 | início |
+| second_room / WestPlatform | (340,480) | 240×24 | 468 | sobe 92; spawn player x=128, vão horizontal até a borda 92 |
+| second_room / UpperPlatform | (615,385) | 190×24 | 373 | sobe 95; vão entre bordas 60; suporte autoral do alvo |
+| second_room / EastPlatform | (900,452) | 170×24 | 440 | sobe 67 no retorno para Upper; gap de aresta 105; queda de 67 no trecho Upper→East |
+
+Gaps de aresta são calculados entre os limites horizontais das plataformas, não centros. Para o retorno mais exigente, East→Upper sobe 67 unidades. Com jump_velocity=640 e gravity=1600, a raiz descendente para essa altura é aproximadamente 0,676 s; a 260 unidades/s constantes isso daria 176 unidades contra gap de 105, cerca de 71 unidades de margem ideal. Esse teto teórico supõe velocidade horizontal máxima imediata; aceleração e colisões reduzem a margem, portanto não se afirma sucesso em jogo. Validar ida e retorno pelas rotas principais, controle, coyote time, corte do pulo e colisões; dash não deve ser obrigatório.
+
+### Passagens no piso e obstáculos contornáveis
+
+O espaço vertical entre o piso (y=560) e a face inferior de cada plataforma determina se há passagem por baixo; não inferir isso apenas pelo gap de salto. O collider do player mede 76 unidades de altura (scenes/player.tscn:19–25).
+
+| Sala/plataforma | Face inferior | Folga até piso | Uso previsto no piso |
+|---|---:|---:|---|
+| main / PlatformA | y=492 | 68 | Obstáculo; não cabe a cápsula do player. A rota sobe para PlatformA. |
+| main / PlatformB | y=480 | 80 | Não contar como passagem: restam só 4 unidades sobre a cápsula, sem margem de controle/corpo visual. Contornar pela rota sobre plataformas. |
+| main / PlatformC | y=464 | 96 | Passagem nominal; cerca de 8 unidades além de corpo visual do herói estimado em 88, valor a confirmar. O GDD já prevê o worker de 64 unidades sob C (04-combate-e-builds.md:47). |
+| second_room / WestPlatform | y=492 | 68 | Obstáculo; não cabe a cápsula do player. A rota sobe para WestPlatform. |
+| second_room / UpperPlatform | y=397 | 163 | Passagem ampla. |
+| second_room / EastPlatform | y=464 | 96 | Passagem nominal, sujeita à confirmação visual do herói. |
+
+Assim, a rota primária não depende de atravessar sob A, B ou West: o jogador sobe para A/West e segue pela rota de plataformas. As faixas sob C, Upper e East permanecem passagens. A validação deve checar circulação dos corpos e legibilidade sem transformar cada corredor sob plataforma baixa em rota obrigatória.
+
+### Suportes e spawns
+
+- Atribuir suporte de TrainingTarget explicitamente por sala: PlatformC em main e UpperPlatform em second_room. Validar que o caminho aponta para SolidPlatform, é suficientemente largo para a colisão do alvo com margens e permanece válido após montagem; emitir aviso claro e fallback seguro se inválido. Não escolher posição aleatória dentre toda a lista.
+- Calcular posição real do alvo depois de conhecer colisão e plataforma, usando topo e bounds da colisão. Não usar position da instância como evidência do ponto em jogo. Checar sprite (corpo visual 128 de altura nominal na escala 2), colisão, câmera e linha de tiro após essa posição.
+- Preservar PlayerSpawnMarker/player em x=160 e x=128; manter RivetWorker no piso em x=650 e x=900, respectivamente, com patrulhas existentes x=420..920 e x=760..1040. Checar que a patrulha cabe no piso e que as laterais não mudam sua extensão útil.
+- Nenhum spawn pode ficar dentro da parede, fora da tela, sob uma plataforma que o esconda ou sem superfície de apoio. O alvo e o worker precisam ter ao menos uma linha de tiro útil no fluxo de combate. Plataformas podem bloquear LOS como cobertura, mas não devem anular toda oportunidade de ataque.
+
+## D. Geração aleatória futura
+
+As fixtures presentes serão autorais e determinísticas. Se geração geral voltar a ser usada, manter seed definida antes de instanciar a sala e validar todas as plataformas após geração. A validação deve rejeitar layouts desconexos ou fora do retângulo técnico; incluir largura/altura real da cápsula do jogador, margem visual, espaço sob/ao redor das plataformas, caminho alcançável de ida e retorno, spawns e suportes de inimigos, patrol area, LOS, porta, câmera e ricochetes. Um grafo de transições deve considerar subida, descida e vão de borda com os valores atuais do MovementConfig, sem contar dash como requisito. Rejeitar bloqueios visuais que cubram sprites/spawns e respeitar mínimo de uma linha de tiro ao jogador para cada inimigo. Não definir quantidade/variação final de salas, progressão procedural ou encontro de chefe.
+
+## Critérios de verificação
+
+1. Inspeção da árvore e do render: ambos os inimigos, animações, frames, alfa, material, modulação, transforms, z e clipping em cada sala.
+2. Inspeção física: faces internas nas coordenadas previstas, player/corpos permanecem entre x=64 e x=1088 com seus bounds, bola bate e ricocheteia na parede e retorna/parry continua intacto.
+3. Jogabilidade: saltos Floor→A→B→C e Floor→West→Upper→East com o pulo normal; checar rota reversa/retorno, espaços de cabeça, cobertura e LOS do worker/target.
+4. Integração: porta standalone próxima à parede, managed sem porta, segunda sala sem saída; câmera/viewport não corta a faixa visual.
+5. Repetibilidade: fixture mantém mesmo layout ao iniciar repetidamente; alvo sempre ocupa suporte declarado; RunRoot permanece no placeholder atual (run_root.tscn:4–9).
+
+Os critérios estáticos podem ser conferidos durante uma futura implementação autorizada. Abertura do Godot, importação, execução de gameplay e testes ficam pendentes até que o usuário peça explicitamente verificação/testes; o pedido de implementação sozinho não autoriza essas ações. Nenhuma validação runtime faz parte deste plano documental.

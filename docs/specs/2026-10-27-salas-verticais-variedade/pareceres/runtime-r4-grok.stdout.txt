@@ -1,0 +1,52 @@
+STATUS: done
+SUMMARY: R4 é delta local e semanticamente nulo: duas colisões de `var` aninhada em Main, alinhadas à regra do parser GDScript (suite consulta `get_local`, que sobe `parent_block`). Os dois pontos em aberto do Muse R3 fecham com o pacote canônico + `prepare_authored_layout`. Sem P1/P2 restantes neste incremento.
+CHANGED_FILES: none
+TESTS: none
+
+## Veredito
+
+O contexto canônico e o caller completo **fecham as duas pendências do Muse R3**. Não restam P1/P2 concretos no delta R4. Não reabro busca de rotas, combinações RIGHT/DOWN/LEFT/UP, nem redesenho.
+
+Revisão estática sobre o pacote informado. Parser/Godot/runtime não foram executados. Opus Cursor e Antigravity indisponíveis por quota; isso não conta como aprovação. Grok R1/R2/R3 vazios; esta é a primeira passagem Grok sobre o runtime desta frente.
+
+## Pendências Muse R3 — fechadas
+
+**1. Testemunha de pouso / retângulos**
+
+Os intervalos `[846,962]` e `[874,934]` já são a faixa segura com inset 22. A comparação do simulador é `landing_x >= target.position.x + 22` e `<= target.end.x - 22`. Aplicar 22 de novo sobre esses intervalos seria o erro: no `roof_five` o pouso interpolado ~924 passaria em `[874,934]` e falharia no falso `[896,912]`.
+
+Geometria canônica (`position = (center, top+8)`, `rect = Rect2(position - size/2, size)`):
+
+- `roof_four` dest = `Rect2(824, 160, 160, 16)` → bounds `824..984`, safe `846..962`. Source `Rect2(608, 256, 160, 16)`. `required_rise=96` ∈ `[0,128]`. Launch `744` ∈ `[622,754]` (`launch_max-8` snap 8). `vx=260` combina com `approach_axis=+1`. Runway `21.125` cabe. Integração discreta da fonte (frame 0 grava `vy=-640` sem gravidade; depois gravidade-antes-de-mover; `dt=1/60`) cruza `y=160` na descida por volta do frame 37→38, `landing_x≈906..908` ∈ `[846,962]`. Na subida o corpo `28×76` não intersecta o dest (x ainda ~796+14=810, dest começa em 824).
+- `roof_five` dest = `Rect2(852, 160, 104, 16)` → bounds `852..956`, safe `874..934`. Source `Rect2(708, 232, 104, 16)`. `required_rise=72`. Launch `752` ∈ `[722,798]`. `vx=100` → `260` em 6 frames. Cruza `y=160` na descida ~frame 41→42; lerp de x dá **~924**, dentro de `[874,934]` (folha 10 px à direita).
+
+Constantes usadas só como relações cinemáticas sobre a fonte: jump 640, gravity 1600, speed 260, acc 1600, maxfall 900, corpo 76, raio 14, centro-root −38. Demais famílias estão em `_canonical_managed_entries`; não exijo todos os pares.
+
+**2. Caller de `valid=false` / bypass**
+
+`prepare_authored_layout` começa com `_authored_layout_valid = false`. Recusa `generation.valid=false` e `fallback_generation.valid=false` **antes** de escrever `platform.size` / `platform.position` do fallback. Candidato inválido na rota física limpa `_prepared_platform_rects`, gera fallback; se o fallback for válido, aplica geometria e **revalida** `_validate_managed_generated_route`. Só no fim, depois de boundaries, obstáculos, spawns/patrol e `_validate_authored_target`, promove `_authored_layout_valid = true`. Não há bypass de invalid.
+
+## Delta R4
+
+Duas colisões pai/filho, sem outra mudança R3→R4. Pelas referências do parser (leitura, não execução): `var` aninhada com o mesmo nome de um local no `parent_block` é erro de parse.
+
+1. `prepare_authored_layout`: o `fallback_index` do candidato já existe no suite da função. O bloco de fallback passou a `canonical_fallback_index` na declaração, no teste de faixa e em `target.fallback_support_path`. Continua lendo `fallback_generation.get("fallback_index", -1)`. Semântica igual; o índice externo do candidato não é reutilizado nesse trecho.
+2. `_validate_authored_target`: o `player_body` externo já veio de `get_node_or_null("Player")` e já falhou se null ou `collision_mask != 9`. A redeclaração interna foi removida; o AABB/spawn overlap reutiliza o mesmo nó. O `if player_body != null` interno fica morto, inócuo.
+
+Loops irmãos com `var platform_name` etc. não entram na cadeia `parent_block` um do outro; não são o mesmo defeito e não reabro.
+
+## P1 / P2 restantes
+
+Nenhum P1. Nenhum P2 concreto neste pacote.
+
+Não classifico como defeito: busca limitada de rota, um horizontal por andar e no máximo um vertical por coluna, seed local, fases lineares UP/DOWN, canônico revalidado.
+
+## RISKS
+
+- Conclusão de parse é leitura da regra oficial + delta, não compilação GDScript executada.
+- Testemunhas de pouso são cinemática discreta sobre a fonte, não tick do Godot.
+- Opus/AGY ausentes; demais scripts declarados idênticos ao snapshot R3 e não reabertos aqui.
+
+## NEXT_STEP
+
+Aceitar R4 como incremento final de runtime desta frente. Sem correção adicional neste delta.

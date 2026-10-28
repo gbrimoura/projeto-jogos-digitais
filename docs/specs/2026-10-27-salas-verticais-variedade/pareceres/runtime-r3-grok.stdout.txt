@@ -1,0 +1,63 @@
+STATUS: done  
+SUMMARY: R3, no texto estável fornecido, fecha os 4 pontos R2 nos 3 scripts: nomes UP/DOWN passam a `left_edge`/`right_edge`/`right_width`; `force_canonical` usa o mesmo `_managed_entries_are_safe`; centros são `snappedf(..., 8)` antes do `Rect2`; aterrissagem jump/drop interpola o pé no cruzamento de y e exige inset 22. Testemunhas analíticas roof4/roof5 caem dentro das janelas. Sem P1 concreto remanescente no delta. P2: canônico não mostrado; snap independente pode estourar gap e cair no fallback; hatch não está no validador geométrico.  
+CHANGED_FILES: none  
+TESTS: none  
+
+## Âmbito
+
+Pacote R3 = delta exato + métodos colados. R2 não aprova R3. Sem engine, parser, linter, Godot, agentes ou arquivos. Física do player só lida (640/1600/260, acc 1600, fall 900, cápsula 76, raio 14). Topologia LINEAR inalterada; âncoras 248/904; slots UP/DOWN 256.
+
+## Os 4 pontos R2
+
+**P1 nomes UP/DOWN — resolvido.**  
+`configure` define `left_edge`/`right_edge` a partir de `_exit_offset ± 128`. UP/DOWN não leem `ceiling_left_edge`/`ceiling_right_edge`. Geometria coerente: faixa esquerda `[0, left_edge]`, direita `[right_edge, 1152]`, gate centrado no offset com largura 256. Âncoras 248 → 120..376; 904 → 776..1032. Ambos `left_edge > 0` e `right_edge < 1152`.
+
+**P2 `force_canonical` sem guarda — resolvido no caminho gerador.**  
+Early-return canônico agora é o mesmo predicado do loop de 12 e do fallback final. Falha → `_invalid_result`, não layout solto.
+
+**P2 centros 4 mod 8 — resolvido em `_build_managed_entries`.**  
+`centers[index] = snappedf(centers[index], 8.0)` antes de `position`/`rect`. O `fposmod(center.x, 8)` do validador deixa de reprovar metade-largura (ex.: 104/2 = 52). Larguras continuam 8k (`104+8n` / `144+8n`); o snap não congela variação de largura. Bordas `x` podem continuar 4 mod 8; o contrato checado é centro e largura, não `position.x`.
+
+**P2 overlap 0.5 / root 13.5 fora — resolvido.**  
+Critério antigo (`body` vs plataforma ±0.5) permitia pé até ~13.5 px fora. R3: fração no cruzamento `target.position.y`, `landing_x = lerp` dos pés, janela `[x+22, end-22]`. Jump usa `root→next` com `vy > 0`; drop usa `previous→root` com `not still_supported`. 22 > 14: pé 8 px para dentro, cápsula inteira sobre a faixa se a plataforma tiver ≥104.
+
+## Testemunhas (só cinemática do validador, dt=1/60)
+
+Integração igual ao código: frame 0 descarta gravidade e usa `vy = -640`; depois `vy += 1600/60` e move. `x` com `move_toward` no mesmo frame.
+
+**roof4, topo 256→160, launch 744, vx 260, dest centro 904 largura 160 (janela 846..962).**  
+Subida cruza 160 cedo; descida entre y≈157.33 e ≈163.56 (frames 36→37). `x` a 260 constante: ≈904.33→908.67; `landing_x` interpolado ≈906 (o “908” contínuo/arredondado cai na mesma janela). Hatch: último topo 160, ápice ≈32; teste de teto (`body.y < 64` e `end.y > -32`) pede corpo em `[portal-128, portal+128]` = `[776, 1032]` ⇒ pé em `[790, 1018]`. Launch no último 160@904 é `[838, 970]`, subset. Uma rota até o hatch existe.
+
+**roof5, topo 232→160, launch 752, vx 100, dest 104@904 (janela 874..934).**  
+`vx` sobe 100→260 em 6 frames. Descida cruza 160 entre y≈159.11 e ≈166.67; `landing_x ≈ 923.5` (~924), dentro de 874..934.
+
+Não exigem borda “segura 260”: roof5 testemunha vx inicial 100. Uma rota basta.
+
+## O que o delta não regressa
+
+P1 R1 (seed estático, grid 104, linha 1040 vs gate 1120, early false, target ignore): fora deste diff; tratados como R2. Sem ciclo novo, sem RIGHT/DOWN/LEFT/UP inventados, player intocado.
+
+## P1 remanescentes
+
+Nenhum P1 concreto no texto R3. `configure` UP/DOWN fecha referências locais.
+
+## P2 concretos remanescentes
+
+1. **`_canonical_managed_entries` ausente.** Snap e guarda valem só para `_build`. Canônicos R2 iguais, sem snap. Se algum centro/gap canônico falhar `_managed_entries_are_safe`, `force_canonical` e o fallback passam a `_invalid_result` (guarda correta; risco de sala sem layout). Dados insuficientes para provar que os 5 canônicos passam.
+
+2. **Snap por plataforma, depois gap.** Dois centros no *4 podem mover 4 px cada (`snappedf` no meio-termo positivo vai para o múltiplo de 8 de cima). Gap roof 40..80 / demais 40..96 pode sair da faixa e forçar fallback. Não publica geometria ilegal; aumenta canônico/`invalid`.
+
+3. **Chamadores não vieram.** Não dá para ver se `force_canonical == true` trata `valid: false`, nem se jump/drop entram no aceite da sala. `_managed_entries_are_safe` não simula salto/queda/hatch: só conta, gap, rise, família e centro do último roof = âncora. As testemunhas hatch são físicas, não um assert no validador colado.
+
+4. **`_add_shape`, `MIN_FALLBACK_WIDTH`, `tops_are_not_*`, abertura real do `Floor` no DOWN.** Fora do delta; DOWN R3 só renomeia. Se o `Floor` cheio não for desabilitado noutro método, o buraco DOWN já era R2, não nasce aqui.
+
+5. **Jump `next.y == root.y` no cruzamento.** 0/0 → comparação falsa; não aceita pouso espúrio. Caso degenerado com `vy > 0`.
+
+6. **Validador Euler ≠ `move_and_slide`.** Pré-existente. Testemunhas validam o predicado R3, não o CharacterBody2D.
+
+## Insuficiente (não inventar)
+
+Corpo de `_canonical_managed_entries`, callers em `main.gd`/`run_controller.gd`, `_add_shape`/`_set_visual_open`, constantes `MIN_*`/`MAX_*`, e se a travessia hatch é um nó do grafo. Sem isso não se afirma “toda seed gera” nem “o grafo exige hatch”.
+
+RISKS: canônico off-grid ou gap pós-snap → invalid/fallback; inset 22 + snap → mais fallback que R2; hatch só testemunhado, não no safe colado; DOWN/`Floor` fora do pacote.  
+NEXT_STEP: se houver incremento, colar `_canonical_managed_entries` e o caller da reachability; conferir os 5 canônicos no mesmo `_managed_entries_are_safe`. Sem implementação nesta frente. Opus/AGY não aprovam. Este texto é só a revisão R3 pedida.

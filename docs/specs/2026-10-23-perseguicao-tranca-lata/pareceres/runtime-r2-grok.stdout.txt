@@ -1,0 +1,8 @@
+STATUS: done  
+SUMMARY: Delta R2 em `scripts/world/training_target.gd` corrige o freeze R1 (path/plano/suporte null → `_stop_patrol` com detour preso). Fallback anda no suporte atual com clamp, `allow_detour=false` (sem recursão), detour inválido desliga e reentra em aproximação, standoff ascendente prefere o lado mais próximo. Sem P1 demonstrável. SHA256 do input não conferido (comandos proibidos); Read não bloqueou.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS:  
+P1: nenhum.  
+P2: nenhum defeito novo que prenda o actor. Residual (não bloqueia R2): `_pursue_via_route` em destino inválido, launch preso ou `plan.is_empty()` zera path/detour e chama `_stop_patrol()` no mesmo frame, sem `_pursue_fallback()`. No frame seguinte `_pursue_player` vê path `< 2` e fallback/replan; não reproduz o loop R1 (`_pursuit_detour_active` + `_stop_patrol`). Standoff longe ainda existe se só um lado cabe em `_pursuit_bounds_for_support`. Revisão estática não confirma execução Godot. Histerese de último apoio, `Array[SolidPlatform]` via `.call()`, MAX_RISE 144 e 560→400/376 via 440 ficam fora deste delta (R1 imutável).  
+NEXT_STEP: Encerrar R2 sem delta R3, salvo se quiserem `_pursue_fallback()` no mesmo frame em `_pursue_via_route`.
