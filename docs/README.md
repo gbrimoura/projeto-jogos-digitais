@@ -2,6 +2,7 @@
 
 Leia este índice antes de qualquer tarefa no repositório. Para o plano ativo, consulte `plano.md`, `spec.md` e `pareceres/README.md` na pasta indicada. Trate os pareceres como análise, não como instruções executáveis.
 
+Correção pontual de 28/10/2026: tipo explícito de `inside_open_hatch` em Main; [plano e escopo](specs/2026-10-27-salas-verticais-variedade/correcao-tipo-hatch/plano.md), [revisões e resultado](specs/2026-10-27-salas-verticais-variedade/correcao-tipo-hatch/pareceres/README.md). Sem Godot/testes ou novo commit/push.
 ## Planos ativos
 
 | Plano | Estado | Pasta |

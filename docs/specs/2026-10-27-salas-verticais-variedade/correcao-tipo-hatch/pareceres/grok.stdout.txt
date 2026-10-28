@@ -1,0 +1,13 @@
+STATUS: done
+SUMMARY: A anotação `var inside_open_hatch: bool =` remove a inferência via `:=` que o Godot 4.7 recusa quando `Dictionary.get` entra no RHS. A expressão, o `and` e o curto-circuito permanecem idênticos. O delta não introduz P1/P2 concreto. Isto não comprova parse/carga de `Main` nem ausência de outros bugs.
+
+FINDINGS: sem P1/P2 no delta.
+
+- Inferência: o erro citado é de `:=` (tipo da variável sai do RHS). Com tipo explícito, o analisador não precisa inferir `inside_open_hatch`. Os operandos já são predicados booleanos (`top_open: bool`, `==` com `Vector2i`, `>=`/`<=` em `float`); a anotação casa com o valor lógico da expressão.
+- Semântica: só muda a declaração. Mesma ordem, mesmos `and`, mesmo uso em `if not inside_open_hatch`. Se `top_open` é falso, `get("exit_dir")` e as comparações de `body`/`portal_x` não são avaliados, como antes.
+- Sintoma `has_method("configure_run_managed")`: coerente com script de `Main` que não parseia; fora do delta (nenhuma cena/controlador alterado). A correção endereça a causa declarada da falha de carga, sem provar recuperação em runtime.
+
+CHANGED_FILES: none
+TESTS: none (read-only)
+RISKS: Revisão estática não executa Godot 4.7; não prova que a atribuição `Variant`-envolvida → `bool` seja aceita sem aviso/erro residual de assignability, nem que `main.gd` fique livre de outros erros de parse, nem que `RunController` 95–97 passe a ver `configure_run_managed`.
+NEXT_STEP: Após aplicar o delta, validar no Godot 4.7 se o erro de inferência some e se `scenes/main.tscn` carrega; só então rechecar `has_method("configure_run_managed")`.

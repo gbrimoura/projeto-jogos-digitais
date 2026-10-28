@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: `var inside_open_hatch: bool =` resolve a inferência descrita sem alterar semântica; delta sem P1/P2.
+FINDINGS: Sem P1/P2 no delta. Linha alterada apenas adiciona tipo explícito `bool`, mantendo expressão, ordem e curto-circuito idênticos; RHS composto por `bool and (Variant==Vector2i) and (float>=float) and (float<=float)` avalia para `bool`, então a atribuição tipada é válida e dispensa inferência de `Variant` do `Dictionary.get`. Não toca cenas/controladores; é pré-requisito plausível para destravar `Main` e, por consequência, `RunController95-97`.
+CHANGED_FILES: none
+TESTS: none (read-only)
+RISKS: Isto não comprova execução ou ausência de outros bugs; falha residual de parse/carga em `Main` fora deste hunk não foi avaliada; coerção runtime Variant→bool pressupõe `exit_dir/exit_offset` nos tipos esperados.
+NEXT_STEP: Recarregar `scripts/world/main.gd` no Godot4.7 e repetir verificação de parse/carga de `Main` + `RunController95-97`.

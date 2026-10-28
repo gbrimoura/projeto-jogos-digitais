@@ -1,0 +1,12 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "011FB56D9ACB47974324A70B09660E0ACC9E11BE1310B0BC2A70EA1C8E4B042C",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-27-salas-verticais-variedade\\correcao-tipo-hatch\\pareceres\\input.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "845122E920FBBB8FEF3D5DC4A5488687CF233505604FB4A1B67C50FDEE4409FD",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-27-salas-verticais-variedade\\correcao-tipo-hatch\\historico\\main-final.gd"
+  }
+]
