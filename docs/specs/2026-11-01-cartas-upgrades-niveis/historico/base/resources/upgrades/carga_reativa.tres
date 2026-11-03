@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+upgrade_id = &"carga_reativa"
+title = "Carga Reativa"
+description = "O parry energiza sua bola para o próximo acerto."
+effect_summary = "+2 de dano"
+reactive_charge_enabled = true
+charged_damage_bonus = 2

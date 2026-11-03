@@ -1,0 +1,20 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/README.md
+✱ Glob "scripts/enemy/training_target*" 0 matches
+✱ Glob "scripts/enemy/containment*" 2 matches
+✱ Glob "scripts/world/training_target*" 2 matches
+✱ Glob "docs/specs/**/plano.md" 37 matches
+→ Read scripts/enemy/containment_attack_visual.gd
+→ Read scripts/world/training_target.gd
+→ Read docs/specs/2026-10-23-tranca-lata-salto/plano.md
+→ Read docs/specs/2026-10-23-tranca-lata-salto
+✱ Grep "motion_mode|collision_layer|collision_mask|FLOATING|GROUNDED|shape.*72|size.*72|96" in scenes · 76 matches
+✱ Grep "larg|gap|top.*44|floor.*560|SolidPlatform.*size|104\.\.|216" in scripts · 30 matches
+→ Read docs/specs/2026-10-23-tranca-lata-salto/spec.md
+→ Read docs/specs/2026-10-23-tranca-lata-salto/pareceres
+→ Read scripts/world/solid_platform.gd
+✱ Glob "resources/enemy/training_target*" 1 match
+✱ Grep "anim_name|\"idle\"|\"walk\"|\"windup\"|\"active\"|\"recovery\"|impact" in resources/enemy · 24 matches
+✱ Grep "prepared_authored|_bind_patrol|add_collision_exception|Floor" in scripts/world/main.gd · 28 matches

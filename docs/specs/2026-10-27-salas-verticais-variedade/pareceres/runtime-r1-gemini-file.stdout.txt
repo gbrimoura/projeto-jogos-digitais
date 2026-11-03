@@ -1,0 +1,31 @@
+STATUS: done
+SUMMARY: Leitura integral concluída de `runtime-r1-input.txt`. A arquitetura de salas lineares e navegação vertical está bem estruturada (topologia, recortes visuais, fechamento de gates e isolamento de ciclo de vida), mas foram identificados achados concretos de simulação de arcos (P1 de interrupção prematura de busca e P2 de cálculo de vetor a partir do centro do piso) e vazamento de estado estático (P2).
+
+CHANGED_FILES: none
+TESTS: none
+
+### Achados P1 / P2
+
+1. **P1 — Aborto prematuro na busca de trajetórias de pulo com colisão ou teto**
+   - **Arquivo / Função:** [`main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd#L483-L495) — `_managed_can_jump_between()` (linhas 487 e 491).
+   - **Motivo:** O laço de simulação de trajetória (`for frame in 120`) utiliza `return false` direto ao detectar colisão do corpo com obstáculo intermediário (`_positive_overlap_area`) ou violação do aperture do teto (`top_open and body.position.y < 64.0 and (body.position.x < portal_x - 128.0 or body.end.x > portal_x + 128.0)`).
+   - **Impacto:** O retorno encerra imediatamente a função inteira `_managed_can_jump_between()`, descartando sem avaliar todos os passos de decolagem (`launch_x_step`) e velocidades restantes. Em salas com saída superior (`roof_four` / `roof_five` com `exit_dir == Vector2i(0, -1)`), o primeiro passo de lançamento no penúltimo apoio (ex.: `launch_x = 632` com `speed = 0`) atinge o topo fora do portal e dispara `return false` no frame 20, antes de testar lançamentos à direita (ex.: `launch_x = 744`, `speed = 260`) que entram perfeitamente na abertura. A busca de alcançabilidade (`_managed_reachable_supports`) falha em alcançar o apoio final, fazendo `_validate_managed_generated_route()` reprovar a sala com `"apoio final da saída superior não é alcançável com o gate liberado"`, abortando a run.
+   - **Correção:** Em vez de `return false`, interromper apenas a simulação da trajetória atual com `break` (usando uma flag de controle booleana `var blocked := true; break`, exatamente como feito em `_managed_can_drop_between()` nas linhas 533–537), permitindo que os laços externos continuem procurando posições e velocidades válidas.
+
+2. **P2 — Referência do vetor horizontal `delta_x` atrelada ao centro do apoio de origem**
+   - **Arquivo / Função:** [`main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd#L452) — `_managed_can_jump_between()` (linhas 452, 463 e 470).
+   - **Motivo:** `delta_x` é calculado como `target.get_center().x - source.get_center().x`. Quando `source` é o `Floor` (centro `576.0`, largura `1152.0`), `delta_x` é sempre medido a partir de 576.
+   - **Impacto:** Para um alvo como a plataforma inicial em `256.0`, `delta_x` fica fixado em `-320.0`, filtrando apenas velocidades negativas (`speed <= 0`) e forçando aceleração para a esquerda (`axis = -1.0`). Pontos de decolagem no chão situados à esquerda da plataforma (`launch_x < 256.0`) são simulados correndo para a esquerda (afastando-se do alvo) em vez de acelerar para a direita.
+   - **Correção:** Calcular a direção em relação ao ponto de decolagem individual testado (`var delta_x := target.get_center().x - launch_x`), alinhando o comportamento ao que `_managed_can_drop_between()` faz na linha 509 (`target.get_center().x - root.x`).
+
+3. **P2 — Modificação desnecessária de variável estática global de classe**
+   - **Arquivo / Função:** [`main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd#L136) — `prepare_authored_layout()` (linha 136).
+   - **Motivo:** Execução de `SolidPlatform.room_seed = room_layout_seed`.
+   - **Impacto:** Apoios gerenciados têm `randomize_position = false` e `randomize_width = false`, de modo que `SolidPlatform._place_randomly()` não é executado. A alteração muta a variável estática de `SolidPlatform` globalmente e sem restauração no descarregamento, podendo vazar semente para cenas avulsas/standalone ou fixtures de teste.
+   - **Correção:** Remover a atribuição global `SolidPlatform.room_seed = room_layout_seed` do fluxo gerenciado, mantendo a aleatoriedade restrita aos geradores determinísticos com instâncias locais de `RandomNumberGenerator`.
+
+RISKS:
+- Caso o P1 não seja corrigido, andares com saídas verticais superiores (`UP`) continuarão sofrendo falsos-positivos na validação estática de rota, bloqueando a transição gerenciada.
+- Em `_managed_can_jump_between`, certificar que a substituição de `return false` por `break` preserve a condição de falha final ao término de todos os passos de busca (retornando `false` apenas na linha 495).
+
+NEXT_STEP: Aplicar as correções delimitadas nos métodos `_managed_can_jump_between()` e `prepare_authored_layout()` de [`scripts/world/main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd) antes de prosseguir com validações de engine ou integrações subsequentes.

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+upgrade_id = &"chassi_reforcado"
+title = "Chassi Reforçado"
+description = "Reforça a estrutura e recupera um ponto de integridade."
+effect_summary = "+1 HP máximo e atual"
+effect_topics = PackedStringArray("+1 HP máximo", "+1 HP ao adquirir")
+rank_cap = 95
+maximum_health_per_rank = 1
+health_recovered_per_rank = 1

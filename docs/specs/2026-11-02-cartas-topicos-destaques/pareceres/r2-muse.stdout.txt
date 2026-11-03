@@ -1,0 +1,8 @@
+Revisão somente-leitura delta R2 — conferindo os 2 fixes sem tocar no workspace.
+Fixes localizados — comparando R1 vs R2 nos dois trechos.
+STATUS: done
+SUMMARY: R2 fecha os 2 achados: `configure` falha explícita em `_wrap_topic` vazio (sem drop silencioso, inferência `Array[Dictionary]` estável) e `topic_colors` Lua usa `#` p/ prefixo UTF-8 (`"ATÉ "` 5 bytes), restaurando paridade com `begins_with` GDScript; demais lógica/arte/cenas inalterados.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Sem engine/testes por restrição; corpus atual não atingia overflow, mudança só afeta falha futura/cor `ATÉ`.
+NEXT_STEP: Manter congelado; aguardar revisores paralelos, sem pedido estético.

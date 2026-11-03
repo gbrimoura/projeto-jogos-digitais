@@ -1,0 +1,16 @@
+Revisão R1 — lendo fonte selada para parecer somente-leitura.
+Fonte parcial obtida — completando leitura para cobrir todos os scripts.
+Leitura parcial — buscando o restante das fontes e metadados.
+```stdout
+STATUS: needs-input
+SUMMARY: R1 read-only 23/10/2026 SHA F6403F89269DB3BEC4A941FF3C37409A4C8DE88850BEAE3AE931B40E32153734. Onda 175ms visual / dano 140ms ACTIVE / cauda 35ms RECOVERY, descida drop200/rise144/apex72/grav1400/body72x96/mask3/queries11/cooldown2.5, PREPARE160/POUSO180, rebite 32x16 pivot20,8 R6 preservados. Estático OK em separação visual/dano, retry único, revalidação PREPARE, casts com overlap origem real. 2xP1 + 3xP2 abaixo impedem done sem gameplay.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+P1-1 pursuit-hysteresis atrasa descida Floor: scripts/enemy/tranca_lata_pursuit.gd:2114-2120 choose_player_support retorna previous_support se válido quando player airborne, ignorando best_below/Floor 320px lookahead. Conflita com "priorizar caminho até Player em outro apoio/chão". Só troca após grounded+best_ground.
+P1-2 descida mínima pode falhar vazio: scripts/enemy/tranca_lata_jump.gd:1598-1600 MIN_SUPPORT_WIDTH104=72+32, 1698-1699+1713-1743 _source_clear_landing_xs filtra overlap origem e só aceita offsets 4/40/80/128 dentro [min,max]. Em destino mínimo, clears caem fora -> result vazio -> plan_jump_to {} . Retry training_target.gd:572-603 _try_alternate_descent_launch só tenta borda oposta uma vez, não expande offsets. Vira dead-end mesmo com can_reach_support true.
+P2-1 footprint 72x96 não verificável: training_target.gd:139 configure(_get_collision_rect), 1415-1423 fallback 32x32. Sem training_target.tscn no input, bounds/footprint/apex não confirmáveis.
+P2-2 pivot/core visual: scenes/hostile_rivet.tscn offset(-4,0) nearest1 + resources/enemy/cospe_rebite_projectile_texture.tres RGBA8 32x16 + assets/projectile/cospe_rebite/generate_cospe_rebite.lua ROWS/paleta13. Pivot20,8 e core~12x10 em torno R6 dependem de preview8x/contact aprovado pelo principal; estático não confirma centragem gameplay.
+P2-3 túnel/arrasto: tranca_lata_jump.gd:1888-1892 _exclusions +1852-1875 cast_motion<0.9999 e training_target.gd:801-874 _advance_airborne substep8px. Limiar grazing + landing_y-0.5 vs _try_bind_landing<=1.0px não confirmáveis sem runtime; queda200px pode roçar.
+NEXT_STEP: coordenador decidir se P1-1/P1-2 exigem ajuste (hysteresis airborne, fallback offsets Floor) ou aceite como recorte temporário, depois gameplay validar descida origem->Floor, timing onda/manual-weights sem dano extra e parry verde/roxo intactos.
+```

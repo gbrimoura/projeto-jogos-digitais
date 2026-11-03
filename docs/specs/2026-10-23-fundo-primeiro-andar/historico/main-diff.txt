@@ -1,0 +1,81 @@
+diff --git a/docs/specs/2026-10-23-fundo-primeiro-andar/historico/base/scenes/main.tscn b/scenes/main.tscn
+index dd6e052..fe35103 100644
+--- a/docs/specs/2026-10-23-fundo-primeiro-andar/historico/base/scenes/main.tscn
++++ b/scenes/main.tscn
+@@ -11,6 +11,7 @@
+ [ext_resource type="Texture2D" uid="uid://7opqxpeloevh" path="res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png" id="9_factory_atlas"]
+ [ext_resource type="Script" path="res://scripts/world/factory_wall_visual.gd" id="10_factory_wall_visual"]
+ [ext_resource type="Script" path="res://scripts/world/factory_ceiling_visual.gd" id="11_factory_ceiling_visual"]
++[ext_resource type="Script" path="res://scripts/world/factory_floor1_background.gd" id="12_floor1_background"]
+ 
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
+ size = Vector2(64, 648)
+@@ -82,10 +83,6 @@ opening_height = 128.0
+ script = ExtResource("11_factory_ceiling_visual")
+ atlas_texture = ExtResource("9_factory_atlas")
+ 
+-[node name="Background" type="Polygon2D" parent="SandboxVisual" unique_id=596273147]
+-color = Color(0.082, 0.067, 0.055, 1)
+-polygon = PackedVector2Array(0, 0, 1152, 0, 1152, 648, 0, 648)
+-
+ [node name="GridVertical0" type="Line2D" parent="SandboxVisual" unique_id=624794061]
+ visible = false
+ points = PackedVector2Array(0, 0, 0, 560)
+@@ -248,51 +245,12 @@ points = PackedVector2Array(0, 528, 1152, 528)
+ width = 1.0
+ default_color = Color(0.17, 0.22, 0.29, 0.35)
+ 
+-[node name="FactoryPanelUpper" type="Sprite2D" parent="SandboxVisual" unique_id=1543758630]
+-modulate = Color(0.56, 0.52, 0.45, 0.68)
+-texture_filter = 1
+-position = Vector2(704, 150)
+-scale = Vector2(2, 2)
+-texture = ExtResource("9_factory_atlas")
+-region_enabled = true
+-region_rect = Rect2(96, 0, 32, 32)
+-
+-[node name="FactoryPanelEast" type="Sprite2D" parent="SandboxVisual" unique_id=1054473756]
+-modulate = Color(0.56, 0.52, 0.45, 0.68)
+-texture_filter = 1
+-position = Vector2(1000, 280)
+-scale = Vector2(2, 2)
+-texture = ExtResource("9_factory_atlas")
+-region_enabled = true
+-region_rect = Rect2(96, 0, 32, 32)
+-
+-[node name="FactoryPipeVertical" type="Sprite2D" parent="SandboxVisual" unique_id=663887830]
+-modulate = Color(0.56, 0.52, 0.45, 0.68)
+-texture_filter = 1
+-position = Vector2(832, 130)
+-scale = Vector2(2, 2)
+-texture = ExtResource("9_factory_atlas")
+-region_enabled = true
+-region_rect = Rect2(96, 64, 32, 32)
+-
+-[node name="FactoryPipeCorner" type="Sprite2D" parent="SandboxVisual" unique_id=1693359314]
+-modulate = Color(0.56, 0.52, 0.45, 0.68)
+-texture_filter = 1
+-position = Vector2(832, 194)
+-scale = Vector2(2, 2)
+-texture = ExtResource("9_factory_atlas")
+-region_enabled = true
+-region_rect = Rect2(96, 96, 32, 32)
+-
+-[node name="FactoryPipeHorizontal" type="Sprite2D" parent="SandboxVisual" unique_id=1250197829]
+-modulate = Color(0.56, 0.52, 0.45, 0.68)
+-texture_filter = 1
+-position = Vector2(896, 194)
+-scale = Vector2(2, 2)
+-texture = ExtResource("9_factory_atlas")
+-region_enabled = true
+-region_rect = Rect2(96, 32, 32, 32)
+-
++[node name="FactoryFloorBackground" type="Sprite2D" parent="SandboxVisual"]
++script = ExtResource("12_floor1_background")
++fallback_base_variant = 0
++fallback_left_variant = 0
++fallback_right_variant = 0
++choose_from_room_seed = true
+ [node name="BallContainer" type="Node2D" parent="." unique_id=854280507 groups=["hostile_projectile_container"]]
+ z_index = 1
+ 

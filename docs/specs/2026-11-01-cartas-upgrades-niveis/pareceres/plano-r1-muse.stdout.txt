@@ -1,0 +1,15 @@
+STATUS: blocked
+SUMMARY: Plano prospectivo bem delimitado e fiel ao pedido/GDD-pendente, mas com 3 lacunas P1 que impedem autorizar escritor A antes de correção mínima.
+FINDINGS:
+P1-1 Tranca fora do escopo autorizado: texto exige escalar Tranca `recovery_duration` mas Fase A autoriza só `training_target.gd`+`rivet_worker.gd`. Correção mínima: incluir `scripts/enemy/tranca*.gd` exato SOMENTE `configure_level`/stats-base, ou declarar Tranca fora de A.
+P1-2 HP/Chassi sem base idempotente: `maximum_health` mutável + reaplicar/ entrar-sala/rollback pode empilhar cura/max. Correção mínima: guardar `base_max` no 1º `_ready`, derivar `max=clampi(base_max+rank_chassi,1,100)`, só aquisição faz `current=min(current+1,new_max)+emit`, reaplicação/rollback só fixa `max` sem curar e sem tocar `_invulnerability_remaining`; nunca usar `restore_health_for_room_transition` mid-combat.
+P1-3 Duplo caminho Boss: manter helpers antigos “sem uso” não remove chamada `Controller335` que abre `RewardScreen` separado + `1.25/1.15/1.15`. Correção mínima: delimitar remoção/inibição da chamada em `Controller335`+caminho `MainBoss-placeholder`, oferta nova única antes de passagem/vitória; helpers ficam deprecated sem chamada.
+P2-1 Identificador Grok: plano cita `4.6`, global exige `grok-4.7-xhigh-fast`. Corrigir.
+P2-2 `RunBuild`: explicitar `MAX_UPGRADES 1→220` técnico (não slots), `add_upgrade` incrementa se `total<220` e `rank+1<=cap_id`, `replace_state` atômico valida `0<=count<=cap_id`, `sum<=220`, chaves ausentes=0, rejeita desconhecidos, aceita snapshots antigos `0/1`; fonte única de IDs com `UpgradeCatalog` sem duplicar constantes/fórmulas.
+P2-3 Oferta/RNG/nível: travar `ordinal=1+(floor-1)*(common+1)+(room-1)` com indexação e `descriptor` únicos para RNG-oferta (`roomseed+ordinal/contexto`, sem consumir RNG topologia) e `configure_level`; cachear oferta por instância (sem rerrolar em redraw/resize/retry não-resolvido reapresenta mesma oferta; retry resolvido não reoferta).
+P2-4 Dano único: exigir `dano=base+rank_impacto+(carga_armada?2*rank_carga:0)+rank_ricochete*min(env,3)` derivada de rank (não `+=`), contador ambiental separado só em parede/não-damageable sem alterar `_bounce_count/max_bounces/lifetime/return`; Mola `max=3+rank/vida=2.2+0.35*rank`, Motor por tabela, Dinamo só `timer=maxf(timer-0.15*rank,0)` com dedup `swing_id` sem resetar air-dash; abortar se nomes `minimum_shot_interval/recovery_duration` divergirem sem inventar.
+P2-5 UI 576x324: `3*160+2*12=504` deixa 84px p/ cabeçalho+instrução — delimitar empilhamento sem estouro/fracionário, `NV` em label separado (nome pode elidir, `NV` nunca oculta), foco inicial+desabilitar ao resolver+`EXIT_RELEASED` sem propagar gameplay.
+CHANGED_FILES: none
+TESTS: none
+RISKS: HP empilhado; duplo reward Boss; Tranca sem arquivo autorizado trava A; `off-by-one` ordinal; fórmulas provisórias não-balanceadas (HP `1+0.12*(L-1)` explode em L220 — correto como provisório, não usar como balance); layout vertical estourado.
+NEXT_STEP: Root delimita P1-1/P1-2/P1-3+P2-1/P2-2 em adendo mínimo ao plano, congela baseline dirty com hash, só então autoriza writer Luna Fase A; sem Godot/testes/audits.

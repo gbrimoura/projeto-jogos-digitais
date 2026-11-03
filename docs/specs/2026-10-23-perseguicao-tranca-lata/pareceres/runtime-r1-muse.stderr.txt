@@ -1,0 +1,14 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/README.md
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/plano.md
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/spec.md
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres/README.md
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres/runtime-r1-input.txt [limit=100, offset=1199]
+✱ Grep "===== SOURCE|===== FILE|===== HASH|SHA256|load_steps|preload|class_name|extends" in docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres · 25 matches
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres/runtime-r1-input.txt [limit=550, offset=1299]
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres/runtime-r1-input.txt [limit=750, offset=1849]
+→ Read docs/specs/2026-10-23-perseguicao-tranca-lata/pareceres/runtime-r1-input.txt [limit=600, offset=2599]

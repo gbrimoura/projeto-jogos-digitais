@@ -1,0 +1,11 @@
+Read-only melee-pressure review — inspecting the frozen input.
+Initial section reviewed — reading the remaining content.
+STATUS: done
+SUMMARY: Static read-only review of frozen input SHA 010C24CA…: 3 initiation gates synchronized via `_find_melee_engagement_player` (IDLE + 2x PREPARE) with 96 preference capped by real 140 + overlap/LOS; same-support pursuit uses 96 sphere projected by real deltaY with 8px padding; 120px/s isolated to `_move_toward_pursuit_x` with min/bounds/test_only preserved; stuck fallback only after 0.65s + replan gate via real query, `_begin_windup` resets stuck. No P1 failure proven in gate/fallback/reset/pauses/lifecycle/attack-safety from this input.
+CHANGED_FILES: none
+TESTS: static review only — no Godot/test/import/parser/linter/QA/simulation executed, no runtime/render claim per FORBIDDEN
+RISKS:
+- P2-low/stale-center: `_pursue_on_current_support` reuses entry `attack_center` for stuck query `L483` after `_move_toward_pursuit_x` moves `global_position`; max drift `120*delta`. Refresh to `global_position+offset` before `_find_melee_engagement_player(...,true)` if strict center parity required.
+- Optional/debt: same-support detour `L489` targets `_bound_support` itself, building `[bound,candidate,bound]` loop; safe via cooldown/replan but causes leave-and-return hop for LOS — confirm intended vs. pure lateral wait.
+- Optional/debt: `not clear_shot and |dx|<=5` with `center<=96` sets `needs=false`, stuck reset, no detour — safe (no wall attack) but idle-in-place behind thin cover; only tuning if more strafing desired.
+NEXT_STEP: Accept as-is if stale-center drift tolerable, or patch only stuck-query center refresh and re-freeze; no other geometry/gate change required by plano/spec in this input.

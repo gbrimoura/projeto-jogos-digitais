@@ -1,0 +1,12 @@
+--- a/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -103,7 +103,8 @@
+ 			)
+ 			_placement_pending = false
+ 		else:
+-			_bind_patrol_support(null, global_position.x, global_position.x, false)	elif spawn_on_platform:
++			_bind_patrol_support(null, global_position.x, global_position.x, false)
++	elif spawn_on_platform:
+ 		# O movimento e a aquisição de combate ficam bloqueados até posição e suporte estarem prontos.
+ 		_placement_pending = true
+ 		_place_on_platform.call_deferred()

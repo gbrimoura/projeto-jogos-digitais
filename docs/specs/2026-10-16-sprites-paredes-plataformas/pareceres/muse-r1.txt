@@ -1,0 +1,13 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: Plano documental coerente e honesto sobre causa invisibilidade não provada, geometria paredes 64x648 faces 64/1088 e saltos nominais dentro de 128/208 teóricos sem garantir runtime; sem implementação runtime, sem Godot/testes por condição AGENTS. Achados abaixo são defeitos do plano/spec, sem exigir execução hoje.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- spec.md B: sem IDs tiles lateral/preenchimento factory_tileset_v1.tres nem âncora recorte 8u em 648, junção parede-piso y560-648 e ordem vs floor não definidos; risco de adivinhação e costura nearest.
+- plano.md Decisão 2/spec.md B: parede visual como moldura/portal sobre ExitDoor x1080 painel 48u sensor 96x108 vs face 1088 sem abertura/dimensões; aceite "sem opaco sobre portal + VFX impacto" sem fonte/contrato mensurável.
+- spec.md C/suportes: suporte fixo PlatformC/UpperPlatform sem nome propriedade/export, path nós, largura mínima alvo, texto aviso/fallback seguro; posição real via topo+bounds sem fórmula; bounds worker/patrulha x420-920/x760-1040 e câmera/limites não quantificados para novas faces.
+- plano.md Arquivos previstos/spec.md D: toque em solid_platform.gd condicional a "_is_valid/wall_margin/Rect2(64,0,1024,648)" indecidível estaticamente; validador futuro/grafo sem thresholds; rollback "snapshot" sem mecanismo/escopo a partir de 90b2e59; aceite LOS/janelas e "estados efetivamente usados" sem lista/métrica.
+NEXT_STEP: Aguardar decisão usuário; se aprovar, emendar plano com IDs atlas, âncora recorte/junção, contrato suporte/fallback, porta/moldura, limites câmera/bounds e critérios mensuráveis, sem autorizar runtime/Godot até pedido explícito verificar/testar.

@@ -1,0 +1,32 @@
+STATUS: done  
+SUMMARY: R3 fecha os P1/P2 concretos do R2 sem novo escopo. Ordem validate→lock, KEEP_ACTIVE antes de PROCESS_MODE_DISABLED, cruzamento geométrico por X amostrado (não velocity/Area), snapshot só no preto no helper raiz, pause com dono, reward único e Player novo por sala batem no contrato revisado. Residual só de ordem de restore e de quem amostra X.  
+CHANGED_FILES: none  
+TESTS: none  
+
+## Fechamento P1/P2 (sem escopo novo)
+
+**P1 lock/física.** Validar `source` / clear / local reward / guard / alive / cruzamento geométrico **antes** de `lockPlayer` elimina o lock cego. `DISABLE_MODE_KEEP_ACTIVE` antes de `PROCESS_MODE_DISABLED`, com restore dos dois no rollback, é o único par que mantém o body no space (docs: default é REMOVE). Revalidação **geométrica**, nunca overlap list — correto com body ainda no physics server. Origem = pés em Y560 + `CollisionShape2D (0,-38)` ⇒ centro do collider em **522** no chão; bound `432..560` no centro, não no pé.
+
+**P1 cruzamento.** Amostra do `knownPlayer` da **mesma** sala, todo physics frame, em coordenadas transformadas da porta — fecha `body_entered` e X local vs world. `previousX < 1120 <= currentX AND currentX > previousX` sobrevive ao OuterGuard zerar velocity no mesmo step. Unlock: `previous = current`. Nunca `previous = 0` (falso cruzamento imediato). Retry só standalone: desarmar até o centro voltar `< 1120` e recruizar; Y do centro dentro do túnel `432..560`.
+
+**P1 swap standalone.** `load` PackedScene **antes** do fade; snapshot **só no preto**, imediatamente antes do swap, após `source == tree.current_scene` + revalidar token/alive/clear/gate. Continuations no helper `CanvasLayer` raiz — sem `await` em Main destruído. Esperar `current_scene` nova **ready**, não assumir `change_scene` síncrono. Falha imediata: revela sala antiga, restaura lock, gate aberto, rearme só por recross. Death/restart cancelam token/tween/overlay e pending snapshot; cleanup idempotente. Um overlay, acima do HUD, mouse ignore quando invisível.
+
+**P1 pause.** Standalone **não** toca `SceneTree.paused` (só lock do Player). Restart/pause durante busy: bloqueia **ou** invalida o token — sem helper órfão. Managed: dono restaura **só** a própria pause; não despausa GameOver/vitória; cancela em run ended/restart/owner stale; UI visível após fade de clear.
+
+**P1 reward.** Gate: **somente** offer local do Main resolvida + clear + guard. `bossRewardScreen` existente **depois** do cross, no controller, **antes** do fade. Sem segunda offer/grant. Retry só standalone. Falha managed → fail run / GameOver / restart **após** revelar erro; **nunca** retry de boss reward.
+
+**P1 Player (correção factual R2).** RunController instancia sala/Player **novos** por stage; não reutiliza Player. Restore existente de spawn/HP/build permanece. Managed **não** usa snapshot de RoomTransition. Player travado morre com a sala antiga; o novo nasce no spawn authorado, processing normal. Destino vazio standalone **substitui** unlock: gate **sólido**, sem cross armado, `ETAPA CONCLUIDA`. Managed segue progresso/vitória.
+
+**Geometria (inalterada, pré-condição).** Filhos diretos de WorldCollision, mesma layer: right-top `64x432 @(1120,216)`; bottom `64x88 @(1120,604)`; ExitGate `64x128 @(1120,496)`; OuterGuard `8x648 @(1156,324)`. Gate `set_deferred` disabled, nunca freed. Validator: nós exatos, disable independente. Parede esquerda sólida; floor `1152`, topo `560`.
+
+## RISKS (mesmo bucket; não é escopo novo)
+
+1. **Restore order** está implícito, não escrito: no rollback, devolver `process_mode` **ainda com** KEEP_ACTIVE, **depois** o `disable_mode` original. Inverter = REMOVE + ainda DISABLED → body some do space (o mesmo P1).
+2. **Amostragem de X** tem de viver no helper/controller, não no `_physics_process` do Player (some no lock). `1120` é o plano local da porta; usar X transformado, não magic world se a sala não for identidade.
+3. **Pause busy** ainda é “block **ou** cancel”: uma regra por evento (pause UI → block; death/restart → cancel). Misturar gera helper órfão ou token vivo.
+4. **`set_deferred` no gate** vs validator no mesmo frame: validator não pode exigir `disabled==true` síncrono; reconhecer o nó e o pedido de disable.
+5. KEEP_ACTIVE durante fade: inimigos ainda simulam; death no preto **tem** de cancelar (já no contrato). Não despausar reward/GameOver no caminho managed.
+
+## NEXT_STEP
+
+Principal persiste este contrato em plan/spec. Runtime, Godot, import, testes, QA e edits continuam **proibidos** até o principal liberar implementação. Implementador, quando liberado: inverse restore de lock; sampler X fora do Player; scene ready real; um overlay; zero pause de tree no standalone.

@@ -1,0 +1,44 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/specs/2026-10-31-hud-aseprite/pareceres/implementacao-r1-input.txt [offset=568]
+
+$ Get-Content -LiteralPath "C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\docs\specs\2026-10-31-hud-aseprite\pareceres\implementacao-r1-input.txt" | Select-Object -Index 502,503,504,505,506,507,508,509,510,511,512,513,514,515; Write-Output "---LEN---"; (Get-Content -LiteralPath "C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\docs\specs\2026-10-31-hud-aseprite\pareceres\implementacao-r1-input.txt")[573].Length
+.. '"player_portrait":'..rjson(14,16,24,24)..',"target_portrait":'..rjson(222,14,32,28)..','
+    .. '"player_bar_frame":'..rjson(42,28,96,14)..',"target_bar_frame":'..rjson(258,28,96,14)..','
+    .. '"player_fill_sample":{"rect":'..rjson(45,31,54,8)..',"fraction":0.6,"rounding":"floor(clamp(current/max,0,1)*90+0.5)"},'
+    .. '"target_fill_sample":{"rect":'..rjson(261,31,60,8)..',"fraction":0.6666667,"rounding":"floor(clamp(current/max,0,1)*90+0.5)"},'
+    .. '"dash_icon":'..rjson(14,64,16,16)..',"dash_clock":'..rjson(32,60,24,24)..','
+    .. '"clock_mapping":{"frames":17,"ready_index":0,"cooldown_full_index":16,"frame_rule":"floor(clamp(remaining,0,1)*16+0.5)"},'
+    .. '"gauge_dial":'..rjson(507,81,37,20)..',"gauge_needle_pivot":{"x":525,"y":99},'
+    .. '"text_rects":{"player_title":{"rect":'..rjson(42,15,24,11)..'},"player_value":{"rect":'..rjson(42,15,96,11)..',"align":"right","sample":"3/5","max_sample_width":42},'
+    .. '"target_name":{"rect":'..rjson(258,15,72,11)..',"sample":"TRANCA-LATA","truncate":{"normal_max_glyphs":12,"with_max_value_glyphs":9,"normal_width_px":72,"with_max_value_width_px":54}},"target_value":{"rect":'..rjson(312,15,42,11)..',"align":"right","sample":"4/6","max_sample_width":42},'
+    .. '"dash_time":{"rect":'..rjson(58,60,78,11)..',"sample":"DASH 0,3s"},"dash_status":{"rect":'..rjson(58,72,78,11)..',"sample":"RECARREGANDO"},'
+    .. '"rooms_first_line":'..rjson(493,14,48,11)..',"rooms_second_line":'..rjson(499,26,42,11)..'},'
+    .. '"alternative_layout":{"gauge":{"rect":'..rjson(484,256,84,60)..',"anchor":"bottom_right"},"concept_label":{"rect":'..rjson(489,238,74,15)..',"study_only":true}},'
+    .. '"notes":["Editable sample values do not define HP rules or limits.","Player/worker portraits use native 24x24 crops; the target Tranca-Lata portrait uses native crop (15,8,32,28) to preserve the CRT face and cap. No resampling or recoloring.","Current/max values up to 999/999 require 42 px at advance 6; player value right-aligns in its 96 px field. Target value is right-aligned in a 42 px field; with a 42 px value the name uses a 54 px field (9 glyphs), while shorter values may expose up to 72 px (12 glyphs).","RECARREGANDO uses 13 glyphs (78 px); its text field is 78 px. Icon/clock gaps are 2 px, giving 122 px total inside the 132 px panel inset.","Clock states are normalized only; no duration is embedded. Gauge has nine normalized study poses, no unit, formula, maximum, or gameplay timing.","The native 576x324 composition maps 2x to 1152x648; final 1920x1080 filtering remains an integration decision."]}'
+  jwrite(OUT.."/layout.json",layout)
+---LEN---
+3069
+
+$ Get-Content -LiteralPath "C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\docs\specs\2026-10-31-hud-aseprite\pareceres\implementacao-r1-input.txt" | Select-Object -Index 423,424,425,426,427,428,429,430,431,432,433; Write-Output "---A---"; Get-Content -LiteralPath "C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\docs\specs\2026-10-31-hud-aseprite\pareceres\implementacao-r1-input.txt" | Select-Object -Index 410,411,412,413,414,415,416
+add("Player panel",pPanel,8,8); add("Player portrait - source crop",portraits[1].image,14,16); add("Player bar frame",bf,42,28); add("Player fill sample 3 of 5",crop(pfill,0,0,54,8),45,31)
+    local pt=img(144,40); text(pt,34,7,"VIDA",K.cream); outlineText(pt,112,7,"3/5",K.ivory); add("Player text - editable sample",pt,8,8)
+    add("Dash panel",dPanel,8,52); add("Dash icon",iconDisabled,14,64); add("Dash clock normalized sample",clocks[11],32,60)
+    local dt=img(144,40); text(dt,50,8,"DASH 0,3s",K.cream); text(dt,50,20,"RECARREGANDO",K.silver); add("Dash text - editable sample",dt,8,52)
+    add("Target panel - Tranca-Lata sample",tPanel,216,8); add("Target portrait - source crop",portraits[2].image,222,16); add("Target bar frame",bf,250,28); add("Target fill sample 4 of 6",crop(tfill,0,0,60,8),253,31)
+    local tt=img(144,40); text(tt,42,7,"TRANCA-LATA",K.cream); outlineText(tt,120,7,"4/6",K.ivory); add("Target text - editable sample",tt,216,8)
+    add("Rooms panel",rPanel,484,8); local rt=img(84,36); text(rt,9,6,"ANDAR 01",K.cream); text(rt,15,18,"SALA 02",K.cream); add("Rooms text - editable sample",rt,484,8)
+    add("Gauge panel - study",gPanel,484,gaugeY); local gt=img(84,60); text(gt,6,6,"ACELERAÇÃO",K.cream); text(gt,21,18,"DA BOLA",K.cream); add("Gauge labels - editable study",gt,484,gaugeY)
+    add("Gauge dial - no units",gdial,507,gaugeY+33); add("Gauge needle - normalized study step 04",needles[5],507,gaugeY+33); add("Concept label - study only",clabel,489,labelY)
+    return layers,over
+  end
+---A---
+  local A={
+    player={x=8,y=8,w=144,h=40},dash={x=8,y=52,w=144,h=40},target={x=216,y=8,w=144,h=40},rooms={x=484,y=8,w=84,h=36},
+    gauge={x=484,y=48,w=84,h=60},concept={x=489,y=110,w=74,h=15},playerPortrait={x=14,y=16,w=24,h=24},targetPortrait={x=222,y=14,w=32,h=28},
+    playerBar={x=42,y=28,w=96,h=14},targetBar={x=258,y=28,w=96,h=14},dashIcon={x=14,y=64,w=16,h=16},clock={x=32,y=60,w=24,h=24},
+    gaugeDial={x=507,y=81,w=37,h=20}
+  }
+  local function build(gaugeY,labelY,bg)
+

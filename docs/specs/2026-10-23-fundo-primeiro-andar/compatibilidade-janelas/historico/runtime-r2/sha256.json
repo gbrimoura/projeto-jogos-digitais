@@ -1,0 +1,352 @@
+[
+  {
+    "path": "scripts/world/factory_floor1_background.gd",
+    "sha256": "B18EF04DD82FF1CC4F9A57A1603A8FCB0833EE052EEF34B397CD97AEAC4625D4",
+    "bytes": 2546
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905",
+    "bytes": 16320
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0",
+    "bytes": 10395
+  },
+  {
+    "path": "resources/environment/factory_floor1_base_atlas_texture.tres",
+    "sha256": "CBC71CF838E348A61CBF5ED0B8BD8E8A25D96443E2F9E9679E972E127796E4BE",
+    "bytes": 4875828
+  },
+  {
+    "path": "resources/environment/factory_floor1_base_boiler_texture.tres",
+    "sha256": "BD37ECDBFEA99050306EF9E77F2E2EAAC221ACFC8E62F3C17C621721A1FBA6F0",
+    "bytes": 257
+  },
+  {
+    "path": "resources/environment/factory_floor1_base_maintenance_texture.tres",
+    "sha256": "F9241611FA55FC19F7FCB270D6DA0F6A37C5AF946305893B815AF5497B2BDDA8",
+    "bytes": 259
+  },
+  {
+    "path": "resources/environment/factory_floor1_left_boiler_texture.tres",
+    "sha256": "CBF28C82AAA5B1943DCA2FBBEF9B279FD69C0754082953BB348A8221CA46915D",
+    "bytes": 262
+  },
+  {
+    "path": "resources/environment/factory_floor1_left_cabinets_texture.tres",
+    "sha256": "6238A041FBA1C0F5CE2BFFB8DD6D176762AEE08E4A9589DCD48F8FB9E624174C",
+    "bytes": 264
+  },
+  {
+    "path": "resources/environment/factory_floor1_modules_atlas_texture.tres",
+    "sha256": "BB4F276FBED99A420A5FFE55746B5A2B36B6E5224A340D1A67EB71531723A4D3",
+    "bytes": 1995655
+  },
+  {
+    "path": "resources/environment/factory_floor1_right_press_texture.tres",
+    "sha256": "816AD0FFF4D3F453E665D2D20CDE59079370E9F1F39CC2E949F1AF331B6F8DDB",
+    "bytes": 260
+  },
+  {
+    "path": "resources/environment/factory_floor1_right_service_texture.tres",
+    "sha256": "06627C32FB044FAC2935B957DE6EA6C5F1ABB728E9849C40380A2A73F0C6D2CD",
+    "bytes": 262
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-modular.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-modular.stdout.log",
+    "sha256": "937E706636E0927B7360636975B74812D01AFD2A66D49DAD433DC4177D2F770D",
+    "bytes": 185
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-v2-generation.log.txt",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-args-after-script.exit-code.txt",
+    "sha256": "5FECEB66FFC86F38D952786C6D696C79C2DBC239DD4E91B46729D73A27FB57E9",
+    "bytes": 1
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-args-after-script.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-args-after-script.stdout.log",
+    "sha256": "937E706636E0927B7360636975B74812D01AFD2A66D49DAD433DC4177D2F770D",
+    "bytes": 185
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-bases-only.exit-code.txt",
+    "sha256": "5FECEB66FFC86F38D952786C6D696C79C2DBC239DD4E91B46729D73A27FB57E9",
+    "bytes": 1
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-bases-only.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-bases-only.stdout.log",
+    "sha256": "937E706636E0927B7360636975B74812D01AFD2A66D49DAD433DC4177D2F770D",
+    "bytes": 185
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-correct-order.exit-code.txt",
+    "sha256": "5FECEB66FFC86F38D952786C6D696C79C2DBC239DD4E91B46729D73A27FB57E9",
+    "bytes": 1
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-correct-order.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-correct-order.stdout.log",
+    "sha256": "71E582955FF886CBD99C3F31DFAFF279E3613A5ABB965EB4B16513CAC7E1DBF1",
+    "bytes": 147
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-failed-01.exit-code.txt",
+    "sha256": "1BAD6B8CF97131FCEAB8543E81F7757195FBB1D36B376EE994AD1CF17699C464",
+    "bytes": 2
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-failed-01.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-failed-01.stdout.log",
+    "sha256": "8D8807DCE5E72008187450FEEF6F49B0A1AEE0B617E6DEF341CF51A2DF77A808",
+    "bytes": 169
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-final.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-final.stdout.log",
+    "sha256": "937E706636E0927B7360636975B74812D01AFD2A66D49DAD433DC4177D2F770D",
+    "bytes": 185
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-full-mode.exit-code.txt",
+    "sha256": "5FECEB66FFC86F38D952786C6D696C79C2DBC239DD4E91B46729D73A27FB57E9",
+    "bytes": 1
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-full-mode.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision-full-mode.stdout.log",
+    "sha256": "937E706636E0927B7360636975B74812D01AFD2A66D49DAD433DC4177D2F770D",
+    "bytes": 185
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "bytes": 0
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/aseprite-window-revision.stdout.log",
+    "sha256": "8D8807DCE5E72008187450FEEF6F49B0A1AEE0B617E6DEF341CF51A2DF77A808",
+    "bytes": 169
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/background_floor1.lua",
+    "sha256": "FE596F429C183FA77A227E6B89614C7AF361B72E9F873930D5A3E6A40C63FE9E",
+    "bytes": 39170
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-context-static.png",
+    "sha256": "B9C448E7C3C33E9D9451E108EFADD8524A36801699F081A0927C809782BF809B",
+    "bytes": 24824
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-context-v2.png",
+    "sha256": "B9C448E7C3C33E9D9451E108EFADD8524A36801699F081A0927C809782BF809B",
+    "bytes": 24824
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-preview-2x.png",
+    "sha256": "E938D030925A77405DD8644683D89817C8F5E4D4459F1BAF4638EA9A7C40C369",
+    "bytes": 12614
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room-preview-4x.png",
+    "sha256": "586C98135D14A37E2706B9C0BAE8B6A735C39C11A4B835604468C2CD2994F3D7",
+    "bytes": 27546
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room.aseprite",
+    "sha256": "1A03B9286EDAEC1B53AFA23EF20A45250BC87A66BC5A67D9C0CADD4D39A2E976",
+    "bytes": 13338
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-boiler-room.png",
+    "sha256": "815D374342932CD852A27AD51C3A38912E1964CE70EC2F49E976EBE7064A9D68",
+    "bytes": 8313
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-context-static.png",
+    "sha256": "1B94F9ED6DB44FA30A88CA34BA42956602195839514460839FCE10910B8E4123",
+    "bytes": 23011
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-context-v2.png",
+    "sha256": "1B94F9ED6DB44FA30A88CA34BA42956602195839514460839FCE10910B8E4123",
+    "bytes": 23011
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-preview-2x.png",
+    "sha256": "F0C14C58B43030ADF89547F785F624B9DE6509DA1DDAF23069320B3F6B409053",
+    "bytes": 10849
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room-preview-4x.png",
+    "sha256": "7BF63E19CBCAAC3397CD17B2C39FF80112650569413693E045E1D8143ABBB938",
+    "bytes": 23081
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room.aseprite",
+    "sha256": "2CBB15EAC3D2CFC1C5081A2A5022C47CED523BF8C4CE7AF03A7A5799AA37C3C8",
+    "bytes": 13679
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/factory-floor1-maintenance-room.png",
+    "sha256": "73B5C674D9EFB5DA524402F3818BAF3C39E12CB22AA3BAE3E20CF90FEAF196D8",
+    "bytes": 6609
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/manifest.json",
+    "sha256": "EF4B2F1EE5DB12E4946BD4C413DC0A4A4DD6297207BC1CBD130E4754A19C2C1D",
+    "bytes": 30576
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/README.md",
+    "sha256": "60B9C85EB7A1E39A51DB77673E3ECE33C4E7BE142FA6E597D0E814923DF86117",
+    "bytes": 3132
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/reference-imagegen.png",
+    "sha256": "27C586A5A3C8493ED8ABBD907FED58DC32A370966032C3D219A95B2D376ED69E",
+    "bytes": 1566238
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-captions.txt",
+    "sha256": "11EAC69523E22F26515724A38648D0563A7E59D899DE83365BD85FF1ACAAFFAD",
+    "bytes": 1139
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-000.png",
+    "sha256": "CA4251A9C9B1CFA33C5F011AB8DE7F496AEA677D3A5F86707202DE076D34C5EF",
+    "bytes": 23616
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-001.png",
+    "sha256": "0EA0550CBAC440567F86F0DDB53E74AA6F0DCF634FCFF81429A6ECFA4A889BDD",
+    "bytes": 25350
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-010.png",
+    "sha256": "91A681079DBAB6D2A53F1457F3DD8BCDAD132B95B331925C2DAB0651C065E566",
+    "bytes": 20627
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-011.png",
+    "sha256": "3C060D08B7996EC5B9339831FEBF5F0B47AE4AD22B5A34E79CA9EA8569AD3285",
+    "bytes": 22621
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-100.png",
+    "sha256": "1B0415C7A3BF68FF0EDA6BD077CFFCC6C55494620CF7775E81A36833893195DA",
+    "bytes": 23820
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-101.png",
+    "sha256": "A919221CE8452E43030F1495075B68DEFCD1B6992446CD49A2B57CC9C4DF7183",
+    "bytes": 25479
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-110.png",
+    "sha256": "034D5BF4806822FC93EC196D0ECC754D3360FC1E52BED94885812E37875EA302",
+    "bytes": 20645
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/context-seed-111.png",
+    "sha256": "6970E380D422ADE79F62045E0CBF31947AC466188A720C438683454C54FB40BF",
+    "bytes": 22644
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-base-boiler.png",
+    "sha256": "6C88BE5162DBE3A2C994FFFFB7760E9ED46AEB3F5F5580F9F1B4463202019A2A",
+    "bytes": 2611
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-base-maintenance.png",
+    "sha256": "48F67F8C4D617BE6E263B0249162AF126C0533AD4095BB92DD2231924EF0C21A",
+    "bytes": 2631
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-bases-atlas.png",
+    "sha256": "97CBE30DDCB5A932E372676AEBC1826B90B0B8275C0D8F6F587EB340C0CA481B",
+    "bytes": 5100
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-bases.aseprite",
+    "sha256": "D6A0B7709257DC521796CBEB32B69CC36C95D0285D782A8B3EB2ED7F0AEF13A3",
+    "bytes": 7678
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-left_boiler.png",
+    "sha256": "432EE902E192AA7214C594291FAA7992BFE7C26B7185CBF37B3B506EA4DACB0E",
+    "bytes": 4793
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-left_cabinets.png",
+    "sha256": "8C87030D66E16BD7E71028FE096E2591332BCA3BE74654EFB9B816E4272B9BF3",
+    "bytes": 2253
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-right_press.png",
+    "sha256": "1B239E257A27E609E118BED1FEFA627199F047348E36C1C0F17E921C3B56F462",
+    "bytes": 3350
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-module-right_service.png",
+    "sha256": "A9B969F2732F22C413C8DF47667F15746C480203B342480AB1D82D596B766903",
+    "bytes": 1356
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-modules-atlas.png",
+    "sha256": "8B4A8A317184B8EB341F107E5DCE8FD002399DD276AEE35FBFFE7D79BF96349B",
+    "bytes": 11393
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-modules.aseprite",
+    "sha256": "64D8CE9D22D86F964F175D92B01DCE2E39333517D8875FC90B5C1A2C2347602D",
+    "bytes": 13303
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/factory-floor1-procedural-contact.png",
+    "sha256": "0EDA84518C5AB1B6A0687C9FEEFA08359F00D4A2D92501E014CC48B5543C6C64",
+    "bytes": 101132
+  },
+  {
+    "path": "assets/environment/factory_v1/background_floor1/modular/regions-and-anchors.json",
+    "sha256": "6F05C9F327B1D6C0C98A532C40FCBDFB5F8AE9B6ECF0CD4A4F2A33A4A488626B",
+    "bytes": 1017
+  }
+]

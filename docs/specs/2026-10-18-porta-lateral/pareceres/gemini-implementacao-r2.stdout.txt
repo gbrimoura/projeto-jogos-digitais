@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: R2 delta review completed with zero regressions identified. (1) In `preview-side-opening.lua`, `blitClipped()` properly bounds all pixel blits to destination dimensions and skips alpha=0 pixels, preventing background corruption; drawing into a dedicated 1152x224 `row` buffer isolates room-strip compositing; bottom shadow adjustment (`y=124`) balances vertical frame symmetry. (2) In `main.tscn` and `second_room.tscn`, setting `opening_top = 432.0` and `opening_height = 128.0` on `LeftWallVisual` and `RightWallVisual` matches runtime geometry (top 432 to bottom 560); renaming inherited `DoorArt` to `SideDoorVisual` with position `Vector2(-80, -26)` correctly overrides the packed scene node, aligning the entrance visual at `(32, 496)`; removal of unused `ext_resource` and update of `load_steps` to 20 in `second_room.tscn` resolve all R1 cleanup points.
+CHANGED_FILES: none
+TESTS: none
+RISKS: None. Effective z-ordering (backdrop -10, walls/doors -1, actors 1) and root positions (Entrance 112,522; Exit 1040,522) remain consistent and conflict-free across both rooms.
+NEXT_STEP: Proceed with final merge and staging of the lateral door implementation as planned.

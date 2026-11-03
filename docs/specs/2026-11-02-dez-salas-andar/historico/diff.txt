@@ -1,0 +1,11 @@
+--- run_root.tscn (base)
++++ run_root.tscn (final)
+-floors_per_run = 1
+-common_rooms_per_floor = 3
++floors_per_run = 1
++common_rooms_per_floor = 10
+
+--- scripts/world/run_controller.gd (base)
++++ scripts/world/run_controller.gd (final)
+-@export_range(1, 10) var common_rooms_per_floor: int = 3
++@export_range(1, 10) var common_rooms_per_floor: int = 10

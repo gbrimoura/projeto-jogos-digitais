@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Correção pontual aprova — troca `Array[int]` com ternário por `[]+assign(literal)` elimina erro `Array->Array[int]` linha 93 sem alterar valores/ordem/RNG.
+FINDINGS: none — P1 none, P2 none. `assign()` aceita `Array` genérico e valida ints; tamanhos 3/5 preservados; consumo RNG posterior idêntico; `base_tops=[...]` literal direto não afetado pelo bug do ternário.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Mínimo — se literal futuro contiver non-int, `assign()` falharia em runtime; não aplicável aos literais atuais.
+NEXT_STEP: Manter R1 como está; sem expansão de escopo ou teste adicional.

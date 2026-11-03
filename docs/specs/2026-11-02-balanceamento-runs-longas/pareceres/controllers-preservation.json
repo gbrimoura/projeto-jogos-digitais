@@ -1,0 +1,44 @@
+[
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\run_build.gd",
+    "Before": "FEB1D8898E0AFD680486AF1171BE946DBD42BD8B57367223855A6A8DE3B3E6A1",
+    "After": "FEB1D8898E0AFD680486AF1171BE946DBD42BD8B57367223855A6A8DE3B3E6A1",
+    "Preserved": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\main.gd",
+    "Before": "B50BCF3BC5E42621604C46E673817E8B93ADE834C7CADA329859A7E0339596FE",
+    "After": "B50BCF3BC5E42621604C46E673817E8B93ADE834C7CADA329859A7E0339596FE",
+    "Preserved": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\run_controller.gd",
+    "Before": "5959E2668F8B1E51B3B7FC712CE679BCB1B5D84D920C110E36051B574B38A28D",
+    "After": "5959E2668F8B1E51B3B7FC712CE679BCB1B5D84D920C110E36051B574B38A28D",
+    "Preserved": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player_health.gd",
+    "Before": "BB08DF627852D4B9DBDC68A4F21897875A84C614109A9BB3C326FE92895FFA61",
+    "After": "BB08DF627852D4B9DBDC68A4F21897875A84C614109A9BB3C326FE92895FFA61",
+    "Preserved": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\racket_controller.gd",
+    "Before": "36A1A7D7A1F826A7281A6E8F9A9D84157AE9D078A31F3D033C68A32239A455CB",
+    "After": "36A1A7D7A1F826A7281A6E8F9A9D84157AE9D078A31F3D033C68A32239A455CB",
+    "Preserved": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\movement_controller.gd",
+    "Before": "59BA33D1ACFC47CF74348520D5BEA5E8DAAF80F9155CEE0F4C928443E4AF408F",
+    "After": "59BA33D1ACFC47CF74348520D5BEA5E8DAAF80F9155CEE0F4C928443E4AF408F",
+    "Preserved": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\projectile\\ricochet_ball.gd",
+    "Before": "2350DA702E0EA4F17A0B145BFD7C561467E3D9E6B63BDE43279B3B15B4B1D4D2",
+    "After": "2350DA702E0EA4F17A0B145BFD7C561467E3D9E6B63BDE43279B3B15B4B1D4D2",
+    "Preserved": true
+  }
+]

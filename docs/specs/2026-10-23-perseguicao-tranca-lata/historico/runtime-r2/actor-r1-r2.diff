@@ -1,0 +1,181 @@
+diff --git a/docs/specs/2026-10-23-perseguicao-tranca-lata/historico/runtime-r1/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index d75c6e2..a008857 100644
+--- a/docs/specs/2026-10-23-perseguicao-tranca-lata/historico/runtime-r1/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -303,10 +303,13 @@ func _collect_pursuit_supports() -> Array[SolidPlatform]:
+ 	return supports
+ 
+ func _pursue_player(player: PhysicsBody2D, delta: float) -> void:
+-	if _pursuit_helper == null or _jump_helper == null or not _ground_support_is_current():
++	if not _ground_support_is_current():
+ 		_stop_patrol()
+ 		return
+ 	var supports: Array[SolidPlatform] = _collect_pursuit_supports()
++	if _jump_helper == null or _pursuit_helper == null:
++		_pursue_fallback(player, delta, supports)
++		return
+ 	var selected_support: SolidPlatform = _pursuit_helper.call(
+ 		"choose_player_support",
+ 		player,
+@@ -321,10 +324,13 @@ func _pursue_player(player: PhysicsBody2D, delta: float) -> void:
+ 		_pursuit_replan_remaining = 0.0
+ 		_pursuit_stuck_remaining = 0.0
+ 		_pursuit_detour_active = false
++	_pursuit_replan_remaining = maxf(_pursuit_replan_remaining - delta, 0.0)
+ 	if selected_support == null:
+-		_stop_patrol()
++		_pursuit_goal_support = null
++		_pursuit_path.clear()
++		_pursuit_detour_active = false
++		_pursue_fallback(player, delta, supports)
+ 		return
+-	_pursuit_replan_remaining = maxf(_pursuit_replan_remaining - delta, 0.0)
+ 	if selected_support == _bound_support and not _pursuit_detour_active:
+ 		_pursuit_goal_support = selected_support
+ 		_pursuit_path.clear()
+@@ -336,15 +342,22 @@ func _pursue_player(player: PhysicsBody2D, delta: float) -> void:
+ 		_pursuit_replan_remaining = 0.0
+ 		_pursuit_detour_active = false
+ 	if selected_support == _bound_support and _pursuit_detour_active:
+-		if _pursuit_path.is_empty() or _pursuit_path[0] != _bound_support:
+-			if _pursuit_replan_remaining <= 0.0:
+-				_try_begin_pursuit_detour(selected_support, player, supports)
++		if _pursuit_path.size() < 2 or _pursuit_path[0] != _bound_support:
++			if _pursuit_replan_remaining <= 0.0 \
++				and not _try_begin_pursuit_detour(selected_support, player, supports):
++				_pursuit_detour_active = false
++				_pursuit_path.clear()
++				_pursuit_goal_support = selected_support
++				_pursue_fallback(player, delta, supports)
++				return
+ 		if _pursuit_path.size() < 2:
+-			_stop_patrol()
++			_pursuit_detour_active = false
++			_pursuit_goal_support = selected_support
++			_pursue_fallback(player, delta, supports)
+ 			return
+ 		_pursue_via_route(player, delta, supports)
+ 		return
+-	if _pursuit_path.is_empty() or _pursuit_path[0] != _bound_support:
++	if _pursuit_path.size() < 2 or _pursuit_path[0] != _bound_support:
+ 		if _pursuit_replan_remaining <= 0.0:
+ 			var route: Array[SolidPlatform] = _pursuit_helper.call(
+ 				"find_path",
+@@ -358,15 +371,31 @@ func _pursue_player(player: PhysicsBody2D, delta: float) -> void:
+ 				_pursuit_path = route
+ 			else:
+ 				_pursuit_path.clear()
++				_pursuit_detour_active = false
+ 				_pursuit_replan_remaining = PURSUIT_REPLAN_INTERVAL
+ 	if _pursuit_path.size() < 2:
+-		_stop_patrol()
++		_pursuit_detour_active = false
++		_pursue_fallback(player, delta, supports)
+ 		return
+ 	_pursue_via_route(player, delta, supports)
+-func _pursue_on_current_support(
++
++func _pursue_fallback(
+ 	player: PhysicsBody2D,
+ 	delta: float,
+ 	supports: Array[SolidPlatform]
++) -> void:
++	if not _is_alive_player(player) or not _ground_support_is_current():
++		_stop_patrol()
++		return
++	_pursuit_path.clear()
++	_pursuit_detour_active = false
++	_pursue_on_current_support(player, delta, supports, false)
++
++func _pursue_on_current_support(
++	player: PhysicsBody2D,
++	delta: float,
++	supports: Array[SolidPlatform],
++	allow_detour: bool = true
+ ) -> void:
+ 	var player_center := _get_player_collider_center(player)
+ 	var attack_center := global_position + attack_center_offset
+@@ -376,22 +405,28 @@ func _pursue_on_current_support(
+ 		_patrol_direction = 1 if delta_x > 0.0 else -1
+ 	var radius := _effective_attack_radius()
+ 	var horizontal_attack_reach := sqrt(maxf(radius * radius - delta_y * delta_y, 0.0))
++	var stop_distance := maxf(horizontal_attack_reach - PURSUIT_STOP_PADDING, PURSUIT_DIRECTION_DEADZONE)
+ 	var desired_x := global_position.x
+ 	var clear_shot := _has_clear_line_of_sight(player, attack_center)
+-	if absf(delta_x) > maxf(horizontal_attack_reach - PURSUIT_STOP_PADDING, 0.0) or not clear_shot:
++	var needs_horizontal_approach := absf(delta_x) > stop_distance \
++		or (not clear_shot and absf(delta_x) > PURSUIT_DIRECTION_DEADZONE)
++	if needs_horizontal_approach:
+ 		var direction := signf(delta_x)
+-		if is_zero_approx(direction):
++		if absf(delta_x) <= PURSUIT_DIRECTION_DEADZONE or is_zero_approx(direction):
+ 			direction = float(_patrol_direction)
+ 		var stop_reach := horizontal_attack_reach - PURSUIT_STOP_PADDING if clear_shot else 0.0
+ 		desired_x = player_center.x - direction * maxf(stop_reach, 0.0) - attack_center_offset.x
+ 	var moved_x := _move_toward_pursuit_x(desired_x, delta, _bound_support)
+-	if absf(moved_x) >= 0.1:
++	if not allow_detour:
+ 		_pursuit_stuck_remaining = 0.0
+-	elif absf(delta_x) > maxf(horizontal_attack_reach - PURSUIT_STOP_PADDING, 0.0) + PURSUIT_DIRECTION_DEADZONE:
++	elif absf(moved_x) >= 0.1:
++		_pursuit_stuck_remaining = 0.0
++	elif absf(delta_x) > stop_distance + PURSUIT_DIRECTION_DEADZONE:
+ 		_pursuit_stuck_remaining += delta
+ 	else:
+ 		_pursuit_stuck_remaining = 0.0
+-	if _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT and _pursuit_replan_remaining <= 0.0:
++	if allow_detour and _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT \
++		and _pursuit_replan_remaining <= 0.0:
+ 		_try_begin_pursuit_detour(_bound_support, player, supports)
+ 	if _attack_state == AttackState.IDLE:
+ 		_update_visuals()
+@@ -452,6 +487,7 @@ func _pursue_via_route(
+ 	var destination := _pursuit_path[1]
+ 	if source == null or destination == null or not is_instance_valid(destination):
+ 		_pursuit_path.clear()
++		_pursuit_detour_active = false
+ 		_pursuit_replan_remaining = 0.0
+ 		_stop_patrol()
+ 		return
+@@ -471,6 +507,7 @@ func _pursue_via_route(
+ 			var blocked_edge: String = _pursuit_helper.call("edge_key", source, destination)
+ 			_pursuit_blocked_edges[blocked_edge] = PURSUIT_EDGE_BLOCK_TIME
+ 			_pursuit_path.clear()
++			_pursuit_detour_active = false
+ 			_pursuit_replan_remaining = 0.0
+ 			_pursuit_stuck_remaining = 0.0
+ 			_stop_patrol()
+@@ -490,6 +527,7 @@ func _pursue_via_route(
+ 		var edge: String = _pursuit_helper.call("edge_key", source, destination)
+ 		_pursuit_blocked_edges[edge] = PURSUIT_EDGE_BLOCK_TIME
+ 		_pursuit_path.clear()
++		_pursuit_detour_active = false
+ 		_pursuit_replan_remaining = 0.0
+ 		_stop_patrol()
+ 		return
+@@ -514,15 +552,19 @@ func _pursuit_launch_x(source: SolidPlatform, destination: SolidPlatform, target
+ 		var body := _get_collision_rect()
+ 		var left_standoff := destination_rect.position.x - body.end.x - PURSUIT_EDGE_CLEARANCE
+ 		var right_standoff := destination_rect.end.x - body.position.x + PURSUIT_EDGE_CLEARANCE
+-		var toward_destination := signf(target_x - destination_rect.get_center().x)
+-		if toward_destination > 0.0 and right_standoff >= bounds.x and right_standoff <= bounds.y:
+-			return right_standoff
+-		if toward_destination < 0.0 and left_standoff >= bounds.x and left_standoff <= bounds.y:
+-			return left_standoff
+ 		var left_valid := left_standoff >= bounds.x and left_standoff <= bounds.y
+ 		var right_valid := right_standoff >= bounds.x and right_standoff <= bounds.y
+ 		if left_valid and right_valid:
+-			return left_standoff if absf(global_position.x - left_standoff) <= absf(global_position.x - right_standoff) else right_standoff
++			var left_distance := absf(global_position.x - left_standoff)
++			var right_distance := absf(global_position.x - right_standoff)
++			if absf(left_distance - right_distance) > 1.0:
++				return left_standoff if left_distance < right_distance else right_standoff
++			var toward_goal := signf(target_x - global_position.x)
++			if is_zero_approx(toward_goal):
++				toward_goal = signf(target_x - destination_rect.get_center().x)
++			if is_zero_approx(toward_goal):
++				toward_goal = float(_patrol_direction)
++			return right_standoff if toward_goal > 0.0 else left_standoff
+ 		if left_valid:
+ 			return left_standoff
+ 		if right_valid:

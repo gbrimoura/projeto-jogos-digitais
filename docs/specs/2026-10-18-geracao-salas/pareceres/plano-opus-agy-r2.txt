@@ -1,0 +1,41 @@
+STATUS: done
+
+SUMMARY: Revisão R2 do plano e da spec, somente leitura e apenas sobre o conteúdo inline. Os sete pontos pedidos na rodada anterior foram incorporados: `_enter_tree` standalone, `size` antes do `_ready`, subida máxima e desempate, nova tentativa após falha no deferred, snapshot de HP/build no standalone, teto em uma linha e fallback inválido.
+
+Conferi a conta do fallback no papel. As posições foram lidas como centros:
+- **Topos:** 440, 400 e 376.
+- **Subidas:** 40 e 24, total de 64.
+- **Bases:** todas até 464, com folga de pelo menos 96 até o piso.
+- **Bordas em x:** 220..420, 498..682 e 768..952.
+- **Vãos:** 78 e 86.
+- **Larguras:** 200, 184 e 184, todas múltiplas de 8.
+
+Tudo cabe nos limites. Com larguras de 160..216, a soma pode passar de x=980, mas isso é tratado pelas 32 tentativas e pelo fallback.
+
+Ainda há problemas concretos, a maioria de precisão:
+
+1. **(Médio) Validação antes de `add_child` no modo managed.** A spec diz que a validação "lê os shapes físicos e AABBs" e que a falha ocorre antes de adicionar a sala. Fora da árvore, `global_position`, `get_global_transform()` e consultas ao PhysicsServer não estão disponíveis ou não são confiáveis. A spec deve exigir cálculo em coordenadas locais à raiz da sala: `position` da plataforma + offset do `CollisionShape2D` + `shape.size`.
+2. **(Médio) `solid_platform.gd` congelado.** O plano depende de três coisas desse script, que não pode ser editado:
+   - O setter de `size` precisa sincronizar o shape mesmo fora da árvore. Não pode ser guardado por `is_inside_tree()` nem `is_node_ready()`.
+   - O sorteio independente precisa ser desligado por uma propriedade exportada que já exista, definida nos `.tscn`.
+   - Cada instância precisa ter seu próprio `RectangleShape2D` (`resource_local_to_scene` ou `duplicate`), para que mudar o `size` de uma plataforma não altere as outras.
+
+   Se alguma dessas condições falhar, o escopo entra em conflito. A spec deve declarar isso como pré-condição e prever o bloqueio.
+3. **(Médio) Entrada reaproveita `exit_door.tscn`.** Main, RunController e RoomController devem pegar a saída por caminho ou referência explícita (`ExitDoor`), nunca por grupo ou tipo. A entrada não pode entrar em grupos de destravamento nem mudar de visual ao liberar a sala. Hoje a spec só diz "sensor desativado, sem sinal".
+4. **(Baixo-médio) Falha de configuração no RunController.** A spec diz que o managed "recebe falha de configuração", mas não diz o que a run faz: abortar, mostrar erro ou não adicionar a sala. Falta esse contrato no `run_controller.gd`.
+5. **(Baixo) Script da SecondRoom.** Se `second_room.tscn` não usar `main.gd`, a geração e a lógica de portas dela ficam fora dos arquivos autorizados. Vale declarar qual script a SecondRoom usa.
+6. **(Baixo, redação) Subida total.** A spec diz "pode subir até 64 px por etapa; portanto a subida total é 64". O "portanto" não decorre: duas etapas de 64 dariam 128. Melhor escrever "e a subida acumulada é limitada a 64 px", como no plano.
+7. **(Baixo, redação) Teto no plano.** "18 colunas de 64 px por 32 fontes" e "o tile é ampliado para cobrir x=0..1152" podem ser lidos como um único tile esticado. Alinhar ao texto da spec: 18 tiles de 32 px de fonte, ampliados 2× para 64×64.
+
+O desempate do alvo está correto. Como a rota não desce, a plataforma da direita, a mais alta e a última da rota são sempre a mesma; o texto é redundante, mas consistente.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- Os itens 1 e 2 podem fazer a validação managed ler valores errados ou vazios sem erro visível.
+- O item 3 pode fazer a entrada ser destravada ou ligada por engano.
+- Alcance dos saltos, leitura visual de teto e portas e integração em runtime continuam sem comprovação, como o plano já declara. Nenhuma estimativa acima foi tratada como teste.
+
+NEXT_STEP: Incluir na spec as correções dos itens 1–4, com uma frase cada, e as de redação dos itens 6–7. Confirmar só por leitura, sem executar nada, como o `solid_platform.gd` trata o setter, o shape e o sorteio, e qual script a SecondRoom usa. Depois liberar a implementação; não precisa de nova rodada completa, salvo se o item 2 mostrar conflito de escopo.

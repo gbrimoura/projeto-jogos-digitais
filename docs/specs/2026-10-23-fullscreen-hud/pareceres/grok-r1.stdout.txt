@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Revisão estática somente de `project.godot` contra o plano/spec: as sete chaves batem com o efeito pretendido. Viewport lógico 1152×648 (16:9) fica explícito; overrides 1920×1080 descrevem a janela quando não estiver em fullscreen; `mode=3` é WINDOW_MODE_FULLSCREEN convencional (não o exclusivo `4`); `canvas_items` existente e `aspect=keep` preservam o espaço das salas sem Camera2D. HUD no spec é só direção, sem implementação. Sem defeitos P1/P2.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Com `canvas_items`, a escala 5/3 em 1920×1080 (e outras frações em monitores nativos diferentes) pode suavizar pixel art; o spec já delimita isso e não houve runtime. Overrides 1920×1080 só importam ao voltar para janela. HUD continua conceitual.
+NEXT_STEP: Registrar este parecer; não alterar `project.godot` nesta rodada. Nitidez e HUD ficam para etapas futuras autorizadas.

@@ -1,0 +1,35 @@
+Pacote R1 localizado — lendo fonte para revisão estática read-only.
+Arquivo com 4105 linhas — vou ler o pacote integral em blocos.
+STATUS: done
+SUMMARY: Revisão estática R1 do pacote integral (4105 linhas) — 3 P1 + 3 P2. Sem validação em engine.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Física real (MovementConfig.accel), RoomTransition/snapshot e cenas/IA fora do pacote não verificados; BFS usa accel fixo 1600.
+NEXT_STEP: Corrigir P1-1/P1-2/P1-3, revalidar estático, depois QA/plan R3.
+
+P1-1 — main.gd `_managed_can_jump_between` aborta tudo no 1º bloqueio:
+- Arquivo/função: scripts/world/main.gd `_managed_can_jump_between` linhas 483-491.
+- Motivo: `return false` em `blocker overlap` e em `top_open fora do portal` invalida todos os takeoffs/velocidades, não só a trajetória atual. Gera falso-negativo (“sem arco”) e reprova layout válido. `_managed_can_drop_between` usa `break` correto.
+- Correção delimitada: trocar ambos `return false` por `break` do `for frame`, mantendo `return true` só no landing; continuar para próximo `speed/launch_x`.
+
+P1-2 — room_run_layout.gd `build_floor` sem anti-revisita:
+- Arquivo/função: scripts/world/room_run_layout.gd `build_floor` 3131-3173, filtro 3154-3164 só exclui `direction==incoming`.
+- Motivo: Pedido exige LINEAR sem branches/revisitas e sem reocupar grid. Sem `visited` permite loop (ex.: RIGHT/DOWN/LEFT/UP volta à origem). Com `common_rooms_per_floor<=3` improvável, com export até 10 possível.
+- Correção: manter `visited={coords[0]:true}`, filtrar `if coords.has(current+chosen): continue`, erro se `legal` vazio.
+
+P1-3 — `SolidPlatform.room_seed` estático vaza:
+- Arquivo/função: scripts/world/main.gd:136 `SolidPlatform.room_seed=room_layout_seed`; scripts/world/solid_platform.gd:3387 `static var room_seed`.
+- Motivo: Setado no ramo gerenciado, nunca restaurado. Contamina salas standalone seguintes com `randomize_position/width=true` (seed determinístico inadvertido).
+- Correção: salvar anterior antes de `generate_managed_layout`, restaurar após `prepare_authored_layout`, ou zerar em `_exit_tree`.
+
+P2-1 — Modelo de runway/acel fixo sem MovementConfig:
+- main.gd:465-468,477 `runway=speed²/3200`, `move_toward(...,1600*dt)`. Pacote não inclui `MovementConfig.acceleration`; diverge do runtime se accel≠1600.
+- Correção: derivar de `MovementConfig` ou remover hard-fail de runway, só ordenar busca.
+
+P2-2 — Landing pode aceitar clip lateral:
+- main.gd:484 exclui `target` do blocker e 479-481 só checa cruzamento `next.y>=target.y` + `next.x` inset 22. Corpo pode atravessar lateral e contar como pouso.
+- Correção: exigir `previous.y<=target.y` e corpo sem overlap lateral antes do cruzamento.
+
+P2-3 — `_managed_can_reach_bottom_sensor` vacuo:
+- main.gd:541-553 `return portal-14>=portal-128...` sempre true; só checa slot canônico 248/904 e `root_y<=660`, não posição x vs abertura 256.
+- Correção: checar `root_x` dentro de `portal±(128-14)` na queda ou remover e confiar no segmento Floor já validado.

@@ -9,7 +9,10 @@ signal died
 @export_range(0.0, 5.0, 0.05) var invulnerability_duration: float = 0.5
 
 var current_health: int
+var _base_maximum_health: int = 5
 var _invulnerability_remaining: float = 0.0
+
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
 var is_dead: bool:
 	get:
 		return current_health <= 0
@@ -18,7 +21,24 @@ var is_invulnerable: bool:
 		return _invulnerability_remaining > 0.0
 
 func _ready() -> void:
+	_base_maximum_health = maxi(maximum_health, 1)
 	current_health = maxi(maximum_health, 1)
+	health_changed.emit(current_health, maximum_health)
+
+func get_base_maximum_health() -> int:
+	return _base_maximum_health
+
+func apply_run_build(build: RunBuild, acquired_upgrade_id: StringName = &"", previous_rank: int = 0) -> void:
+	var chassis_rank := build.count_for(&"chassi_reforcado") if build != null else 0
+	maximum_health = UpgradeCatalogScript.maximum_health(_base_maximum_health, chassis_rank)
+	current_health = clampi(current_health, 0, maximum_health)
+	if not acquired_upgrade_id.is_empty() and current_health > 0:
+		var recovered := UpgradeCatalogScript.acquisition_heal(
+			acquired_upgrade_id,
+			previous_rank,
+			build.count_for(acquired_upgrade_id) if build != null else previous_rank
+		)
+		current_health = mini(current_health + recovered, maximum_health)
 	health_changed.emit(current_health, maximum_health)
 
 func restore_health_for_room_transition(restored_current: int, restored_maximum: int) -> bool:

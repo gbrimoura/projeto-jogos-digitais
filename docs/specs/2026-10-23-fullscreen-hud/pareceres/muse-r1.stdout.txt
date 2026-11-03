@@ -1,0 +1,7 @@
+Revisão de configuração fullscreen + HUD conceitual — conferindo chaves Godot sem alterar nada.
+STATUS: done
+SUMMARY: Sem defeitos P1/P2. `project.godot` confere com DIFF/SPEC: viewport 1152x648 preserva enquadramento das salas sem Camera2D, stretch `canvas_items` existente mantido, aspect `keep` preserva 16:9, overrides 1920x1080 são alvo windowed sem forçar modo de vídeo do SO, mode=3 é fullscreen convencional correto (não exclusivo=4). HUD é somente direção conceitual sem implementação e sem inventar slots/economia/raridade/acúmulos.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Fullscreen usa resolução nativa/corrente do monitor, não garante 1920x1080; overrides só valem em janela. Escala fracionária 5/3 com `canvas_items` pode precisar validação visual futura já admitida no SPEC. Fallback windowed 1920x1080 pode exceder telas <1080p. Sem validação runtime por escopo. Duplicação HUD RunRoot vs CombatRoom segue pendente.
+NEXT_STEP: Sem correção de config; avançar para detalhamento HUD com resolução da duplicação e validação visual futura.

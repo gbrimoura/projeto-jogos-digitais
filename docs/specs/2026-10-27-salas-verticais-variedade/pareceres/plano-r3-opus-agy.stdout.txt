@@ -1,0 +1,30 @@
+STATUS: done
+
+SUMMARY: O delta R3 fecha os meus dois P1 do R2. Não sobrou nenhuma falha física concreta que bloqueie o plano. Confiro os dois itens abaixo. Fiz só as contas no texto, com os parâmetros 640/1600/260, corpo de 76 de altura e raio 14. Não rodei nada.
+
+- **P1-1 (sala inicial com entrada e saída LEFT):** resolvido pelo item 1.
+  - A regra `exit_dir != entry_dir` passa a valer em todas as salas, e a entrada externa LEFT fica reservada.
+  - Quando o sentido é LEFT, o primeiro link é vertical. A partir daí as colunas são sempre novas, não há reversão vertical, e a sala terminal escolhe uma direção diferente da entrada sem criar sala extra.
+  - Para Run de 3 links, todas as combinações são finitas e não se sobrepõem. O exemplo é (0,0)→UP→(0,1)→LEFT→(−1,1)→… A garantia de "≥1 vertical com ≥2 links" continua satisfeita.
+- **P1-2 (arcos altos com gate fechado em vez de aberto):** resolvido pelos itens 2 e 3.
+  - Escada de 4, do penúltimo apoio (topo 256, x 608..768) ao último: a cabeça passa de 64 em t≈0,278 s, depois de uns 72 px de deslocamento horizontal. Saindo com o centro em ≤746 (margem 8 + raio 14), o centro chega a ~818, já dentro de ≥790, o mínimo para o corpo inteiro caber no vão 776..1032. Sobram ~28 px. O pouso cai em ~902, dentro da faixa segura de 846..962.
+  - Escada de 5: o penúltimo apoio (708..812) já fica sob o vão aberto, então o arco é trivial.
+  - Com o gate fechado, a subida ao último apoio dependeria de bater a cabeça (os pés parariam em 140, abaixo do topo 160). O R3 deixa explícito que isso não é exigido e proíbe inimigo no último apoio alto. Está correto.
+  - Na entrada UP, o jogador nasce sobre o apoio em 160 com a cabeça em 84, abaixo do teto em 64. A rota descendente a partir do spawn é coerente.
+  - O espelho é exato (1152−904=248), com vão 120..376, e as contas ficam simétricas.
+
+CHANGED_FILES: none
+
+TESTS: none (respeitando o AGENTS e o pedido; não escrevi artefato nenhum, nem o do `/plan`).
+
+RISKS: são condições de implementação, sem escopo novo.
+1. **Integração discreta.** Com o padrão do Godot (soma a gravidade e depois `move_and_slide`) a 60 Hz, a altura máxima do pulo fica em ~122,7 px, não nos 128 da conta contínua. As margens mudam assim:
+   - subida do piso ao apoio em 448: a folga cai de 16 para ~10,7 px;
+   - salto entre apoios com vão de 56: a folga contra a face lateral do próximo apoio cai para ~10 px.
+
+   Ainda fecha, mas o validador precisa usar o mesmo integrador e o mesmo passo do runtime, não a fórmula fechada.
+2. **Ponto de referência da linha UP 32.** Se o sensor usar o corpo, o centro ou a cabeça, sobra folga. Se usar a origem nos pés, o salto a partir de 160 chega a 32 exatamente no contínuo e a ~37 no discreto. Nesse caso a saída UP nunca dispara. O validador e o runtime precisam usar a mesma referência. Se for a dos pés, a decolagem da escada não fecha.
+3. **Guard top −48.** A cabeça chega a no máximo −44 no contínuo, menos alto no discreto. Fica abaixo de −48, sem colisão, mas a folga é pequena.
+4. **Item 6 (não físico).** O AGENTS.md que eu tenho aqui confirma `grok-4.7-xhigh-fast`. A precedência do 4.6 depende da instrução explícita do usuário. Vale registrar essa decisão no histórico do plano. O Grok R2 continua pendente e não deve contar como aprovação.
+
+NEXT_STEP: Fixar no plano a referência do sensor UP e a exigência de que o validador use o mesmo integrador discreto do runtime. Depois disso o plano pode ir para implementação com o subagente exigido. Em cada incremento, as revisões de runtime (Gemini, Grok com o identificador que você decidir, Muse e Opus via Cursor `claude-opus-5-5-high`) continuam obrigatórias.

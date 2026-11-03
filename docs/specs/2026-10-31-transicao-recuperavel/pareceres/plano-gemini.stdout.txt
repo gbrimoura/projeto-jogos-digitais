@@ -1,0 +1,18 @@
+STATUS: done
+SUMMARY: Revisão prospectiva do plano de carregamento transacional de salas e mitigação de falha técnica concluída em modo somente leitura. A abordagem transacional (preparar/validar antes de descartar a sala de origem) é sólida e resolve adequadamente a conversão indevida de erro técnico em derrota (GameOver). Foram identificados pontos de atenção contratuais críticos (P1 sobre o momento de avanço do estágio e P2 sobre isolamento da árvore, idempotência de recompensas e sala inicial) a serem incorporados antes da execução pelo Luna.
+
+FINDINGS:
+- **[P1] Ponto de commit de `_advance_stage` vs. rollback de descritores**: No fluxo atual, `_advance_stage` muta variáveis de estágio, famílias e arrays descritores antes de `_load_current_encounter`. Se o estágio for avançado antes da validação da sala candidata, um rollback em falha exigirá reverter manualmente o índice de estágio e restaurar pools/descritores anteriores. O plano deve explicitar **commit diferido**: `_advance_stage` (ou a consolidação final do estágio) só deve ser aplicado quando a sala candidata for aprovada na validação e estiver pronta para substituir a sala de origem, evitando estados intermediários inconsistentes ou operações frágeis de desfazimento.
+- **[P2] Isolamento estrito da sala candidata durante validação na árvore**: Ao adicionar a candidata com `add_child` para disparar `@onready`/`PlayerHealth` antes de descartar a sala antiga, `process_mode` deve ser estritamente `Node.PROCESS_MODE_DISABLED` (não apenas `PAUSED`). Isso impede que `Area2D`, corpos físicos, câmeras secundárias e ouvintes de áudio da candidata interfiram na simulação física ou nos sinais da sala anterior ativa enquanto ambas coexistem temporariamente.
+- **[P2] Bifurcação para falha na Sala 0 (sem sala prévia)**: Quando a falha ocorre no primeiro carregamento da run (`current_room_instance == null`), não há sala anterior nem porta para rollback. O plano deve detalhar explicitamente o tratamento de UI/estado para esse caso: exibir o painel de erro técnico com seed/diagnóstico e opções de retry de carregamento ou retorno ao menu, com guardas contra acessos a ponteiros nulos de sala.
+- **[P2] Idempotência explícita da recompensa de chefe no retry**: Para garantir que a recompensa de chefe não seja concedida novamente ao acionar a porta de transição após um rollback, o plano deve formalizar uma flag ou trava de estágio (ex.: `reward_claimed_for_stage`) no `RunController`, impedindo reentrada na rotina de concessão caso o jogador interaja novamente com a porta.
+
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+- **Sobrescrita ou colisão de nomes na árvore**: Se ambas as salas compartilharem o mesmo nome default no nó container sob `Main`, o Godot pode renomear a segunda sala (ex.: `@Room@2`), quebrando buscas pontuais por caminho caso existam nós dependentes de hierarquia estática.
+- **Vazamento de conexões de sinais em descarte**: Se a sala candidata conectar sinais a nós externos/autoloads durante seu ciclo de entrada na árvore, esses listeners devem ser garantidamente desconectados ou limpos caso a candidata seja rejeitada e liberada via `queue_free()`.
+- **Dessincronização de Fade/Input no cancelamento**: A transição para o estado de erro e o rollback para a sala concluída não devem deixar a tela escura por fade incompleto nem o jogador em estado de trava de input (`_transition_in_progress` preso).
+
+NEXT_STEP: Ajustar o plano incorporando o commit diferido de `_advance_stage`, o uso de `PROCESS_MODE_DISABLED` na candidata e as guardas contratuais para Sala 0 e recompensas de chefe; em seguida, prosseguir com a implementação delegada ao Luna (`gpt-6-luna`, raciocínio `xhigh`) em `scripts/world/run_controller.gd` e `scripts/world/main.gd`.

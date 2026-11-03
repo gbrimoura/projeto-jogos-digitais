@@ -1,0 +1,7 @@
+Revisão somente leitura do pacote mecânico — conferindo gerador, paleta e preservação sem alterações.
+STATUS: done
+SUMMARY: Pacote art-only coerente (7 IDs/caminhos, 64x40->2x 128x80, paleta 19 travada, alpha binário, frames/font só leitura, sem Godot/testes). P1: ricochete_pressao usa 12 cores opacas (ink/steel/steelLight/copper/copperDark/amber/iron/brass/ivory/cream/red/redDark) acima do max_colors_per_icon 10 do manifest. P2: manifest omite preview nativa 432x352; volante dínamo com anel 2px (12 vs 10, cubo 4 vs 2) contra contorno 1px; motor/carga com lateral esquerda silver mais clara que direita steelLight invertendo luz alto-direita; chama toca y=39 sem contorno — efeitos isentos? Não afirmo inspeção visual sem PNG; vale inspeção root do contato/cartas.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Contagem de cores por inspeção estática do gerador; confirmação pixel e legibilidade dependem do contato/cartas já inspecionados pelo root; faísca carga colada ao corpo pode ler-se como secundária curta.
+NEXT_STEP: Reduzir ricochete para <=10 cores ou ajustar contrato, completar manifest com 432x352, uniformizar contorno/luz e recongelar para aceite visual.

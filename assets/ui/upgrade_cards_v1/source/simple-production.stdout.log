@@ -1,0 +1,10 @@
+ART_OK impacto_reforcado 64x40 base, 128x80 export
+ART_OK motor_acelerado 64x40 base, 128x80 export
+ART_OK carga_reativa 64x40 base, 128x80 export
+ART_OK ricochete_pressao 64x40 base, 128x80 export
+ART_OK mola_retorno 64x40 base, 128x80 export
+ART_OK dinamo_defesa 64x40 base, 128x80 export
+ART_OK chassi_reforcado 64x40 base, 128x80 export
+PREVIEW_OK 3 cards, descriptions and 2 labeled topics
+ART_CONTACT_OK 7 simplified illustrations
+UPGRADE_CARDS_ART_ONLY_OK ./assets/ui/upgrade_cards_v1

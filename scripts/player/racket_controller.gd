@@ -14,6 +14,7 @@ signal swing_cancelled
 
 const ARC_SEGMENTS: int = 12
 const WORLD_MASK: int = 1
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
 
 @onready var _shot_origin: Node2D = get_parent().get_node_or_null("ShotOrigin") as Node2D
 @onready var _racket_visual: RacketVisual = get_parent().get_node_or_null("PlayerVisual/RacketVisual") as RacketVisual
@@ -24,6 +25,8 @@ const WORLD_MASK: int = 1
 var _aim_direction: Vector2 = Vector2.RIGHT
 var _frozen_direction: Vector2 = Vector2.RIGHT
 var _swing_id: int = 0
+var _last_rewarded_swing_id: int = -1
+var _dash_cooldown_refund: float = 0.0
 var _active: bool = false
 var _swing_duration: float = 0.0
 var _active_remaining: float = 0.0
@@ -155,7 +158,18 @@ func register_parry_success(swing_id: int) -> void:
 	if swing_id != _swing_id:
 		return
 	_success_flash_remaining = 0.18
+	if swing_id != _last_rewarded_swing_id:
+		_last_rewarded_swing_id = swing_id
+		if _dash_cooldown_refund > 0.0:
+			var player := get_parent()
+			var movement := player.get_node_or_null("MovementController") if player != null else null
+			if movement != null and movement.has_method("reduce_dash_cooldown_remaining"):
+				movement.call("reduce_dash_cooldown_remaining", _dash_cooldown_refund)
 	_update_feedback()
+
+func apply_run_build(build: RunBuild) -> void:
+	var rank := build.count_for(&"dinamo_defesa") if build != null else 0
+	_dash_cooldown_refund = UpgradeCatalogScript.dash_refund_seconds(rank)
 
 func cancel() -> void:
 	_active = false

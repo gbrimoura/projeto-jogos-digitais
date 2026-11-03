@@ -1,0 +1,47 @@
+[
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "8361AE5C95A22F78B3B93E254FD5D37D5B2CA8A15C66A2CD7A35AA4F3F168D5D",
+    "length": 17026
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "578CDDA1D1A2FEB87452ADB82BBBECC249552768A814D496BFC3C24F25B5099D",
+    "length": 11035
+  },
+  {
+    "path": "scenes/exit_door.tscn",
+    "sha256": "0D2E8EB5D24D9C7A73F7B6274B6A6716FD78970CABAEBF300B56D6CBD5FFBA8A",
+    "length": 1595
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "70C309F9D22BF6402AB60DBA52ADF4663A8086DF85D6940537DCAAFD814B5AD0",
+    "length": 4559
+  },
+  {
+    "path": "scripts/world/factory_wall_visual.gd",
+    "sha256": "990F7F0509A848BBEA1DF9EACBD311461B30C69CB22BA92D21A81462F29E4BAE",
+    "length": 1708
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1-atlas.png",
+    "sha256": "1ECBCD964639CEE5B8502076952B9AA12909E30B146EF62B6330CC36258CA7D5",
+    "length": 10030
+  },
+  {
+    "path": "assets/environment/factory_v1/tileset-fabrica-v1.aseprite",
+    "sha256": "84032A2A1896CE948B068ECD44FE0560A4224584F16DB250E4FCE5039AAA18A8",
+    "length": 6249
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/pitch-assets/tileset-fabrica-v1/palette-fabrica-v1.json",
+    "sha256": "8C8484C59D695F2548E216BA521E3B91EFABF2BCD26B07DD43D45CBAE9472D3D",
+    "length": 660
+  },
+  {
+    "path": "../GDD_Dieselpunk_Noir/04-combate-e-builds.md",
+    "sha256": "3DB1549F070D69A5FA815E23BE417BC4AA3DC70649B40D8C7239E3166BDFF2CC",
+    "length": 36341
+  }
+]

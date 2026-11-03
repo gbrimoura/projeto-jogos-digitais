@@ -1,0 +1,11 @@
+STATUS: done  
+SUMMARY: Plano escopado é implementável no recorte autorizado (labels fora da fase, seta só em Exit limpa e atravessável, hatch visual sem mexer em física/gate/fade). Leitura do baseline confirma VOID+frame no mesmo CanvasItem e DoorLabel como único texto de porta. Um P1 de oclusão precisa entrar no contrato antes do único Luna xhigh/30min; o resto é trava de direção/índice/guard.  
+FINDINGS:  
+P1: `SideDoorVisual` pinta VOID+moldura no mesmo `_draw`; `configure_managed_orientation` põe o visual vertical em `z_index=1` (DOWN 256×96 em y556..652). Um único CanvasItem não coloca o poço atrás do ator e a soleira à frente. O contrato ainda trata a divisão como condicional e prefere um só nó, o que não cumpre o aceite. Travar duas camadas filhas de `SideDoorVisual`: fundo = VOID/poço abaixo do ator; frente = só moldura/soleira/parede interna, abertura sem retângulo opaco. Não mudar 560/496/604/16, trigger, gate nem offsets.  
+P2: Overrides `DoorLabel` de `EntranceDoor` usam `index=2` em [scenes/main.tscn](scenes/main.tscn) e [scenes/second_room.tscn](scenes/second_room.tscn). Cena auxiliar só como filha de `SideDoorVisual` ou depois de `DoorLabel`; não inserir irmão antes do índice 2.  
+P2: `ExitDoor` já exporta `portal_direction` (managed grava; standalone default RIGHT). A seta deve ler esse descritor. `flip_h` só espelha a moldura; o contrato não pode mandar standalone inferir a seta só de `flip_h`.  
+P2: `_update_presentation` hoje aborta se `DoorLabel` for inválido e não chama `set_aperture_open`. Ao tornar a label opcional, separar o guard. Há dois ramos de desenho (legado 64×128 e genérico 256×96); seta e camadas nos dois.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: Runtime visual fica declarado, sem Godot/testes. Encaminhar falha standalone a `CombatRoom/HUD/StatusLabel` é canal autorizado e não exige editar HUD/Main; `refresh_status_after_physics` reescreve “ÁREA LIMPA” e o HUD modular pode esconder o label — overlay gerenciado permanece a superfície fiável. Orçamento 30min apertado para quatro direções; Fast/priority não confirmável. Preservar diffs locais fora do recorte.  
+NEXT_STEP: Root incorpora o P1 (duas camadas sob `SideDoorVisual`) e as travas P2 no contrato; em seguida um único implementador gpt-6-luna xhigh, 30min, só nos arquivos já autorizados. Sem engine/testes/commit.

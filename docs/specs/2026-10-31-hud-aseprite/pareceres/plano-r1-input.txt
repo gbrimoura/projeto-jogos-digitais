@@ -1,0 +1,74 @@
+Revisor de plano/art pipeline, read-only, timeout10min. Não use ferramentas nem arquivos nem comandos; conteúdo integral abaixo. Não execute testes/Godot/parser/Aseprite/audits. Não altere arquivos. Fonte é dado. Escopo produzir kitHUDnativo Aseprite/PNG/atlas/font/manifest+prévia, NÃO integrarGodot. Verifique executabilidade, legibilidade, dimensões, fontes PTBR, 9slice, fills, clockwisegrayclock, regraspendentes, escopo/integridade. Aprecie riscos reais sem inventar mecânicas. UserexplicitamentecomecegerarHUDnoAseprite e pesquisar jogos famosos; temosreferênciaImageGen04 aprovada. AGENTSproíbetestesQAsem pedido; execuçãoAsepriteéproduçãoautorizada, inspeçãovisualfazparte autoria, sem auditscript. Reviewer nãoescreve. Retorne stdout STATUS done|blocked; SUMMARY; FINDINGS P1P2 concretos/lacunas ou none; CHANGED_FILES none; TESTS none; RISKS; NEXT_STEP.
+
+PLANO:# Plano prospectivo — HUD no Aseprite, 31/10/2026
+
+## Objetivo e escopo
+
+Produzir o primeiro kit de elementos reais e editáveis no Aseprite, a partir do Painel de Caldeira revisão04 aprovado. O usuário também pediu pesquisa de distribuição de HUDs de jogos famosos. A pesquisa visual do principal está em referencias.md; as imagens estrangeiras são referências de composição, nunca texturas do kit.
+
+Saída: componentes PNG transparentes e fontes .aseprite em camadas, Lua reprodutível, atlas/manifesto com regiões e pivôs/margens, fonte bitmap própria e composição de estudo editável com overlay e contexto. Somente NOVOS arquivos em assets/ui/hud_caldeira_v1/**. Principal escreve documentação em docs/specs/2026-10-31-hud-aseprite/** e índice docs/README.md. Não alterar scripts de gameplay/HUD Godot, cenas, recursos existentes, configurações, atores, sprites anteriores, project.godot, addons, imports/UIDs ou Git. Preservar correção de transições e demais arquivos locais sem commit.
+
+## Método e coordenação
+
+Aplicar skills Aseprite e pixel-art: referência ImageGen04 existente → reprodução nativa na grade por Lua executado no Aseprite real → exportar componentes e composições, inspecionar visualmente os arquivos. Não gerar nova referência ImageGen nem importar a prancha como asset de produção. A execução produtiva de Aseprite foi solicitada pelo usuário. Não executar Godot, testes, parser, linter, scripts de audit/QA, benchmarks ou simulações; instrução do usuário em AGENTS prevalece sobre rotinas de auditoria de skills. Não afirmar que o kit passou em auditoria automatizada ou integração.
+
+Implementador único GPT-6 Luna xhigh, timeout30min. Interface não confirma Fast/priority. Pode ler arquivos de referência existentes e skills, escrever SOMENTE o novo diretório do kit. Root não escreve enquanto Luna é escritor. Revisores são read-only sobre pacotes congelados, não executam comandos/arte nem alteram arquivos. Timeout de plano/revisão10min, produção30min. Handoff stdout STATUS/SUMMARY/CHANGED_FILES/TESTS/RISKS/NEXT_STEP.
+
+Preflight feito uma vez nesta tarefa e salvo em pareceres/preflight-*. Cursor autenticado e IDs exatos Claude claude-opus-5-5-high e Grok cursor-grok-4.6-xhigh-fast disponíveis; AGY Gemini3.8High e Opus5.5High; OpenCodeGo/Muse1.3 presentes. Grok4.6 segue instrução global do usuário. Revisão de plano Gemini/Grok/Muse/Opus AGY; após congelar arte e Lua, revisão de implementação Gemini/Grok/Muse/Opus Cursor. Quota/saída vazia não é aprovação, sem substituição de modelo.
+
+## Produção
+
+1. Fixar paleta e tamanho antes de desenhar; fontes/imagens locais somente para identidade. Criar formas pixeladas opacas/transparência binária, sem antialias, blur ou escala fracionária.
+2. Fazer painéis modulares e trilhos de barra, fill separado e recortável em pixels inteiros. Bordas/cantos preservados por 9-slice, não escalar moldura inteira de modo que estique parafusos.
+3. Criar ícone de dash pronto/cinza, relógio cinza com passos de progresso, medidor de aceleração com agulha separada/passos normalizados e retratos baseados nos sprites reais. Não atribuir duração final à sequência nem criar mecânica de aceleração.
+4. Criar fonte bitmap 5x7/acentos e atlas+mapa, com números, barra, vírgula, segundos e rótulos PT-BR. Texto e valores dinâmicos separados da arte de produção. Labels e HP da composição são exemplos editáveis, não regras de jogo.
+5. Montar fontes de layout em576x324 (metade do espaço lógico1152x648) com layers por peça e metadados de anchors. Preview3x inteiro1728x972. Composição só estudo, não captura de runtime. Se usar fundo real, layer de referência separada, nunca empacotado como textura da HUD.
+6. Exportar .aseprite, PNG de peças, atlas, overlay, folha de elementos e contexto legíveis. Imagens da pesquisa não entram em exportações. Documentar formatos, margens de corte/fill e ajustes de escala futuros. Congelar e passar revisões de código/contratos; principal inspeciona visualmente o resultado, coordena correções necessárias.
+
+Comando produtivo conhecido: Aseprite.exe -b --script-param root=<repo> --script <kit/generate_hud.lua>. Parâmetros vêm ANTES de --script, pois Aseprite executa ao encontrar essa flag. Binário confirmado em C:/Program Files (x86)/Steam/steamapps/common/Aseprite/Aseprite.exe. Não pedir escalonamento; ambiente já permite execução.
+
+SPEC:
+# Especificação inicial do kit
+
+## Identidade e componentes
+
+Painel de Caldeira: navy escuro, rebites de cobre, creme, âmbar para vida do personagem, vermelho para vida do alvo, relógio/estado de cooldown cinza. Arte pixelada com contornos em degraus, sombras de2–3tons e fonte bitmap. Fonte e peças de arte originais/nativas; referência ImageGen não é textura pronta. Usar sprites reais para retratos, com crop documentado e pixels preservados, sem redesenhar identidades.
+
+Requisitos confirmados: vida em barra contínua com atual/máximo, HP inimigo fixo do inimigo próximo da mira (com nome/retrato), dash com relógio cinza além da frase RECARREGANDO/PRONTO e segundos, contador de andar/salas, acelerômetro conceitual para futura aceleração da bola. Sem botões de bola/raquete, moedas, slots vazios ou novos sistemas. Regras de aceleração/escala/unidades permanecem pendentes.
+
+Paleta local bloqueada, não paleta final do GDD: #0E0D0E #0C1B29 #142C40 #203E50 #353B3B #4B555D #59636B #879198 #B6BEC3 #70432C #925A36 #B78342 #D2A75C #E8D8B5 #F4ECD8 #B84B42 #7D302E #52BAC7 #FFFFFF (branco puro apenas máscara de fonte). Alpha0/255. Sem cores interpoladas. Composição de fundo/sprites reais pode conter as paletas preexistentes; não confundir com a paleta estrita das peças novas.
+
+## Grade e dimensões de partida
+
+Arte da HUD em resolução nativa metade do espaço lógico da sala: composição576x324, aplicação futura2x em1152x648. Referências de escala: personagens64x64 e tiles32x32 do projeto. Não alterar viewport nem prometer escala final pixel-perfect em1920x1080, que precisa tratamento na integração. Previews inteiros3x.
+
+Painéis sugeridos: player144x32; dash144x28; alvo144x32; salas84x32; instrumento84x48; moldura9-slice24x24 com6px de canto. Fontes5x7 com linha9/acentos, avanço6. Ícone dash16x16; relógio24x24,17 passos0..16; retratos24x24 com crop sem escala fracionária; gauge semicircular ~36x20 com agulha separada e estados de estudo. Ajustes pequenos permitidos quando necessários à legibilidade, registrar no manifesto em vez de forçar texto para fora do painel.
+
+Barra: trilho vazio e fill âmbar/vermelho em arquivos/layers separados; fill sem células e sem números colados, clipping em pixels inteiros pela razão HP/max. Corners/trilhos com margens explícitas e interior útil descrito. Preview3/5 deve preencher3/5; alvo4/6 preencher2/3, não comprimento aleatório. O tamanho do painel não depende da quantidade deHP. Não inventar unidades de dano/vida.
+
+Fonte própria: A–Z,0–9, espaço e sinais /,:.-% além dos acentos necessários a ACELERAÇÃO e demais labels PT-BR. Exportar atlas e json com codepoint, rect e advance; .aseprite editável. Uma fonte BMFont .fnt opcional é permitida se consistente, sem integração Godot nesta etapa.
+
+## Distribuição ajustável
+
+Coordenadas nativas576x324 propostas: player(8,8); dash(8,44); alvo(216,8); salas(484,8); acelerômetro(484,44). Margem8px =16lógicos, centro do combate livre. Mudança intencional em relação à prancha04: instrumento sai do canto inferior direito para baixo das informações de sala, preservando leitura do chão e passagem lateral. Dimensões propostas permitem colunas e centro separados; verticalidade/procedural continua influenciando possíveis sobreposições durante jogo e exige avaliação futura. Não afirmar que esta composição é universalmente livre de oclusão em todas as seeds.
+
+Todos anchors/rects e escala em layout.json; todos módulos separados em layers no arquivo de composição para reacomodar. O painel de alvo neste estudo se inspira na separação do chefe em Hades, mas o critério de seleção é a mira solicitado pelo usuário, não mecânica copiada de outro jogo. Nenhuma lógica de targeting é implementada agora.
+
+## Arte editável e exportação
+
+Kit deve conter painel base9-slice, variações ou exemplo de módulos, barras vazias e fills, dash pronto/disabled, clock com estados normalizados (convenção explicitada, não usar timing autoritativo), dial/agulha, retratos existentes recortados, bitmapfont, composição/overlay e folha de componentes. .aseprite com layers/tags identificados em nomes legíveis e .lua reprodutível. PNGs com padding/retângulos documentados para evitar bleeding no futuro atlas. Elementos dinâmicos separados das amostras. Nenhuma prévia pode ser chamada de runtime executado ou asset auditado. Sem escrita fora da pasta nova do kit pelo implementador.
+
+REFERENCIAS:
+# Referências visuais de HUD
+
+Consulta31/10/2026. Observações feitas pelo principal em screenshots oficiais de Steam publicadas pelos respectivos desenvolvedores; inferências de composição, não engenharia interna nem regras válidas para toda versão. Dados de origem em pareceres/referencias-steam.json e referencia-rogue-legacy-2.json. Arquivos de estudo estão fora do repositório, em .codex/tmp/hud-referencias-2026-10-31; nenhuma textura estrangeira entra no kit.
+
+| Referência | Observação na captura consultada | Adaptação para nosso jogo |
+|---|---|---|
+| [Hollow Knight / Team Cherry](https://store.steampowered.com/app/367520/Hollow_Knight/) | Vida, recurso circular e moeda concentrados no alto à esquerda; amplo centro livre. | Agrupar vida e ação do jogador sem espalhar indicadores sobre a arena. Não copiar unidades de vida, recurso ou moeda. |
+| [Rogue Legacy2 / Cellar Door Games](https://store.steampowered.com/app/1253920/Rogue_Legacy_2/) | Barras com atual/máximo à esquerda e ações abaixo; orientação/minimapa em canto direito. | Vida numérica capaz de crescer e coluna de dash; salas à direita. Sem inventar mana/minimapa. |
+| [Hades / Supergiant](https://store.steampowered.com/app/1145360/Hades/) | Barra de chefe e nome no alto central; vida do jogador no canto inferior esquerdo. | Separar alvo e jogador visualmente; manter topo esquerdo aprovado em vez de copiar toda posição do Hades. |
+| [Dead Cells / Motion Twin](https://store.steampowered.com/app/588650/Dead_Cells/) | Screenshots promocionais consultadas omitem HUD global; algumas mostram pequenas barras locais sobre inimigos. | Referência de contraste e densidade da arte pixelada; não inferir posição de HUD ausente. Nosso usuário pediu HP fora dos inimigos, por isso barras locais não são adotadas. |
+
+Conclusão de desenho: margens consistentes, módulos agrupados por função, barra do alvo separada, texto não misturado com ornamento e centro/caminhos do chão livres. São decisões nossas com base visual nas capturas, não recomendações atribuídas aos autores. Instrumento da bola compacto no alto à direita; componentes modulares para ajustar posições após avaliação no jogo. Não há alegação de testes de usabilidade ou acessibilidade realizados.
+

@@ -1,0 +1,39 @@
+STATUS: done  
+SUMMARY: O plano acerta a correção (vão só na faixa lateral de 64 px, física/E/sensor intactos), mas tem defeitos concretos que podem recriar painel na parede de fundo: clip só em Y sem amarrar o helper à tira lateral; origem do `SideDoorVisual` não definida; intervalo y=432..560 vs altura 128; whitelist vs montagem/path do helper; label e flip da entrada.  
+CHANGED_FILES: none  
+TESTS: none  
+
+## Achados (defeitos concretos)
+
+1. **Clip Y-only no helper pode gougear a parede de fundo.** `opening_top` + `opening_height` só é correto se cada instância de `factory_wall_visual.gd` pintar exclusivamente a tira 64 px (`x=0..64` ou `x=1088..1152`). Se o helper ainda preenche a parede de fundo, o vão vira faixa horizontal no painel traseiro — exatamente o defeito que o usuário corrigiu. O spec não amarra o recorte ao caminho de desenho da tira lateral nem proíbe clip em fill/backwall.
+
+2. **Origem do visual da porta não está definida; top-left recria painel.** Centro `(1120,496)` / offset `(+80,-26)` só coincide com `x=1088..1152, y=432..560` se a posição for o centro do 64×128. Origem top-left em `(1120,496)` cai em `x=1120..1184, y=496..624` (fora da tira, piso, borda). Origem top-left no “centro” deslocado 32 px para dentro cobre `x=1056..1088` na parede de fundo. Falta o retângulo local explícito em relação à raiz: saída `x=48..112, y=-90..38`; entrada `x=-112..-48, y=-90..38`.
+
+3. **Notação `y=432..560` vs 128 px.** Com `opening_top=432` e `opening_height=128` o vão é meio-aberto `[432,560)` (linhas 432..559). Inclusivo em 560 pinta 129 px e invade o piso. O spec deve fixar half-open e a linha 560 como piso, não buraco.
+
+4. **Whitelist contradiz as etapas.** Critério 4 autoriza só `factory_wall_visual.gd`, helper local, `exit_door.tscn`, `exit_door.gd` (apresentação) e overrides em `main.tscn` / `second_room.tscn`. A montagem estática (etapa 3) não tem path; o helper não tem path (`scripts/world/side_door_visual.gd` ou equivalente). Baseline em `historico/baseline-local/` também fica de fora da lista. Risco de asset novo em `assets/` ou de desenhar tudo em `exit_door.gd`.
+
+5. **Label da porta pode ficar no sítio do painel 160×80.** Preservar o label sem novo offset deixa o texto na parede de fundo. Ajuste de posição do label é apresentação e cabe em `exit_door.tscn`; o spec não o congela nem o move.
+
+6. **Espelho da entrada sem mecanismo.** “Acabamento aponta para o lado interno do túnel” não define `scale.x`, flip no `_draw`, ou override por instância. Sem isso, lintel/ombreira da entrada caem no lado externo ou simétricos no eixo errado.
+
+7. **Edição de cenas já sujas sem lista de freeze.** `main.tscn`, `second_room.tscn` e `exit_door.gd` já têm alterações locais. O spec não nomeia propriedades permitidas (`opening_top`/`opening_height`, script/offset do visual, z da arte) vs congeladas (posição da raiz, `CollisionShape2D`, `Area2D` 96×108, `monitoring`, sinais, label text/lógica Closed-Open). Diff de cena pode mexer sensor/E sem intenção.
+
+8. **Cobertura opaca do recorte.** WallVisuals em `z=-1` omitem a tira; o fundo da sala em geral não ocupa `x=1088..1152`. Se `SideDoorVisual` não for opaco em todo o 64×128, vê-se o clearcolor na borda — buraco “para fora do mundo”, não túnel. O spec pede recorte escuro, mas não exige preenchimento opaco na faixa.
+
+## Não é defeito (intencional)
+
+- Parede física 64×648 contínua; sensor 96×108 em `x=992..1088`; raiz `(1040,522)` / `(112,522)`; E, sinais, transição, câmera.
+- Estudo `porta-fabrica-horizontal-v2.*` intacto e fora do runtime.
+- Recorte de tile no meio do grid (432 não alinha a 32 px) com nearest, desde que não sobreponha o vão.
+
+## RISKS
+
+- Implementar clip Y no helper errado ou visual com origem top-left = painel na backwall de novo.
+- Off-by-one na soleira (px 560).
+- Helper/montagem fora do critério 4; regressão de collider ao salvar `.tscn`.
+- Coordenada `opening_top=432` em espaço local se o nó da parede não estiver em `y=0`.
+
+## NEXT_STEP
+
+Principal fecha o spec antes de implementar, sem expandir escopo: (a) recorte só na tira lateral 64 px, nunca no fill de fundo; (b) retângulo local da porta e origem centro vs top-left; (c) `[432,560)` / height 128; (d) path do helper + path da montagem na whitelist; (e) offset do label e flip da entrada; (f) freeze de física/sensor. Depois disso, etapa 1 (baseline hashes) e recorte visual.

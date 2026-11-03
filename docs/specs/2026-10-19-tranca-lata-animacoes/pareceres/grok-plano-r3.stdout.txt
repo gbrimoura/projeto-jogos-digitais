@@ -1,0 +1,34 @@
+STATUS: done  
+SUMMARY: R3 fecha os riscos reais de R1 (suporte efetivo, depenetração, flash_amount, fases, mirror (b), allowlist, sem reservas/transporte/clip complexo). Restam 2 P1 de redação mínima no contrato persistido e P2 de processo/runtime futuro. Revisão só do contrato; sem workspace, sem engine.  
+CHANGED_FILES: none  
+TESTS: none  
+
+R1 — fechamento
+
+1. Suporte efetivo — fechado. Ordem primário (spawn seguro + sweep World livre) → fallback equivalente → primeiro spawn seguro estacionário + aviso único → erro existente. Sem intervalo reduzido. Random só em SolidPlatform real; `<8px` ou obstruído → inativo estacionário. `null`/`!is_instance_valid` sem passo. `_placement_pending` + bind bloqueiam movimento precoce. Pisos atuais estáticos/eixo-alinhados.
+2. Exceção só do suporte + FLOATING — fechado. LOS/AOE continuam exclude-self; plataforma ainda bloqueia ataque. Mask 3 vs World/Player. Sem reservas entre inimigos; Worker `8/1` e Target `8/3` já se ignoram.
+3. Passo X em 2 etapas — fechado no papel. Clamp → `move_and_collide(Vector2(request_dx,0), true, 0.0)` só query → `travel.x` no mesmo sinal/módulo e no intervalo (oposto → 0) → só `global_position.x += safe_dx`. Sem Y, sem slide, sem collide real, sem transporte do Player. `dx` ≤ `48*delta`.
+4. Guards + combate — fechado. Aquisição em IDLE (e na pausa) antes de andar; windup zera movimento, congela facing, trava centro. 3 fases sem deslocamento. Ponta/bloqueio = inversão + pausa 0,25 sem jitter. Player morto → idle congelado.
+5. Visual — fechado. Precedência derrotado > placement/sem percurso/pause/IDLE parado (`idle` 14) > walk se `actual_dx>0.01` > fases manuais por pesos. Flash só `flash_amount` (não `flash_strength`, não cel impact). `flip_h` só no sprite; mirror do tubo é (b) aceito. NameLabel irmão, fora do flip. 15 cels.
+6. Pipeline Aseprite — contrato de arte isolada, ainda sem arte/runtime. Atlas 960×64, append/durações alinhados a 650/140/1400, speed 1, baseline y56 x32 / scale 2 no papel. SHA256 da ref é fato do principal; esta revisão não recomputou. Sem prova de vazão/RGB.
+7. Fatos de layer/preview/GDD — aceitos. Bola/preview/Worker/shader/salas fora. GDD antigo histórico; patrulha 19/10 autorizada.
+8. Allowlist OP6 — fechada. Sem `.import` extra (mesmo path/UID). Sem testes/Git/Godot.
+
+P1 remanescentes (correção mínima no plano/spec, sem ampliar escopo)
+
+1. Área de ataque só em ACTIVE. No windup: capturar centro, visual, `monitoring=false`. ACTIVE 140 ms: ligar. Recovery/cancel/derrota: ocultar área e soltar lock antes de IDLE. Evita hitbox de 650 ms.
+2. Parar o walk no windup. `AnimatedSprite2D.stop()` (ou pause) em `_begin_windup` antes dos frames manuais. Sem `play()` nas 3 fases. Senão o loop de walk sobrescreve a fase.
+
+P2 (não bloqueiam o freeze do delta)
+
+- Passo/query/`global_position.x` só em `_physics_process`.
+- `flash_amount=0` após 120 ms e em cancel/recovery/derrota; não deixar o shader preso.
+- `safe_margin` 0.0: overlap de 1 frame vs Player/parede possível; sem dano ao toque; Player separa. Opcional: default 0.08.
+- Bind + exceção ficam obsoletos se a sala substituir o SolidPlatform; `is_instance_valid` já para o passo. Fixtures atuais estáticas; gerador intocado.
+- Sobreposição X no mesmo frame se o Player entrar depois da query; sem dano/transporte.
+- Pausa 0,25 ≪ 2,19 s de ataque: pós-recovery pode andar na ponta e inverter de novo. Aceitável.
+- Layer 8 do Target igual ao Worker; hit da bola segue o path atual do `combat_enemy`, não mask 9≠layer 8. Verificar só no incremento runtime, sem alegar prova agora.
+- Cels 0..2, baseline, 23,04 px/ciclo e hash: dependem da arte futura.
+
+RISKS: P1 área/playback se Luna persistir “muda área” sem janela ACTIVE e sem `stop()`. Teleporte X + query não é prova de depenetração no Godot. SHA256/vazão/foot não verificados aqui. `.import` pode mudar sozinho no editor; allowlist não inclui.  
+NEXT_STEP: Luna grava P1 (área só ACTIVE + `stop()` no windup) e P2 `_physics_process`/`flash_amount=0` no plano/spec; congela o pacote; arte Aseprite isolada depois; runtime só no allowlist OP6. Sem ImageGen/engine/QA nesta frente.

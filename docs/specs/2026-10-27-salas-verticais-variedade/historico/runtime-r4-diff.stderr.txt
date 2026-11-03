@@ -1,0 +1,14 @@
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/exit_door.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/exit_door.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/factory_wall_visual.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/factory_wall_visual.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/main.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/main.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/managed_room_topology.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/managed_room_topology.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/room_layout_generator.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/room_layout_generator.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/room_run_layout.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/room_run_layout.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/run_controller.gd', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/run_controller.gd', CRLF will be replaced by LF the next time Git touches it

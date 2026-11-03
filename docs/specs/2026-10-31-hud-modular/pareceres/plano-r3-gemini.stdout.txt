@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Análise prospectiva R3 aprovada. Os fechamentos técnicos de R3 resolvem os riscos remanescentes de R1 e R2: a compensação matemática via `get_viewport().get_stretch_transform()` garante escala final inteira e pixel-perfect sem violar a imutabilidade de `ProjectSettings`; o desacoplamento da ocultação visual na pausa (`inner_content.visible = false`) evita conflito com os overlays em Layer 1 sem disparar unbind prematuro; o carregamento dinâmico via `ResourceLoader.exists` protege contra quebras em export; a priorização de `is_dead` e o uso de `can_dash` blindam o estado do dash sem expor atributos privados; e o fallback seguro de retratos (`null` para inimigos sem arte no kit) fecha as dependências visuais.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: Em resoluções de janela com dimensões estritamente inferiores ao espaço de referência (576x324), a escala mínima 1 resultará em clipping das bordas extremas da HUD (comportamento documentado e aceitável para preservar a integridade pixel-art sem blur); a adição pontual do getter puro `get_dash_cooldown_duration()` em `MovementController.gd` é a única alteração permitida em script de gameplay existente e deve ser mantida estritamente sem efeitos colaterais.
+NEXT_STEP: Prosseguir com a implementação da HUD modular e da bridge conforme os contratos consolidados de R2/R3, iniciando pela criação dos scripts e cenas em `res://scripts/ui/hud/` e `res://scenes/ui/hud/`, adição do getter em `MovementController.gd`, e integração não destrutiva no `run_root.tscn`.

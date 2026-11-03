@@ -1,0 +1,17 @@
+FRAME_CLEAN_OK source 3 states; isolated copper markers removed at y=144,158,172
+UPGRADE_CARDS_GENERATION_ERROR: C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:478: attempt to index a nil value (global 'K')
+stack traceback:
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:478: in upvalue 'topic_colors'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:520: in upvalue 'wrap_topic'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:622: in local 'make_preview'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:666: in function <C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:1>
+	[C]: in function 'xpcall'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:678: in main chunk
+C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:681: C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:478: attempt to index a nil value (global 'K')
+stack traceback:
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:478: in upvalue 'topic_colors'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:520: in upvalue 'wrap_topic'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:622: in local 'make_preview'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:666: in function <C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:1>
+	[C]: in function 'xpcall'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:678: in main chunk

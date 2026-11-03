@@ -1,0 +1,9 @@
+STATUS: done
+SUMMARY: R1 valley/HUD confere com escopo: valley inners travados em 448, gaps 80..96, canônico [216,456,696,936] com mesmos tops/widths, validador/física/primary0-fallback1 preservados, RNG calls preservadas (jitter internos consumido e ignorado), determinismo versão nova. HUD corrige freed-cast com validade rawVariant antes de casts em todos os loops de cache. Números manuais de pés (399.11 frame5, 315.11 frame23, 451.11/446.67/442.67) são aritmeticamente consistentes com speed260/accel1600/gravity1600/jump640/dt1/60 sem alegar replay executado.
+FINDINGS:
+- P1: none. Sem enfraquecimento de física, sem troca de primary, sem toque em outras famílias no diff fornecido.
+- P2 (concreto, escopo): scripts/ui/hud/run_hud_bridge.gd ~_ensure_legacy_hidden true-branch: gate novo `if _is_live_node(enemy)` antes de `_hide_enemy_legacy_nodes` muda comportamento vs original que escondia sempre (quando válido) e vs demais branches que só checam validade+tipo. Para válido-mas-não-live pode vazar label legado em modo compacto. Sugestão mínima: remover gate, manter só `is_instance_valid`+`is Node`+erase como nos outros loops, sem mudar tokens/sinais/aparência.
+CHANGED_FILES: none
+TESTS: none
+RISKS: passo mínimo valley 224 vs 192 antes aumenta extensão lateral (borda direita canônica 1016 vs 984, esquerda 136 vs 176) e pode elevar taxa de rejeição/fallback para widths 184+gap96; validador cobre via 12 tentativas+fallback canônico. Semântica exata de `_is_live_node` e limites `RIGHT_LIMIT/FIRST_LEFT/MAX_RISE` em `_managed_entries_are_safe` completo não visíveis no recorte; assumido não-rejeição do canônico novo por tops inalterados.
+NEXT_STEP: decidir P2 (remover `_is_live_node` do hide), congelar estado e seguir sem novos redesenhos.

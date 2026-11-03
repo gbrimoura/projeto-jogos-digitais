@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Revisão estática concluída com parecer favorável para os dois ajustes de apresentação em scripts/world/exit_door.gd e scripts/world/exit_direction_indicator.gd. O alinhamento horizontal das setas utiliza corretamente a coordenada Y de SideDoorVisual tanto para portas gerenciadas quanto standalone (preservando o offset de X48 relativo à linha do portal e mantendo inalterados os offsets UP/DOWN), e o piscar binário lento implementa estritamente o ciclo ON 0.8s / OFF 0.4s via retorno no _draw em runtime, preservando o visible de elegibilidade, reiniciando aceso na habilitação, preservando fase em chamadas repetidas com mesmo estado e mantendo o editor estático.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco concreto identificado. O acesso a _door_visual é resguardado por is_instance_valid; os nós preservam a lógica de física, crossing, sinais e colisões sem alteração de escopo; e queue_redraw é disparado exclusivamente na transição de fase (was_lit != is_lit), evitando repinturas contínuas desnecessárias.
+NEXT_STEP: Prosseguir com a integração dos diffs autorizados para exit_door.gd e exit_direction_indicator.gd na frente de implementação.

@@ -1,0 +1,1019 @@
+REVIEW R1 tópicos cartaspixeladas. User pediu retirar quadradinhos amarelos, agrupar efeitos com traço e destacar benefícios/valoresnovos. Implementação Luna gpt-6-luna xhigh. Root inspecionou PNG e fonte: dashciano#52BAC7, textoatual/cinzas#B6BEC3, NOVOvalor#D2A75C inclusivesinais/decimais/unidade. Não destacar Até3 condição. Prefix - sóprimeiralinhatópico; continuation2spaces; wrapconteúdo22+prefix2=24glyphs, max3linhas globally. Todasfunçõesdegameplay/resources/Catalog/HUDbase nãoeditadas. 7iconePNG/ASE,fontes/contatosprotegidos. Revisar tipos/parserestaticamentesemexecutar, spans signed/unsigned e limites. Godot4.7. NÃOferramentasescrita/engine/testes/audits/comandos. ArteAsepriteproduçãoexit0, usernãoaprovoufinalainda.
+# Plano prospectivo — traços e destaques nos tópicos das cartas
+
+## Objetivo
+Retirar os pequenos quadrados cobre que aparecem atrás dos tópicos, representar cada efeito como um tópico com traço ciano e destacar em amarelo apenas o benefício numérico ou o valor novo de uma comparação. Manter a moldura de 160×240, a fonte bitmap, os ícones e a lógica dos upgrades.
+
+## Escopo autorizado
+- `scripts/ui/upgrade_card.gd`: preparar e quebrar os tópicos por conteúdo e repassar as cores dos glifos.
+- `scripts/ui/upgrade_stat_text.gd`: novo renderizador local derivado de `HudBitmapText`, sem carregar outra fonte.
+- `scenes/ui/upgrade_card.tscn`: atribuir o script aos controles de tópicos existentes e ajustar apenas esses controles/backdrops se necessário.
+- `assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua`: modo explícito `preview_only=true` + `clean_frames=true`, limpando só as marcas pequenas na região dos tópicos das três molduras; atualizar o estudo de três cartas.
+- `assets/ui/upgrade_cards_v1/source/upgrade-card-frame-states.aseprite` e os três `frame_*_160x240.png`: apenas as marcas isoladas na área y=118..186, nos estados normal/focus/pressed.
+- `assets/ui/upgrade_cards_v1/preview/upgrade-cards-study-576x324.png` e `upgrade-cards-study-1728x972.png`: prévias atualizadas pelo Aseprite Lua.
+- `assets/ui/upgrade_cards_v1/README.md` e `assets/ui/upgrade_cards_v1/export/manifest.json`: atualizar somente o contrato da apresentação e os arquivos realmente regenerados.
+
+## Restrições
+Não alterar gameplay, `UpgradeCatalog`, recursos de upgrades, mecânicas, IDs, caminhos ou arte dos sete ícones, fonte/atlas, tamanho, geometria ou molduras globais. Não tocar no contact sheet. Não executar Godot, imports, testes, parser, linter, auditorias, render audits ou simulações. Produção somente com Aseprite real; sem commit, push, limpeza ou mudanças fora deste escopo.
+
+## Estado
+Escopo implementado e congelado para revisão. A baseline foi arquivada antes da edição; revisões externas somente leitura ficam a cargo do agente principal.
+# Especificação — tópicos e valores destacados
+
+## Layout e copy
+- Área de cada linha: 24 glifos (fonte 5×11, avanço 6 px); três linhas no máximo.
+- Cada tópico começa com `- `; continuação do mesmo tópico começa com dois espaços.
+- Quebrar o conteúdo em palavras com limite de 22 glifos, reservando duas colunas para o prefixo. Preservar palavras, pontuação e spans de cor através das quebras.
+- Usar ciano `#52BAC7` no traço; cinza `#B6BEC3` nos rótulos, valores atuais, setas e condicionais; amarelo `#D2A75C` no benefício nominal ou valor novo.
+- NOVO: realçar sinal, decimal e número, incluindo `s` quando for a unidade. EVOLUIR: manter cinza o valor atual e `>`, e realçar o valor novo completo, com sinal/unidade. Condições `Até 3 paredes...` e `Uma vez por rebatida` ficam cinza.
+- Nenhuma caixa ou quadrado atrás das linhas de tópico. A faixa de Summary continua opaca como hoje.
+
+## Renderização
+Um script local derivado de `HudBitmapText` desenha os glifos existentes da fonte local de cartas usando o atlas/métricas já configurados pelo pai. A cor por glifo é calculada antes da quebra e remapeada a cada linha. Não alterar `HudBitmapText` nem carregar fonte nova.
+
+## Fonte Aseprite e prévias
+`clean_frames=true` só pode ser usado junto com `preview_only=true`. Limpar as marcas cobre isoladas em y=118..186 nos três frames do arquivo-fonte, sem tocar bordas, filetes/divisórias, ícones, fonte ou contato. O modo preview_only não gera os sete ícones. Reexportar as três molduras 160×240 e somente as duas prévias de estudo usando Aseprite.
+
+## Conferência manual dos sete upgrades
+Checar faixas e pior quebra, sem executar gameplay:
+- Impacto, rank máximo 220: `Dano da bola: 220 > 221` precisa de duas linhas.
+- Motor, rank máximo 3: valores de recarga com `s` permanecem juntos e legíveis, incluindo `0,55s > 0,4s`.
+- Carga, rank máximo 220: `Dano extra: +438 > +440` pode quebrar; com `No próximo acerto`, usar três linhas no total.
+- Pressão, rank máximo 3: valor por parede e limite condicional cabem em até três linhas.
+- Mola, rank máximo 3: rebotes e `Duração: 2,55s > 2,9s` cabem em até três linhas.
+- Dínamo, rank máximo 3: `Recarga do dash: -0,15s`/comparação e `Uma vez por rebatida` cabem em até três linhas.
+- Chassi, rank máximo 95: a vida máxima e `Cura na escolha: +1 vida` cabem em até três linhas.
+
+A quebra não pode truncar conteúdo; uma comparação pode continuar na linha seguinte sem perder a distinção visual entre valor atual, `>` e valor novo.
+FINAL scripts/ui/upgrade_card.gd
+class_name UpgradeCard
+extends Button
+
+const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const CARD_FONT_ATLAS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-atlas.png"
+const CARD_FONT_ADDITIONS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-additions.json"
+const FRAME_NORMAL: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_normal_160x240.png")
+const FRAME_FOCUS: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_focus_160x240.png")
+const FRAME_PRESSED: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_pressed_160x240.png")
+const TOPIC_TEXT_COLOR: Color = Color("B6BEC3")
+const TOPIC_DASH_COLOR: Color = Color("52BAC7")
+const TOPIC_VALUE_COLOR: Color = Color("D2A75C")
+const TOPIC_CONTENT_WIDTH: int = 22
+
+@onready var _frame: TextureRect = $Frame
+@onready var _illustration: TextureRect = $Illustration
+@onready var _title: HudBitmapText = $Title
+@onready var _summary: HudBitmapText = $Summary
+@onready var _topic_lines: Array[UpgradeStatText] = [
+	$Topic0 as UpgradeStatText,
+	$Topic1 as UpgradeStatText,
+	$Topic2 as UpgradeStatText,
+]
+@onready var _badge: HudBitmapText = $Badge
+
+var _hovered: bool = false
+var _pressed_visual: bool = false
+
+static var _cached_card_font_bundle: Dictionary = {}
+
+func _ready() -> void:
+	flat = true
+	focus_mode = Control.FOCUS_ALL
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	focus_entered.connect(_on_focus_entered)
+	focus_exited.connect(_on_focus_exited)
+	button_down.connect(_on_button_down)
+	button_up.connect(_on_button_up)
+	_apply_frame_state()
+
+static func load_card_font_bundle() -> Dictionary:
+	if bool(_cached_card_font_bundle.get("valid", false)):
+		return _cached_card_font_bundle.duplicate(true)
+	var bundle: Dictionary = HudBitmapTextScript.load_font_bundle()
+	if not bool(bundle.get("valid", false)):
+		return bundle
+	var atlas: Texture2D = ResourceLoader.load(CARD_FONT_ATLAS_PATH) as Texture2D
+	var additions_json: JSON = ResourceLoader.load(CARD_FONT_ADDITIONS_PATH) as JSON
+	var additions_data: Variant = additions_json.data if additions_json != null else null
+	if atlas == null or typeof(additions_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "atlas local ou adições da fonte de cartas inválidos"}
+	var additions: Dictionary = additions_data
+	var glyphs: Dictionary = bundle.get("glyphs", {})
+	var raw_glyphs: Variant = additions.get("glyphs", [])
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "lista de glifos locais inválida"}
+	for glyph_variant: Variant in raw_glyphs:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant
+		var character: String = String(glyph_data.get("character", ""))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if character.is_empty() or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant
+		var glyph_rect := Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > atlas.get_width() or glyph_rect.end.y > atlas.get_height():
+			continue
+		glyphs[character] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 6)), 1),
+		}
+	bundle["atlas"] = atlas
+	bundle["glyphs"] = glyphs
+	_cached_card_font_bundle = bundle.duplicate(true)
+	return _cached_card_font_bundle.duplicate(true)
+
+func configure(row: Dictionary, font_bundle: Dictionary) -> bool:
+	if not bool(font_bundle.get("valid", false)):
+		return false
+	var definition: UpgradeDefinitionResource = row.get("definition") as UpgradeDefinitionResource
+	if definition == null:
+		return false
+	var illustration: Texture2D = row.get("icon", definition.icon) as Texture2D
+	if illustration == null:
+		return false
+	if not _configure_text(_title, String(row.get("title", definition.title)), font_bundle, 1):
+		return false
+	var summary_text := String(row.get("description", definition.description))
+	if summary_text.is_empty():
+		summary_text = definition.description
+	var summary_lines := _wrap_text(summary_text, 24, 2)
+	if summary_lines.size() != 1 and summary_lines.size() != 2:
+		return false
+	if not _configure_text(_summary, "\n".join(PackedStringArray(summary_lines)), font_bundle, 2):
+		return false
+	var topic_lines: Array[Dictionary] = []
+	var topics_variant: Variant = row.get("topics", definition.effect_topics)
+	if typeof(topics_variant) == TYPE_PACKED_STRING_ARRAY or typeof(topics_variant) == TYPE_ARRAY:
+		for topic_variant: Variant in topics_variant:
+			topic_lines.append_array(_wrap_topic(String(topic_variant)))
+	if topic_lines.is_empty() or topic_lines.size() > _topic_lines.size():
+		return false
+	for index in range(_topic_lines.size()):
+		var line_text := ""
+		var line_colors: Array[Color] = []
+		if index < topic_lines.size():
+			var line_data: Dictionary = topic_lines[index]
+			line_text = String(line_data.get("text", ""))
+			var colors_variant: Variant = line_data.get("colors", [])
+			if typeof(colors_variant) == TYPE_ARRAY:
+				for color_variant: Variant in colors_variant:
+					if color_variant is Color:
+						line_colors.append(color_variant)
+		if not _configure_topic_text(_topic_lines[index], line_text, line_colors, font_bundle):
+			return false
+	if not _configure_text(_badge, String(row.get("rank_label", "")), font_bundle, 1):
+		return false
+	_illustration.texture = illustration
+	_illustration.show()
+	return true
+
+func _configure_text(control: HudBitmapText, value: String, font_bundle: Dictionary, lines: int) -> bool:
+	if control == null or not control.configure_font(font_bundle):
+		return false
+	control.max_lines = lines
+	control.set_text(value)
+	return true
+
+func _configure_topic_text(control: UpgradeStatText, value: String, colors: Array[Color], font_bundle: Dictionary) -> bool:
+	if control == null or not control.configure_font(font_bundle):
+		return false
+	control.max_lines = 1
+	control.set_colored_text(value, colors)
+	return true
+
+func _wrap_topic(value: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if value.is_empty():
+		return result
+	var source_colors := _topic_colors(value)
+	var content := ""
+	var content_colors: Array[Color] = []
+	var source_offset := 0
+	for word: String in value.split(" ", false):
+		if word.length() > TOPIC_CONTENT_WIDTH:
+			return []
+		var word_start := value.find(word, source_offset)
+		if word_start < 0:
+			return []
+		var needs_space := not content.is_empty()
+		if needs_space and content.length() + 1 + word.length() > TOPIC_CONTENT_WIDTH:
+			result.append(_make_topic_line(content, content_colors, result.is_empty()))
+			content = word
+			content_colors = []
+			for color_index in range(word_start, word_start + word.length()):
+				content_colors.append(source_colors[color_index])
+		else:
+			if needs_space:
+				content += " "
+				content_colors.append(TOPIC_TEXT_COLOR)
+			content += word
+			for color_index in range(word_start, word_start + word.length()):
+				content_colors.append(source_colors[color_index])
+		source_offset = word_start + word.length()
+	if not content.is_empty():
+		result.append(_make_topic_line(content, content_colors, result.is_empty()))
+	return result
+
+func _make_topic_line(content: String, content_colors: Array[Color], first_line: bool) -> Dictionary:
+	var prefix := "- " if first_line else "  "
+	var colors: Array[Color] = [TOPIC_DASH_COLOR, TOPIC_TEXT_COLOR] if first_line else [TOPIC_TEXT_COLOR, TOPIC_TEXT_COLOR]
+	colors.append_array(content_colors)
+	return {"text": prefix + content, "colors": colors}
+
+func _topic_colors(value: String) -> Array[Color]:
+	var colors: Array[Color] = []
+	for _index in range(value.length()):
+		colors.append(TOPIC_TEXT_COLOR)
+	if value.begins_with("Até ") or value.begins_with("Uma vez"):
+		return colors
+	var number_start := -1
+	var number_end := -1
+	var comparison_index := value.find(">")
+	var search_start := 0
+	if comparison_index >= 0:
+		search_start = comparison_index + 1
+		while search_start < value.length() and value.substr(search_start, 1) == " ":
+			search_start += 1
+		if search_start < value.length():
+			if _is_sign(value.substr(search_start, 1)):
+				number_start = search_start
+				search_start += 1
+			elif _is_digit(value.substr(search_start, 1)):
+				number_start = search_start
+	else:
+		for index in range(value.length()):
+			if _is_digit(value.substr(index, 1)):
+				number_start = index
+				if index > 0 and _is_sign(value.substr(index - 1, 1)):
+					number_start = index - 1
+				search_start = index
+				break
+	if number_start < 0:
+		return colors
+	number_end = search_start
+	while number_end < value.length():
+		var character := value.substr(number_end, 1)
+		if _is_digit(character) or character == "," or character == ".":
+			number_end += 1
+		else:
+			break
+	if number_end == search_start:
+		return colors
+	if number_end < value.length() and value.substr(number_end, 1).to_lower() == "s":
+		number_end += 1
+	for index in range(number_start, number_end):
+		colors[index] = TOPIC_VALUE_COLOR
+	return colors
+
+func _is_digit(value: String) -> bool:
+	return value >= "0" and value <= "9"
+
+func _is_sign(value: String) -> bool:
+	return value == "+" or value == "-"
+
+func _wrap_text(value: String, maximum_characters: int, maximum_lines: int) -> Array[String]:
+	var result: Array[String] = []
+	var current := ""
+	for word: String in value.replace("\n", " ").split(" ", false):
+		if word.length() > maximum_characters:
+			return []
+		var candidate := word if current.is_empty() else current + " " + word
+		if candidate.length() <= maximum_characters:
+			current = candidate
+			continue
+		result.append(current)
+		current = word
+		if result.size() >= maximum_lines:
+			return []
+	if not current.is_empty():
+		result.append(current)
+	if result.size() > maximum_lines:
+		return []
+	return result
+
+func _on_mouse_entered() -> void:
+	_hovered = true
+	_apply_frame_state()
+
+func _on_mouse_exited() -> void:
+	_hovered = false
+	_apply_frame_state()
+
+func _on_focus_entered() -> void:
+	_apply_frame_state()
+
+func _on_focus_exited() -> void:
+	_apply_frame_state()
+
+func _on_button_down() -> void:
+	_pressed_visual = true
+	_apply_frame_state()
+
+func _on_button_up() -> void:
+	_pressed_visual = false
+	_apply_frame_state()
+
+func _apply_frame_state() -> void:
+	if _frame == null:
+		return
+	if _pressed_visual:
+		_frame.texture = FRAME_PRESSED
+	elif _hovered or has_focus():
+		_frame.texture = FRAME_FOCUS
+	else:
+		_frame.texture = FRAME_NORMAL
+FINAL scripts/ui/upgrade_stat_text.gd
+class_name UpgradeStatText
+extends HudBitmapText
+
+var _character_colors: Array[Color] = []
+
+func set_colored_text(value: String, colors: Array[Color]) -> void:
+	_character_colors = colors.duplicate()
+	text = value
+	queue_redraw()
+
+func _draw() -> void:
+	if _font_atlas == null or _glyphs.is_empty() or _advance <= 0 or _line_height <= 0:
+		return
+	var lines: Array[String] = _make_lines()
+	var character_offset := 0
+	for line_index: int in range(lines.size()):
+		var line: String = lines[line_index]
+		var line_x: float = 0.0
+		if center_text:
+			var line_width: int = line.length() * _advance
+			line_x = floorf((size.x - float(line_width)) * 0.5)
+		elif right_align:
+			var line_width: int = line.length() * _advance
+			line_x = floorf(size.x - float(line_width))
+		for char_index: int in range(line.length()):
+			var character: String = line.substr(char_index, 1)
+			var glyph_variant: Variant = _glyphs.get(character, null)
+			if glyph_variant == null:
+				if not _warned_missing_glyph:
+					push_warning("Fonte bitmap do HUD sem glifo para: %s" % character)
+					_warned_missing_glyph = true
+				glyph_variant = _glyphs.get(" ", {})
+			if typeof(glyph_variant) == TYPE_DICTIONARY:
+				var glyph_data: Dictionary = glyph_variant
+				var source_rect: Rect2i = glyph_data.get("rect", Rect2i())
+				var source := Rect2(Vector2(source_rect.position), Vector2(source_rect.size))
+				var destination := Rect2(
+					Vector2(line_x + float(char_index * _advance), float(line_index * _line_height)),
+					Vector2(source_rect.size)
+				)
+				var color := font_color
+				if character_offset < _character_colors.size():
+					color = _character_colors[character_offset]
+				draw_texture_rect_region(_font_atlas, destination, source, color)
+			character_offset += 1
+FINAL scripts/ui/hud/bitmap_text.gd
+class_name HudBitmapText
+extends Control
+
+const FONT_METADATA_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font.json"
+const FONT_ATLAS_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font-atlas.png"
+
+@export var text: String = "":
+	set(value):
+		if text == value:
+			return
+		text = value
+		queue_redraw()
+@export var font_color: Color = Color("E8D8B5"):
+	set(value):
+		if font_color == value:
+			return
+		font_color = value
+		queue_redraw()
+@export_range(1, 4, 1) var max_lines: int = 1
+@export var center_text: bool = false
+@export var right_align: bool = false
+
+var _font_atlas: Texture2D
+var _glyphs: Dictionary = {}
+var _advance: int = 6
+var _line_height: int = 12
+var _warned_missing_glyph: bool = false
+
+static func load_font_bundle() -> Dictionary:
+	if not ResourceLoader.exists(FONT_METADATA_PATH) or not ResourceLoader.exists(FONT_ATLAS_PATH):
+		return {"valid": false, "reason": "fonte bitmap do HUD ausente"}
+	var metadata_resource: Resource = ResourceLoader.load(FONT_METADATA_PATH)
+	var atlas_resource: Resource = ResourceLoader.load(FONT_ATLAS_PATH)
+	var metadata_json: JSON = metadata_resource as JSON
+	var font_atlas: Texture2D = atlas_resource as Texture2D
+	if metadata_json == null or font_atlas == null:
+		return {"valid": false, "reason": "metadados ou atlas da fonte bitmap inválidos"}
+	var raw_data: Variant = metadata_json.data
+	if typeof(raw_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "font.json não contém um objeto"}
+	var font_data: Dictionary = raw_data as Dictionary
+	var raw_glyphs: Variant = font_data.get("glyphs", null)
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "font.json não contém a lista de glifos"}
+	var glyphs: Dictionary = {}
+	var glyph_list: Array = raw_glyphs as Array
+	for glyph_variant: Variant in glyph_list:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant as Dictionary
+		var codepoint: int = int(glyph_data.get("codepoint", -1))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if codepoint < 0 or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant as Dictionary
+		var glyph_rect: Rect2i = Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > font_atlas.get_width() \
+			or glyph_rect.end.y > font_atlas.get_height():
+			continue
+		glyphs[String.chr(codepoint)] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 0)), 1),
+		}
+	var advance: int = int(font_data.get("advance", 0))
+	var line_height: int = int(font_data.get("line_height", 0))
+	if glyphs.is_empty() or advance <= 0 or line_height <= 0 or not glyphs.has(" "):
+		return {"valid": false, "reason": "métricas incompletas da fonte bitmap"}
+	return {"valid": true, "atlas": font_atlas, "glyphs": glyphs, "advance": advance, "line_height": line_height}
+
+func configure_font(bundle: Dictionary) -> bool:
+	if not bool(bundle.get("valid", false)):
+		return false
+	_font_atlas = bundle.get("atlas") as Texture2D
+	_glyphs = bundle.get("glyphs", {}) as Dictionary
+	_advance = int(bundle.get("advance", 6))
+	_line_height = int(bundle.get("line_height", 12))
+	var configured: bool = _font_atlas != null and not _glyphs.is_empty() and _advance > 0 and _line_height > 0
+	visible = configured
+	queue_redraw()
+	return configured
+
+func set_text(value: String) -> void:
+	text = value
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if _font_atlas == null:
+		configure_font(load_font_bundle())
+
+func _draw() -> void:
+	if _font_atlas == null or _glyphs.is_empty() or _advance <= 0 or _line_height <= 0:
+		return
+	var lines: Array[String] = _make_lines()
+	for line_index: int in range(lines.size()):
+		var line: String = lines[line_index]
+		var line_width: int = line.length() * _advance
+		var line_x: float = 0.0
+		if center_text:
+			line_x = floorf((size.x - float(line_width)) * 0.5)
+		elif right_align:
+			line_x = floorf(size.x - float(line_width))
+		for char_index: int in range(line.length()):
+			var character: String = line.substr(char_index, 1)
+			var glyph_variant: Variant = _glyphs.get(character, null)
+			if glyph_variant == null:
+				if not _warned_missing_glyph:
+					push_warning("Fonte bitmap do HUD sem glifo para: %s" % character)
+					_warned_missing_glyph = true
+				glyph_variant = _glyphs.get(" ", {})
+			if typeof(glyph_variant) != TYPE_DICTIONARY:
+				continue
+			var glyph_data: Dictionary = glyph_variant as Dictionary
+			var source_rect: Rect2i = glyph_data.get("rect", Rect2i())
+			var source: Rect2 = Rect2(Vector2(source_rect.position), Vector2(source_rect.size))
+			var destination: Rect2 = Rect2(
+				Vector2(line_x + float(char_index * _advance), float(line_index * _line_height)),
+				Vector2(source_rect.size)
+			)
+			draw_texture_rect_region(_font_atlas, destination, source, font_color)
+
+func _make_lines() -> Array[String]:
+	var result: Array[String] = []
+	var max_chars: int = int(floor(size.x / float(_advance)))
+	if max_chars <= 0:
+		return result
+	var source_lines: PackedStringArray = text.replace("—", "-").replace("–", "-").split("\n")
+	for source_line: String in source_lines:
+		var line: String = _normalize_line(source_line)
+		if line.length() > max_chars:
+			line = line.substr(0, max_chars)
+			if max_chars > 1 and not line.ends_with("-"):
+				line = line.substr(0, max_chars - 1) + "-"
+		result.append(line)
+		if result.size() >= max_lines:
+			break
+	return result
+
+func _normalize_line(value: String) -> String:
+	var normalized: String = ""
+	for index: int in range(value.length()):
+		var character: String = value.substr(index, 1)
+		var prior_character: String = value.substr(index - 1, 1) if index > 0 else ""
+		if character == "s" and prior_character >= "0" and prior_character <= "9":
+			normalized += "s"
+		else:
+			normalized += character.to_upper()
+	return normalized
+FINAL scenes/ui/upgrade_card.tscn
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_card.gd" id="1_card"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="2_bitmap_text"]
+[ext_resource type="Script" path="res://scripts/ui/upgrade_stat_text.gd" id="3_stat_text"]
+
+[sub_resource type="StyleBoxEmpty" id="ButtonEmpty"]
+
+[node name="UpgradeCard" type="Button"]
+custom_minimum_size = Vector2(160, 240)
+layout_mode = 2
+focus_mode = 2
+mouse_filter = 0
+flat = true
+theme_override_styles/normal = SubResource("ButtonEmpty")
+theme_override_styles/hover = SubResource("ButtonEmpty")
+theme_override_styles/pressed = SubResource("ButtonEmpty")
+theme_override_styles/disabled = SubResource("ButtonEmpty")
+theme_override_styles/focus = SubResource("ButtonEmpty")
+theme_override_styles/hover_pressed = SubResource("ButtonEmpty")
+texture_filter = 1
+script = ExtResource("1_card")
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Illustration" type="TextureRect" parent="."]
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 144.0
+offset_bottom = 114.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Title" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 152.0
+offset_bottom = 20.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.909804, 0.847059, 0.709804, 1)
+
+[node name="SummaryBackdrop" type="ColorRect" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+color = Color(0.047059, 0.105882, 0.160784, 1)
+
+[node name="Summary" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 2
+font_color = Color(0.321569, 0.729412, 0.780392, 1)
+
+[node name="Topic0" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 146.0
+offset_right = 152.0
+offset_bottom = 158.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic1" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 160.0
+offset_right = 152.0
+offset_bottom = 172.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic2" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 174.0
+offset_right = 152.0
+offset_bottom = 186.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Badge" type="Control" parent="."]
+offset_left = 12.0
+offset_top = 210.0
+offset_right = 148.0
+offset_bottom = 222.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.823529, 0.654902, 0.360784, 1)
+
+DIFF LUA baseline->final:
+diff --git a/docs/specs/2026-11-02-cartas-topicos-destaques/historico/baseline/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua b/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
+index 243011d..7187921 100644
+--- a/docs/specs/2026-11-02-cartas-topicos-destaques/historico/baseline/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
++++ b/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
+@@ -1,14 +1,17 @@
+ local function main()
+   local P = app.params or {}
+   local PREVIEW_ONLY = string.lower(tostring(P.preview_only or "")) == "true"
++  local CLEAN_FRAMES = string.lower(tostring(P.clean_frames or "")) == "true"
+   local ROOT = assert(P.root, "missing root parameter")
++  assert(not CLEAN_FRAMES or PREVIEW_ONLY, "clean_frames requires preview_only=true")
+   local KIT = ROOT .. "/assets/ui/upgrade_cards_v1"
+   local SRC, OUT, PRE = KIT .. "/source", KIT .. "/export", KIT .. "/preview"
+   local PAL = ROOT .. "/assets/ui/hud_caldeira_v1/export/palette.json"
+   local FONTJSON = ROOT .. "/assets/ui/hud_caldeira_v1/export/font.json"
+   local FONTPNG = OUT .. "/card-font-atlas.png"
+   local pc = app.pixelColor
++  local PREVIEW_COLORS = nil
+   local EXPECT = {
+     "0E0D0E", "0C1B29", "142C40", "203E50", "353B3B", "4B555D",
+     "59636B", "879198", "B6BEC3", "70432C", "925A36", "B78342",
+     "D2A75C", "E8D8B5", "F4ECD8", "B84B42", "7D302E", "52BAC7", "FFFFFF"
+@@ -51,8 +54,58 @@ local function main()
+       cream = colors[14], ivory = colors[15], red = colors[16],
+       redDark = colors[17], cyan = colors[18], white = colors[19]
+     }
+   end
++  local function clean_frame_assets()
++    local _, K = lock_palette()
++    local source_path = SRC .. "/upgrade-card-frame-states.aseprite"
++    local sprite = assert(app.open(source_path), "cannot open frame source: " .. source_path)
++    assert(sprite.width == 160 and sprite.height == 240 and #sprite.frames == 3, "frame source geometry/state count changed")
++    local frame_layer = assert(sprite.layers[2], "copper frame layer missing")
++    assert(frame_layer.name == "02 Copper and steel frame", "frame layer order/name changed")
++    local markers = { { x = 14, y = 144 }, { x = 14, y = 158 }, { x = 14, y = 172 } }
++    for frame_index, frame in ipairs(sprite.frames) do
++      local cel = assert(frame_layer:cel(frame), "frame cel missing: " .. frame_index)
++      local cel_image = cel.image
++      for _, marker in ipairs(markers) do
++        for dy = 0, 1 do
++          for dx = 0, 1 do
++            local x, y = marker.x + dx, marker.y + dy
++            local local_x, local_y = x - cel.position.x, y - cel.position.y
++            assert(local_x >= 0 and local_y >= 0 and local_x < cel_image.width and local_y < cel_image.height, "marker outside frame cel")
++            local source_pixel = cel_image:getPixel(local_x, local_y)
++            if source_pixel == K.brass then
++              cel_image:drawPixel(local_x, local_y, pc.rgba(0, 0, 0, 0))
++            else
++              assert(pc.rgbaA(source_pixel) == 0, "unexpected source pixel in marker region at frame " .. frame_index .. " pixel " .. x .. "," .. y)
++            end
++          end
++        end
++      end
++    end
++    assert(sprite:saveAs(source_path), "could not save cleaned Aseprite frame source")
++    local frame_names = { "normal", "focus", "pressed" }
++    for _, state in ipairs(frame_names) do
++      local path = OUT .. "/frame_" .. state .. "_160x240.png"
++      local frame_image = Image { fromFile = path }
++      assert(frame_image.width == 160 and frame_image.height == 240, "frame PNG dimensions changed: " .. state)
++      for _, marker in ipairs(markers) do
++        for dy = 0, 1 do
++          for dx = 0, 1 do
++            local x, y = marker.x + dx, marker.y + dy
++            local frame_pixel = frame_image:getPixel(x, y)
++            if frame_pixel == K.brass then
++              frame_image:drawPixel(x, y, K.navy)
++            else
++              assert(frame_pixel == K.navy, "unexpected frame PNG pixel in marker region: " .. state .. " at " .. x .. "," .. y)
++            end
++          end
++        end
++      end
++      assert(frame_image:saveAs(path), "could not save cleaned frame PNG: " .. state)
++    end
++    print("FRAME_CLEAN_OK source 3 states; isolated copper markers removed at y=144,158,172")
++  end
+   local function set_palette(sprite, colors)
+     local palette = Palette(#colors)
+     for i, value in ipairs(colors) do
+       palette:setColor(i - 1, Color(pc.rgbaR(value), pc.rgbaG(value), pc.rgbaB(value), 255))
+@@ -364,8 +417,9 @@ local function main()
+       assert(existing.width == 128 and existing.height == 80, "preview icon dimensions changed: " .. id)
+       arts[id] = existing
+     end
+   end
++  if CLEAN_FRAMES then clean_frame_assets() end
+   local function load_font()
+     lock_palette()
+     local raw = read(FONTJSON)
+     assert(raw:find('"cell":{"w":5,"h":11}', 1, true), "font cell changed")
+@@ -394,21 +448,22 @@ local function main()
+       i = i + n
+     end
+     return out
+   end
+-  local function draw_text(im, x, y, value, color, atlas, glyphs)
++  local function draw_text(im, x, y, value, color, atlas, glyphs, char_colors)
+     local cursor = x
+-    for _, ch in ipairs(chars(value)) do
++    for index, ch in ipairs(chars(value)) do
++      local glyph_color = char_colors and char_colors[index] or color
+       if ch == "+" then
+-        for xx = 1, 3 do pixel(im, cursor + xx, y + 5, color) end
+-        for yy = 3, 7 do pixel(im, cursor + 2, y + yy, color) end
++        for xx = 1, 3 do pixel(im, cursor + xx, y + 5, glyph_color) end
++        for yy = 3, 7 do pixel(im, cursor + 2, y + yy, glyph_color) end
+         cursor = cursor + 6
+       else
+         local g = assert(glyphs[ch], "preview glyph missing: " .. ch)
+         for yy = 0, g.h - 1 do
+           for xx = 0, g.w - 1 do
+             if pc.rgbaA(atlas:getPixel(g.x + xx, g.y + yy)) > 0 then
+-              pixel(im, cursor + xx, y + yy, color)
++              pixel(im, cursor + xx, y + yy, glyph_color)
+             end
+           end
+         end
+         cursor = cursor + g.advance
+@@ -419,8 +474,101 @@ local function main()
+     local width = 0
+     for _, ch in ipairs(chars(value)) do width = width + (ch == "+" and 6 or assert(glyphs[ch], "preview glyph missing: " .. ch).advance) end
+     draw_text(im, center - math.floor(width / 2), y, value, color, atlas, glyphs)
+   end
++  local function is_digit(ch)
++    return ch ~= nil and ch >= "0" and ch <= "9"
++  end
++  local function is_sign(ch)
++    return ch == "+" or ch == "-"
++  end
++  local function topic_colors(topic)
++    local topic_chars = chars(topic)
++    local colors = {}
++    for i = 1, #topic_chars do colors[i] = PREVIEW_COLORS.silver end
++    if topic:sub(1, 4) == "ATÉ " or topic:sub(1, 7) == "UMA VEZ" then return colors end
++    local arrow_index
++    for i, ch in ipairs(topic_chars) do
++      if ch == ">" then arrow_index = i; break end
++    end
++    local number_start, digit_start
++    if arrow_index then
++      digit_start = arrow_index + 1
++      while topic_chars[digit_start] == " " do digit_start = digit_start + 1 end
++      number_start = digit_start
++      if is_sign(topic_chars[digit_start]) then digit_start = digit_start + 1 end
++      if not is_digit(topic_chars[digit_start]) then return colors end
++    else
++      for i, ch in ipairs(topic_chars) do
++        if is_digit(ch) then
++          digit_start = i
++          number_start = i
++          if i > 1 and is_sign(topic_chars[i - 1]) then number_start = i - 1 end
++          break
++        end
++      end
++      if not digit_start then return colors end
++    end
++    local number_end = digit_start
++    while is_digit(topic_chars[number_end]) or topic_chars[number_end] == "," or topic_chars[number_end] == "." do
++      number_end = number_end + 1
++    end
++    if number_end == digit_start then return colors end
++    if topic_chars[number_end] == "S" or topic_chars[number_end] == "s" then number_end = number_end + 1 end
++    for i = number_start, number_end - 1 do colors[i] = PREVIEW_COLORS.amber end
++    return colors
++  end
++  local function make_topic_line(content, content_colors, first_line)
++    local prefix = first_line and "- " or "  "
++    local colors = first_line and { PREVIEW_COLORS.cyan, PREVIEW_COLORS.silver } or { PREVIEW_COLORS.silver, PREVIEW_COLORS.silver }
++    for _, color in ipairs(content_colors) do colors[#colors + 1] = color end
++    return { text = prefix .. content, colors = colors }
++  end
++  local function wrap_topic(topic)
++    local result = {}
++    local topic_chars = chars(topic)
++    local source_colors = topic_colors(topic)
++    local words, word, word_start = {}, "", nil
++    local function save_word(last_index)
++      if word ~= "" then
++        words[#words + 1] = { text = word, start_index = word_start, end_index = last_index }
++        word, word_start = "", nil
++      end
++    end
++    for i, ch in ipairs(topic_chars) do
++      if ch == " " then
++        save_word(i - 1)
++      else
++        if word_start == nil then word_start = i end
++        word = word .. ch
++      end
++    end
++    save_word(#topic_chars)
++    local content, content_colors, content_width = "", {}, 0
++    for _, item in ipairs(words) do
++      local word_width = #chars(item.text)
++      if word_width > 22 then return {} end
++      local needs_space = content ~= ""
++      if needs_space and content_width + 1 + word_width > 22 then
++        result[#result + 1] = make_topic_line(content, content_colors, #result == 0)
++        content, content_colors, content_width = item.text, {}, word_width
++      else
++        if needs_space then
++          content = content .. " "
++          content_colors[#content_colors + 1] = PREVIEW_COLORS.silver
++          content_width = content_width + 1
++        end
++        content = content .. item.text
++        for i = item.start_index, item.end_index do content_colors[#content_colors + 1] = source_colors[i] end
++        content_width = content_width + word_width
++      end
++      if needs_space and content == item.text then
++        for i = item.start_index, item.end_index do content_colors[#content_colors + 1] = source_colors[i] end
++      end
++    end
++    if content ~= "" then result[#result + 1] = make_topic_line(content, content_colors, #result == 0) end
++    return result
++  end
+   local function save_integer_scale(source, path, scale)
+     local result = image(source.width * scale, source.height * scale)
+     for y = 0, source.height - 1 do
+       for x = 0, source.width - 1 do
+@@ -434,8 +582,9 @@ local function main()
+   end
+ 
+   local function make_preview()
+     local _, K = lock_palette()
++    PREVIEW_COLORS = K
+     local atlas, glyphs = load_font()
+     local canvas = image(576, 324)
+     rect(canvas, 0, 0, 576, 324, K.navy)
+     rect(canvas, 0, 0, 576, 36, K.blue)
+@@ -477,22 +626,27 @@ local function main()
+       rect(canvas, x + 8, y + 118, 144, 24, K.navy)
+       center_text(canvas, x + 80, y + 9, card.title, K.ivory, atlas, glyphs)
+       center_text(canvas, x + 80, y + 118, card.desc[1], K.cyan, atlas, glyphs)
+       center_text(canvas, x + 80, y + 130, card.desc[2], K.cyan, atlas, glyphs)
+-      for topic_index, topic in ipairs(card.topics) do
+-        assert(#chars(topic) <= 24, "card line exceeds 24 glyphs")
+-        draw_text(canvas, x + 8, y + 146 + (topic_index - 1) * 14, topic, K.silver, atlas, glyphs)
++      local topic_line_index = 0
++      for _, topic in ipairs(card.topics) do
++        for _, topic_line in ipairs(wrap_topic(topic)) do
++          assert(#chars(topic_line.text) <= 24, "card line exceeds 24 glyphs")
++          topic_line_index = topic_line_index + 1
++          draw_text(canvas, x + 8, y + 146 + (topic_line_index - 1) * 14, topic_line.text, K.silver, atlas, glyphs, topic_line.colors)
++        end
+       end
++      assert(topic_line_index > 0 and topic_line_index <= 3, "preview topics exceed three lines")
+       center_text(canvas, x + 80, y + 210, card.badge, K.cyan, atlas, glyphs)
+     end
+     center_text(canvas, 288, 307, "ESTUDO VISUAL - NÃO É SCREENSHOT GODOT", K.silver, atlas, glyphs)
+     assert(canvas:saveAs(PRE .. "/upgrade-cards-study-576x324.png"), "study preview export failed")
+     save_integer_scale(canvas, PRE .. "/upgrade-cards-study-1728x972.png", 3)
+-    print("PREVIEW_OK 3 cards, descriptions and 2 labeled topics")
++    print("PREVIEW_OK 3 cards, dashed topics and highlighted gain spans")
+   end
+-
+   local function make_contact()
+     local _, K = lock_palette()
++    PREVIEW_COLORS = K
+     local atlas, glyphs = load_font()
+     local canvas = image(432, 352)
+     rect(canvas, 0, 0, 432, 352, K.navy)
+     rect(canvas, 0, 0, 432, 2, K.copper)
+UNCHANGED CARD TOPIC SOURCE:
+static func card_topics(
+	upgrade_id: Variant,
+	current_rank: int,
+	next_rank: int,
+	base_maximum_health: int = 5
+) -> PackedStringArray:
+	var definition := definition_for(upgrade_id)
+	if definition == null:
+		return PackedStringArray()
+	var rank_gain: int = maxi(next_rank - current_rank, 0)
+	match definition.upgrade_id:
+		&"impacto_reforcado":
+			var base_damage: int = maxi(BASE_PROJECTILE_CONFIG.damage, 1)
+			var current_damage: int = base_damage + maxi(current_rank, 0) * definition.projectile_damage_per_rank
+			var next_damage: int = base_damage + maxi(next_rank, 0) * definition.projectile_damage_per_rank
+			if current_rank == 0:
+				return PackedStringArray(["Dano da bola: +%d" % (next_damage - current_damage)])
+			return PackedStringArray(["Dano da bola: %d > %d" % [current_damage, next_damage]])
+		&"motor_acelerado":
+			var current_cooldown := dash_cooldown_for_rank(current_rank)
+			var next_cooldown := dash_cooldown_for_rank(next_rank)
+			return PackedStringArray([
+				"Recarga: %ss > %ss" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)]
+			])
+		&"carga_reativa":
+			var charge_enabled: int = 1 if definition.reactive_charge_enabled else 0
+			var current_charge: int = maxi(current_rank, 0) * definition.charged_damage_bonus_per_rank * charge_enabled
+			var next_charge: int = maxi(next_rank, 0) * definition.charged_damage_bonus_per_rank * charge_enabled
+			var charge_topic: String
+			if current_rank == 0:
+				charge_topic = "Dano extra: +%d" % (next_charge - current_charge)
+			else:
+				charge_topic = "Dano extra: +%d > +%d" % [current_charge, next_charge]
+			return PackedStringArray([charge_topic, "No próximo acerto"])
+		&"ricochete_pressao":
+			var current_wall_bonus: int = maxi(current_rank, 0) * definition.environmental_bounce_damage_per_rank
+			var next_wall_bonus: int = maxi(next_rank, 0) * definition.environmental_bounce_damage_per_rank
+			var pressure_topic: String
+			if current_rank == 0:
+				pressure_topic = "Dano por parede: +%d" % (next_wall_bonus - current_wall_bonus)
+			else:
+				pressure_topic = "Dano por parede: %d > %d" % [current_wall_bonus, next_wall_bonus]
+			return PackedStringArray([
+				pressure_topic,
+				"Até %d paredes por bola" % definition.environmental_bounce_damage_count_cap,
+			])
+		&"mola_retorno":
+			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(current_rank)
+			var next_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(next_rank)
+			var current_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + projectile_lifetime_bonus(current_rank)
+			var next_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + projectile_lifetime_bonus(next_rank)
+			if current_rank == 0:
+				var bounce_gain: int = rank_gain * definition.max_bounces_per_rank
+				var bounce_label: String = "rebote" if bounce_gain == 1 else "rebotes"
+				var duration_gain: float = rank_gain * definition.lifetime_per_rank
+				return PackedStringArray([
+					"+%d %s da bola" % [bounce_gain, bounce_label],
+					"+%ss de duração" % _format_decimal(duration_gain),
+				])
+			return PackedStringArray([
+				"Rebotes: %d > %d" % [current_bounces, next_bounces],
+				"Duração: %ss > %ss" % [_format_decimal(current_lifetime), _format_decimal(next_lifetime)],
+			])
+		&"dinamo_defesa":
+			var current_refund: float = dash_refund_seconds(current_rank)
+			var next_refund: float = dash_refund_seconds(next_rank)
+			var refund_topic: String
+			if current_rank == 0:
+				refund_topic = "Recarga do dash: -%ss" % _format_decimal(next_refund - current_refund)
+			else:
+				refund_topic = "Redução: %ss > %ss" % [
+					_format_decimal(current_refund),
+					_format_decimal(next_refund),
+				]
+			return PackedStringArray([refund_topic, "Uma vez por rebatida"])
+		&"chassi_reforcado":
+			var base_health: int = maxi(base_maximum_health, 1)
+			var current_health: int = mini(base_health + maxi(current_rank, 0) * definition.maximum_health_per_rank, 100)
+			var next_health: int = mini(base_health + maxi(next_rank, 0) * definition.maximum_health_per_rank, 100)
+			var health_gain: int = maxi(next_health - current_health, 0)
+			var recovered: int = acquisition_heal(upgrade_id, current_rank, next_rank)
+			var health_topic: String
+			if current_rank == 0:
+				health_topic = "Vida máxima: +%d" % health_gain
+			else:
+				health_topic = "Vida máxima: %d > %d" % [current_health, next_health]
+			return PackedStringArray([
+				health_topic,
+				"Cura na escolha: +%d vida" % recovered,
+			])
+	return definition.effect_topics.duplicate()
+
+
+

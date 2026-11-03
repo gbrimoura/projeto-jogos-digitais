@@ -1,0 +1,24 @@
+diff --git a/docs/specs/2026-10-23-perseguicao-tranca-lata/historico/runtime-r2/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index a008857..990308c 100644
+--- a/docs/specs/2026-10-23-perseguicao-tranca-lata/historico/runtime-r2/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -342,7 +342,9 @@ func _pursue_player(player: PhysicsBody2D, delta: float) -> void:
+ 		_pursuit_replan_remaining = 0.0
+ 		_pursuit_detour_active = false
+ 	if selected_support == _bound_support and _pursuit_detour_active:
+-		if _pursuit_path.size() < 2 or _pursuit_path[0] != _bound_support:
++		if not _pursuit_path.is_empty() and _pursuit_path[0] != _bound_support:
++			_pursuit_path.clear()
++		if _pursuit_path.size() < 2:
+ 			if _pursuit_replan_remaining <= 0.0 \
+ 				and not _try_begin_pursuit_detour(selected_support, player, supports):
+ 				_pursuit_detour_active = false
+@@ -421,7 +423,7 @@ func _pursue_on_current_support(
+ 		_pursuit_stuck_remaining = 0.0
+ 	elif absf(moved_x) >= 0.1:
+ 		_pursuit_stuck_remaining = 0.0
+-	elif absf(delta_x) > stop_distance + PURSUIT_DIRECTION_DEADZONE:
++	elif needs_horizontal_approach:
+ 		_pursuit_stuck_remaining += delta
+ 	else:
+ 		_pursuit_stuck_remaining = 0.0

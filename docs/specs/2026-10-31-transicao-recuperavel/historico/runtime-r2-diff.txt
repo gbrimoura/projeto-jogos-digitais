@@ -1,0 +1,17 @@
+diff --git a/docs/specs/2026-10-31-transicao-recuperavel/historico/runtime-r1/run_controller.gd b/scripts/world/run_controller.gd
+index 620ebc5..305e5d8 100644
+--- a/docs/specs/2026-10-31-transicao-recuperavel/historico/runtime-r1/run_controller.gd
++++ b/scripts/world/run_controller.gd
+@@ -778,7 +778,10 @@ func _return_to_completed_room() -> void:
+ 		_release_technical_error_pause()
+ 
+ func _retry_initial_load() -> void:
+-	if _technical_error_source != null:
++	if not is_instance_valid(_technical_error_layer) \
++		or is_instance_valid(current_room_instance) \
++		or _run_ended or _restart_in_progress \
++		or _technical_error_source != null:
+ 		return
+ 	var retry_kind: StringName = _technical_retry_kind
+ 	var retry_proposal: Dictionary = _technical_retry_proposal.duplicate(true)
+

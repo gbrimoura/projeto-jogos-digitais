@@ -1,0 +1,82 @@
+[
+  {
+    "Path": "scripts/ui/upgrade_card.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/ui/upgrade_rank_prisms.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scenes/ui/upgrade_card.tscn",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/README.md",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/export/manifest.json",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/preview/upgrade-cards-study-576x324.png",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/preview/upgrade-cards-study-1728x972.png",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/preview/post-build-study-576x324.png",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/preview/post-build-study-1728x972.png",
+    "Unchanged": true
+  },
+  {
+    "Path": "docs/README.md",
+    "Unchanged": false
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/plano.md",
+    "Unchanged": true
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/spec.md",
+    "Unchanged": true
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/registro.md",
+    "Unchanged": false
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/pareceres/README.md",
+    "Unchanged": false
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/pareceres/production-aseprite.stdout.log",
+    "Unchanged": true
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/pareceres/production-aseprite.stderr.log",
+    "Unchanged": true
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/pareceres/production-aseprite.exit.txt",
+    "Unchanged": true
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/historico/plano-v1.md",
+    "Unchanged": true
+  },
+  {
+    "Path": "docs/specs/2026-11-02-prismas-textos-cartas/historico/spec-v1.md",
+    "Unchanged": true
+  }
+]

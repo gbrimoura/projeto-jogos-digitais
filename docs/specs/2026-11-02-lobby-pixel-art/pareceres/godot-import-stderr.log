@@ -1,0 +1,2 @@
+WARNING: UID duplicate detected between res://scenes/main.tscn and res://assets/environment/factory_v1/background_floor1/baseline/main.tscn.
+   at: _process_file_system (editor/file_system/editor_file_system.cpp:1405)

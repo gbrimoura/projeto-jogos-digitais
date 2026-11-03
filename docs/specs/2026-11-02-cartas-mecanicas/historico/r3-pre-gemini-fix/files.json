@@ -1,0 +1,102 @@
+[
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua",
+    "sha256": "12e486f96e4b35920199914f0c57250c80e8825a61eb9f24827091bcd9912839",
+    "bytes": 23806
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/impacto_reforcado_128x80.aseprite",
+    "sha256": "6977de24cfc8f1fd47d9afd8bd0261ae271b8cdd51353fe65f5295a9adc40e74",
+    "bytes": 1658
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/motor_acelerado_128x80.aseprite",
+    "sha256": "93071bfb91bff1a2ed91594daef8440d27fe26faa8cc24e6107d7552ef0eccf6",
+    "bytes": 1687
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/carga_reativa_128x80.aseprite",
+    "sha256": "6d58686075a077afc04f6530708a3683f0da57d63495ed3da19eb0ed6eda4519",
+    "bytes": 1869
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/ricochete_pressao_128x80.aseprite",
+    "sha256": "49ee7e8d17abe4771d36e16d5448a819e0f8667addcfb827ee09f53020741348",
+    "bytes": 1777
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/mola_retorno_128x80.aseprite",
+    "sha256": "16663df661b09c28471ecb7b7035c971835cc0ccff8a5d7927637d7f36ee8725",
+    "bytes": 1855
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/dinamo_defesa_128x80.aseprite",
+    "sha256": "f4b99071026d1bdf1c7133b3eb90fe7aecda607701f3cd9a684316aa12e157b8",
+    "bytes": 1786
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/chassi_reforcado_128x80.aseprite",
+    "sha256": "aed1725302a81267f90b4a7e4cfb3084717d5be0ca9b546ecdd5d10506684e63",
+    "bytes": 1871
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/impacto_reforcado_128x80.png",
+    "sha256": "fcbd2dec36edcb7ba78e6fbfede7b46af81b365d5ce364685b6a07b5fd524fb6",
+    "bytes": 733
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/motor_acelerado_128x80.png",
+    "sha256": "d08430ef09baf6d52c7bb29bd86afbd29277883823d303a26ffc2d3a77598634",
+    "bytes": 876
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/carga_reativa_128x80.png",
+    "sha256": "93481e394d814cf871ec5edc231c96e6cb7eafbe4b2b794b276478c34b4732e3",
+    "bytes": 744
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/ricochete_pressao_128x80.png",
+    "sha256": "916538579b4da5606e049723c2008dd1458bec2ed011161b7a8d01e5448d288a",
+    "bytes": 877
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/mola_retorno_128x80.png",
+    "sha256": "8fda4c4a84d8c5f09ed700434b965091b75f2e6d9e9e3fb93b4139004afd2660",
+    "bytes": 750
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/dinamo_defesa_128x80.png",
+    "sha256": "49b6ce83ea6c15facf801c797e76a1a5981d4ad627d06434ae709d54749caf90",
+    "bytes": 827
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/chassi_reforcado_128x80.png",
+    "sha256": "45825bb7eb23d2713a8bf9eae184f5db1c872380afdc731f4eb0e5ac1c06b554",
+    "bytes": 717
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/preview/upgrade-cards-study-576x324.png",
+    "sha256": "caf35ab2195e0ebb7a8308fabd471135b0616a0cfe304fd6aed1c3dcd02f15fe",
+    "bytes": 8160
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/preview/upgrade-cards-study-1728x972.png",
+    "sha256": "4e4009f0a66b1aadf4904d4ef9cde3281455f52af0c01665eabdb44c3bd85a3c",
+    "bytes": 18418
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/preview/upgrade-illustrations-contact-432x352.png",
+    "sha256": "8dffbc998bd07073e27c9556994b1ba42b998e65f6753e5270cbf7aadf83a937",
+    "bytes": 6807
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/preview/upgrade-illustrations-contact-864x704.png",
+    "sha256": "78231f7c9e6e90c9d59c129873ec1f55a004660c6da336b4b436bb3e17762eee",
+    "bytes": 10522
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/manifest.json",
+    "sha256": "335e7f27d9c71f95c37bf72942e084120161c80b14003c1f9b4b5c4f38613a75",
+    "bytes": 1398
+  }
+]

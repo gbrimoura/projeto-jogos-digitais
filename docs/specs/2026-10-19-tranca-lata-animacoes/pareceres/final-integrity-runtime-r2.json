@@ -1,0 +1,46 @@
+{
+  "captured_at": "2026-10-20T22:39:28.3077342Z",
+  "runtime": [
+    {
+      "path": "scripts/world/training_target.gd",
+      "expected": "B764E233E7E2CE54D571AF278F15C0E627E9BCC62C445BCCAC1F356490C1A7E1",
+      "actual": "B764E233E7E2CE54D571AF278F15C0E627E9BCC62C445BCCAC1F356490C1A7E1",
+      "equal": true
+    },
+    {
+      "path": "scripts/world/main.gd",
+      "expected": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "actual": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "equal": true
+    },
+    {
+      "path": "scenes/training_target.tscn",
+      "expected": "08AE902A590C174609059A9591BB146992B6D35655283989278E6F4DEF7309E2",
+      "actual": "08AE902A590C174609059A9591BB146992B6D35655283989278E6F4DEF7309E2",
+      "equal": true
+    },
+    {
+      "path": "resources/enemy/training_target_sprite_frames.tres",
+      "expected": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D",
+      "actual": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D",
+      "equal": true
+    },
+    {
+      "path": "assets/enemy/training_target/training_target-atlas.png",
+      "expected": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "actual": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "equal": true
+    },
+    {
+      "path": "assets/enemy/training_target/training_target.aseprite",
+      "expected": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "actual": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "equal": true
+    }
+  ],
+  "packet_sha256": "AD5357C6E4346E6CDD0F0E371D60C96586301989A0D226FD3BD2D55AF775E36E",
+  "protected_comparison": "protegidos-after-runtime-r2.json",
+  "engine_or_tests_run": false,
+  "branch": "corrigir-sprites-salas-plataformas",
+  "head": "90b2e592bd70e1b2ff3e5828af8a9029031e1c66"
+}

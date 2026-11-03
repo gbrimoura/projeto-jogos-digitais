@@ -1,0 +1,42 @@
+[
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "6D8F97C59A0044207270713F18878B56C181EA8F05123E14646C1983C2E1086A"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "21B68DAE1F5DE472482F4DCE6276B44177265DFB5812AF408FF0F7230AB8DC3C"
+  },
+  {
+    "path": "scenes/exit_door.tscn",
+    "sha256": "6D26AA44449178C03C9E9034CBDF2AEAF5D9D52C701785DF6F237C7281FE12FB"
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "4C33845AD3A8B5A4BEA0F3059D11F96D26CFCF9DD44A23F56CF154CFF7F4778D"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\environment\\factory_v1\\door\\porta-fabrica-horizontal-v2-montagem-estatica.png",
+    "sha256": "C9EC1FF4EFA8F87872CA07FB7BB5B9B93F4ADA1FD7D241A0793DB558E408FA32"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\environment\\factory_v1\\door\\porta-fabrica-horizontal-v2-preview-4x.png",
+    "sha256": "746BE9AD45F5C6C7F01B7B8832EFE114A3613C38B50DB0AE97205A3A6629BD03"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\environment\\factory_v1\\door\\porta-fabrica-horizontal-v2.aseprite",
+    "sha256": "E78DEEA45BB66C4254751D73A2599431C840DA91248511C7A1D119125D53B232"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\environment\\factory_v1\\door\\porta-fabrica-horizontal-v2.lua",
+    "sha256": "47C53EA313975E4551EF641E2DCF7AA4587DC5306102E3DB8663B74A048E765D"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\environment\\factory_v1\\door\\porta-fabrica-horizontal-v2.png",
+    "sha256": "A8BFDC0D5F1C0FB2FE5BBD693EADBE4C9E0BAE0467F7A1349CF98276B707ADD8"
+  },
+  {
+    "path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\environment\\factory_v1\\door\\referencia-porta-horizontal-v2.png",
+    "sha256": "1A0B1FC64064061D109AB6C2AA857324E49AB7BA6B51B40B019A8B4302F3A5DF"
+  }
+]

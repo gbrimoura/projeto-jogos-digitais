@@ -1,0 +1,5 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read project.godot
+% WebFetch https://docs.godotengine.org/en/stable/classes/class_projectsettings.html

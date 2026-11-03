@@ -1,0 +1,201 @@
+R3 REVIEW DELTA — CARTAS MECÂNICAS
+R2 package remains unchanged in pareceres/review-input.txt; R2 and the prior R3 candidate are preserved under historico/. Review this delta only.
+
+BRIEF AND RESPONSES
+Muse: ricochete_pressao used 12 colors against a budget of 10. It now merges the cream dial edge into ivory and the dark-red hub pixel into red, keeping the copperDark valve shadow. The pressure function uses 10 distinct palette entries.
+Gemini: oval_band's left width was negative; it now uses outer_half - inner_half and includes the inner ellipse edge so both sides of each winding render without filling the center hole.
+Gemini: outlines/reflections painted on lower layers were occluded. The bolt helper now paints contour, copper head and glints in hardware order; coil bands, chassis inset panel and flywheel hub likewise render last in the hardware layer. Gauge ticks now render over the face.
+Muse/root: motor side material values now put steelLight at left and silver at right, following top-right light. Carga's different end caps remain unchanged. The manifest and its Lua template include both 432x352 and 864x704 contact previews.
+Grok R2 produced exit 0 with empty stdout; this is not treated as a review result. No other layout, palette, text, frames, fonts, game code or mechanics changed.
+
+AFFECTED HELPER: oval_band
+  local function oval_band(im, cx, cy, rx, ry, inner_rx, inner_ry, color)
+    for y = -ry, ry do
+      local outer_ratio = ry == 0 and 0 or (y * y) / (ry * ry)
+      local outer_half = math.floor(rx * math.sqrt(math.max(0, 1 - outer_ratio)))
+      if math.abs(y) <= inner_ry then
+        local inner_ratio = (y * y) / (inner_ry * inner_ry)
+        local inner_half = math.floor(inner_rx * math.sqrt(math.max(0, 1 - inner_ratio)))
+        local left_width = outer_half - inner_half
+        local right_width = outer_half - inner_half
+        if left_width > 0 then rect(im, cx - outer_half, cy + y, left_width, 1, color) end
+        if right_width > 0 then rect(im, cx + inner_half + 1, cy + y, right_width, 1, color) end
+      else
+        rect(im, cx - outer_half, cy + y, outer_half * 2 + 1, 1, color)
+      end
+    end
+  end
+
+AFFECTED HELPER: bolt
+  local function bolt(a, K, cx, cy, radius)
+    disk(a, cx, cy, radius + 1, K.ink)
+    disk(a, cx, cy, radius, K.copper)
+    pixel(a, cx + 1, cy - 1, K.amber)
+    pixel(a, cx, cy - 1, K.cream)
+  end
+
+
+AFFECTED DRAWING FUNCTION: impacto_reforcado
+  make_art("impacto_reforcado", function(o, f, sh, hi, a, K)
+    oval_fill(o, 32, 20, 15, 15, K.ink)
+    oval_fill(f, 32, 20, 14, 14, K.steel)
+    poly(sh, {{x=19,y=23},{x=23,y=31},{x=29,y=34},{x=36,y=34},{x=33,y=27},{x=28,y=22}}, K.iron, nil)
+    poly(hi, {{x=25,y=8},{x=31,y=6},{x=37,y=7},{x=42,y=11},{x=44,y=15},{x=38,y=15},{x=34,y=12},{x=29,y=11}}, K.silver, nil)
+    poly(hi, {{x=27,y=9},{x=31,y=8},{x=35,y=9}}, K.steelLight, nil)
+    bolt(a, K, 23, 12, 2)
+    bolt(a, K, 41, 12, 2)
+    bolt(a, K, 23, 28, 2)
+    bolt(a, K, 41, 28, 2)
+  end)
+
+
+AFFECTED DRAWING FUNCTION: motor_acelerado
+  make_art("motor_acelerado", function(o, f, sh, hi, a, K)
+    round_rect(o, 22, 3, 20, 23, 6, K.ink)
+    round_rect(f, 23, 4, 18, 21, 5, K.steel)
+    poly(o, {{x=22,y=20},{x=42,y=20},{x=48,y=28},{x=43,y=34},{x=21,y=34},{x=16,y=28}}, K.ink, K.ink)
+    poly(f, {{x=23,y=22},{x=41,y=22},{x=45,y=28},{x=42,y=32},{x=22,y=32},{x=19,y=28}}, K.iron, nil)
+    poly(sh, {{x=25,y=26},{x=40,y=26},{x=42,y=30},{x=24,y=30}}, K.gunmetal, nil)
+    poly(hi, {{x=24,y=7},{x=29,y=5},{x=37,y=5},{x=39,y=7},{x=38,y=10},{x=27,y=10}}, K.steelLight, nil)
+    round_rect(o, 16, 11, 8, 6, 2, K.ink)
+    round_rect(f, 17, 12, 6, 4, 1, K.steelLight)
+    round_rect(o, 40, 11, 8, 6, 2, K.ink)
+    round_rect(f, 41, 12, 6, 4, 1, K.silver)
+    for _, y in ipairs({11, 15, 19}) do
+      round_rect(sh, 26, y, 12, 3, 1, K.navy)
+      rect(sh, 27, y + 1, 10, 1, K.ink)
+    end
+    line(hi, 39, 11, 39, 21, K.silver, 1)
+    line(hi, 25, 8, 35, 8, K.silver, 1)
+    poly(a, {{x=22,y=29},{x=42,y=29},{x=39,y=35},{x=32,y=39},{x=25,y=35}}, K.amber, nil)
+    poly(a, {{x=28,y=30},{x=36,y=30},{x=34,y=35},{x=32,y=37},{x=30,y=35}}, K.ivory, nil)
+  end)
+
+AFFECTED DRAWING FUNCTION: carga_reativa
+  make_art("carga_reativa", function(o, f, sh, hi, a, K)
+    round_rect(o, 14, 11, 36, 19, 6, K.ink)
+    round_rect(f, 15, 12, 34, 17, 5, K.steel)
+    round_rect(sh, 18, 17, 28, 8, 3, K.ink)
+    round_rect(hi, 19, 18, 26, 6, 2, K.cyan)
+    poly(sh, {{x=18,y=26},{x=45,y=26},{x=42,y=29},{x=21,y=29}}, K.iron, nil)
+    round_rect(o, 11, 14, 7, 13, 2, K.ink)
+    round_rect(f, 12, 15, 5, 11, 1, K.silver)
+    round_rect(o, 46, 14, 7, 13, 2, K.ink)
+    round_rect(f, 47, 15, 5, 11, 1, K.steelLight)
+    for _, x in ipairs({19, 26, 33, 40, 47}) do
+      round_rect(a, x - 1, 10, 5, 21, 2, K.ink)
+      round_rect(a, x, 11, 3, 19, 1, K.copper)
+      rect(a, x, 12, 1, 16, K.amber)
+    end
+    line(a, 49, 12, 53, 7, K.amber, 2)
+    line(a, 50, 10, 56, 10, K.ivory, 1)
+    line(a, 51, 11, 55, 14, K.cyan, 1)
+    pixel(a, 50, 10, K.white)
+  end)
+
+
+AFFECTED DRAWING FUNCTION: ricochete_pressao
+  make_art("ricochete_pressao", function(o, f, sh, hi, a, K)
+    round_rect(o, 7, 25, 15, 9, 3, K.ink)
+    round_rect(f, 8, 26, 13, 7, 2, K.steel)
+    round_rect(o, 42, 25, 15, 9, 3, K.ink)
+    round_rect(f, 43, 26, 13, 7, 2, K.steelLight)
+    poly(o, {{x=18,y=23},{x=23,y=19},{x=41,y=19},{x=46,y=23},{x=46,y=31},{x=41,y=36},{x=23,y=36},{x=18,y=31}}, K.ink, K.ink)
+    poly(f, {{x=20,y=24},{x=24,y=21},{x=40,y=21},{x=44,y=24},{x=44,y=30},{x=40,y=34},{x=24,y=34},{x=20,y=30}}, K.copper, nil)
+    poly(sh, {{x=21,y=29},{x=43,y=29},{x=40,y=33},{x=24,y=33}}, K.copperDark, nil)
+    poly(hi, {{x=23,y=24},{x=27,y=22},{x=39,y=22},{x=42,y=24},{x=37,y=25},{x=27,y=25}}, K.amber, nil)
+    round_rect(o, 28, 15, 8, 10, 2, K.ink)
+    round_rect(f, 29, 16, 6, 8, 1, K.iron)
+    oval_fill(o, 32, 9, 9, 9, K.ink)
+    oval_fill(f, 32, 9, 8, 8, K.brass)
+    oval_fill(sh, 32, 9, 6, 6, K.ivory)
+    oval_outline(hi, 32, 9, 5, 5, K.ivory)
+    line(a, 28, 8, 29, 8, K.iron, 1)
+    line(a, 35, 8, 36, 8, K.iron, 1)
+    line(a, 31, 4, 31, 5, K.iron, 1)
+    line(a, 32, 10, 36, 5, K.red, 2)
+    oval_fill(a, 32, 10, 1, 1, K.red)
+  end)
+
+
+AFFECTED DRAWING FUNCTION: mola_retorno
+  make_art("mola_retorno", function(o, f, sh, hi, a, K)
+    round_rect(o, 14, 3, 36, 8, 3, K.ink)
+    round_rect(f, 15, 4, 34, 6, 2, K.iron)
+    round_rect(hi, 18, 5, 27, 2, 1, K.steelLight)
+    round_rect(o, 14, 29, 36, 8, 3, K.ink)
+    round_rect(f, 15, 30, 34, 6, 2, K.iron)
+    round_rect(sh, 18, 33, 27, 2, 1, K.gunmetal)
+    line(hi, 20, 6, 43, 6, K.silver, 1)
+    line(hi, 20, 31, 43, 31, K.steelLight, 1)
+    for _, y in ipairs({11, 17, 23, 29}) do
+      oval_band(o, 32, y, 13, 4, 9, 2, K.ink)
+      oval_band(f, 32, y, 12, 3, 8, 1, K.steel)
+      oval_arc(sh, 32, y, 10, 2, false, K.iron)
+      oval_arc(hi, 32, y - 1, 10, 2, true, K.silver)
+    end
+  end)
+
+AFFECTED DRAWING FUNCTION: dinamo_defesa
+  make_art("dinamo_defesa", function(o, f, sh, hi, a, K)
+    round_rect(o, 9, 12, 34, 21, 5, K.ink)
+    round_rect(f, 10, 13, 32, 19, 4, K.iron)
+    poly(sh, {{x=12,y=25},{x=39,y=25},{x=37,y=31},{x=14,y=31}}, K.navy, nil)
+    poly(hi, {{x=14,y=15},{x=21,y=13},{x=35,y=13},{x=39,y=16},{x=36,y=18},{x=18,y=18}}, K.steelLight, nil)
+    round_rect(o, 14, 30, 24, 6, 2, K.ink)
+    round_rect(f, 15, 31, 22, 4, 1, K.steel)
+    rect(a, 20, 18, 16, 3, K.copper)
+    oval_fill(o, 45, 20, 12, 12, K.ink)
+    oval_fill(f, 45, 20, 10, 10, K.copperDark)
+    oval_fill(sh, 45, 20, 7, 7, K.gunmetal)
+    line(a, 45, 20, 45, 12, K.brass, 3)
+    line(a, 45, 20, 38, 24, K.brass, 3)
+    line(a, 45, 20, 51, 25, K.brass, 3)
+    oval_fill(a, 45, 20, 4, 4, K.ink)
+    oval_fill(a, 45, 20, 2, 2, K.amber)
+    line(hi, 41, 11, 47, 10, K.amber, 1)
+  end)
+
+
+AFFECTED DRAWING FUNCTION: chassi_reforcado
+  make_art("chassi_reforcado", function(o, f, sh, hi, a, K)
+    local plate = {{x=14,y=4},{x=50,y=4},{x=58,y=12},{x=58,y=28},{x=50,y=36},{x=14,y=36},{x=6,y=28},{x=6,y=12}}
+    local inset = {{x=14,y=6},{x=49,y=6},{x=56,y=13},{x=56,y=27},{x=49,y=34},{x=14,y=34},{x=8,y=27},{x=8,y=13}}
+    poly(o, plate, K.ink, K.ink)
+    poly(f, inset, K.steel, nil)
+    poly(sh, {{x=10,y=25},{x=54,y=25},{x=50,y=32},{x=14,y=32}}, K.iron, nil)
+    poly(hi, {{x=15,y=7},{x=48,y=7},{x=53,y=12},{x=46,y=13},{x=20,y=13},{x=11,y=17}}, K.steelLight, nil)
+    line(hi, 17, 8, 46, 8, K.silver, 1)
+    poly(a, {{x=25,y=14},{x=39,y=14},{x=42,y=17},{x=42,y=23},{x=39,y=26},{x=25,y=26},{x=22,y=23},{x=22,y=17}}, K.ink, K.ink)
+    poly(a, {{x=25,y=16},{x=38,y=16},{x=40,y=18},{x=40,y=22},{x=38,y=24},{x=25,y=24},{x=24,y=22},{x=24,y=18}}, K.gunmetal, nil)
+    poly(a, {{x=26,y=16},{x=37,y=16},{x=39,y=18},{x=35,y=18},{x=27,y=18},{x=25,y=19}}, K.steelLight, nil)
+    bolt(a, K, 17, 13, 2)
+    bolt(a, K, 47, 13, 2)
+    bolt(a, K, 17, 27, 2)
+    bolt(a, K, 47, 27, 2)
+  end)
+
+EXPORTED MANIFEST
+{"asset_set":"upgrade_cards_v1","card":{"w":160,"h":240},"illustration":{"w":128,"h":80,"source_canvas":{"w":64,"h":40},"scale":2,"max_colors_per_icon":10,"style":"cartoon mechanical objects, rounded volume, bold silhouettes, 2-3 tones per material, 1px outline"},"palette":"assets/ui/hud_caldeira_v1/export/palette.json","palette_colors":19,"alpha":[0,255],"font":"assets/ui/upgrade_cards_v1/export/card-font-atlas.png","card_font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","replacement_atlas":"card-font-atlas.png","additions":"card-font-additions.json","canvas":{"w":84,"h":105},"glyphs":[{"character":"+","codepoint":43},{"character":">","codepoint":62}]},"illustrations":["impacto_reforcado_128x80.png","motor_acelerado_128x80.png","carga_reativa_128x80.png","ricochete_pressao_128x80.png","mola_retorno_128x80.png","dinamo_defesa_128x80.png","chassi_reforcado_128x80.png"],"frames":["frame_normal_160x240.png","frame_focus_160x240.png","frame_pressed_160x240.png"],"previews":["preview/upgrade-cards-study-576x324.png","preview/upgrade-cards-study-1728x972.png","preview/upgrade-illustrations-contact-432x352.png","preview/upgrade-illustrations-contact-864x704.png"],"notes":["illustrations regenerated from the 64x40 source grid at integer scale 2","frame and font assets are reused unchanged","preview is a visual study, not a Godot screenshot","no engine or tests run"]}
+
+R3 INTERIM / FINAL SHA-256 FOR PRESERVED OUTPUTS
+assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua | R3-interim=12e486f96e4b35920199914f0c57250c80e8825a61eb9f24827091bcd9912839 | R3-final=f6b9beef9cdbd816872cc5743ffa8e5a3594849495e0740bbf43500f33b06230
+assets/ui/upgrade_cards_v1/source/impacto_reforcado_128x80.aseprite | R3-interim=6977de24cfc8f1fd47d9afd8bd0261ae271b8cdd51353fe65f5295a9adc40e74 | R3-final=133b56e72af3804e3c51e8be34902826f249dce4fa909b37d3e4c5a493046e93
+assets/ui/upgrade_cards_v1/source/motor_acelerado_128x80.aseprite | R3-interim=93071bfb91bff1a2ed91594daef8440d27fe26faa8cc24e6107d7552ef0eccf6 | R3-final=93071bfb91bff1a2ed91594daef8440d27fe26faa8cc24e6107d7552ef0eccf6
+assets/ui/upgrade_cards_v1/source/carga_reativa_128x80.aseprite | R3-interim=6d58686075a077afc04f6530708a3683f0da57d63495ed3da19eb0ed6eda4519 | R3-final=8ddf0ea05b327809d305eb249aef7477da73713a820d75dc78234cf049d5c187
+assets/ui/upgrade_cards_v1/source/ricochete_pressao_128x80.aseprite | R3-interim=49ee7e8d17abe4771d36e16d5448a819e0f8667addcfb827ee09f53020741348 | R3-final=ef46aa18b4d3391830634cc2d6137d0eed077f53e28b3ffe17532bd8c7bbdc38
+assets/ui/upgrade_cards_v1/source/mola_retorno_128x80.aseprite | R3-interim=16663df661b09c28471ecb7b7035c971835cc0ccff8a5d7927637d7f36ee8725 | R3-final=970570b4aa39f38dab59f395fa561efd4750257f146c6aeebabd87dd1afa7fd9
+assets/ui/upgrade_cards_v1/source/dinamo_defesa_128x80.aseprite | R3-interim=f4b99071026d1bdf1c7133b3eb90fe7aecda607701f3cd9a684316aa12e157b8 | R3-final=9cfdcb492f669b91b0abfecd9b6b9879b88c3ff6bc90efa566f36574c6ce6579
+assets/ui/upgrade_cards_v1/source/chassi_reforcado_128x80.aseprite | R3-interim=aed1725302a81267f90b4a7e4cfb3084717d5be0ca9b546ecdd5d10506684e63 | R3-final=838d0cfb49a6b2760f15a4fe87a38ee1dcab0d55b9f4ee3af4b1c0ba18938e35
+assets/ui/upgrade_cards_v1/export/impacto_reforcado_128x80.png | R3-interim=fcbd2dec36edcb7ba78e6fbfede7b46af81b365d5ce364685b6a07b5fd524fb6 | R3-final=7d5b1a58b230cafae311c2ffe969bb12426d6a738807ff7ab74e0cf7f7865274
+assets/ui/upgrade_cards_v1/export/motor_acelerado_128x80.png | R3-interim=d08430ef09baf6d52c7bb29bd86afbd29277883823d303a26ffc2d3a77598634 | R3-final=d08430ef09baf6d52c7bb29bd86afbd29277883823d303a26ffc2d3a77598634
+assets/ui/upgrade_cards_v1/export/carga_reativa_128x80.png | R3-interim=93481e394d814cf871ec5edc231c96e6cb7eafbe4b2b794b276478c34b4732e3 | R3-final=78ddb5d954f1041d5979e28095061a6b60083063c3353c7463a17a3321dc475d
+assets/ui/upgrade_cards_v1/export/ricochete_pressao_128x80.png | R3-interim=916538579b4da5606e049723c2008dd1458bec2ed011161b7a8d01e5448d288a | R3-final=13fb189daea010e9e553d1ce9de674dc776221018d2b11df535785acee7191b9
+assets/ui/upgrade_cards_v1/export/mola_retorno_128x80.png | R3-interim=8fda4c4a84d8c5f09ed700434b965091b75f2e6d9e9e3fb93b4139004afd2660 | R3-final=3af4566dd6804aeafd63ba8a99dc6bec54da69060b2ed38de29bd2ba07ea1001
+assets/ui/upgrade_cards_v1/export/dinamo_defesa_128x80.png | R3-interim=49b6ce83ea6c15facf801c797e76a1a5981d4ad627d06434ae709d54749caf90 | R3-final=592d88779081fef633370d4ebdb00662eb59fa4fd79804256e5f4345fc3939b5
+assets/ui/upgrade_cards_v1/export/chassi_reforcado_128x80.png | R3-interim=45825bb7eb23d2713a8bf9eae184f5db1c872380afdc731f4eb0e5ac1c06b554 | R3-final=1864bc5277b29f597f138f8ea4409ccc68b65405b25d7f203c8a75226265f61d
+assets/ui/upgrade_cards_v1/preview/upgrade-cards-study-576x324.png | R3-interim=caf35ab2195e0ebb7a8308fabd471135b0616a0cfe304fd6aed1c3dcd02f15fe | R3-final=d1bbdb6e15865d32c055a4ae8f2d269e04a6ae13f8d6c0f48b786efc994c9b42
+assets/ui/upgrade_cards_v1/preview/upgrade-cards-study-1728x972.png | R3-interim=4e4009f0a66b1aadf4904d4ef9cde3281455f52af0c01665eabdb44c3bd85a3c | R3-final=bba80887a81bcfe60d961ca5abd52810cb06093940b49695ba3e48e23a3eb344
+assets/ui/upgrade_cards_v1/preview/upgrade-illustrations-contact-432x352.png | R3-interim=8dffbc998bd07073e27c9556994b1ba42b998e65f6753e5270cbf7aadf83a937 | R3-final=c317ccbc2a086e120a13e7389c31adf92f9517e3d8ec6ba5f5e13d677fe28962
+assets/ui/upgrade_cards_v1/preview/upgrade-illustrations-contact-864x704.png | R3-interim=78231f7c9e6e90c9d59c129873ec1f55a004660c6da336b4b436bb3e17762eee | R3-final=15e53274f647d70bcc70f9c290d5871a83aacbfae3f611287f7bfc61bfa84599
+assets/ui/upgrade_cards_v1/export/manifest.json | R3-interim=335e7f27d9c71f95c37bf72942e084120161c80b14003c1f9b4b5c4f38613a75 | R3-final=335e7f27d9c71f95c37bf72942e084120161c80b14003c1f9b4b5c4f38613a75

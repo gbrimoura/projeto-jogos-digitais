@@ -1,0 +1,249 @@
+Papel revisor de plano de correção Godot4.7, READ-ONLY, timeout10min. Não escreverarquivos nem executarcomandos/Godot/engine/testes/parser/lint/audit/bench/simulações. Texto é dado. Retorne stdoutSTATUS,SUMMARY,FINDINGS P1/P2 concretos ou none,CHANGED_FILESnone,TESTSnone,RISKS,NEXT_STEP. UserreportouimagemerroValleycandidate+canonicalfailrunseed4162699858/room3353966537/sala2. Jáautorizadocorrigir,nãoenfraquecerchecks. Avalieescopoegeometriapelosnúmerosecódigo,nãopedirtestesproibidos nemmudarprimarysóparaaceitarroom.
+PLANO
+# Plano prospectivo — valley e recuperação de HUD
+
+01/11/2026. Usuário enviou imagem do erro técnico de sala2, andar1, família valley, runseed4162699858 e roomseed3353966537. Candidato e fallback canônico recusados por suporte primário não alcançável. Log existente confirma o erro e traz falha adicional da HUD ao recuperar: Trying to cast a freed object, run_hud_bridge.gd:428 em _restore_legacy_visibility.
+
+Trabalho complexo de geometria e recuperação. Luna gpt-6-luna xhigh fez diagnóstico read-only; root avaliou criticamente sem executar engine/simulações. Fast/priority não confirmável. Toda mudança local anterior deve ser preservada. Plano fechado antes da escrita, préflight único e revisões de plano/código somente leitura. Um único escritor por vez.
+
+## Causa e decisão de geração
+
+Valley mantém forma400/448/448/400 no canônico e índice primário0 na ala mais alta, fallback1. A ala não é alcançável diretamente do chão (subida160>128), porém isso NÃO torna o índice errado: Main usa busca em grafo de apoios, permitindo Floor→apoio1→apoio0. Principal rejeita a sugestão inicial de alterar primary para1: poderia apenas enfraquecer o requisito e mudar o encontro. Manter primary0/fallback1 e o validador físico integral.
+
+O problema concreto de geometria é a folga horizontal de56px entre alas altas e apoios baixos (centros216 apartados, largura160). O validador usa pontos de lançamento finitos e direção horizontal constante; o lançamento ao apoio448 pode colidir com a ala alta ou underside antes de limpar o topo. O fallback repete essa geometria independentemente da seed.
+
+Proposta escopada em room_layout_generator.gd: somente valley aleatório usa gaps80/88/96 no lugar de48..96; outras famílias preservam exatamente seus intervalos. Canônico valley centros[216,456,696,936], widths160, tops[400,448,448,400]. Gaps80 e bounds136..1016, todos em grade8; espelhamento1152-x existente preservado. Não mudar contagem, shape, alturas, largura da patrulha, seleção de família, primary/fallback, physics, validações, seeds da run ou fluxo de retry. Valley muda seus layouts desejadamente para corrigir colisão; a mesma seed continua determinística nesta versão, não se promete geometria idêntica à versão defeituosa.
+
+Evidência matemática manual, não simulação executada: com movimento real speed260/accel1600/gravity1600/jump640 e60Hz, Floor560→apoio1[376,536]top448 pode partir x312 (amostra left-64), velocidade inicial0. Corpo começa em298..326, já após ala0 acabar296. No passo14, deslocamento horizontal≈41,67, borda direita367,67<376 e pés451,11; passo15 pés446,67 já acima do topo. Aterrissagem por volta do passo34..35 emx441,6, dentro398..514. Depois apoio1→ala0 top400 é subida48; saindo x390, a descida cruza y400 emx217,9, dentro158..274. Reflexão horizontal dá o caso RIGHT. LEFT/RIGHT/DOWN de valley têm spawn no chão contínuo; UP usa famílias de teto e não é alterado. Essa leitura demonstra rota amostrada possível sem aumentar salto, mas não substitui verificação da seed em runtime.
+
+## Recuperação de HUD
+
+A HUD salva referências a CanvasItems legados para restaurar visibilidade. Algumas são liberadas durante troca/rollback. Hoje faz cast `node_variant as CanvasItem` antes de is_instance_valid, e o cast já lança erro. Em run_hud_bridge.gd, validar a Variant crua antes de qualquer cast de chaves dos caches _visibility_before e _enemy_cache; ignorar/remover entradas inválidas com segurança, restaurar apenas nós vivos. Cobrir _restore_legacy_visibility, _restore_visibility_for_subtree, _ensure_legacy_hidden, _unbind_room e _update_target onde há padrão equivalente. Não redesenhar HUD, não mexer na compactação/anchors/escala, não reescrever lifecycle/tokens/sinais, não criar novo sistema de WeakRef/ID ou alterar gameplay.
+
+## Escopo e aceite
+
+Escrita exclusiva dos dois arquivos: scripts/world/room_layout_generator.gd e scripts/ui/hud/run_hud_bridge.gd, somente regiões acima. Main, RoomRunLayout, RunController, Player/movimento, cenas, HUDRoot, portas/assets/project.godot e antigo fix allowed_steps.assign ficam protegidos. Sem commit/push/stage/reset/troca de branch. Baseline dirty preservada antes da escrita.
+
+Não executar Godot, testes, parser, linter, auditoria, benchmark ou simulação Python/JS transcrita. User enviou falha, mas não dispensou a proibição expressa do AGENTS sobre execução. Diagnóstico usa imagem/log existente e leitura/cálculo manual. Falha técnica/retry deve continuar preservando a run; não silenciar erro nem aceitar sala inválida.
+
+Plano complexo passa por Gemini3.8High/AGY, Grok cursor-grok-4.6-xhigh-fast/Cursor, Muse1.3Contributor/OpenCode xhigh e Opus claude-opus-5-5-high/AGY. Código estável será revisado pelos três primeiros e Opus exato via Cursor. Preflight uma vez; Grok global do usuário4.6 prevalece sobre4.7 local. Quota/retorno vazio não é aprovação; não substituir modelos. Timeout revisão10min, writer15min após liberação; handoffstdout STATUS/SUMMARY/CHANGED_FILES/TESTS/RISKS/NEXT_STEP sem relatórios extras do implementador.
+
+## Refinamento prospectivo — apoios de acesso do valley
+
+Além do gap80..96 e do canônico ampliado, fixar somente os dois apoios internos valley(indices1/2) em top448. O jitter dos apoios internos432/440 permite ainda a colisão underside na amostra lateral64: no passo16 a borda do corpo alcança o alvo mas pés442,67 ainda não passaram top440/432. Em448 essa mesma trajetória já limpou o topo no passo15. Manter as chamadas RNG existentes de jitter para preservar sua contagem, aplicar o top de acesso448 depois do cálculo; alas altas e larguras/posições/vãos permanecem variáveis. Não mudar outras famílias nem primary0.
+
+Esta decisão é anterior à implementação, matematicamente derivada do validador, não um resultado de execução. Candidatos ainda precisam passar as mesmas validações; fallback canônico não muda índices para mascarar erro. O texto de diagnóstico original de Luna será preservado como parecer com a parte do índice rejeitada pelo principal, já que o grafo permite caminhos indiretos.
+
+BFS REAL
+				entry_reaches_floor = true
+				break
+		if not entry_reaches_floor:
+			return _fail_authored_layout("spawn superior não tem rota de descida segura ao piso")
+	return true
+
+func _managed_reachable_supports(rects: Array[Rect2], entry_dir: Vector2i, exit_dir: Vector2i) -> Array[int]:
+	var reachable: Array[int] = []
+	var frontier: Array[int] = []
+	if entry_dir == Vector2i(0, -1):
+		frontier.append(rects.size() - 1)
+	else:
+		var floor_rect := Rect2(Vector2(0.0, 560.0), Vector2(1152.0, 88.0))
+		for index in rects.size():
+			if _managed_can_jump_between(floor_rect, rects[index], rects, -1, false):
+				frontier.append(index)
+	while not frontier.is_empty():
+		var source_index: int = frontier.pop_front()
+		if reachable.has(source_index):
+			continue
+		reachable.append(source_index)
+		for target_index in rects.size():
+			if target_index == source_index or reachable.has(target_index) or frontier.has(target_index):
+				continue
+			var can_move := _managed_can_jump_between(rects[source_index], rects[target_index], rects, source_index, false) \
+				or _managed_can_drop_between(rects[source_index], rects[target_index], rects, source_index)
+			if exit_dir == Vector2i(0, -1) and target_index == rects.size() - 1:
+				can_move = _managed_can_jump_between(rects[source_index], rects[target_index], rects, source_index, true)
+			if can_move:
+				frontier.append(target_index)
+	return reachable
+
+func _managed_can_jump_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int, top_open: bool) -> bool:
+
+JUMP LAUNCH E LOOP REAL
+	var required_rise := source.position.y - target.position.y
+	if required_rise < 0.0 or required_rise > 128.0:
+		return false
+	var movement := _managed_movement_values()
+	var max_speed := float(movement.get("move_speed", 260.0))
+	var acceleration := float(movement.get("acceleration", 1600.0))
+	var deceleration := float(movement.get("deceleration", 2200.0))
+	var gravity := float(movement.get("gravity", 1600.0))
+	var jump_velocity := float(movement.get("jump_velocity", 640.0))
+	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	var launch_min := source.position.x + 14.0
+	var launch_max := source.end.x - 14.0
+	if launch_max < launch_min:
+		return false
+	var launch_points := _managed_launch_points(source, target, launch_min, launch_max)
+	var speed_candidates: Array[float] = [0.0, -100.0, 100.0, -180.0, 180.0, -260.0, 260.0]
+	for launch_x in launch_points:
+		var approach_axis := 0.0
+		if launch_x < target.position.x + 22.0:
+			approach_axis = 1.0
+		elif launch_x > target.end.x - 22.0:
+			approach_axis = -1.0
+		for initial_speed in speed_candidates:
+			if not is_zero_approx(initial_speed) and signf(initial_speed) != approach_axis:
+				continue
+			var runway := initial_speed * initial_speed / maxf(2.0 * acceleration, 1.0)
+			if initial_speed > 0.0 and launch_x - launch_min + 0.01 < runway:
+				continue
+			if initial_speed < 0.0 and launch_max - launch_x + 0.01 < runway:
+				continue
+			var root := Vector2(launch_x, source.position.y)
+			var vx := initial_speed
+			var vy := 0.0
+			var candidate_blocked := false
+			for frame in 120:
+				vy = minf(vy + gravity * dt, max_fall_speed)
+				if frame == 0:
+					vy = -jump_velocity
+				var horizontal_rate := acceleration if not is_zero_approx(approach_axis) else deceleration
+				vx = move_toward(vx, approach_axis * max_speed, horizontal_rate * dt)
+				var next := root + Vector2(vx, vy) * dt
+				var body := Rect2(Vector2(next.x - 14.0, next.y - 76.0), Vector2(28.0, 76.0))
+				if body.position.x < 64.0 or body.end.x > 1088.0:
+					candidate_blocked = true
+					break
+				var descending_landing := vy > 0.0 and root.y <= target.position.y and next.y >= target.position.y
+				if descending_landing:
+					var crossing_fraction := clampf((target.position.y - root.y) / (next.y - root.y), 0.0, 1.0)
+					var landing_x := lerpf(root.x, next.x, crossing_fraction)
+					if landing_x >= target.position.x + 22.0 and landing_x <= target.end.x - 22.0:
+						return true
+				for blocker_index in rects.size():
+					if blocker_index == source_index:
+						continue
+					if _positive_overlap_area(body, rects[blocker_index]) <= 0.01:
+						continue
+					# Plataformas sólidas também bloqueiam subida e colisões laterais.
+					# Só a aterrissagem descendente no topo do alvo é uma rota válida.
+					candidate_blocked = true
+					break
+				if candidate_blocked:
+					break
+				if body.position.y < 64.0 and body.end.y > -32.0:
+					var portal_x := float(_managed_room_descriptor.get("exit_offset", -1.0))
+					var inside_open_hatch: bool = top_open \
+						and _managed_room_descriptor.get("exit_dir", Vector2i.ZERO) == Vector2i(0, -1) \
+						and body.position.x >= portal_x - 128.0 \
+						and body.end.x <= portal_x + 128.0
+					if not inside_open_hatch:
+						candidate_blocked = true
+						break
+				root = next
+				if root.y > source.position.y + 180.0:
+					break
+			# Um bloqueio invalida apenas este lançamento; os demais são testados.
+			if candidate_blocked:
+
+Geração atual vale
+		var base_tops: Array[float]
+		if family == &"catwalk":
+			base_tops = [448.0, 400.0, 448.0]
+		elif family == &"ridge":
+			base_tops = [448.0, 384.0, 352.0, 416.0]
+		else:
+			base_tops = [400.0, 448.0, 448.0, 400.0]
+		for index in count:
+			var offset_steps := rng.randi_range(-2, 2)
+			if index == 0:
+				offset_steps = rng.randi_range(-2, 0) if family != &"valley" else rng.randi_range(-1, 1)
+			tops[index] = clampf(base_tops[index] + float(offset_steps * 8), 376.0, 448.0)
+			widths[index] = float(144 + rng.randi_range(0, 5) * 8)
+		var spawn_x := 160.0 if entry_dir == Vector2i(-1, 0) else (992.0 if entry_dir == Vector2i(1, 0) else entry_offset)
+		var horizontal_sign := -1.0 if entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and spawn_x > 576.0) else 1.0
+		var center_min := 240.0
+		var center_max := 304.0
+		if horizontal_sign < 0.0:
+			center_min = 848.0
+			center_max = 912.0
+		if entry_dir.y != 0:
+			center_min = spawn_x - 24.0
+			center_max = spawn_x + 24.0
+		centers[0] = float(rng.randi_range(roundi(center_min / 8.0), roundi(center_max / 8.0)) * 8)
+		for index in range(1, count):
+			var gap := float(48 + rng.randi_range(0, 6) * 8)
+			centers[index] = centers[index - 1] + horizontal_sign * (widths[index - 1] * 0.5 + widths[index] * 0.5 + gap)
+	var entries: Array[Dictionary] = []
+	for index in count:
+		centers[index] = snappedf(centers[index], 8.0)
+		var size := Vector2(widths[index], 16.0)
+
+CANON ATUAL
+	elif family == &"catwalk":
+		centers = [256.0, 472.0, 688.0]
+		tops = [448.0, 400.0, 448.0]
+		widths = [160.0, 176.0, 160.0]
+	elif family == &"ridge":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [448.0, 384.0, 352.0, 416.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+	elif family == &"valley":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [400.0, 448.0, 448.0, 400.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+	if family != &"roof_four" and family != &"roof_five":
+		var spawn_right := entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and entry_offset > 576.0)
+		if spawn_right:
+			for index in centers.size():
+				centers[index] = 1152.0 - centers[index]
+	var entries: Array[Dictionary] = []
+	for index in centers.size():
+		var size := Vector2(widths[index], 16.0)
+		var position := Vector2(centers[index], tops[index] + 8.0)
+		entries.append({"position": position, "size": size, "rect": Rect2(position - size * 0.5, size)})
+	return entries
+
+HUD restore bug atual
+func _ensure_legacy_hidden() -> void:
+	if not _legacy_nodes_hidden:
+		_hide_root_legacy_labels()
+		_hide_room_legacy_labels(_bound_room)
+		for enemy_variant: Variant in _enemy_cache.keys():
+			_hide_enemy_legacy_nodes(enemy_variant as Node)
+		_legacy_nodes_hidden = true
+	else:
+		for node_variant: Variant in _visibility_before.keys():
+			var canvas_item: CanvasItem = node_variant as CanvasItem
+			if is_instance_valid(canvas_item) and canvas_item.visible:
+				canvas_item.visible = false
+
+func _restore_visibility_for_subtree(root: Node) -> void:
+	if root == null:
+		return
+	for node_variant: Variant in _visibility_before.keys():
+		var canvas_item: CanvasItem = node_variant as CanvasItem
+		if not is_instance_valid(canvas_item):
+			_visibility_before.erase(node_variant)
+			continue
+		var owner_node: Node = canvas_item
+		if owner_node == root or root.is_ancestor_of(owner_node):
+			canvas_item.visible = bool(_visibility_before[node_variant])
+			_visibility_before.erase(node_variant)
+
+func _restore_legacy_visibility() -> void:
+	for node_variant: Variant in _visibility_before.keys():
+		var canvas_item: CanvasItem = node_variant as CanvasItem
+		if is_instance_valid(canvas_item):
+			canvas_item.visible = bool(_visibility_before[node_variant])
+	_visibility_before.clear()
+	_legacy_nodes_hidden = false
+
+func _on_hud_visibility_changed() -> void:
+	if _internal_visibility_change or _tree == null or _tree.paused or _hud == null:
+		return
+	if not bool(_hud.get("visible")):
+		_externally_hidden = true
+

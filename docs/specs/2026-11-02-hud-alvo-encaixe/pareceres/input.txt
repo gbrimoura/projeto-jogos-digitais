@@ -1,0 +1,363 @@
+READ ONLY stable implementation review timeout5min. Do not call tools, edit files, run Godot/tests. User screenshot enemy name truncated NV1 TRANCA-- 1/6; asks portrait/name fit existing HUD. Changes: SAME144x40 panel, font5x11 advance6, noassetschanged. Full raw display_name on firstline96px (Tranca-Lata11 and Cospe-Rebite12chars), level separately secondline30px (NV220 5chars fits), HP right60px (up to999/999 fits). Portrait natural32x28 or24x24 centered in32x28 region, fallbackcontainnearest for largertextures. New target-only bar96x6 at42,30 uses currentHP/realmaximum, no gameplay/playerbar change. Critical draw-order handled Frame.show_behind_parent=true because panel own _drawbar must appear above NinePatchbackground, remainingtext/portrait children drawn afterparent. API addoptional lastlevel1 forwarded through HUDroot, bridge rawname+level. Clearing resetsall andhides. Evaluate concrete P1/P2 with sourceevidence, no hypothetical unrelated features. Return STATUS SUMMARY CHANGED_FILES:none TESTS:none RISKS NEXT_STEP.
+FILE scripts/ui/hud/target_panel.gd
+class_name HudTargetPanel
+extends Control
+
+const TARGET_BAR_FILL: Texture2D = preload("res://assets/ui/hud_caldeira_v1/export/bar-fill-target-90x8.png")
+const PORTRAIT_REGION: Vector2 = Vector2(32.0, 28.0)
+const BAR_POSITION: Vector2 = Vector2(42.0, 30.0)
+const BAR_SIZE: Vector2 = Vector2(96.0, 6.0)
+const BAR_OUTER_COLOR: Color = Color("0E0D0E")
+const BAR_BORDER_COLOR: Color = Color("4B555D")
+const BAR_BACKGROUND_COLOR: Color = Color("0C1B29")
+const BAR_FILL_SOURCE: Rect2 = Rect2(0.0, 2.0, 90.0, 2.0)
+
+@onready var _portrait: TextureRect = $Portrait
+@onready var _name_text: Control = $NameText
+@onready var _level_text: Control = $LevelText
+@onready var _value_text: Control = $ValueText
+
+var _current_health: int = 0
+var _maximum_health: int = 0
+
+func set_target(target_name: String, current: int, maximum: int, portrait: Texture2D, level: int = 1) -> void:
+	_name_text.call("set_text", target_name)
+	_level_text.call("set_text", "NV%d" % maxi(level, 1))
+	_value_text.call("set_text", "%d/%d" % [current, maximum])
+	_current_health = current
+	_maximum_health = maximum
+	_set_portrait(portrait)
+	queue_redraw()
+	show()
+
+func _set_portrait(portrait: Texture2D) -> void:
+	_portrait.texture = portrait
+	_portrait.visible = portrait != null
+	if portrait == null:
+		return
+	var natural_size: Vector2 = portrait.get_size()
+	var display_size: Vector2 = natural_size
+	if natural_size.x > PORTRAIT_REGION.x or natural_size.y > PORTRAIT_REGION.y:
+		var contain_scale: float = minf(
+			PORTRAIT_REGION.x / natural_size.x,
+			PORTRAIT_REGION.y / natural_size.y
+		)
+		display_size = Vector2(
+			maxf(floorf(natural_size.x * contain_scale), 1.0),
+			maxf(floorf(natural_size.y * contain_scale), 1.0)
+		)
+	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
+	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_portrait.size = display_size
+	_portrait.position = Vector2(
+		6.0 + floorf((PORTRAIT_REGION.x - display_size.x) * 0.5),
+		6.0 + floorf((PORTRAIT_REGION.y - display_size.y) * 0.5)
+	)
+
+func _draw() -> void:
+	var outer_rect: Rect2 = Rect2(BAR_POSITION, BAR_SIZE)
+	draw_rect(outer_rect, BAR_OUTER_COLOR)
+	draw_rect(Rect2(BAR_POSITION + Vector2.ONE, BAR_SIZE - Vector2(2.0, 2.0)), BAR_BORDER_COLOR)
+	draw_rect(Rect2(BAR_POSITION + Vector2(2.0, 2.0), BAR_SIZE - Vector2(4.0, 4.0)), BAR_BACKGROUND_COLOR)
+	if _maximum_health <= 0:
+		return
+	var health_ratio: float = clampf(float(_current_health) / float(_maximum_health), 0.0, 1.0)
+	var filled_width: int = int(floor(90.0 * health_ratio + 0.5))
+	if filled_width <= 0:
+		return
+	var fill_destination: Rect2 = Rect2(BAR_POSITION + Vector2(3.0, 2.0), Vector2(float(filled_width), 2.0))
+	var fill_source: Rect2 = Rect2(BAR_FILL_SOURCE.position, Vector2(float(filled_width), BAR_FILL_SOURCE.size.y))
+	draw_texture_rect_region(TARGET_BAR_FILL, fill_destination, fill_source)
+
+func clear_target() -> void:
+	_name_text.call("set_text", "")
+	_level_text.call("set_text", "")
+	_value_text.call("set_text", "")
+	_current_health = 0
+	_maximum_health = 0
+	_portrait.texture = null
+	_portrait.hide()
+	queue_redraw()
+	hide()
+FILE scenes/ui/hud/target_panel.tscn
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud/target_panel.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud_caldeira_v1/export/panel-9slice-24.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud_caldeira_v1/export/portrait-tranca-lata-32x28.png" id="4"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="7"]
+
+[node name="Target" type="Control"]
+custom_minimum_size = Vector2(144, 40)
+layout_mode = 3
+anchors_preset = 0
+visible = false
+offset_right = 144.0
+offset_bottom = 40.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("1")
+
+[node name="Frame" type="NinePatchRect" parent="."]
+show_behind_parent = true
+mouse_filter = 2
+layout_mode = 0
+offset_right = 144.0
+offset_bottom = 40.0
+texture = ExtResource("2")
+patch_margin_left = 6
+patch_margin_top = 6
+patch_margin_right = 6
+patch_margin_bottom = 6
+
+[node name="Portrait" type="TextureRect" parent="."]
+mouse_filter = 2
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 38.0
+offset_bottom = 34.0
+texture = ExtResource("4")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="NameText" type="Control" parent="."]
+offset_left = 42.0
+offset_top = 6.0
+offset_right = 138.0
+offset_bottom = 18.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+
+[node name="LevelText" type="Control" parent="."]
+offset_left = 42.0
+offset_top = 18.0
+offset_right = 72.0
+offset_bottom = 30.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+
+[node name="ValueText" type="Control" parent="."]
+offset_left = 78.0
+offset_top = 18.0
+offset_right = 138.0
+offset_bottom = 30.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+right_align = true
+FILE scripts/ui/hud/bitmap_text.gd
+class_name HudBitmapText
+extends Control
+
+const FONT_METADATA_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font.json"
+const FONT_ATLAS_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font-atlas.png"
+
+@export var text: String = "":
+	set(value):
+		if text == value:
+			return
+		text = value
+		queue_redraw()
+@export var font_color: Color = Color("E8D8B5"):
+	set(value):
+		if font_color == value:
+			return
+		font_color = value
+		queue_redraw()
+@export_range(1, 4, 1) var max_lines: int = 1
+@export var center_text: bool = false
+@export var right_align: bool = false
+
+var _font_atlas: Texture2D
+var _glyphs: Dictionary = {}
+var _advance: int = 6
+var _line_height: int = 12
+var _warned_missing_glyph: bool = false
+
+static func load_font_bundle() -> Dictionary:
+	if not ResourceLoader.exists(FONT_METADATA_PATH) or not ResourceLoader.exists(FONT_ATLAS_PATH):
+		return {"valid": false, "reason": "fonte bitmap do HUD ausente"}
+	var metadata_resource: Resource = ResourceLoader.load(FONT_METADATA_PATH)
+	var atlas_resource: Resource = ResourceLoader.load(FONT_ATLAS_PATH)
+	var metadata_json: JSON = metadata_resource as JSON
+	var font_atlas: Texture2D = atlas_resource as Texture2D
+	if metadata_json == null or font_atlas == null:
+		return {"valid": false, "reason": "metadados ou atlas da fonte bitmap inválidos"}
+	var raw_data: Variant = metadata_json.data
+	if typeof(raw_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "font.json não contém um objeto"}
+	var font_data: Dictionary = raw_data as Dictionary
+	var raw_glyphs: Variant = font_data.get("glyphs", null)
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "font.json não contém a lista de glifos"}
+	var glyphs: Dictionary = {}
+	var glyph_list: Array = raw_glyphs as Array
+	for glyph_variant: Variant in glyph_list:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant as Dictionary
+		var codepoint: int = int(glyph_data.get("codepoint", -1))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if codepoint < 0 or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant as Dictionary
+		var glyph_rect: Rect2i = Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > font_atlas.get_width() \
+			or glyph_rect.end.y > font_atlas.get_height():
+			continue
+		glyphs[String.chr(codepoint)] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 0)), 1),
+		}
+	var advance: int = int(font_data.get("advance", 0))
+	var line_height: int = int(font_data.get("line_height", 0))
+	if glyphs.is_empty() or advance <= 0 or line_height <= 0 or not glyphs.has(" "):
+		return {"valid": false, "reason": "métricas incompletas da fonte bitmap"}
+	return {"valid": true, "atlas": font_atlas, "glyphs": glyphs, "advance": advance, "line_height": line_height}
+
+func configure_font(bundle: Dictionary) -> bool:
+	if not bool(bundle.get("valid", false)):
+		return false
+	_font_atlas = bundle.get("atlas") as Texture2D
+	_glyphs = bundle.get("glyphs", {}) as Dictionary
+	_advance = int(bundle.get("advance", 6))
+	_line_height = int(bundle.get("line_height", 12))
+	var configured: bool = _font_atlas != null and not _glyphs.is_empty() and _advance > 0 and _line_height > 0
+	visible = configured
+	queue_redraw()
+	return configured
+
+func set_text(value: String) -> void:
+	text = value
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if _font_atlas == null:
+		configure_font(load_font_bundle())
+
+func _draw() -> void:
+	if _font_atlas == null or _glyphs.is_empty() or _advance <= 0 or _line_height <= 0:
+		return
+	var lines: Array[String] = _make_lines()
+	for line_index: int in range(lines.size()):
+		var line: String = lines[line_index]
+		var line_width: int = line.length() * _advance
+		var line_x: float = 0.0
+		if center_text:
+			line_x = floorf((size.x - float(line_width)) * 0.5)
+		elif right_align:
+			line_x = floorf(size.x - float(line_width))
+		for char_index: int in range(line.length()):
+			var character: String = line.substr(char_index, 1)
+			var glyph_variant: Variant = _glyphs.get(character, null)
+			if glyph_variant == null:
+				if not _warned_missing_glyph:
+					push_warning("Fonte bitmap do HUD sem glifo para: %s" % character)
+					_warned_missing_glyph = true
+				glyph_variant = _glyphs.get(" ", {})
+			if typeof(glyph_variant) != TYPE_DICTIONARY:
+				continue
+			var glyph_data: Dictionary = glyph_variant as Dictionary
+			var source_rect: Rect2i = glyph_data.get("rect", Rect2i())
+			var source: Rect2 = Rect2(Vector2(source_rect.position), Vector2(source_rect.size))
+			var destination: Rect2 = Rect2(
+				Vector2(line_x + float(char_index * _advance), float(line_index * _line_height)),
+				Vector2(source_rect.size)
+			)
+			draw_texture_rect_region(_font_atlas, destination, source, font_color)
+
+func _make_lines() -> Array[String]:
+	var result: Array[String] = []
+	var max_chars: int = int(floor(size.x / float(_advance)))
+	if max_chars <= 0:
+		return result
+	var source_lines: PackedStringArray = text.replace("—", "-").replace("–", "-").split("\n")
+	for source_line: String in source_lines:
+		var line: String = _normalize_line(source_line)
+		if line.length() > max_chars:
+			line = line.substr(0, max_chars)
+			if max_chars > 1 and not line.ends_with("-"):
+				line = line.substr(0, max_chars - 1) + "-"
+		result.append(line)
+		if result.size() >= max_lines:
+			break
+	return result
+
+func _normalize_line(value: String) -> String:
+	var normalized: String = ""
+	for index: int in range(value.length()):
+		var character: String = value.substr(index, 1)
+		var prior_character: String = value.substr(index - 1, 1) if index > 0 else ""
+		if character == "s" and prior_character >= "0" and prior_character <= "9":
+			normalized += "s"
+		else:
+			normalized += character.to_upper()
+	return normalized
+HUDROOT_API
+func set_target(target_name: String, current: int, maximum: int, portrait: Texture2D, level: int = 1) -> void:
+	_target_panel.call("set_target", target_name, current, maximum, portrait, level)
+	_target_panel.show()
+
+func clear_target() -> void:
+	_target_panel.call("clear_target")
+	_target_panel.hide()
+
+BRIDGE_UPDATE_TARGET
+func _update_target() -> void:
+	var aim_position: Vector2 = _player.call("get_aim_target_position")
+	var nearest: Node2D
+	var nearest_distance_squared: float = INF
+	var nearest_instance_id: int = 0
+	for enemy_variant: Variant in _enemy_cache.keys():
+		if not is_instance_valid(enemy_variant):
+			_enemy_cache.erase(enemy_variant)
+			continue
+		if not (enemy_variant is Node):
+			_enemy_cache.erase(enemy_variant)
+			continue
+		var enemy: Node = enemy_variant as Node
+		if not _is_eligible_enemy(enemy):
+			_enemy_cache.erase(enemy)
+			continue
+		var enemy_2d: Node2D = enemy as Node2D
+		var distance_squared: float = enemy_2d.global_position.distance_squared_to(aim_position)
+		var instance_id: int = enemy_2d.get_instance_id()
+		if nearest == null or distance_squared < nearest_distance_squared \
+			or (is_equal_approx(distance_squared, nearest_distance_squared) and instance_id < nearest_instance_id):
+			nearest = enemy_2d
+			nearest_distance_squared = distance_squared
+			nearest_instance_id = instance_id
+	if nearest == null:
+		_current_target = null
+		_hud.call("clear_target")
+		return
+	_current_target = nearest
+	var target_level: int = maxi(int(nearest.get("enemy_level")), 1)
+	var target_name: String = String(nearest.get("display_name"))
+	var current_health: int = int(nearest.get("health"))
+	var maximum_health: int = int(nearest.get("max_health"))
+	_hud.call("set_target", target_name, current_health, maximum_health, _portrait_for(nearest), target_level)
+
+func _portrait_for(enemy: Node) -> Texture2D:
+	if enemy is TrainingTarget:
+		return TRANCA_PORTRAIT
+	if enemy is RivetWorker:
+		return RIVET_PORTRAIT
+	return null
+
+func _hide_root_legacy_labels() -> void:
+	_hide_canvas_item(_controller.get_node_or_null("HUD/ProgressLabel"))
+	_hide_canvas_item(_controller.get_node_or_null("HUD/StatusLabel"))
+

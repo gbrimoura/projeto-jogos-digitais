@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="EnemyLevelConfigResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/enemy_level_config_resource.gd" id="1_enemy_level"]
+
+[resource]
+script = ExtResource("1_enemy_level")
+health_multiplier_per_level = 0.12
+damage_increase_every_levels = 10
+maximum_damage_bonus = 2
+cooldown_multiplier_reduction_per_level = 0.015
+minimum_cooldown_multiplier = 0.65

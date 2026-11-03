@@ -1,0 +1,6 @@
+STATUS: done  
+SUMMARY: R1 is closed. The FINAL `out` default is now derived from the same absolute `root` (`root .. "/assets/environment/factory_v1/door/porta-fabrica-horizontal-v2"`), so default export no longer mixes a relative `out` with an absolute `root`. No remaining concrete defect in this R2 delta.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: Residual only if `p.out` is still passed as a relative override (same as other `app.params` overrides; not in this default-line delta). Hash/docs update without rerender is consistent if it records the script/path change only; PNG pixels were already exported in the correct repo CWD. Prior items (alpha, both-end-open legend, busy closed, source positions, no legacy nodes) stay out of scope and are not reopened.  
+NEXT_STEP: Accept R2. Do not rerender. Treat the horizontal wall-door path default as consistent; no further R1 follow-up.

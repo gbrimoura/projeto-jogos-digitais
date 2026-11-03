@@ -1,0 +1,38 @@
+Revisei só o contrato que veio na mensagem. Você vetou ferramentas e escrita, então não abri o repositório, nem o `docs/README.md`, e não criei o artefato do `/plan`. Nada aqui valida a engine: os comportamentos de Godot citados são o que se espera da API, não algo que eu executei.
+
+```text
+STATUS: done
+SUMMARY: Os pontos R1 estão fechados no contrato: depenetração (exceção só para o
+Support, query test-only, só X aplicado, travel com sinal/módulo limitado), flash
+(flash_amount), fase (frames manuais com pesos que batem: 650/140/1400 e walk
+4x120 = 23,04 px de mundo por ciclo), mirror aceito como escolha (b), .import com
+mesmo path/UID e reservas fora do escopo. Não há P1. Ficam 3 P2 concretos e
+locais, que não exigem novo mecanismo.
+CHANGED_FILES: none
+TESTS: none
+RISKS: ver abaixo
+NEXT_STEP: Luna incorpora as correções P2-1..P2-3 (ou a aceitação explícita do
+P2-3) em plano/spec, sem arte/runtime; depois o pacote congelado segue para os
+revisores do incremento.
+```
+
+**P2 remanescentes (correção mínima)**
+
+1. **A varredura de spawn ignora a exceção de colisão.** `add_collision_exception_with` só vale para `move_and_collide`/`test_motion`. Consultas de `PhysicsDirectSpaceState2D` (`intersect_shape`/`cast_motion`), usadas no sweep "World livre" do Main e do random, não respeitam essa exceção.
+   - **Risco:** a forma encostada no topo do Support conta como obstruída. Aí todo spawn primário cai em estacionário com aviso, e a feature morre sem erro.
+   - **Correção:** especificar `exclude = [support.get_rid()]` mais o RID próprio, se já existir, no sweep e na consulta geométrica limitadora.
+
+2. **A exceção vale para o corpo inteiro do Support, não para um shape.** Se o `SolidPlatform` vencedor dividir o mesmo `PhysicsBody2D` com paredes ou obstáculos (vários `CollisionShape2D`, ou TileMap/colisão compartilhada), a patrulha atravessa essas paredes. Isso vale tanto no teste de runtime quanto no sweep excluído.
+   - **Correção:** definir como pré-condição que o Support seja um `PhysicsBody2D` cujo único shape é o retângulo da superfície. Caso contrário, o alvo fica inativo, estacionário, com aviso único. A inspeção estática dos layouts atuais confirma isso sem ampliar o escopo.
+
+3. **Player parado na cabeça do alvo.** Mask3 inclui Player, e o teste com `safe_margin 0.0` contra contato rente pode voltar como hit com travel 0. Pela regra de bloqueio, isso vira inversão + pausa repetida: o alvo fica virando a cada ~0,25 s enquanto o Player estiver em cima.
+   - **Correção (uma das duas):** contar como bloqueio só `abs(collision.get_normal().x) > 0.5` e, com normal vertical, manter o `safe_dx` limitado. Ou registrar no spec que esse comportamento é aceito.
+
+**Riscos e nits (não bloqueiam)**
+
+- **Material do flash:** se o `ShaderMaterial` com `flash_amount` estiver sendo adicionado ou compartilhado no `target.tscn`, um flash acenderia todas as instâncias. O spec deve exigir material por instância (`resource_local_to_scene` ou `duplicate()` no `_ready`), a menos que o código atual já faça isso.
+- **Nomes das animações:** fixar os nomes no spec (`idle` com 1 cel = 14, `walk` 3..6 em loop, `windup`/`active`/`recovery` sem loop, e impact/disabled legados). No ramo de walk, usar `animation != &"walk" or not is_playing()`, para o walk não travar se algo der `stop()` sem trocar de clipe.
+- **Progresso das fases:** limitar o progresso a `[0,1]` e só calcular com `effectiveStateDuration > 0`.
+- **Prensado entre parede e Player:** a inversão a cada pausa troca o `flip_h` de forma periódica. É limitado e aceitável, mas não é "sem jitter" no sentido literal.
+- **Bola atravessando:** a RicochetBall (layer4) não entra na mask3, então o alvo pode avançar sobre ela e quem resolve é a bola. Isso já é a semântica atual e não pede mudança.
+- **Escopo desta revisão:** sem leitura do repositório, os fatos dos itens 7 e 8 (layers, fixtures, `_body_aabb`, TrajectoryPreview) ficaram como premissas do principal, não conferidos.

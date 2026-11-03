@@ -1,0 +1,42 @@
+[
+  {
+    "path": "scripts/world/training_target.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_jump.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_pursuit.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "unchanged": true
+  },
+  {
+    "path": "scenes/rivet_worker.tscn",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/tranca_lata_jump_texture.tres",
+    "unchanged": true
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_texture.tres",
+    "unchanged": true
+  },
+  {
+    "path": "docs/specs/2026-10-23-perseguicao-tranca-lata/empacotar_atlas_tranca_lata.lua",
+    "unchanged": true
+  }
+]

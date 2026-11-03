@@ -1,0 +1,9 @@
+```text
+STATUS: done
+SUMMARY: Delta R4->R5 aprovado: remove duplicação literal das 2 frases de timelines, mantém semântica de índices/timing, adiciona dimensão CONCEITO 74x15.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco editorial; dimensão 74x15 aceita por declaração como já confirmada em arte/metadados/log, sem verificação executada por escopo read-only.
+NEXT_STEP: Manter congelado; apto a seguir sem nova rodada editorial se escopo permanecer só README.
+```

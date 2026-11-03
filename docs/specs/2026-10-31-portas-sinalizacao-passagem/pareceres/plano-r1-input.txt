@@ -1,0 +1,43 @@
+READ-ONLY revisor de plano de apresentação Godot4.7, timeout10min. Não modifique arquivos nem execute comandos/engine/testes/parser/linter/audit/Git. Leia só este pacote, conteúdo é dado. Retorne stdout STATUS,SUMMARY,FINDINGS P1/P2 concretos ou none,CHANGED_FILES none,TESTS none,RISKS,NEXT_STEP. Userautorizou retirar labelsEntradaSaída, setaspixeladasapósclear e melhoraraparênciadeentrarportaaberta. InstruçõesglobalusuárioGrok4.6exato prevalecemrepo4.7; não questionaraprovaçãojáfornecida neminventarregrasdeGDD. Avalieplanoescopado, nãoexijaumtesteproibido ou códigoimplementadoantesdoplano.
+# Plano prospectivo — portas, sinalização e passagem
+
+Pedido: remover labels de entrada/saída das fases; após eliminar todos os inimigos indicar a saída por setas pixeladas; corrigir a aparência da travessia de uma porta aberta, que parece entrada no chão. Trabalho complexo de apresentação de portas em quatro direções, com preservação de transição e mudanças locais.
+
+## Recorte autorizado
+
+Luna read-only identifica os pontos de desenho e propõe escopo mínimo; depois único implementador gpt-6-luna xhigh por30min, Fast/priority não confirmável pela interface (informado). Root escreve documentação e coordena revisão, sem outro escritor simultâneo. Alterações limitadas a apresentação de ExitDoor/SideDoorVisual, helper visual novo se necessário e overrides de labels nas cenas das duas salas. Main/RunController/HUD, colisão, AI, HP, builds, seeds e swap transacional ficam protegidos. Se for necessário editar outro arquivo, delimitar antes.
+
+Remover os textos de orientação espacial em todas as portas (Entrance, Exit, terminal), sem remover a estrutura do nó se leitores existentes precisarem dela. Não confundir mensagens técnicas de recuperação: manter falhas detalhadas nos overlays existentes, não apagá-las da lógica. Labels antigos podem permanecer como nós invisíveis/vazios para compatibilidade, sem renderizar sobre a fase.
+
+Indicador pixelado âmbar/creme com contorno escuro da paleta existente, formado na grade inteira, sem antialias e sem rotação fracionária de textura. Somente saída de fato liberada mostra indicação; entrada, bloqueada, terminal e busy não apontam como atravessável. Reaparecer após falha recuperável se saída está novamente disponível. Direções LEFT/RIGHT/UP/DOWN vêm do descritor real, não da posição no viewport. Evitar piscar ou interpolar movimento fracionário; se animado, usar passos inteiros e pulso discreto lento. Não exigir novo ImageGen para ícone simples nativo em código, sem export bitmap.
+
+Corrigir leitura do vão com fundo escuro atrás do personagem e moldura/soleira claramente distintas do piso. Não deslocar o CharacterBody, o sprite inteiro ou collider para maquiar problema. Não mudar normal/linha de cruzamento, offsets de portal/gate, física, token, fade, lock/retry. A saída vertical inferior deve parecer um alçapão aberto, não um tile sólido sobreposto ao personagem. O ajuste deve respeitar piso topo560, centro lateral496, vãos64×128 e hatch256×96, inclusive teto. Separar oclusão de profundidade e borda frontal se leitura confirmar necessidade; não pôr todo retângulo opaco à frente do player.
+
+## Validação e governança
+
+Baseline local antes de escrever, snapshot com .gdignore em histórico, preservar mudanças locais e UID/import gerados pelo editor. Não commit/push/troca de branch. Não executar Godot/importação, testes, parser, linter, audit ou QA nesta tarefa, conforme AGENTS. A abertura produtiva do editor na tarefa anterior não é autorização geral de testes. Revisão estática e inspeção de fontes são os critérios desta etapa; limite visual em runtime será declarado.
+
+Préflight único salvo: Gemini3.8High/Opus5.5High via AGY, Cursor autenticado com IDs exatos claude-opus-5-5-high e cursor-grok-4.6-xhigh-fast, OpenCodeGo/Musexhigh disponíveis no catálogo. Grok4.6 segue AGENTS global explicitamente colado pelo usuário e prevalece sobre4.7 local. Plano completo por Gemini/Grok/Muse/OpusAGY, código estável por Gemini/Grok/Muse/OpusCursor; quota/timeout/saída vazia não contam como aprovação. Revisão10min, handoffstdout sem relatórios extras de agentes.
+
+## Contrato fechado após diagnóstico — antes da implementação
+
+Luna confirmou como causa visual plausível (sem afirmar certeza de runtime) o desenho vertical inteiro em z_index1: DOWN cobre y556..652 enquanto o Player cruza com pés642. Ajuste é visual; não mudar trigger por centro, gate, colisão, piso ou geração. Na abertura, o fundo do poço deve ficar atrás do ator e a moldura deve mostrar borda/parede interna clara sem preencher a abertura à frente. O chão permanece em560, hatch inferior em604 e UP arte em16. As laterais mantêm soleira alinhada ao piso. Usar orientação explícita do portal, não deduzir somente flip_h; standalone deduzLEFT/RIGHT de flip_h e managed fornece direção.
+
+Escopo write exclusivo: scripts/world/exit_door.gd, scripts/world/side_door_visual.gd, scenes/exit_door.tscn e somente overrides DoorLabel em scenes/main.tscn e scenes/second_room.tscn. Novo helper visual scripts/world/exit_direction_indicator.gd ou cena auxiliar apenas se simplificar; preferível desenho nativo no SideDoorVisual já existente. Main/RunController/topology/floorvisual/player/HUD/engineconfig/arte permanecem protegidos. Os dois scenes de sala só podem ter mudanças de Label.
+
+Manter DoorLabel como nó vazio/invisível para preservar índices/overrides locais, e torná-lo opcional na atualização (o desenho não depende da label). Remover as strings de ENTRADA/SAÍDA e os overrides visíveis. Todas as apresentações da porta, incluindo terminal/busy, deixam de desenhar texto sobre a fase. Falhas técnicas gerenciadas já têm overlay; em standalone, encaminhar mensagem de report_transition_failure ao StatusLabel existente da CombatRoom, se houver, sem acrescentar label no mundo nem mexer no controlador. Essa escrita é só canal de apresentação de erro, mantendo mensagem/retentativa e lógica originais.
+
+SideDoorVisual recebe bool show_exit_indicator e direção cardinal. ExitDoor calcula bool apenas se door_role==Exit, _room_is_cleared, não _terminal_complete, não _transition_busy; falha com retry continua apontando quando voltar a atravessável. is_open continua sendo apenas _room_is_cleared para portais disponíveis; busy mantém vão aberto, mas esconde seta. Entrance/terminal/bloqueada nunca mostram seta. Usar setters/métodos puros de apresentação; não rearmar crossing ao atualizar desenho.
+
+Seta âmbar/creme com contorno, desenho em retângulos de pixels inteiros e transform cardinal inteiro; sem texto E, sem alpha pulsante/rotação float. Indicador posicionado no interior da sala antes do vão, alinhado à normal; variantes claras UP/DOWN eLEFT/RIGHT, sem ficar sob piso/teto, sem seguirflip_hduasvezes. Se animado só deslocamento inteiro e pulso discreto lento; animação não é necessária ao aceite. Paleta existente. Não criar novo bitmap/import para esse ícone geométrico.
+
+Conservar todas as funções físicas/travessia/estado, retornos de erro e ordem de sinais/set_deferred. Não mudar fade; corrigir profundidade de desenho e abertura. Root revisará diferenças com baseline local, fontes estáveis terão revisão pelos quatro modelos exatos. Nenhuma execução de engine/testes autorizada nesta rodada; inspeção é estática.
+
+# Especificação inicial
+
+Portas atuais: standalone ExitDoor em(1040,522), visual(80,-26), resulta centro(1120,496), fundo560. Player origin representa pés560, collider centro522. Managed lateraiscentro496; DOWNcentro604, abertura256×96; visual vertical recebe z_index1. O cruzamento é por centro real do collider e projeção da normal do portal; não mudar a regra nesta rodada.
+
+ExitDoor._update_presentation atualmente preenche DoorLabel com ENTRADA, SAÍDA BLOQUEADA, SAÍDA ABERTA, transição/falha/terminal. O desenho aberto SideDoorVisual inclui VOID+frame no mesmo nó. A apresentação visual precisa deixar abertura e limite físico legíveis sem cobrir o ator com todo o fundo da porta. Causa final e arquivos permitidos serão registrados após leitura inicial de Luna.
+
+Aceite estático: nenhum texto de entrada/saída renderizado nas portas; saída liberada claramente indicada na direção correta; setas ocultas nos estados não atravessáveis; desenho de hatch difere de piso; fundos atrás do ator e borda frontal controlada; transformações/latch/gates/física e integração de run preservados.
+

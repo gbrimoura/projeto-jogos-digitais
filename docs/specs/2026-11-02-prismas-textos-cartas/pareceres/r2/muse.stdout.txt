@@ -1,0 +1,6 @@
+STATUS: APPROVED — no blockers
+SUMMARY: CARD_FINAL retains typed `Array[Color]=[]+append` ternary fix and `max_lines=1` footer; `_wrap_topic/_make_topic_line` preserves per-char colors, `content_colors.clear()` conservative typed-equivalent, validation retained; PRISMS_FINAL mirrors Lua `draw_prism/draw_rank_prisms` rect-for-rect, centering, owned cyan/offered amber, slots exactly 3/5/10 else numeric-only, recovery hides; `rank_after=current+1` per Catalog; Catalog always `MANUTENÇÃO`, no `MÁXIMO` for recovery, all current topics ≤3 lines, numbers-only gold/percent gray retained; geometry 160x240, prisms 12..148/190..202, backdrop 8..152/143..187 before text, rows 146/160/174, status 205/counter 217, `draw_rect(...,true,-1.0,false)` palette primitives, native/3x PNGs clear no yellow squares.
+CHANGED_FILES: none
+TESTS: none — Aseprite production exit 0, no tests run
+RISKS: `_topic_colors` body/layout/mouse-ignore outside supplied delta, assumed unchanged; unsupported `rank_max` shows counter only by design.
+NEXT_STEP: merge/proceed, no further code change.

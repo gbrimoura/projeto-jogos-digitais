@@ -1,0 +1,47 @@
+STATUS: done  
+SUMMARY: Revisão arquitetural somente leitura do plano/spec congelados do Tranca-Lata. Arte e runtime ainda não iniciados; nada foi executado no Godot. O recorte (nome visível, CharacterBody2D, patrulha só no X do suporte efetivo, timers/área/dano intactos, append de cels) é coerente com o pedido. O texto ainda não fecha o contrato físico do suporte nem o helper visual já existente; isso é regressão concreta, não “motor validado”.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: colisão runtime com a própria SolidPlatform (mask 3); `_update_visuals`/`_update_hit_flash` ainda mapeiam flash|ACTIVE→impact; lock do centro e patrulha na mesma frame; oscilação em bloqueio; init autoral sem gate; flip_h no assimétrico; sidecar `.import`; GDD histórico parado vs patrulha autorizada.  
+NEXT_STEP: Emendar o plano congelado só com as correções mínimas P1 abaixo; só então autorizar a frente Aseprite (append cels 3–14, 0–2 byte-exatos). Runtime depois da arte congelada. Não abrir perseguir, nova IA nem economia.
+
+## Achados P1 — condições e correção mínima
+
+**P1-1 — Física do suporte vs mask 3.**  
+Hoje o alvo é StaticBody2D mask 0; o collider 72×96 centrado na origem assenta a base no topo da plataforma (meio-altura 48 = base visual 56×2). Com CharacterBody2D mask 3, `move_and_collide(Vector2(dx, 0))` passa a consultar World layer 1, inclusive a SolidPlatform escolhida. A varredura AABB já ignora só esse suporte; o movimento runtime não. Efeito: contato/`safe_margin` no chão, depenetração em Y (proibida de “corrigir” depois), jitter walk/idle ou saída do suporte.  
+Correção mínima: no bind do suporte efetivo, `add_collision_exception_with(plataforma_escolhida)` (ou equivalente local). Manter mask 3 para o resto de World e Player. Varredura autoral continua excluindo só esse suporte. `motion_mode` FLOATING. Sem gravidade, sem `move_and_slide`, sem correção/teleporte de Y.
+
+**P1-2 — Helper visual atual é incompatível com os clips novos.**  
+`_update_hit_flash` chama `_update_visuals` a cada physics no flash; o mapa atual é flashing|ACTIVE→impact, senão idle. Isso sobrescreve walk/windup/active/recovery, reabre o clip de impact (cel 1) e, com `play()` repetido, reinicia não-loopados parados no último cel. Timings 650/140/1400 já batem com 180+220+250, 70+70 e 120+180+1100; o relógio autoritativo é o timer, não o AnimatedSprite.  
+Correção mínima: um helper que só troca de clip quando o nome desejado muda; se já é o clip da fase, return mesmo com `is_playing()==false`. Flash = só shader. WINDUP/ACTIVE/RECOVERY nunca caem em impact/idle/walk. IDLE: walk só com deslocamento efetivo > épsilon; senão idle (cel 14). Disparar windup em `_begin_windup` (hoje só a área); `_enter_active`/`_enter_recovery` só na transição de estado.
+
+**P1-3 — Ordem lock / movimento / cancelamento.**  
+Centro hoje é capturado no windup e a área usa esse ponto; o corpo era imóvel, então coincidia. Patrulha no mesmo `_physics_process` pode dar um `move_and_collide` depois do lock, ou cancelar (cena/player morto) e retomar andando com a área ainda no corpo.  
+Correção mínima: na transição para WINDUP, zerar patrulha, depois capturar centro global, depois clip/área. Nas três fases, nenhum deslocamento. Cancelamento existente solta o lock e só então volta à patrulha em IDLE.
+
+**P1-4 — Oscilação em bloqueio sem passo efetivo.**  
+Colisão com Player/World (mask 3) com dx≈0, se só inverter sem pausa, vira flip a cada physics.  
+Correção mínima: o mesmo 0,25 s das pontas em todo bloqueio com deslocamento abaixo da tolerância; ficar em idle. Ponta do suporte: inverter + pausa. A pausa trava só o passo, não LOS/aquisição já existentes.
+
+**P1-5 — Gate do suporte autoral.**  
+Main hoje guarda só posição/node; MainStage prepara antes do Ready; spawn aleatório já tem `_placement_pending`. Sem bind do suporte que venceu (primário ou fallback) ou da decisão “parado”, a patrulha pode começar com limites vazios.  
+Correção mínima: Main expõe a SolidPlatform efetiva (não o path primário). Authored e random não andam até bind ou “estacionário + aviso”. Random deriva limites da instância de `_place_on_platform`; 104 px + margem 16 ⇒ percurso 0 ⇒ parado + aviso, sem alargar margem. Sem posição segura, manter a falha de layout atual.
+
+## Achados P2
+
+**P2-1.** Épsilon de “movimento efetivo” não está no texto; fixar valor local provisório (ex. 0,1–0,5 px), não GDD.  
+**P2-2.** `flip_h` só no AnimatedSprite2D do corpo — não no root, collider, NameLabel, área nem centro travado. Tubo/visor frontais vão espelhar; aceitar no plano ou não virar o sprite. Não criar facing novo.  
+**P2-3.** Atlas 960×64: cels 0–2 byte/pixel-exatos (primeiras 192 colunas); append 3–14. ImageGen (SHA 63F1C181…E43E) é referência, não atlas. walk1 vs walk3 com contato distinto; botas dentro do AABB 72×96.  
+**P2-4.** `training_target-atlas.png.import` não está na lista autorizada; na fase de arte, ou o editor regenera, ou o sidecar entra no allowlist. Sem import/execução Godot agora.  
+**P2-5.** Idle deixa de usar o cel 0; flash deixa de forçar impact. Clips 1 e 2 ficam no atlas. Não reescrever `../2026-10-14-alvo-ataque-area/` nem o snapshot GDD parado; o conflito (parado vs patrulha autorizada) permanece explícito.  
+**P2-6.** Preview já invalida `CharacterBody2D` + `combat_enemy`; bola mask 9 + `damageable`/`take_damage`; `_body_aabb` já é `CollisionObject2D`. Não alterar `trajectory_preview.gd`. Revisão estática pós-integração, sem alegar validação de engine.  
+**P2-7.** Se alguma sala protegida duplicar a escolha de suporte fora de `main.gd`, o bind novo não chega lá; confirmar que o autoral passa só por Main.  
+**P2-8.** 48 px/s e 0,25 s continuam locais provisórios.
+
+## Contratos que o plano já preserva (sem alargar)
+
+Identidade técnica `TrainingTarget` / `scenes/training_target.tscn` / path `TrainingTarget`; nome visível Tranca-Lata. Layer 8, collider 72×96 centro 0. Sem dano por contato. Raio 140, windup 650, active 140, recovery 1400, dano 1, HP 3, flash 120 ms, dedup por jogador, LOS World 1, `defeated`, remoção. Salas, gerador, player, worker, bola, shader, visual do círculo e preview intocados. Sem perseguir, gravidade, pulo, troca de plataforma ou economia.
+
+## Pipeline ImageGen → Aseprite → Godot
+
+Ordem correta e ainda não executada: prancha já hashed → reprodução Aseprite 1.3.18.6 em canvas 64×64, centro x=32, base y=56, Cartoon V2 + #FE5B01, alpha binário → atlas 15 cels 960×64 → `SpriteFrames` com idle no cel 14 e clips novos → runtime só depois disso congelado. Não tratar a prancha como sheet. Não afirmar import, colisão ou clip validados no motor.

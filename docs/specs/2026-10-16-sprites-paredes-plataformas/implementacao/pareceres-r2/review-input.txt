@@ -1,0 +1,119 @@
+READ-ONLY STATIC R2 REVIEW, timeout10min. No tools, no files, no Godot/import/tests, no mutations. All relevant delta is inline below. Return STATUS/SUMMARY/CHANGED_FILES none/TESTS none/RISKS/NEXT_STEP. Review ONLY final delta vs accepted R1. Previous full R1 reviewed by Gemini/Muse/Grok; OpusCursor quota. R1 geometry, local pre-tree validation, managed configure-before-add and standalone gates unchanged. Accepted findings fixed: main skin null -> explicit bool true / enum Floor1 A/B/C0; A serialized220x24 collider matches default/expected authoredtable; getter returns null invalid/layoutdisabled/wrongtarget instead of ZERO, caller already rejects non-Vector2. Do not reopen speculative future features; identify only concrete P1/P2 in this delta. Log already-existing user run identifies missing .ctex for both enemies -> failed PNG -> SpriteFrames -> missing animations; import pending user authorization; no shader/art change.
+diff --git a/docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r2-precorrecao/scenes/main.tscn b/scenes/main.tscn
+index 99b7e9c..2644bd1 100644
+--- a/docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r2-precorrecao/scenes/main.tscn
++++ b/scenes/main.tscn
+@@ -24,6 +24,10 @@ size = Vector2(1152, 32)
+ resource_local_to_scene = true
+ size = Vector2(1152, 88)
+ 
++[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_a_authored"]
++resource_local_to_scene = true
++size = Vector2(220, 24)
++
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_platform_b_authored"]
+ resource_local_to_scene = true
+ size = Vector2(190, 24)
+@@ -289,8 +293,8 @@ shape = SubResource("RectangleShape2D_ceiling")
+ position = Vector2(576, 604)
+ size = Vector2(1152, 88)
+ fill_color = Color(0.101961, 0.14902, 0.196078, 1)
+-factory_skin_enabled = null
+-factory_surface_style = null
++factory_skin_enabled = true
++factory_surface_style = 1
+ 
+ [node name="CollisionShape2D" parent="Floor" index="0"]
+ shape = SubResource("RectangleShape2D_floor_authored")
+@@ -306,16 +310,20 @@ default_color = Color(0.145098, 0.215686, 0.27451, 1)
+ position = Vector2(290, 480)
+ randomize_position = false
+ randomize_width = false
+-factory_skin_enabled = null
+-factory_surface_style = null
++size = Vector2(220, 24)
++factory_skin_enabled = true
++factory_surface_style = 0
++
++[node name="CollisionShape2D" parent="PlatformA" index="0"]
++shape = SubResource("RectangleShape2D_platform_a_authored")
+ 
+ [node name="PlatformB" parent="." unique_id=1509114514 instance=ExtResource("5_solid_platform")]
+ position = Vector2(615, 468)
+ randomize_position = false
+ randomize_width = false
+ size = Vector2(190, 24)
+-factory_skin_enabled = null
+-factory_surface_style = null
++factory_skin_enabled = true
++factory_surface_style = 0
+ 
+ [node name="CollisionShape2D" parent="PlatformB" index="0"]
+ shape = SubResource("RectangleShape2D_platform_b_authored")
+@@ -325,8 +333,8 @@ position = Vector2(915, 452)
+ randomize_position = false
+ randomize_width = false
+ size = Vector2(190, 24)
+-factory_skin_enabled = null
+-factory_surface_style = null
++factory_skin_enabled = true
++factory_surface_style = 0
+ 
+ [node name="CollisionShape2D" parent="PlatformC" index="0"]
+ shape = SubResource("RectangleShape2D_platform_c_authored")
+
+diff --git a/docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r2-precorrecao/scripts/world/main.gd b/scripts/world/main.gd
+index b468ed3..2046b2f 100644
+--- a/docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r2-precorrecao/scripts/world/main.gd
++++ b/scripts/world/main.gd
+@@ -135,9 +135,9 @@ func is_authored_layout_valid() -> bool:
+ func get_authored_layout_error() -> String:
+ 	return _authored_layout_error
+ 
+-func get_prepared_authored_target_position(target: Node) -> Vector2:
+-	if not is_authored_layout_valid() or target != _authored_target_node:
+-		return Vector2.ZERO
++func get_prepared_authored_target_position(target: Node) -> Variant:
++	if not authored_layout_enabled or not _authored_layout_prepared or not _authored_layout_valid or target != _authored_target_node:
++		return null
+ 	return _authored_target_position
+ 
+ func _fail_authored_layout(message: String) -> bool:
+
+CALLER FULL READY CONTEXT
+var _line_of_sight_query: PhysicsRayQueryParameters2D
+var _placement_pending: bool = false
+
+func _ready() -> void:
+	health = maxi(max_health, 1)
+	add_to_group("damageable")
+	add_to_group("combat_enemy")
+	if not _parent_room_allows_enemy_activation():
+		process_mode = Node.PROCESS_MODE_DISABLED
+		return
+
+	if authored_support_enabled:
+		var room := get_parent()
+		if room == null or not room.has_method("get_prepared_authored_target_position"):
+			push_error("TrainingTarget: a sala não preparou a posição autoral.")
+			process_mode = Node.PROCESS_MODE_DISABLED
+			return
+		var prepared_position_value: Variant = room.call("get_prepared_authored_target_position", self)
+		if typeof(prepared_position_value) != TYPE_VECTOR2:
+			push_error("TrainingTarget: posição autoral preparada inválida.")
+			process_mode = Node.PROCESS_MODE_DISABLED
+			return
+		var prepared_position: Vector2 = prepared_position_value
+		position = prepared_position
+
+	_configure_physics_queries()
+	_set_attack_visual(&"hidden", 0.0)
+	_update_visuals()
+	if spawn_on_platform and not authored_support_enabled:
+		# Fica inativo até ser posicionado, para não detectar o jogador no lugar errado.
+		_placement_pending = true
+		# Deferido para rodar depois que todas as plataformas já se posicionaram.
+		_place_on_platform.call_deferred()
+
+func _parent_room_allows_enemy_activation() -> bool:
+	var room := get_parent()

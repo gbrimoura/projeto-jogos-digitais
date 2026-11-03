@@ -1,0 +1,122 @@
+REVISÃO COMPLEMENTAR MUSE R1 SOMENTE LEITURA. Nenhum arquivo runtime mudou, estado R1 selado. Esclarecer seus achados anteriores; não executar comandos/Godot/testes/import/parser/linter/QA. Retorne stdout STATUS/SUMMARY/CHANGED_FILESnone/TESTSnone/RISKS P1/P2 concretos/NEXT_STEP. Pode usar Read desta entrada e runtime-r1-input.txt nesta mesma pasta para as fontes completas. Não pedir gameplay como requisito para emitir parecer estático, pois está expressamente proibido; limitação de runtime deve constar como limite, não bug por si.
+1. Histerese do último apoio do Player durante voo é um requisito intencional herdado e preservado. Ao grounded com best_ground válido, choose_player_support retorna esse novo apoio ANTES da regra previous_support. Player no Floor, depois de pousar, tornaFloor objetivo. Não se exige descer já durante o pulo do jogador; evitar thrashing é aceito. Julgar bug só se demonstrar que Player grounded no Floor não troca quando apoio válido.
+2. Grafo can_reach_support usa SOMENTE geometria de alcance como filtro barato; não é promessa de percurso físico. A validação física do primeiro hop é autoridade. MIN_SUPPORT_WIDTH104 não implica falha por offsets: _source_clear_landing_xs INICIA com _candidate_landing_xs (clampedpreferred/min/max/midpoint/quarters), DEPOIS adiciona offsets, e preserva todos os pontos que não sobrepõem origem. Exemplo estático de geometria, não teste executado: origem X200..400, destino inferiorX500..604 (104px), bodyX−36..36, EDGE_MARGIN16 -> landingmin=max552, footprint516..588 é totalmente fora da origem, logo candidato-base552 continua mesmo se offsets4/40/80/128 não caem no destino. Já destinoX250..354, contido na projeção da origem, não oferece landing completo sem atravessar ou contornar o suporte sólido; o solver de arco/vx constante recusa, por segurança. Não é requisito criar controle aéreo com reversão ou atravessar bancada. Floor e demais apoios com landing livre são aceitos. Se ainda houver P1 real, apresentar geometria concreta que esta lógica refuta.
+3. training_target.tscn completo abaixo confirma RectangleShape72x96. Não houve mudança nessa cena. Colliderfallback32x32 não é usado na cena existente.
+4. Alinhamento estático: Sprite32x16 centeredtrue dá canto(−16,−8); offset(−4,0) dá(−20,−8), logo pixel/pivot(20,8) cai em(0,0) da CircleShapeR6. Preview8x já inspecionado/aprovado pelo principal. Essa transformação não exige gameplay para confirmar.
+5. Tolerância de pouso≤1px, landingfeet−0.5px, margem.08 e substeps8px são herdados sem alterações desta tarefa; ausência de execução não demonstra novo túnel ou arrasto. Registrar eventual limite, não defeito sem caminho concreto. Script HostileRivet integral no input original e hash preservado.
+Parecer anterior será mantido fiel; principal decide integração e não altera saídas do revisor. Reavaliar os dois P1 à luz do contrato e das fontes, sem redesenhar escopo.
+===== training_target.tscn INALTERADA =====
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
+[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+[ext_resource type="Script" path="res://scripts/enemy/containment_attack_visual.gd" id="4_attack_visual"]
+[ext_resource type="Script" path="res://scripts/enemy/tranca_lata_dust.gd" id="5_tranca_lata_dust"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/tranca_lata_shockwave_sprite_frames.tres" id="6_shockwave_frames"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+size = Vector2(72.0, 96.0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_target_hit_flash"]
+resource_local_to_scene = true
+shader = ExtResource("3_hit_flash_shader")
+
+[node name="TrainingTarget" type="CharacterBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 3
+motion_mode = 1
+z_index = 1
+script = ExtResource("1_training_target")
+display_name = "Tranca-Lata"
+max_health = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_training_target")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+material = SubResource("ShaderMaterial_target_hit_flash")
+sprite_frames = ExtResource("2_target_frames")
+animation = &"idle"
+autoplay = &"idle"
+centered = true
+
+[node name="NameLabel" type="Label" parent="Visuals"]
+offset_left = -48.0
+offset_top = -84.0
+offset_right = 48.0
+offset_bottom = -66.0
+theme_override_colors/font_color = Color(0.82, 0.91, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.07, 0.11, 1)
+theme_override_constants/outline_size = 3
+text = "Tranca-Lata"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+
+[node name="Visor" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+
+[node name="UpperStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+
+[node name="LowerStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+
+[node name="FootLine" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-38.0, -60.0)
+color = Color(0.894118, 0.435294, 0.345098, 1)
+polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)
+
+[node name="AttackAreaVisual" type="Node2D" parent="."]
+visible = false
+z_index = 1
+script = ExtResource("4_attack_visual")
+
+[node name="Shockwave" type="AnimatedSprite2D" parent="AttackAreaVisual"]
+visible = false
+z_index = 0
+z_as_relative = false
+texture_filter = 1
+sprite_frames = ExtResource("6_shockwave_frames")
+animation = &"impact"
+centered = true
+
+[node name="TrancaLataDust" type="Node2D" parent="."]
+process_mode = 0
+z_index = 2
+z_as_relative = false
+top_level = true
+script = ExtResource("5_tranca_lata_dust")
+

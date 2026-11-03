@@ -1,0 +1,28 @@
+STATUS: done  
+SUMMARY: O plano acerta a categoria (rejeição de `_load_current_encounter` → `_fail_run` → GameOver “Não foi possível continuar a run”) e a correção certa (troca transacional; config inválida ≠ morte; sem reroll; died/vitória intactos). Não identifica guarda de layout/seed — e não deve. Faltam contratos para não reentrar no encerramento atual, não mutar avanço cedo demais, e não reaplicar recompensa no retry.
+
+FINDINGS:
+P1: Falha técnica ainda pode encerrar a run. Hoje `_load_current_encounter` chama `_fail_run` (`_run_ended`) e o caller abre GameOver. O plano proíbe derrota, mas não veta esse caminho nem cria relatório técnico separado. Sem isso, Main pode reabrir a mesma derrota, inclusive no boot sem sala.
+
+P1: `_advance_stage` muta família anterior e arrays de descritores antes da candidata validar. “Restaurar estado de avanço” sem (a) adiar `_advance_stage` até o commit ou (b) snapshot/restore explícito de índice, família, descritores e seed faz o retry avançar de novo ou trocar o encontro. Isso viola “não trocar descriptor/seed”.
+
+P1: Retry reconecta o ONE_SHOT no mesmo `_advance_after_room` que recompensa o chefe no início. Aceite pede idempotência, mas sem latch/early-return antes da recompensa a segunda entrada concede de novo. A escolha já dada deve permanecer; a recompensa não pode depender de rollback da troca.
+
+P1: Ordem de validação vs árvore. Hoje `configure_run_managed` / `prepare_authored_layout` roda antes do `add_child`. Candidata só deve ir à árvore pausada depois dessa preparação, para onready/PlayerHealth. Inverter configure e `add_child` pode mudar o resultado da validação de layout (causa não identificada) e foge do escopo.
+
+P1: Commit de identidade só depois de validar. `current_room_instance`, `progression.connect(CONNECT_ONE_SHOT)`, `died` e restore de HP/build só na candidata aprovada. Candidata pausada não vira corrente; fonte não é `queue_free` nem `null` antes disso. Senão sinal da candidata/antiga altera HP ou encerra a sala errada.
+
+P2: Fade atual ocorre antes de destruir a sala. Fade-out não pode commitar visualmente antes da validação, ou o rollback precisa fade-in da fonte; senão o retry fica em tela preta com sala válida.
+
+P2: “Pausado” é `process_mode` da candidata (`PROCESS_MODE_DISABLED`), não `get_tree().paused`. Tree-pause colide com player KEEP_ACTIVE/process disabled e com o rollback vertical (`reset_to_spawn`, HP intacto, ponto fora do hatch DOWN).
+
+P2: Lock/unlock de input e `_transition_in_progress` endereçam o Player da fonte até o commit; depois transferem. Rollback horizontal não reutiliza `reset_to_spawn`. Rearmar porta via `report_transition_failure` existente.
+
+P2: Reset de `_run_progression_notified` só no rollback técnico, não após commit. Overlay de erro vive em Main, só no estado de falha, com seed/andar/sala; não reusa GameOver como derrota e não cobre o combate com log permanente. HUD conceitual continua fora.
+
+CHANGED_FILES: none  
+TESTS: none
+
+RISKS: Causa de layout/seed continua desconhecida; o erro pode repetir até correção externa — esperado. Dois Players na árvore (fonte + candidata pausada) podem vazar grupo/sinal se o commit não for estrito. Timeout de 30 min do implementador é apertado se o snapshot de avanço for descoberto na hora. Sem Godot/parser, aceite é só contratual. Vitória de chefe final e `died` quebram se `_fail_run` for reutilizado sem fenda. Dirty de editor/plugin deve permanecer intocado.
+
+NEXT_STEP: Fechar no plano os contratos P1 (caminho sem `_fail_run`/`_run_ended`/GameOver; adiar ou snapshot de `_advance_stage`; latch de recompensa antes do handler; prepare antes de `add_child` pausado; sinais/HP/`current_room_instance` só no commit). Depois Luna só em `scripts/world/run_controller.gd` e `scripts/world/main.gd`. Revisores não escrevem.

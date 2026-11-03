@@ -1,0 +1,26 @@
+STATUS: done
+
+SUMMARY: I reviewed the side-wall door plan using only the context in your message. The geometry checks out. The exit's visual centre is 1040+80 = 1120, the middle of the 1088–1152 strip. The entrance's is 112−80 = 32, the middle of 0–64. At y=522−26 = 496, a 128-tall footprint spans 432–560, which matches both the skipped wall rows and the floor line. There are no blocking design flaws. The plan does have the gaps below, and they should be closed in the prospective spec before anything is implemented.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS / concrete flaws:
+
+1. **The wall gap is hard-coded in a shared script.** If `factory_wall_visual.gd` always skips y432–560 on both sides, any room using it will show a hole even where there is no door, such as a first room without an entrance or a last room without an exit. Add exported per-side settings, e.g. `left_gap_enabled`, `right_gap_enabled`, `gap_y_min` and `gap_y_max`, defaulting to off. Set them only through the overrides in the 2 rooms.
+2. **The gap edges may not line up with the atlas tile rows.** 432 and 560 are multiples of 16 but not of 32 or 64. If the strip is drawn in 32- or 64-tall rows from y=0, the gap will cut a tile in half. The spec should say how the wall strip is split: either partial source rects clipped to exact y values, or rows chosen so the edges fall on tile boundaries. It should also state the strip's y origin and source region/scale, so the "64 world wide" assumption is confirmed rather than assumed.
+3. **Mirroring could be applied twice.** If the entrance mirrors the root (scale.x = −1) and the −80 offset is applied in local space, the art lands at x=192 instead of 32. State that offsets are in parent space and that mirroring applies only to the visual child.
+4. **Removing the front panel can break references.** Deleting the active 320×160 panel from the packed scene may leave broken NodePaths, AnimationPlayer tracks, `$Panel`/unique-name lookups or exported refs in the presentation script. These would cause null errors at runtime, and since tests/QA are not authorized, nothing would catch them. Either list every reference to retarget, or keep the node hidden and unused (the old art is preserved either way).
+5. **Changing the packed scene affects every instance.** Confirm that all instances of the door scene are in the 2 rooms, or that the new default offsets are correct for every instance. Otherwise unlisted rooms change silently.
+6. **The entrance's open/closed state is not defined.** "Driven by existing ExitDoor presentation only" may not cover the entrance, if it uses a different script or has no state. Specify a fixed state for the entrance or which existing source drives it.
+7. **The `@tool` helper runs in the editor.** It needs `Engine.is_editor_hint()` and null guards before reading ExitDoor state or connecting signals. Otherwise it throws errors in the editor, or saves runtime state into the scene.
+8. **The z-index is still "−1 or 0".** Pick one: the same z as the existing wall, with the same y_sort/parent. The trim and passage must sort exactly like the wall they replace.
+9. **The hole looks walkable but isn't (design risk, not a bug).** With the collider continuous, players may walk into an invisible boundary at x=1088 or x=64. The closed state needs a clearly solid shutter inside the passage. Keep the "open" look subtle enough that the E prompt is still read as the way through.
+10. **Process issues under AGENTS.md.**
+    - I couldn't read `docs/README.md` or the active plan folder because you asked for no file reads, so this review doesn't check consistency with the existing spec.
+    - Implementation must go to the `gpt-6-luna` `xhigh` subagent.
+    - Each implementation step needs the 4 reviewers, including Opus. The basic-upgrades exception does not cover this work.
+    - Record this review as: Antigravity, Claude Opus 5.5 High, plan review, inline context only.
+
+NEXT_STEP: Write the prospective `docs/specs/<pasta>/plano.md` and `spec.md` with fixes 1–8 as explicit requirements, take a snapshot, run the remaining plan reviews, then send the frozen file list to the `gpt-6-luna` `xhigh` subagent for implementation.

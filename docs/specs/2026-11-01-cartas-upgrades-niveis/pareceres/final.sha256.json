@@ -1,0 +1,342 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "FEB1D8898E0AFD680486AF1171BE946DBD42BD8B57367223855A6A8DE3B3E6A1",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\run_build.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "EA0CD1B5BE0918C1A0CEE5638750F96CDF3761E5C99962D5CE6B2CA98B9AD5CC",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\upgrade_definition_resource.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B50BCF3BC5E42621604C46E673817E8B93ADE834C7CADA329859A7E0339596FE",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\main.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "5959E2668F8B1E51B3B7FC712CE679BCB1B5D84D920C110E36051B574B38A28D",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\run_controller.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "4941361E5B11E0582DD2C1804C9CEF7B3528122129039D2031F8746EC8E6951C",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "BB08DF627852D4B9DBDC68A4F21897875A84C614109A9BB3C326FE92895FFA61",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\player_health.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "EB4D1214B1DFF72ED24CF2DA252C8D96771B3E3497B5E754B0594C8C484B65BB",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\ball_launcher.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "36A1A7D7A1F826A7281A6E8F9A9D84157AE9D078A31F3D033C68A32239A455CB",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\racket_controller.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "59BA33D1ACFC47CF74348520D5BEA5E8DAAF80F9155CEE0F4C928443E4AF408F",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\movement_controller.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "52BCB5C916D0C0226509EA96B5D8393C660927FF22BD299F8E2B690E0DB57818",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\projectile\\projectile_config.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2350DA702E0EA4F17A0B145BFD7C561467E3D9E6B63BDE43279B3B15B4B1D4D2",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\projectile\\ricochet_ball.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "3C8F08D67A6CDC0AF18FB117F298329D52A551B66EAFE17BC329DF4496AA9234",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\training_target.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A7788D17C4FDAF8F46BA74731E1C9EDBC2140B57B29C06DA9B6703A5A6D13CD8",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\enemy\\rivet_worker.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "86B79D1035CE6CEA5B822FCB72D4374201607B096E5E13B05D2DA54C539A8460",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\hud\\run_hud_bridge.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B3BAF504DB2086D4476BCA573D0C35F190054F34AA49225264F39FB252A0F425",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\upgrade_offer.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "BE58103D8BDDEBF0D34C77DBA2581497801945BDDE0CF15AAB496EF623C9913C",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\carga_reativa.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "6196B16CD8C0059589CC3987FD9393A84324AF59591490C85998F6DA4A3A5DAC",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\impacto_reforcado.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "BCD37A90978DA81D979FD9DA0CD78956F5481E6C13C538F84E72BC96783549BD",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\motor_acelerado.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "94EA4E370DA04345F8156F2609D73FF07D3E5046A38D5BF25E922B54D23B6EAF",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\upgrade_catalog.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "45F76DEA03EE22419C034A65531B3DC4D436D819CC034A4CB0FE70F48300AB99",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\enemy_level_config_resource.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "38A6F22C7054B499B16D194CC9545AB4105F55342D722ACABC63F863C5F85373",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\progression\\enemy_levels.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "6BC9DB7244121BA01B17CB1BD24AB625F5207AF6F1DCF53FFEC1EC47121BB6E2",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ricochete_pressao.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C89EA3B182696785AC5EB3FD9F36F11732025101357A051F1B3643DAF28F2538",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\mola_retorno.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "EB60C6A72BC41954B596C9C99FA95AC7C43409A99F68DF63DAC116B1ADF7A181",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\dinamo_defesa.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "FFC5923073105DCA844D35C24EDC80987D093E4BE6CEDEF9F76CAA527F7A2E43",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\chassi_reforcado.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B0B8DB2B2AA6C874C331686B3C4086259099ACE03C960E4AE4C8D364C8E033ED",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\upgrade_card.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "70879C22CC34DE08AB8E4B09651AA75323B51B5C2A115A35EECD60134CF117D8",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scenes\\upgrade_offer.tscn"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "BF596D403556A1C9036DCAEC595CE069C1DAFBADBA657B333B9B5C33EDDFB764",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scenes\\ui\\upgrade_card.tscn"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "16BE63769551D9054EBA741B44800C45C9B5FF00AB82B2C16AAC8338FB1365FA",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\integration_geometry.json"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "85EAEB2DE4FD021217DB9E63C5B96D384D8987AD86E2CBAD6C0F391900C6B7E2",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\README.md"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "EB27C39D756A1C3E8A63B60DD204FAED1C3EBBC7733221CC1C30193A40F19D57",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\card-font-additions.json"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "3660D14BD96CE7E20FBCF290300755DDBFFCF079ED7A79CCAA3514107D0A99C3",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\card-font-atlas.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "8F457392C1F7EED6881F2605A4C94F7BCD817E3ED476C8ACAC67CB70C655DBB0",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\carga_reativa_128x80.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "CA6ECC1F42A8A63D7BB2B681E85D645DB38488B5AF8E0296994B4BFBB262570C",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\chassi_reforcado_128x80.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "14B700E4B1721E5A5EE10A5B7DAA2F89D7421B80BCB36F4948739BFC9DBD5603",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\dinamo_defesa_128x80.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "51BCB363C9F59EC343CC10D01C9542FABBFF3E49CCFAC5AC0ABE0F1132B1D632",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\frame_focus_160x240.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E49C6E7E4A9C9F80082D25863D7D44F2A4B0336883050EB4A0D3F4E07D61AA69",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\frame_normal_160x240.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2105BDBD0BCF3D6CCBC434D5D03A39FD9046B95FB544FF8D93F8E55B6F0B9DC2",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\frame_pressed_160x240.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "0CD6B8B5B4FB6660F4021F4FF188E11E3122E5BEAEE77A6674AF8441756E7C7F",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\impacto_reforcado_128x80.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "9192C9FA3E6A560B514A42BEC748E80338C180D6FB9995FD6C0D37E90C94312A",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\manifest.json"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B0F172E6AD948F6A94EAAA51EBA3FD7A7660E2EC564FB34FC994932B9D51F2C6",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\mola_retorno_128x80.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "098B5BC85028B692418DECD61AD6F63C538778AFAF7AF32D6AA84E59C8ECF723",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\motor_acelerado_128x80.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "711EBD729037011758EB11BD8551E8C4621F2F747852B881E5A7982723E42B3B",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\export\\ricochete_pressao_128x80.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\preview\\.gdignore"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "DFA8B78D86B72A77B305C3E9A6A1D810989578196DEB8ACFF089D02855EA2193",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\preview\\upgrade-cards-study-1728x972.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "983D6EB0CB4677C98187FCA4DFE6245D45FA88E06468EA84EF94FEA7F3E41882",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\preview\\upgrade-cards-study-576x324.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "F83F596A690B7934A4481873D61956F3A5038D3D7D8838CC75B17DD91E61661E",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\preview\\upgrade-illustrations-contact-432x352.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "11B54AF107E5CEEDC96F52D2D5822E549550C1371EE79A0C1161381350755DFD",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\preview\\upgrade-illustrations-contact-864x704.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\.gdignore"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "8D2BC7B1ED94325841C18343351FC3501D5B58F5DDB77C5AB6D2121E0B7E7930",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\card-font-production.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "ED86DBADD675C4DAC5FBC7BC67D319BEF0AFAB0BA251C1759B2F921E5C4A6970",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\card-font.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\card-font.stderr.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "192402B5E2CF5CEE18079D6D54712E2769AD780860D5E17200B3E8BCA1D6E19A",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\card-font.stdout.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A4DF1E6C97EC4B86CF1A812338A7AD5499A056F1D0F9D6581ED6960643DED9BA",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\carga_reativa_128x80.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "CCB4EE7C6EA127356F878AC7F0E4E96751D400EC34801F7E32250AB75ADCE525",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\chassi_reforcado_128x80.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "DE4426F4094F7F83DB06F4DFB48FE4A88A9E4B1314B82D062BCBB2B40035155C",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\dinamo_defesa_128x80.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "88A014221F113EDB90E0EE754CFD2826DA905CC96F77D84102A4391A7166BB01",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\generate_card_font.lua"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "6F40EFF09E772B8E8CFA8BDBC50C5C1E74187659D948911E6109C418FBD06A2F",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\generate_upgrade_cards.lua"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C5DC19A812965DE9555EC3542452370AB48526BD69B5CF2F9DBC88E971A50B60",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\generation.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "72D1E43AAE44FE28EE3EF3A8F84F3A5BDDF8B1E48A0F2B66E90432E7B64D6A7B",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\impacto_reforcado_128x80.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "922C42B5F7E03E28BFD19E06F2DF61074426ED7E2633F52806D3992CA9F6BE41",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\mola_retorno_128x80.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2E53FF4024C4D483FCF0C9B840CFD7F102E72237A92199F2634443607F9AC78B",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\motor_acelerado_128x80.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\preview-refresh.stderr.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "9ED55C21FCF2FD510B308F48AD7F7A400697F28F5CEE19857D8001B4A0DD1E6E",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\preview-refresh.stdout.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\production.stderr.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\production.stdout.log"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "D3ABFF04B05670392A8A735D2496DD01E887537ED9E7ED3B198DA8AF24F20C9F",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\ricochete_pressao_128x80.aseprite"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "91BC501940F4D3CC1DDB88766714A2676978EDD72526492C21819FC484DA0205",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\assets\\ui\\upgrade_cards_v1\\source\\upgrade-card-frame-states.aseprite"
+  }
+]

@@ -1,0 +1,123 @@
+REVISÃO DELTA READ-ONLY R2: uma linha no fallback melee. Estado R1 teve revisão completa via inputSHA010C24CA5B55DB8651102BAD4BD49C9362995989A0BCFE5B7BF64EE408E83D87. Gemini semP1/P2, Muse P2baixo: centro da consulta stuck era calculado antes do último movimento físico. Principal aceitou refinamento de precisão; Luna alterou SÓ o argumento para global_position+attack_center_offset, mantendo gates/guardas/área/dano/tempos/locks/velocidade. Agora usa o centro atual que será travado no _begin_windup.
+Nota crítica: drift no caso fallback anterior era <0.1px (moved>=0.1zera_stuck); não era genericamente120*delta com fallbackpronto. A correção elimina atéessa diferença.
+Nãoeditar/gravararquivos nemexecutarcomandos/testes/Godot/import/parser/linter/QA/simulação/preflight. Ler apenas dados inline. Timeout10min. Avalie se P2 está resolvido e se introduziu defeito concreto; semalegarruntime. Não reabrir tuning opcional120/96 nem exigir testesproibidos. Handoff stdout STATUS/SUMMARY/CHANGED_FILES none/TESTS static review only/RISKS/NEXT_STEP.
+CONTEXTO: PURSUIT_SPEED120, PATROL48, PREFER_MELEE96<=actualradius140, INNER_PADDING8, STUCK0.65 eREPLAN0.45; semalterardano/range/650windup/140ativo/1400recovery/175onda. IDLE+2PREPARE iniciam pelo helper(defaultfalse), novo fallbackground somenteapósstuck usa helpertrue. _begin consomecontador, fallback não vaza próximo ciclo. Movimento teste-colisão/bounds eataqueemvoo continuam protegidos comoR1.
+DIFF ÚNICO:diff --git a/docs/specs/2026-10-24-tranca-lata-pressao-melee/historico/runtime-r1/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index 1dfbcc9..eb5675c 100644
+--- a/docs/specs/2026-10-24-tranca-lata-pressao-melee/historico/runtime-r1/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -452,7 +452,7 @@ func _pursue_on_current_support(
+ 		_pursuit_stuck_remaining = 0.0
+ 	if _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT \
+ 		and _pursuit_replan_remaining <= 0.0:
+-		var stalled_player := _find_melee_engagement_player(attack_center, true)
++		var stalled_player := _find_melee_engagement_player(global_position + attack_center_offset, true)
+ 		if stalled_player != null:
+ 			_known_player = stalled_player
+ 			_begin_windup(stalled_player)
+
+CURRENT SOURCE: scripts/world/training_target.gd :: _pursue_on_current_support
+func _pursue_on_current_support(
+	player: PhysicsBody2D,
+	delta: float,
+	supports: Array[SolidPlatform],
+	allow_detour: bool = true
+) -> void:
+	var player_center := _get_player_collider_center(player)
+	var attack_center := global_position + attack_center_offset
+	var delta_x := player_center.x - attack_center.x
+	var delta_y := player_center.y - attack_center.y
+	if absf(delta_x) > PURSUIT_DIRECTION_DEADZONE:
+		_patrol_direction = 1 if delta_x > 0.0 else -1
+	var preferred_distance := minf(PREFERRED_MELEE_DISTANCE, _effective_attack_radius())
+	var preferred_horizontal_reach := sqrt(maxf(
+		preferred_distance * preferred_distance - delta_y * delta_y,
+		0.0
+	))
+	var desired_x := global_position.x
+	var clear_shot := _has_clear_line_of_sight(player, attack_center)
+	var center_distance := attack_center.distance_to(player_center)
+	var needs_horizontal_approach := center_distance > preferred_distance \
+		or (not clear_shot and absf(delta_x) > PURSUIT_DIRECTION_DEADZONE)
+	if needs_horizontal_approach:
+		var direction := signf(delta_x)
+		if absf(delta_x) <= PURSUIT_DIRECTION_DEADZONE or is_zero_approx(direction):
+			direction = float(_patrol_direction)
+		var stop_reach := maxf(preferred_horizontal_reach - PURSUIT_STOP_PADDING, 0.0) if clear_shot else 0.0
+		desired_x = player_center.x - direction * stop_reach - attack_center_offset.x
+	var moved_x := _move_toward_pursuit_x(desired_x, delta, _bound_support)
+	if absf(moved_x) >= 0.1:
+		_pursuit_stuck_remaining = 0.0
+	elif needs_horizontal_approach:
+		_pursuit_stuck_remaining += delta
+	else:
+		_pursuit_stuck_remaining = 0.0
+	if _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT \
+		and _pursuit_replan_remaining <= 0.0:
+		var stalled_player := _find_melee_engagement_player(global_position + attack_center_offset, true)
+		if stalled_player != null:
+			_known_player = stalled_player
+			_begin_windup(stalled_player)
+			return
+		if allow_detour:
+			_try_begin_pursuit_detour(_bound_support, player, supports)
+		else:
+			_pursuit_replan_remaining = PURSUIT_REPLAN_INTERVAL
+	if _attack_state == AttackState.IDLE:
+		_update_visuals()
+
+
+CURRENT SOURCE: scripts/world/training_target.gd :: _find_melee_engagement_player
+func _find_melee_engagement_player(
+	area_center: Vector2,
+	allow_stuck_fallback: bool = false
+) -> PhysicsBody2D:
+	var player := _find_player_in_attack_area(area_center)
+	if player == null or allow_stuck_fallback:
+		return player
+	var preferred_distance := minf(PREFERRED_MELEE_DISTANCE, _effective_attack_radius())
+	if area_center.distance_to(_get_player_collider_center(player)) <= preferred_distance:
+		return player
+	return null
+
+
+CURRENT SOURCE: scripts/world/training_target.gd :: _find_player_in_attack_area
+func _find_player_in_attack_area(area_center: Vector2) -> PhysicsBody2D:
+	if _area_query == null or _area_shape == null:
+		return null
+	_area_shape.radius = _effective_attack_radius()
+	_area_query.transform = Transform2D(0.0, area_center)
+	var overlaps: Array[Dictionary] = get_world_2d().direct_space_state.intersect_shape(
+		_area_query,
+		MAX_QUERY_RESULTS
+	)
+	for overlap in overlaps:
+		var collider: Variant = overlap.get("collider")
+		if not collider is PhysicsBody2D:
+			continue
+		var player_body := collider as PhysicsBody2D
+		if not _is_alive_player(player_body):
+			continue
+		if _has_clear_line_of_sight(player_body, area_center):
+			return player_body
+	return null
+
+
+CURRENT SOURCE: scripts/world/training_target.gd :: _begin_windup
+func _begin_windup(player_body: PhysicsBody2D) -> void:
+	_shockwave_tail_remaining = 0.0
+	_pursuit_stuck_remaining = 0.0
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	_locked_player = player_body
+	_damaged_player_ids.clear()
+	_attack_state = AttackState.WINDUP
+	_state_remaining = maxf(windup_duration, 0.05)
+	_recovery_fade_remaining = 0.0
+	_body_sprite.pause()
+	_locked_attack_center = global_position + attack_center_offset
+	_select_attack_frame(&"windup", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+
+
+FINAL SOURCE SHA256: 64770EFB0053901302948D9A585F6BD42E108208A214BAEFC3E7B5885C42880F

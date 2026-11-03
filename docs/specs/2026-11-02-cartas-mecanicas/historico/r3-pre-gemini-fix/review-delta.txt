@@ -1,0 +1,67 @@
+R3 REVIEW DELTA — CARTAS MECÂNICAS
+R2 remains immutable in review-input.txt and historico/r2-pre-review-fix. Review only this delta for R3.
+
+RESPONSES
+Muse found 12 palette colors in ricochete_pressao against the manifest budget of 10. The pressure drawing now merges the dial-edge cream into ivory and the red hub pixel into red, retaining the copperDark body shadow and the integrated gauge; the drawing function uses ten distinct palette entries.
+The motor's two lateral mounts now use steelLight on the left and silver on the right to follow top-right light. Carga's different end-cap materials were not changed.
+The manifest previews list now includes preview/upgrade-illustrations-contact-432x352.png alongside the 864x704 contact. The canonical Lua manifest template and exported manifest match.
+No changes were made to the flywheel's 2px structural spokes, the 39px flame effect, other drawing functions, frames, fonts, text, layout, gameplay, or palette.
+
+AFFECTED DRAWING FUNCTION: motor_acelerado
+  make_art("motor_acelerado", function(o, f, sh, hi, a, K)
+    round_rect(o, 22, 3, 20, 23, 6, K.ink)
+    round_rect(f, 23, 4, 18, 21, 5, K.steel)
+    poly(o, {{x=22,y=20},{x=42,y=20},{x=48,y=28},{x=43,y=34},{x=21,y=34},{x=16,y=28}}, K.ink, K.ink)
+    poly(f, {{x=23,y=22},{x=41,y=22},{x=45,y=28},{x=42,y=32},{x=22,y=32},{x=19,y=28}}, K.iron, nil)
+    poly(sh, {{x=25,y=26},{x=40,y=26},{x=42,y=30},{x=24,y=30}}, K.gunmetal, nil)
+    poly(hi, {{x=24,y=7},{x=29,y=5},{x=37,y=5},{x=39,y=7},{x=38,y=10},{x=27,y=10}}, K.steelLight, nil)
+    round_rect(o, 16, 11, 8, 6, 2, K.ink)
+    round_rect(f, 17, 12, 6, 4, 1, K.steelLight)
+    round_rect(o, 40, 11, 8, 6, 2, K.ink)
+    round_rect(f, 41, 12, 6, 4, 1, K.silver)
+    for _, y in ipairs({11, 15, 19}) do
+      round_rect(sh, 26, y, 12, 3, 1, K.navy)
+      rect(sh, 27, y + 1, 10, 1, K.ink)
+    end
+    line(hi, 39, 11, 39, 21, K.silver, 1)
+    line(hi, 25, 8, 35, 8, K.silver, 1)
+    poly(a, {{x=22,y=29},{x=42,y=29},{x=39,y=35},{x=32,y=39},{x=25,y=35}}, K.amber, nil)
+    poly(a, {{x=28,y=30},{x=36,y=30},{x=34,y=35},{x=32,y=37},{x=30,y=35}}, K.ivory, nil)
+  end)
+
+AFFECTED DRAWING FUNCTION: ricochete_pressao
+  make_art("ricochete_pressao", function(o, f, sh, hi, a, K)
+    round_rect(o, 7, 25, 15, 9, 3, K.ink)
+    round_rect(f, 8, 26, 13, 7, 2, K.steel)
+    round_rect(o, 42, 25, 15, 9, 3, K.ink)
+    round_rect(f, 43, 26, 13, 7, 2, K.steelLight)
+    poly(o, {{x=18,y=23},{x=23,y=19},{x=41,y=19},{x=46,y=23},{x=46,y=31},{x=41,y=36},{x=23,y=36},{x=18,y=31}}, K.ink, K.ink)
+    poly(f, {{x=20,y=24},{x=24,y=21},{x=40,y=21},{x=44,y=24},{x=44,y=30},{x=40,y=34},{x=24,y=34},{x=20,y=30}}, K.copper, nil)
+    poly(sh, {{x=21,y=29},{x=43,y=29},{x=40,y=33},{x=24,y=33}}, K.copperDark, nil)
+    poly(hi, {{x=23,y=24},{x=27,y=22},{x=39,y=22},{x=42,y=24},{x=37,y=25},{x=27,y=25}}, K.amber, nil)
+    round_rect(o, 28, 15, 8, 10, 2, K.ink)
+    round_rect(f, 29, 16, 6, 8, 1, K.iron)
+    oval_fill(o, 32, 9, 9, 9, K.ink)
+    oval_fill(f, 32, 9, 8, 8, K.brass)
+    oval_fill(sh, 32, 9, 6, 6, K.ivory)
+    oval_outline(hi, 32, 9, 5, 5, K.ivory)
+    line(sh, 28, 8, 29, 8, K.iron, 1)
+    line(sh, 35, 8, 36, 8, K.iron, 1)
+    line(sh, 31, 4, 31, 5, K.iron, 1)
+    line(a, 32, 10, 36, 5, K.red, 2)
+    oval_fill(a, 32, 10, 1, 1, K.red)
+  end)
+
+
+EXPORTED MANIFEST
+{"asset_set":"upgrade_cards_v1","card":{"w":160,"h":240},"illustration":{"w":128,"h":80,"source_canvas":{"w":64,"h":40},"scale":2,"max_colors_per_icon":10,"style":"cartoon mechanical objects, rounded volume, bold silhouettes, 2-3 tones per material, 1px outline"},"palette":"assets/ui/hud_caldeira_v1/export/palette.json","palette_colors":19,"alpha":[0,255],"font":"assets/ui/upgrade_cards_v1/export/card-font-atlas.png","card_font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","replacement_atlas":"card-font-atlas.png","additions":"card-font-additions.json","canvas":{"w":84,"h":105},"glyphs":[{"character":"+","codepoint":43},{"character":">","codepoint":62}]},"illustrations":["impacto_reforcado_128x80.png","motor_acelerado_128x80.png","carga_reativa_128x80.png","ricochete_pressao_128x80.png","mola_retorno_128x80.png","dinamo_defesa_128x80.png","chassi_reforcado_128x80.png"],"frames":["frame_normal_160x240.png","frame_focus_160x240.png","frame_pressed_160x240.png"],"previews":["preview/upgrade-cards-study-576x324.png","preview/upgrade-cards-study-1728x972.png","preview/upgrade-illustrations-contact-432x352.png","preview/upgrade-illustrations-contact-864x704.png"],"notes":["illustrations regenerated from the 64x40 source grid at integer scale 2","frame and font assets are reused unchanged","preview is a visual study, not a Godot screenshot","no engine or tests run"]}
+
+R2/R3 SHA-256
+assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua | R2=92d4fa531184b0eed30b6e0f4a0d8789e7615783e1aa6d3598be037169c22c90 | R3=12e486f96e4b35920199914f0c57250c80e8825a61eb9f24827091bcd9912839
+assets/ui/upgrade_cards_v1/source/motor_acelerado_128x80.aseprite | R2=ef8719db8957b75bd1f09addf957a33eeaa072dcb85d804ddfe3a4372560f3fb | R3=93071bfb91bff1a2ed91594daef8440d27fe26faa8cc24e6107d7552ef0eccf6
+assets/ui/upgrade_cards_v1/source/ricochete_pressao_128x80.aseprite | R2=adafccfc42dda929fa94fc2c1541221f5f41ba6fac68f001cbaa8a758e2c12b6 | R3=49ee7e8d17abe4771d36e16d5448a819e0f8667addcfb827ee09f53020741348
+assets/ui/upgrade_cards_v1/export/motor_acelerado_128x80.png | R2=71a2dc22086f6ada44b218ad45d0cc8443545e7b8bec0587655c6e4efd63161e | R3=d08430ef09baf6d52c7bb29bd86afbd29277883823d303a26ffc2d3a77598634
+assets/ui/upgrade_cards_v1/export/ricochete_pressao_128x80.png | R2=ef0e0c50e932eee3b45c1833042cb1b0741ad400d27bc538e2f6550219740484 | R3=916538579b4da5606e049723c2008dd1458bec2ed011161b7a8d01e5448d288a
+assets/ui/upgrade_cards_v1/preview/upgrade-illustrations-contact-432x352.png | R2=b8c4e556d7dbd1aed519227d64e51b13ce725f4cafd3bcd0c3ccc8714c34935d | R3=8dffbc998bd07073e27c9556994b1ba42b998e65f6753e5270cbf7aadf83a937
+assets/ui/upgrade_cards_v1/preview/upgrade-illustrations-contact-864x704.png | R2=bce26cb36a22809ec36f07d98380cd8fe63fe6e758f8e85f1312ce27a6a3730d | R3=78231f7c9e6e90c9d59c129873ec1f55a004660c6da336b4b436bb3e17762eee
+assets/ui/upgrade_cards_v1/export/manifest.json | R2=cdb03230416b7b7e90ccdc5b6d00198507bce37e3cadcc436ec4bcf07226eacd | R3=335e7f27d9c71f95c37bf72942e084120161c80b14003c1f9b4b5c4f38613a75

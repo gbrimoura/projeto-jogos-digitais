@@ -1,0 +1,96 @@
+```text
+STATUS: done
+SUMMARY: Revisão arquitetural somente leitura do plano e da spec do Tranca-Lata. Usei apenas o contexto
+         enviado; não executei nenhuma ferramenta, comando, escrita ou teste, então também não li
+         docs/README.md. Veredito: aprovável com condições. A direção está correta: preserva class_name,
+         paths, grupos, timers e dano, não persegue o jogador e usa o suporte efetivo. Há 4 achados P1
+         que precisam entrar no texto antes de liberar a arte e o runtime. A engine NÃO foi validada.
+CHANGED_FILES: none
+TESTS: none
+RISKS: depenetração do move_and_collide sobre o próprio suporte; clips sem loop reiniciados por play();
+       flip_h espelhando a assimetria do sprite; patrulha rodando fora da sala corrente; camadas
+       não verificadas da bola e do RivetWorker contra mask 3.
+NEXT_STEP: incorporar as correções mínimas P1 (e as P2 aceitas) ao plano e à spec em nova versão,
+           preservando a v atual em historico/. Revisão de delta pelos mesmos revisores e depois
+           liberar a fase de arte.
+```
+
+## Achados P1 (bloqueiam antes de liberar arte e runtime)
+
+**P1-1 — `move_and_collide` com mask 3 contradiz "Y fixo, sem correção posterior".**
+- O suporte é World (layer 1) e fica em contato com a base do collider. A etapa de depenetração do `move_and_collide` pode deslocar o corpo em Y, e um pouco em X, para fora de sobreposições dentro do `safe_margin`. Isso acontece com o piso e também com o Player apoiado em cima ou encostado.
+- Limitar o dx antes da chamada não controla esse deslocamento. O plano proíbe corrigir Y depois do movimento, então essa garantia não se sustenta.
+- **Correção mínima:**
+  - `add_collision_exception_with(support)` ao configurar a patrulha.
+  - Mover em duas etapas: consulta com `test_only=true`, depois aplicar só `global_position.x += clamp(travel.x)` dentro dos limites. Y nunca é escrito.
+  - Um equivalente com `body_test_motion` também serve. A spec deve dizer explicitamente que Y nunca é escrito pela patrulha.
+
+**P1-2 — Controle de clip e flash.**
+- `AnimatedSprite2D.play(nome)` reinicia o clip quando um clip sem loop está parado no último frame.
+- Hoje `_update_hit_flash` chama `_update_visuals` a cada frame de física. Assim, um flash durante o cel de 1.100 ms do recovery reiniciaria o clip.
+- O helper atual também mostra *impact* durante o flash e na fase ACTIVE. Trocar isso por "só shader" é uma mudança de comportamento e precisa ser declarada como decisão, não ficar implícita.
+- Também não está especificado que `_begin_windup` passa a trocar o clip do corpo.
+- **Correção mínima:** tabela de precedência fechada:
+  - derrotado → `disabled`;
+  - WINDUP, ACTIVE e RECOVERY → frame calculado pelo tempo decorrido do timer autoritativo, sem `play()`;
+  - IDLE em movimento efetivo → `walk`, com `play()` só quando o clip muda;
+  - IDLE parado, em pausa, estacionário ou com `_placement_pending` → `idle` (cel 14);
+  - flash → só shader, sem trocar clip.
+- Registrar que o *impact* deixa de aparecer no flash e na fase ACTIVE.
+
+**P1-3 — Onde a patrulha fica no `_physics_process`.**
+- O plano não diz se a patrulha roda antes ou depois dos guards existentes: cena não corrente, `_placement_pending`, derrota, Player inválido/travado/morto.
+- Se rodar antes, alvos de salas não correntes andam, gastam física e invalidam o preview.
+- **Correção mínima:** a patrulha só roda quando todos os guards passam e o suporte foi configurado. Com Player travado, o corpo congela em idle. A direção atual é preservada através de ataque e cancelamento.
+
+**P1-4 — `flip_h` contradiz a preservação de identidade.**
+- `flip_h` espelha o sprite inteiro, incluindo tubo, antena e outros detalhes assimétricos. O AGENTS.md exige alinhar a antena/assimetria, e a spec diz que o rosto mantém a orientação frontal.
+- O espelhamento só é exato se o eixo de simetria cair na fronteira x=32. Se o eixo for a coluna 32, há salto de 1 px nativo (2 px em runtime).
+- **Decisão necessária antes da arte:**
+  - (a) sem flip: walk frontal, com a direção lida pelas pernas;
+  - (b) flip aceito, com espelhamento do tubo explicitamente aprovado;
+  - (c) cels direcionais. Esta opção muda a contagem de 15 cels e exige nova revisão.
+- Registrar também se a direção do flip congela no início do windup.
+
+## Achados P2 (condições ou correções que entram na revisão de delta)
+
+1. **Camadas e tipos não verificados.**
+   - A layer da RicochetBall não pode ser 1 nem 2; se for, a bola bloqueia ou inverte a patrulha.
+   - Se o RivetWorker estiver na layer 8, a mask 3 deixa o Tranca-Lata atravessá-lo. A varredura deve evitar outros `combat_enemy`, ou a decisão deve ser declarada.
+   - Procurar por `is StaticBody2D` ou casts equivalentes em Player, Main, bola, worker e gerador.
+   - Verificar se alguma cena de sala sobrescreve propriedades específicas de StaticBody2D (`constant_*_velocity`, `physics_material_override`) ou `collision_mask`/`layer` na instância TrainingTarget. Essas sobrescritas anulariam a mask 3 nova.
+2. **Seleção do suporte autoral.**
+   - Definir uma ordem determinística: primário com intervalo livre → fallback com intervalo livre → posição segura atual, sem patrulha.
+   - O termo "patrulha reduzida" é ambíguo. Recomendo calcular o intervalo livre que contém o x de spawn, em vez de uma escolha tudo-ou-nada.
+   - Declarar que isso pode mudar a plataforma escolhida em layouts que hoje usam o primário.
+3. **Spawn aleatório.**
+   - Aplicar ao modo aleatório a mesma limitação do intervalo contra World. Hoje a spec só limita pelas bordas da plataforma.
+   - Definir um percurso mínimo útil como limiar técnico local, para evitar oscilação em intervalos de 1–2 px.
+   - Fazer `is_instance_valid(support)` antes de usar o suporte.
+4. **Reservas de espaço.** Main deve usar a AABB de toda a varredura, e não a posição estática, ao checar o spawn do Player e ao posicionar outros inimigos.
+5. **Inversões.** Toda inversão, inclusive por bloqueio do Player, aplica a pausa de 0,25 s. Caso contrário, entre a ponta e o Player o `flip_h` e o clip piscam a cada frame. Trocar "quando apropriado" por uma regra fechada.
+6. **Player apoiado em cima.**
+   - Decidir se o Tranca-Lata anda com o Player em cima e se o carrega. Isso depende da velocidade cinemática que o servidor de física reporta, e não há como afirmar sem execução.
+   - Na prática, o raio de 140 px quase sempre dispara o windup nessa situação.
+7. **Pipeline de arte.**
+   - Exportar como faixa horizontal, sem trim, borda ou padding.
+   - "byte/pixel-exatos" é impossível no atlas, porque as dimensões mudam: comparar o RGBA decodificado das regiões x 0–191 e os cels 0–2 da fonte.
+   - Manter as configurações de importação (nearest, sem mipmaps, lossless).
+   - Confirmar que não existe plugin que auto-importe `.aseprite` e sobrescreva `.tres`/`.png`.
+   - Fixar a fórmula de `speed`/`duration` das SpriteFrames para que os milissegundos fiquem exatos.
+   - Conferir quem mais consome o clip `idle` cel 0 (ícones, previews).
+8. **Pés deslizando.** A 48 px/s, um ciclo de 480 ms cobre cerca de 23 px em runtime, ou cerca de 5,8 px nativos por passo. Alinhar a passada da arte a isso, ou ajustar a velocidade provisória.
+9. **Conflito com o GDD.** Acrescentar uma seção explícita: "o snapshot do GDD descreve inimigo parado; mudança autorizada pelo usuário em 19/10/2026; GDD e spec de 14/10 preservados sem reescrita; pendência de atualização do GDD registrada".
+10. **Pontos menores.**
+    - Se a interpolação de física 2D estiver ativa, chamar `reset_physics_interpolation()` após o posicionamento deferred.
+    - NameLabel não pode ser filho do sprite que recebe flip.
+    - O aviso de "sem percurso útil" deve ser emitido uma vez, não por frame.
+    - A invalidação do preview a cada frame enquanto o alvo anda tem custo, que deve ser revisto estaticamente.
+
+## Pontos confirmados como corretos (estático, sobre o contexto enviado)
+
+- A conta dos limites bate: 104 − 72 − 2×16 = 0 no modo aleatório, e 160–216 com margem 8 dá 72–128 px de deslocamento.
+- A base do collider (+48) coincide com a base y=56 do sprite em escala 2×.
+- Manter layer 8 e o grupo `damageable` preserva a bola (mask 9) e o `take_damage` genérico.
+- Travar o centro no início do windup e ficar imóvel nas três fases evita o círculo desalinhado.
+- O escopo de arquivos e a proteção do preview, do shader e das salas estão coerentes.

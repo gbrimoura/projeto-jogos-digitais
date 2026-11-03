@@ -1,7 +1,7 @@
 class_name Player
 extends CharacterBody2D
 
-const MOTOR_ACELERADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/motor_acelerado.tres")
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
 
 signal health_changed(current_health: int, maximum_health: int)
 signal died
@@ -61,15 +61,25 @@ func _ready() -> void:
 	racket_controller.swing_cancelled.connect(_on_swing_cancelled)
 	trajectory_preview.call("configure", aim_controller, shot_origin, ball_launcher)
 
-func apply_run_build(build: RunBuild) -> void:
+func apply_run_build(
+	build: RunBuild,
+	acquired_upgrade_id: StringName = &"",
+	previous_rank: int = 0
+) -> void:
 	if _base_movement_config == null:
 		return
 	var derived_config := _base_movement_config.duplicate(true) as MovementConfig
-	if build != null and build.has_upgrade(MOTOR_ACELERADO_DEFINITION.upgrade_id):
-		derived_config.dash_cooldown = MOTOR_ACELERADO_DEFINITION.dash_cooldown_override
-	movement_controller.configure(self, derived_config)
-	movement_controller.reset()
+	if build != null:
+		derived_config.dash_cooldown = UpgradeCatalogScript.dash_cooldown_with_adjustment(
+			build.count_for(&"motor_acelerado"),
+			build.count_for(&"ajuste_recarga_dash")
+		)
+	movement_controller.update_config_preserving_state(derived_config)
 	ball_launcher.apply_run_build(build)
+	if racket_controller != null:
+		racket_controller.apply_run_build(build)
+	if health != null:
+		health.apply_run_build(build, acquired_upgrade_id, previous_rank)
 
 func _physics_process(delta: float) -> void:
 	if is_dead:

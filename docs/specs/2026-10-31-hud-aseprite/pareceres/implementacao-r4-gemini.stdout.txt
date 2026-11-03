@@ -1,0 +1,23 @@
+STATUS: done
+SUMMARY: Fechamento completo e verificado dos achados R1 no delta R2–R4 do kit de arte HUD Caldeira v1. Todas as correções pontuais foram integradas com sucesso no script Lua, metadados JSON e logs produtivos, sem regressões de empacotamento, layout ou geometria.
+
+FINDINGS:
+- P1: none
+- P2: Duplicação textual estrita no [README](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/ui/hud_caldeira_v1/README.md) (seção *Grade, cores e elementos*), onde a descrição de `source/clock-states.aseprite` (24×24 px, 17 frames) e `source/gauge-needle-states.aseprite` (37×20 px, 9 frames) foi inserida duas vezes em sequência no mesmo parágrafo. Defeito meramente editorial, sem impacto funcional ou divergência com os metadados.
+
+Análise detalhada dos deltas R1 -> R4:
+1. **API e Paleta**: `spr:setPalette(p)` adotado diretamente sem `pcall`, alinhado à API oficial do Aseprite.
+2. **Relógio**: Pivô estabilizado em inteiros `cx, cy = 11, 11`, raios quadráticos concêntricos sem frações ($d \le 100$, $d > 64$, $d > 49$), varredura horária normalizada correta (frame 0 limpo/vazio `K.navy`; frame 16 cheio `K.steel`).
+3. **Selo Conceito**: Dimensões atualizadas para 74×15 px com centralização exata do texto (margens horizontais de 13 px, verticais de 2 px), em total sincronia com [layout.json](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/ui/hud_caldeira_v1/export/layout.json) e log produtivo.
+4. **Estado Pronto**: Rótulo simplificado para `DASH` e `PRONTO` no preview de prontidão, removendo `0,3s`.
+5. **Empacotador de Atlas**: Ajuste de passo `x = x + im.width + 4` e quebra de linha `y = y + row + 4` com margens mínimas de 2 px, eliminando acúmulo espúrio e refletindo fielmente `"padding_per_side": 2`, `"inter_region_gap": 4` e `"outer_margin_min": 2`.
+6. **Timelines Aseprite**: Inclusão de `saveTimeline()` gerando arquivos nativos sequenciais com tags e metadados dedicados em [manifest.json](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/assets/ui/hud_caldeira_v1/export/manifest.json) (`timeline_sources`), mantendo sheets PNG intactas.
+7. **Composição do Alvo**: Posicionamento desacoplado via coordenadas `A.targetPortrait` (222, 14) e `A.targetBar` (258, 28), acomodando o crop 32×28 do Tranca-Lata sem colisão.
+8. **Métricas Textuais**: Correção da nota de contagem para 12 glyphs (72 px avanço, 71 px tinta) em campo de 78 px com 6 px de folga horizontal.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- `source/generate_hud.lua` opera por reconstrução total sobrescrevendo exports e `.aseprite`; edições manuais exigem rigor no fluxo de *Save Copy...* / *Export...* conforme documentado para não serem perdidas em eventuais execuções do builder.
+- As timelines de estudo não embutem timing de gameplay; eventual integração em engine deverá consumir o índice normalizado programaticamente.
+NEXT_STEP: Delta R2–R4 está consistente e pronto para homologação e encerramento da entrega; a duplicação textual no README pode ser sanada em consolidação documental sem necessidade de reprocessamento dos assets.

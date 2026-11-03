@@ -1,0 +1,75 @@
+### Parecer de Revisão Técnica (Implementação e Plano — Geração Coordenada de Salas)
+
+**Escopo revisado:** Pacote congelado `docs/specs/2026-10-18-geracao-salas/pareceres/implementacao-input-r1.txt`  
+**Modo:** Somente leitura (`/plan`), estático, sem mutação de workspace, sem execução de engine Godot ou testes dinâmicos.
+
+---
+
+### Avaliação Geral de Consistência (Código vs. Plano e Especificação)
+
+1. **Geração e Rota (`room_layout_generator.gd` e `main.gd`):**
+   - Implementação fiel ao contrato: rota ordenada em $X$, primeira plataforma fixa em topo $y = 440$, subidas limitadas a no máximo 64 px no acumulado da rota ($y \ge 376$), vãos entre 56 e 96 px, e corredor inferior com folga mínima de 96 px até o piso ($y = 560$, término das plataformas até $y = 464$).
+   - Fallback de 3 plataformas estritamente quantizado em múltiplos de 8 (centros 324, 596, 860; larguras 200, 184, 184; bordas $X$: 224..424, 504..688, 768..952; vãos de 80 px).
+   - Suporte técnico a 2..5 plataformas no gerador e no validador sem imposição de contagem final de design.
+   - Seed reproduzível via `room_layout_seed` (seed 0 randomiza uma vez por instância com registro no `Main`).
+
+2. **Ciclo de Vida e Idempotência (`main.gd`, `training_target.gd`, `solid_platform.gd`):**
+   - O preparo do layout ocorre antes da árvore/ready (`_enter_tree` em standalone ou `configure_run_managed` antes de `add_child`). É idempotente via trava `_authored_layout_prepared`.
+   - `SolidPlatform.size` sincroniza a forma física via `_sync_geometry` com `resource_local_to_scene = true`.
+   - As flags `randomize_position` e `randomize_width` estão desativadas tanto nas instâncias da cena quanto no preparo, impedindo re-randomização divergente do `SolidPlatform`.
+   - `TrainingTarget` desativa o reposicionamento com RNG deferido quando `authored_support_enabled == true`, aplicando a posição autoral diretamente calculada sobre o suporte primário/fallback validado.
+
+3. **Portas e Teto (`exit_door.gd`, `factory_ceiling_visual.gd`, cenas `.tscn`):**
+   - Entrada visual em $(112, 522)$ com colisor/sensor desativado (`SensorShape.disabled = true`), sem interação (`interaction_enabled = false`), apresentando visual e rótulo de bloqueio.
+   - Saída reutilizável em $(1040, 522)$ com sensor em $x = 992..1088$. A porta não é deletada em modo gerenciado; o fluxo aguarda limpeza de sala, recompensa e guarda de input antes de liberar destrancamento, exigindo interação [E] no sensor com validação dupla (imediata e diferida).
+   - `SecondRoom` standalone com `next_room_scene_path = ""` trata a ausência de próximo destino via `set_terminal_complete()` com exibição de `"ETAPA CONCLUÍDA"`, evitando destino vazio, loop ou travamento em `"ABRINDO SAÍDA..."`.
+   - Faixa de teto desenhada com o tile `terrain_top_mid` ($32 \times 32$ da fonte espelhado verticalmente em 18 colunas de 64 px cobrindo $x = 0..1152$, $y = 0..64$) e colisor `CeilingBand` em $(576, 32)$ com tamanho $1152 \times 64$, encostando no teto superior existente.
+
+---
+
+### Apontamentos Concretos (P1 / P2)
+
+#### Defeitos P1 (Críticos / Bloqueantes):
+*Nenhum defeito P1 identificado.* O fluxo de estados, parse de cenas, contratos de colisão/máscara, limites de rota e persistência de run atendem rigorosamente aos requisitos do plano.
+
+#### Apontamentos P2 (Médios / Riscos de Borda / Observações Técnicas):
+
+1. **Restrição rígida a teclado na interação com a porta:**
+   - **Local:** `scripts/world/exit_door.gd:1032-1036`
+   - **Evidência:**
+     ```gdscript
+     if not event is InputEventKey:
+         return
+     var key_event := event as InputEventKey
+     if key_event.echo or not key_event.is_action_pressed("interact"):
+         return
+     ```
+   - **Impacto:** O método descarta qualquer evento que não seja `InputEventKey`. Se o jogador estiver utilizando um controle/gamepad configurado para a ação `"interact"` (ex: botão A/Cruz), o evento `InputEventJoypadButton` é sumariamente ignorado e a transição da porta não dispara via controle.
+
+2. **Assimetria no teste de grade de ponto flutuante:**
+   - **Local:** `scripts/world/main.gd:216` e `scripts/world/room_layout_generator.gd:1218`
+   - **Evidência:** `fposmod(rect.position.x, 8.0) > 0.01`
+   - **Impacto:** `fposmod` retorna valores no intervalo $[0.0, 8.0)$. Caso uma coordenada sofra imprecisão infinitesimal negativa de float (ex: $208.0 - 10^{-15} \approx 207.99999999999997$), `fposmod` resulta em $\approx 7.99999999999997$, o que avalia como $> 0.01$ e rejeitaria falsamente a posição. Na implementação atual, as posições derivam de inteiros multiplicados por 8 (`randi_range(...) * 8`), portanto resultam em $0.0$ exato; contudo, a verificação não é simétrica para erros de aproximação próximos ao múltiplo superior (o padrão idiomático seria `minf(fposmod(x, 8.0), 8.0 - fposmod(x, 8.0)) > 0.01`).
+
+3. **Dependência do estado do servidor de física em validação diferida de alcance:**
+   - **Local:** `scripts/world/exit_door.gd:1068`
+   - **Evidência:** `return get_overlapping_bodies().has(player)`
+   - **Impacto:** Chamado dentro de `_complete_managed_progression_deferred` e `_change_room_deferred`. A consulta `get_overlapping_bodies()` em `Area2D` depende da sincronização das iterações de física. Como a chamada é diferida após o frame em que o input foi acionado, o estado normalmente está estável, mas se houver teleporte ou interrupção de frames no carregamento de nós no mesmo tick, consultas diretas a `get_overlapping_bodies` podem apresentar latência de um tick de física em relação ao dicionário interno `_players_in_range`.
+
+4. **Incerteza de alcançabilidade física de saltos (Risco Documental / Runtime):**
+   - **Local:** `scripts/world/room_layout_generator.gd` e `docs/specs/2026-10-18-geracao-salas/spec.md:3508`
+   - **Evidência:** A altura do topo do chão é 560 e o topo da primeira plataforma é 440 (subida vertical de 120 px). O salto teórico sem dash é estimado em 128 px.
+   - **Impacto:** Conforme destacado na documentação e mantido nesta análise estática, a rota possui folga geométrica de 8 px em relação ao limite teórico do pulo, mas a alcançabilidade física real, fluidez e timing de pulo dependem de testes dinâmicos com a engine Godot em execução, os quais permanecem explicitamente não autorizados e não atestados nesta etapa.
+
+---
+
+### Bloco Padronizado de Saída
+
+```text
+STATUS: done
+SUMMARY: Revisão estática da implementação e do plano concluída com sucesso. Código íntegro, consistente com o contrato geométrico, ciclo de vida pré-tree idempotente, persistência de run e regras de transição de salas; sem defeitos P1. Apontados P2 de suporte a gamepad em exit_door e robustez numérica de fposmod.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Ausência de validação de jogabilidade/alcançabilidade física em runtime da engine Godot (salto de 120 px próximo ao teto teórico de 128 px); interação de exit_door não aceita eventos de gamepad (InputEventJoypadButton).
+NEXT_STEP: Apresentar o parecer ao agente principal/usuário para estabilização ou autorização dos ajustes pontuais de P2 e futura validação interativa no Godot quando solicitada.
+```

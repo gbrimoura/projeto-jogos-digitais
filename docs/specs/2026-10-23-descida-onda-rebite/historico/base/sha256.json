@@ -1,0 +1,66 @@
+[
+  {
+    "sha256": "EBBDC2443C71DEB91100793D50FE5D37882A16068E91DC45A0EB68769BE1C6BE",
+    "path": "scripts/world/training_target.gd"
+  },
+  {
+    "sha256": "21405FA654E6EA2278172AD04B2C54D9C214B5FC3A35C8624315F46114BEC629",
+    "path": "scripts/enemy/tranca_lata_jump.gd"
+  },
+  {
+    "sha256": "6C652B9AD17927BCC4A416F927087985C11F144723DE1109D94FC84DF9B300E5",
+    "path": "scripts/enemy/tranca_lata_pursuit.gd"
+  },
+  {
+    "sha256": "4D5A836FD2EE66838CFC9805392AC1C9B952F2776D9CFFF473C46439AC77B92A",
+    "path": "scripts/enemy/containment_attack_visual.gd"
+  },
+  {
+    "sha256": "8AAA476DDE2720C1EA111563F5D0E010CC0BDD41A1889ABF3C0FC00A256E5472",
+    "path": "scripts/projectile/hostile_rivet.gd"
+  },
+  {
+    "sha256": "717CBE1F870487D438D3C42D00F16ECE524598C09AA4AB90D235733493BFE90B",
+    "path": "scenes/hostile_rivet.tscn"
+  },
+  {
+    "sha256": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE",
+    "path": "scenes/training_target.tscn"
+  },
+  {
+    "sha256": "CBE1903D51B687DA009861A7C0B71C3966EB727905ADF5DDFA70EF2E78D8AC04",
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres"
+  },
+  {
+    "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+    "path": "scripts/world/main.gd"
+  },
+  {
+    "sha256": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7",
+    "path": "scenes/main.tscn"
+  },
+  {
+    "sha256": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D",
+    "path": "scenes/second_room.tscn"
+  },
+  {
+    "sha256": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+    "path": "project.godot"
+  },
+  {
+    "sha256": "9028C991C29F072E4AA41C85FCFD7648F0650BB80AE4C41658BC056E26E75DD1",
+    "path": "assets/enemy/rivet_worker/rivet_worker-atlas.png"
+  },
+  {
+    "sha256": "DD0747F3FD159CB78397B31F417734F54EC6CDA014C951397CB812D7F0E24450",
+    "path": "assets/enemy/rivet_worker/rivet_worker.aseprite"
+  },
+  {
+    "sha256": "5400F8E39359CC069139EB5D94C4F969B1A2F56C2328F5149AEE07C6A4DDF001",
+    "path": "assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png"
+  },
+  {
+    "sha256": "64D797D413875B0192886D42A89368A75118DCF2E7C06D8F78EE4C39F3CA823B",
+    "path": "assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png"
+  }
+]

@@ -1,0 +1,643 @@
+FINAL STATIC REVIEW integration R1. Role READ-ONLY timeout10min. ALL content inline; NO tools/files/shell/engine/import/tests/parser/QA/writes. Root read docsREADME/AGENTS first. User requests existing approved shockwave sprite IN GAME for Tranca-Lata. Only3files authorized: targetgd visual bridge, containment_attack_visual.gd, training_target.tscn. Existing dirty local changes preserved. AssetPNG/ASE/SpriteFrames previously approved and immutable; 6cels160x160 pivot80,80 maxnativeR70, durations20/20/20/20/30/30ms total140; animimpact speed1 nonloop. Requirement manual animation driven by target ACTIVE state_remaining/active_window, including windup overshoot, no separate clock/play/autoplay/new damage/query/physics/cadence. Old circle set_area_state API4args retained, old phaseimpact acceptedhit color should NOT be overwritten by per-tick set_area_state. Wave progress bridge only at end of state match uses final timer, ACTIVE/IMPACT show, windup/recovery/hidden clear/pause/reset. Impact hit must not reset/replay frame0; old inactive phase already resetprogress to0 before nextactive. Scene child centeredposition0 underAttackAreaVisual inherits lockedAOEcenter andpause, nearest1 scaleeffectiveRadius/70 (2at140), absolutez0 floorz0 appears beforeTargettree, actorbodyglobalz1 andcircleglobalz2. Thus waveabovefloorsamezbytreeorderandbehindbody; no negativez. Target bodyneverfliproot. Death/cancel/inactiveguards existinghidden path removesvisual, enemyowns child. Preserve dust and allcombat. No sourcebitmap edits requested. Review introduced concrete P1/P2, not hypothetical scope expansion. Return stdout STATUS done|blocked|timeout|needs-input, SUMMARY, CHANGED_FILES none, TESTS none, RISKS concrete file/cause or no findings, NEXT_STEP. Do not claim engine validation.
+
+DIFF AGAINST PREEXISTING LOCAL BASE
+
+diff --git a/docs/specs/2026-10-21-tranca-lata-integracao-onda/historico/base/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index 7c658bd..c9aabc8 100644
+--- a/docs/specs/2026-10-21-tranca-lata-integracao-onda/historico/base/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -169,6 +169,15 @@ func _physics_process(delta: float) -> void:
+ 			_update_active(physics_step)
+ 		AttackState.RECOVERY:
+ 			_update_recovery(physics_step)
++	_sync_shockwave_progress()
++
++func _sync_shockwave_progress() -> void:
++	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_shockwave_progress"):
++		return
++	var progress := 0.0
++	if _attack_state == AttackState.ACTIVE:
++		progress = 1.0 - _state_remaining / maxf(active_window, 0.05)
++	_attack_visual.call("set_shockwave_progress", clampf(progress, 0.0, 1.0))
+ 
+ func _configure_physics_queries() -> void:
+ 	_area_shape = CircleShape2D.new()
+diff --git a/docs/specs/2026-10-21-tranca-lata-integracao-onda/historico/base/scripts/enemy/containment_attack_visual.gd b/scripts/enemy/containment_attack_visual.gd
+index 868b070..b35a6ba 100644
+--- a/docs/specs/2026-10-21-tranca-lata-integracao-onda/historico/base/scripts/enemy/containment_attack_visual.gd
++++ b/scripts/enemy/containment_attack_visual.gd
+@@ -3,6 +3,9 @@ extends Node2D
+ var _radius: float = 140.0
+ var _phase: StringName = &"hidden"
+ var _opacity: float = 0.0
++var _shockwave_progress: float = 0.0
++
++@onready var _shockwave: AnimatedSprite2D = $Shockwave
+ 
+ func set_area_state(radius: float, center_offset: Vector2, phase: StringName, opacity: float) -> void:
+ 	_radius = maxf(radius, 0.0)
+@@ -11,6 +14,50 @@ func set_area_state(radius: float, center_offset: Vector2, phase: StringName, op
+ 	_opacity = clampf(opacity, 0.0, 1.0)
+ 	visible = _phase != &"hidden" and _opacity > 0.001
+ 	queue_redraw()
++	_sync_shockwave()
++
++func set_shockwave_progress(progress: float) -> void:
++	_shockwave_progress = clampf(progress, 0.0, 1.0)
++	_sync_shockwave()
++
++func _sync_shockwave() -> void:
++	if not is_instance_valid(_shockwave):
++		return
++	_shockwave.scale = Vector2.ONE * (_radius / 70.0)
++	_shockwave.pause()
++	if _phase != &"active" and _phase != &"impact":
++		_shockwave_progress = 0.0
++		_shockwave.visible = false
++		if _shockwave.sprite_frames != null and _shockwave.sprite_frames.has_animation(&"impact"):
++			if _shockwave.animation != &"impact":
++				_shockwave.animation = &"impact"
++			if _shockwave.sprite_frames.get_frame_count(&"impact") > 0:
++				_shockwave.frame = 0
++		return
++	_shockwave.visible = true
++	_select_shockwave_frame()
++
++func _select_shockwave_frame() -> void:
++	if _shockwave.sprite_frames == null or not _shockwave.sprite_frames.has_animation(&"impact"):
++		return
++	var frames := _shockwave.sprite_frames.get_frame_count(&"impact")
++	if frames <= 0:
++		return
++	if _shockwave.animation != &"impact":
++		_shockwave.animation = &"impact"
++	var total_weight := 0.0
++	for frame_index in frames:
++		total_weight += _shockwave.sprite_frames.get_frame_duration(&"impact", frame_index)
++	var elapsed := _shockwave_progress * total_weight
++	var cumulative := 0.0
++	var selected_frame := frames - 1
++	for frame_index in frames:
++		cumulative += _shockwave.sprite_frames.get_frame_duration(&"impact", frame_index)
++		if elapsed < cumulative:
++			selected_frame = frame_index
++			break
++	_shockwave.pause()
++	_shockwave.frame = selected_frame
+ 
+ func _draw() -> void:
+ 	if not visible or _radius <= 0.0:
+diff --git a/docs/specs/2026-10-21-tranca-lata-integracao-onda/historico/base/scenes/training_target.tscn b/scenes/training_target.tscn
+index 61a21b8..1115f71 100644
+--- a/docs/specs/2026-10-21-tranca-lata-integracao-onda/historico/base/scenes/training_target.tscn
++++ b/scenes/training_target.tscn
+@@ -1,10 +1,11 @@
+-[gd_scene load_steps=8 format=3]
++[gd_scene load_steps=9 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+ [ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
+ [ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+ [ext_resource type="Script" path="res://scripts/enemy/containment_attack_visual.gd" id="4_attack_visual"]
+ [ext_resource type="Script" path="res://scripts/enemy/tranca_lata_dust.gd" id="5_tranca_lata_dust"]
++[ext_resource type="SpriteFrames" path="res://resources/enemy/tranca_lata_shockwave_sprite_frames.tres" id="6_shockwave_frames"]
+ 
+ [sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+ size = Vector2(72.0, 96.0)
+@@ -95,6 +96,15 @@ visible = false
+ z_index = 1
+ script = ExtResource("4_attack_visual")
+ 
++[node name="Shockwave" type="AnimatedSprite2D" parent="AttackAreaVisual"]
++visible = false
++z_index = 0
++z_as_relative = false
++texture_filter = 1
++sprite_frames = ExtResource("6_shockwave_frames")
++animation = &"impact"
++centered = true
++
+ [node name="TrancaLataDust" type="Node2D" parent="."]
+ process_mode = 0
+ z_index = 2
+
+
+FULL SOURCE scripts/enemy/containment_attack_visual.gd
+
+extends Node2D
+
+var _radius: float = 140.0
+var _phase: StringName = &"hidden"
+var _opacity: float = 0.0
+var _shockwave_progress: float = 0.0
+
+@onready var _shockwave: AnimatedSprite2D = $Shockwave
+
+func set_area_state(radius: float, center_offset: Vector2, phase: StringName, opacity: float) -> void:
+	_radius = maxf(radius, 0.0)
+	position = center_offset
+	_phase = phase
+	_opacity = clampf(opacity, 0.0, 1.0)
+	visible = _phase != &"hidden" and _opacity > 0.001
+	queue_redraw()
+	_sync_shockwave()
+
+func set_shockwave_progress(progress: float) -> void:
+	_shockwave_progress = clampf(progress, 0.0, 1.0)
+	_sync_shockwave()
+
+func _sync_shockwave() -> void:
+	if not is_instance_valid(_shockwave):
+		return
+	_shockwave.scale = Vector2.ONE * (_radius / 70.0)
+	_shockwave.pause()
+	if _phase != &"active" and _phase != &"impact":
+		_shockwave_progress = 0.0
+		_shockwave.visible = false
+		if _shockwave.sprite_frames != null and _shockwave.sprite_frames.has_animation(&"impact"):
+			if _shockwave.animation != &"impact":
+				_shockwave.animation = &"impact"
+			if _shockwave.sprite_frames.get_frame_count(&"impact") > 0:
+				_shockwave.frame = 0
+		return
+	_shockwave.visible = true
+	_select_shockwave_frame()
+
+func _select_shockwave_frame() -> void:
+	if _shockwave.sprite_frames == null or not _shockwave.sprite_frames.has_animation(&"impact"):
+		return
+	var frames := _shockwave.sprite_frames.get_frame_count(&"impact")
+	if frames <= 0:
+		return
+	if _shockwave.animation != &"impact":
+		_shockwave.animation = &"impact"
+	var total_weight := 0.0
+	for frame_index in frames:
+		total_weight += _shockwave.sprite_frames.get_frame_duration(&"impact", frame_index)
+	var elapsed := _shockwave_progress * total_weight
+	var cumulative := 0.0
+	var selected_frame := frames - 1
+	for frame_index in frames:
+		cumulative += _shockwave.sprite_frames.get_frame_duration(&"impact", frame_index)
+		if elapsed < cumulative:
+			selected_frame = frame_index
+			break
+	_shockwave.pause()
+	_shockwave.frame = selected_frame
+
+func _draw() -> void:
+	if not visible or _radius <= 0.0:
+		return
+
+	var fill_alpha := 0.045
+	var outline_alpha := 0.88
+	var outline_width := 2.0
+	var color := Color(1.0, 0.27, 0.055)
+	match _phase:
+		&"windup":
+			color = Color(1.0, 0.32, 0.055)
+			fill_alpha = 0.055
+			outline_alpha = 0.82
+		&"active":
+			color = Color(1.0, 0.16, 0.035)
+			fill_alpha = 0.09
+			outline_alpha = 1.0
+			outline_width = 3.0
+		&"impact":
+			color = Color(1.0, 0.76, 0.24)
+			fill_alpha = 0.13
+			outline_alpha = 1.0
+			outline_width = 4.0
+		&"recovery":
+			color = Color(1.0, 0.27, 0.055)
+			fill_alpha = 0.035
+			outline_alpha = 0.55
+
+	draw_circle(Vector2.ZERO, _radius, Color(color.r, color.g, color.b, fill_alpha * _opacity))
+	draw_arc(
+		Vector2.ZERO,
+		_radius,
+		0.0,
+		TAU,
+		96,
+		Color(color.r, color.g, color.b, outline_alpha * _opacity),
+		outline_width,
+		true
+	)
+
+
+FULL SOURCE scenes/training_target.tscn
+
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/training_target.gd" id="1_training_target"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/training_target_sprite_frames.tres" id="2_target_frames"]
+[ext_resource type="Shader" path="res://scripts/enemy/enemy_hit_flash.gdshader" id="3_hit_flash_shader"]
+[ext_resource type="Script" path="res://scripts/enemy/containment_attack_visual.gd" id="4_attack_visual"]
+[ext_resource type="Script" path="res://scripts/enemy/tranca_lata_dust.gd" id="5_tranca_lata_dust"]
+[ext_resource type="SpriteFrames" path="res://resources/enemy/tranca_lata_shockwave_sprite_frames.tres" id="6_shockwave_frames"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_training_target"]
+size = Vector2(72.0, 96.0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_target_hit_flash"]
+resource_local_to_scene = true
+shader = ExtResource("3_hit_flash_shader")
+
+[node name="TrainingTarget" type="CharacterBody2D" groups=["damageable", "combat_enemy"]]
+collision_layer = 8
+collision_mask = 3
+motion_mode = 1
+z_index = 1
+script = ExtResource("1_training_target")
+display_name = "Tranca-Lata"
+max_health = 3
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_training_target")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BodySprite" type="AnimatedSprite2D" parent="Visuals"]
+scale = Vector2(2.0, 2.0)
+texture_filter = 1
+material = SubResource("ShaderMaterial_target_hit_flash")
+sprite_frames = ExtResource("2_target_frames")
+animation = &"idle"
+autoplay = &"idle"
+centered = true
+
+[node name="NameLabel" type="Label" parent="Visuals"]
+offset_left = -48.0
+offset_top = -84.0
+offset_right = 48.0
+offset_bottom = -66.0
+theme_override_colors/font_color = Color(0.82, 0.91, 0.98, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.07, 0.11, 1)
+theme_override_constants/outline_size = 3
+text = "Tranca-Lata"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BodyBorder" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-36.0, -48.0, 36.0, -48.0, 36.0, 48.0, -36.0, 48.0)
+
+[node name="BodyFill" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.219608, 0.278431, 0.34902, 1)
+polygon = PackedVector2Array(-33.0, -45.0, 33.0, -45.0, 33.0, 45.0, -33.0, 45.0)
+
+[node name="Visor" type="Polygon2D" parent="Visuals"]
+visible = false
+color = Color(0.396078, 0.466667, 0.541176, 1)
+polygon = PackedVector2Array(-24.0, -36.0, 24.0, -36.0, 24.0, -12.0, -24.0, -12.0)
+
+[node name="UpperStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-28.0, 18.0, 28.0, 18.0)
+
+[node name="LowerStripe" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.764706, 0.494118, 0.25098, 1)
+points = PackedVector2Array(-22.0, 30.0, 22.0, 30.0)
+
+[node name="FootLine" type="Line2D" parent="Visuals"]
+visible = false
+width = 4.0
+default_color = Color(0.062745, 0.090196, 0.133333, 1)
+points = PackedVector2Array(-29.0, 42.0, 29.0, 42.0)
+
+[node name="HealthFrame" type="Polygon2D" parent="Visuals"]
+color = Color(0.062745, 0.090196, 0.133333, 1)
+polygon = PackedVector2Array(-40.0, -64.0, 40.0, -64.0, 40.0, -56.0, -40.0, -56.0)
+
+[node name="HealthFill" type="Polygon2D" parent="Visuals"]
+position = Vector2(-38.0, -60.0)
+color = Color(0.894118, 0.435294, 0.345098, 1)
+polygon = PackedVector2Array(0.0, -2.0, 76.0, -2.0, 76.0, 2.0, 0.0, 2.0)
+
+[node name="AttackAreaVisual" type="Node2D" parent="."]
+visible = false
+z_index = 1
+script = ExtResource("4_attack_visual")
+
+[node name="Shockwave" type="AnimatedSprite2D" parent="AttackAreaVisual"]
+visible = false
+z_index = 0
+z_as_relative = false
+texture_filter = 1
+sprite_frames = ExtResource("6_shockwave_frames")
+animation = &"impact"
+centered = true
+
+[node name="TrancaLataDust" type="Node2D" parent="."]
+process_mode = 0
+z_index = 2
+z_as_relative = false
+top_level = true
+script = ExtResource("5_tranca_lata_dust")
+
+
+
+FINAL TARGET CONTEXT
+
+func take_damage(amount: int, _source: Node = null) -> bool:
+	if _defeated_emitted or health <= 0 or amount <= 0:
+		return false
+
+	health = maxi(health - amount, 0)
+	_flash_remaining = maxf(flash_duration, 0.0)
+	_update_visuals()
+	if health == 0:
+		_defeated_emitted = true
+		_cancel_attack()
+		defeated.emit()
+		queue_free()
+	return true
+
+func _physics_process(delta: float) -> void:
+	_update_hit_flash(delta)
+	if _defeated_emitted:
+		return
+	if not _is_inside_current_scene():
+		_cancel_attack()
+		_stop_patrol()
+		return
+	if _placement_pending:
+		_stop_patrol()
+		return
+	if _is_known_player_defeated():
+		_cancel_attack()
+		_stop_patrol()
+		return
+	if _attack_state != AttackState.IDLE and not _is_alive_player(_locked_player):
+		_cancel_attack()
+		return
+
+	var physics_step := maxf(delta, 0.0)
+	match _attack_state:
+		AttackState.IDLE:
+			var detected_player := _find_player_in_attack_area(global_position + attack_center_offset)
+			if detected_player != null:
+				_known_player = detected_player
+				_begin_windup(detected_player)
+				return
+			if not _patrol_preconditions_hold():
+				_stop_patrol()
+				return
+			_advance_patrol(physics_step)
+		AttackState.WINDUP:
+			_update_windup(physics_step)
+		AttackState.ACTIVE:
+			_update_active(physics_step)
+		AttackState.RECOVERY:
+			_update_recovery(physics_step)
+	_sync_shockwave_progress()
+
+func _sync_shockwave_progress() -> void:
+	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_shockwave_progress"):
+		return
+	var progress := 0.0
+	if _attack_state == AttackState.ACTIVE:
+		progress = 1.0 - _state_remaining / maxf(active_window, 0.05)
+	_attack_visual.call("set_shockwave_progress", clampf(progress, 0.0, 1.0))
+
+
+
+FINAL TARGET CONTEXT
+
+func _begin_windup(player_body: PhysicsBody2D) -> void:
+	velocity = Vector2.ZERO
+	_patrol_moving = false
+	_locked_player = player_body
+	_damaged_player_ids.clear()
+	_attack_state = AttackState.WINDUP
+	_state_remaining = maxf(windup_duration, 0.05)
+	_recovery_fade_remaining = 0.0
+	_body_sprite.pause()
+	_locked_attack_center = global_position + attack_center_offset
+	_select_attack_frame(&"windup", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+
+func _update_windup(delta: float) -> void:
+	var effective_duration := maxf(windup_duration, 0.05)
+	var before_step := _state_remaining
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		var overshoot := maxf(delta - before_step, 0.0)
+		_enter_active()
+		_apply_attack_area()
+		if overshoot >= maxf(active_window, 0.05):
+			_enter_recovery()
+		else:
+			_state_remaining = maxf(active_window, 0.05) - overshoot
+			_select_attack_frame(&"active", _state_remaining, maxf(active_window, 0.05))
+		return
+	_select_attack_frame(&"windup", _state_remaining, effective_duration)
+	_update_attack_area_visual()
+
+func _enter_active() -> void:
+	_attack_state = AttackState.ACTIVE
+	_state_remaining = maxf(active_window, 0.05)
+	var feet_origin := Vector2(global_position.x, global_position.y + _get_collision_rect().end.y)
+	if is_instance_valid(_attack_dust) and _attack_dust.has_method("burst"):
+		_attack_dust.call("burst", feet_origin)
+	_select_attack_frame(&"active", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_active(delta: float) -> void:
+	_apply_attack_area()
+	var effective_duration := maxf(active_window, 0.05)
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	if _state_remaining <= 0.0:
+		_enter_recovery()
+		return
+	_select_attack_frame(&"active", _state_remaining, effective_duration)
+
+
+
+FINAL TARGET CONTEXT
+
+func _enter_recovery() -> void:
+	_attack_state = AttackState.RECOVERY
+	_state_remaining = maxf(recovery_duration, 0.05)
+	_recovery_fade_remaining = maxf(recovery_fade_duration, 0.0)
+	_select_attack_frame(&"recovery", _state_remaining, _state_remaining)
+	_update_attack_area_visual()
+	_update_visuals()
+
+func _update_recovery(delta: float) -> void:
+	var effective_duration := maxf(recovery_duration, 0.05)
+	_state_remaining = maxf(_state_remaining - delta, 0.0)
+	_recovery_fade_remaining = maxf(_recovery_fade_remaining - delta, 0.0)
+	_update_attack_area_visual()
+	if _state_remaining <= 0.0:
+		_set_attack_visual(&"hidden", 0.0)
+		_attack_state = AttackState.IDLE
+		_state_remaining = 0.0
+		_recovery_fade_remaining = 0.0
+		_locked_player = null
+		_locked_attack_center = Vector2.ZERO
+		_damaged_player_ids.clear()
+		_update_visuals()
+		return
+	_select_attack_frame(&"recovery", _state_remaining, effective_duration)
+
+func _select_attack_frame(animation_name: StringName, remaining: float, effective_duration: float) -> void:
+	if _body_sprite.sprite_frames == null or not _body_sprite.sprite_frames.has_animation(animation_name):
+		return
+	var frames := _body_sprite.sprite_frames.get_frame_count(animation_name)
+	if frames <= 0:
+		return
+	if _body_sprite.animation != animation_name:
+		_body_sprite.animation = animation_name
+	_body_sprite.pause()
+	var normalized_progress := clampf(1.0 - remaining / maxf(effective_duration, 0.0001), 0.0, 1.0)
+	var total_weight := 0.0
+	for frame_index in frames:
+		total_weight += _body_sprite.sprite_frames.get_frame_duration(animation_name, frame_index)
+	var elapsed := normalized_progress * total_weight
+	var cumulative := 0.0
+	var selected_frame := frames - 1
+	for frame_index in frames:
+		cumulative += _body_sprite.sprite_frames.get_frame_duration(animation_name, frame_index)
+		if elapsed < cumulative:
+			selected_frame = frame_index
+			break
+	_body_sprite.pause()
+	_body_sprite.frame = selected_frame
+
+func _update_attack_area_visual() -> void:
+	match _attack_state:
+		AttackState.WINDUP:
+			var windup_progress := 1.0 - clampf(
+				_state_remaining / maxf(windup_duration, 0.05),
+				0.0,
+				1.0
+			)
+			_set_attack_visual(&"windup", 0.58 + windup_progress * 0.34)
+		AttackState.ACTIVE:
+			_set_attack_visual(&"active", 1.0)
+		AttackState.RECOVERY:
+			var fade_alpha := 0.0
+			if recovery_fade_duration > 0.0:
+				fade_alpha = _recovery_fade_remaining / recovery_fade_duration
+			_set_attack_visual(&"recovery", clampf(fade_alpha, 0.0, 1.0))
+		_:
+			_set_attack_visual(&"hidden", 0.0)
+
+func _set_attack_visual(phase: StringName, alpha: float) -> void:
+	if not is_instance_valid(_attack_visual) or not _attack_visual.has_method("set_area_state"):
+		return
+	_attack_visual.call(
+		"set_area_state",
+		_effective_attack_radius(),
+		attack_center_offset if _attack_state == AttackState.IDLE else _locked_attack_center - global_position,
+		phase,
+		alpha
+	)
+
+
+
+FINAL TARGET CONTEXT
+
+func _cancel_attack() -> void:
+	if is_instance_valid(_attack_dust) and _attack_dust.has_method("clear"):
+		_attack_dust.call("clear")
+	_set_attack_visual(&"hidden", 0.0)
+	_attack_state = AttackState.IDLE
+	_state_remaining = 0.0
+	_recovery_fade_remaining = 0.0
+	_locked_player = null
+	_locked_attack_center = Vector2.ZERO
+	_damaged_player_ids.clear()
+	_update_visuals()
+
+
+
+IMMUTABLE RESOURCE
+
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png" id="1_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_0"]
+atlas = ExtResource("1_atlas")
+region = Rect2(0, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_1"]
+atlas = ExtResource("1_atlas")
+region = Rect2(160, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_2"]
+atlas = ExtResource("1_atlas")
+region = Rect2(320, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_3"]
+atlas = ExtResource("1_atlas")
+region = Rect2(480, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_4"]
+atlas = ExtResource("1_atlas")
+region = Rect2(640, 0, 160, 160)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_impact_5"]
+atlas = ExtResource("1_atlas")
+region = Rect2(800, 0, 160, 160)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_0")
+}, {
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_1")
+}, {
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_2")
+}, {
+"duration": 0.02,
+"texture": SubResource("AtlasTexture_impact_3")
+}, {
+"duration": 0.03,
+"texture": SubResource("AtlasTexture_impact_4")
+}, {
+"duration": 0.03,
+"texture": SubResource("AtlasTexture_impact_5")
+}],
+"loop": 0,
+"name": &"impact",
+"speed": 1.0
+}]
+
+
+MANIFEST
+
+{
+  "baseline_manifest": "historico/base/sha256-before.json",
+  "state": "runtime-r1",
+  "files": [
+    {
+      "path": "scripts/world/training_target.gd",
+      "sha256": "A92466D96F0DEF3C20C70911E14F7E763A68F4ACC4E8EAEE7CAFA5B0C3D81E7C",
+      "snapshot": "scripts/world/training_target.gd"
+    },
+    {
+      "path": "scripts/enemy/containment_attack_visual.gd",
+      "sha256": "0F7D8071764848FF18C57B21442D2668CFAF4EE1C68C3A14DFC94106262946AD",
+      "snapshot": "scripts/enemy/containment_attack_visual.gd"
+    },
+    {
+      "path": "scenes/training_target.tscn",
+      "sha256": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE",
+      "snapshot": "scenes/training_target.tscn"
+    }
+  ]
+}

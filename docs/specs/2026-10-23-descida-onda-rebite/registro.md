@@ -1,0 +1,17 @@
+# Registro — onda, descida e rebite
+Implementação incremental delegada ao GPT-6 Luna xhigh, escritor único; interface sem seleção/confirmação Fast/priority. Plano/spec e baseline registrados antes da implementação. O principal leu GDD de combate, atlas atuais e metodologia anterior, gerou referência com ImageGen integrado e aprovou previews antes da integração Aseprite.
+
+Onda: visual175ms (20%mais lento, antes140), danoACTIVE140msinalterado. Progresso manual cobre80% duranteACTIVE e últimos20% na cauda35ms na recuperação. Pesos SpriteFrames20/20/20/20/30/30ms aumentadosuniformemente25% para25/25/25/25/37.5/37.5ms, mesmas seis regiões. Dano/raio140/escala1.25/windup650/recovery1400 preservados. Cauda cancelada em novos estados/limpeza de ataque e sem ampliar hitbox.
+
+Descida: problema por inspeção estática confirmado: pouso muito perto da origem (+4px além do corpo) pode reinterceptar origem no arco72antes de terminar voo ao chão. Novos offsets4/40/80/128px, footprint fora da origem em todos os destinos inferiores, casts/overlaps físicos mantidos, plano revalidado PREPARE. Se decolagem/plano falhar, uma tentativa limitada pelo lado oposto do apoio é pré-validada no solver; aproximação física até esse ponto e plano real refeito ao chegar. Sem teleporte, descida200/subida144, gravidade/cooldown/PREPARE/POUSO preservados. Proteções da perseguição anterior mantidas.
+
+Novo tiro: ImageGen integrado gerou referência copiada intacta; prompt integral em historico/prompt-imagegen.txt. Aseprite Lua autorou o sprite32x16 em grade nativa e paleta existente13cores, alpha0/255, núcleo13x10aproximado e rastro cosmético. Preview8xnearest e contato dos nativos2x inspecionados pelo principal antes da integração. PNG/ASE, gerador e metadata em assets/projectile/cospe_rebite. Cena usaSprite2D sobVisuals, nearest1, offset(-4,0) para pivot(20,8) centralizarcorpoemhitboxR6. ScriptHostileRivet intacto: rotações e tints de parry/non-parryable continuam aplicando-se pelo pai. RecursoImageTextureRGBA8nativo não depende de PNGimport pendente; formato deriva do empacotamento já utilizado no projeto.
+
+Snapshot completo e hashes em historico/runtime-r1/sha256.json; input revisão F6403F89269DB3BEC4A941FF3C37409A4C8DE88850BEAE3AE931B40E32153734. Arquivos protegidos intactos conforme historico/protected-r1.json, incluindo Main/salas/fullscreen/HostileRivet e arte original dos inimigos.
+
+Preflight uma vez. Gemini/Grok/Muse em revisão estática; Opus Cursor tentado no estado congelado e bloqueado por quota, sem parecer/substituição. Saídas fiéis em pareceres/runtime-r1-*. Nenhum Godot/teste/import/parser/linter/quality_audit foi executado conforme AGENTS; produção/render Aseprite concluída. Nenhuma confirmação de gameplay. Branch/localchanges preservados, sem commit/push.
+
+## Encerramento
+Gemini/Grok/Muse concluíram revisões estáticas; Muse esclareceu sua primeira saída com contexto e retirou P1/P2 sem causa concreta. Achados Grok foram avaliados criticamente e rejeitados pelo principal com geometria analítica/fluxo de controle, sem modificar seus relatórios originais. Decisões e entradas em pareceres/README.md. Opus Cursor bloqueado por quota, sem parecer. Runtime R1 integrado, sem Godot/testes/QA nem confirmação de gameplay. Mudanças locais e branch preservadas, sem commit/push.
+
+Conferência final: 14/14 arquivos do snapshot estáveis e 11/11 arquivos protegidos intactos; historico/stable-final.json e protected-final.json. PNG/ASE/referência, cena, textura e scripts mantêm os hashes revisados.

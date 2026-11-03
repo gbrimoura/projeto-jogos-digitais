@@ -1,0 +1,12 @@
+STATUS: done
+SUMMARY: O FIX2 é válido em Godot 4.7.2 para a causa do log: o Card deixa de resolver o identificador global `UpgradeStatText` (ausente no cache) e passa a tipar pelo `preload` local; o StatText herda o bitmap por path, sem ciclo. Não reabre Offer/Main/cena/cache.
+CHANGED_FILES: none
+TESTS: none
+RISKS: runtime da oferta ainda não confirmado; `HudBitmapText` no Card continua via class_name global (já no cache e fora do erro). Sem P1 de tipo/ciclo neste recorte.
+NEXT_STEP: Rodar a cena da oferta e conferir se `upgrade_card.gd` parseia e se `UpgradeCard.load_card_font_bundle` responde no `_ready` existente. Não limpar cache, não alterar Main/Offer/cena.
+
+P1
+Nenhum. `const UpgradeStatTextScript = preload("res://scripts/ui/upgrade_stat_text.gd")` é tipo local válido em 4.7 para `Array[UpgradeStatTextScript]`, parâmetros e `as`. Isso remove a dependência de parse do class_name global que o log quebrou nas linhas 19–25/153/187. A cena já liga Topic/Rank por `ExtResource` path, então o `as` bate no mesmo Script. `extends "res://scripts/ui/hud/bitmap_text.gd"` não cria ciclo: Card preloada StatText e bitmap; StatText só estende bitmap; bitmap só estende Control. Membros herdados usados no `_draw`/configure (`_font_atlas`, `_glyphs`, `_advance`, `_line_height`, `_warned_missing_glyph`, `_make_lines`, `font_color`, `text`, `center_text`, `right_align`, `size`, `configure_font`) continuam visíveis. Cor por caractere não depende de class_name. Alias não duplica o tipo global no Card; `class_name UpgradeStatText` permanece só para o editor.
+
+P2
+O Offer quebra porque o Card não carregou (`load_card_font_bundle` some do GDScript); Main só relata. Fora de escopo. `HudBitmapText` no Card ainda é class_name; o cache observado já tem essa entrada, o log não falhou aí. `class_name UpgradeStatText` pode continuar fora do cache observado; neste load path isso não é necessário.

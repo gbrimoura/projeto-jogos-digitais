@@ -1,0 +1,13 @@
+Iniciando revisão estática do estado integrado — leitura do input congelado.
+Input parcial lido; buscando restante do arquivo congelado para revisão completa.
+Quase lá — lendo o trecho final do input para concluir a revisão.
+Continuando a leitura do input integrado para fechar a análise.
+STATUS: done
+SUMMARY: Revisão estática integrada do input congelado — NAV (training_target.gd retry de subida) e GEN (room_layout_generator.gd por orçamento) atendem plano/spec, sem P1/P2 bloqueante. Solver/gravidade/máscaras/corpo/ataque/Main/Run/cenas/arte preservados; sem benchmarks ou validação runtime.
+CHANGED_FILES: none
+TESTS: static review only — sem execução de Godot/import/parser/linter/QA/simulação; somente leitura do input.
+RISKS:
+- NAV training_target.gd _try_alternate_pursuit_launch/_pursuit_launch_x/_pursue_via_route: sem defeito P1. Descida mantém single opposite-edge; subida/igual usa até 7 candidatos (atual, ±16/±32, standoffs destino) filtrados por bounds/dedup 2px e validados via plan_jump_to_from antes de armazenar; exaustão antes de block 1.5s; sem reset por frame; PREPARE revalida. Standoff 76 invasor de parede e bounds Floor 52..1100 são corretamente rejeitados pelo solver (QUERY_MASK World+Player), com fallback para parada física ~100 — não exigir atravessar parede/Player; ápice 168 (max 72, rise+48) <=192 e MAX_RISE 144 preservados, não confundir MIN_APEX 72 com teto.
+- GEN room_layout_generator.gd generate_layout/_distribute_horizontal_budget/_distribute_vertical_rise: sem defeito P1. Orçamento viável (footprint mínimo, spawn+38, first 208..256), slack/total, reserva 1u, extra aleatório, Fisher-Yates local + reservas suffix sem Array.shuffle/global RNG; vertical total 0..8u distribuído sem clamp; 1 validação + fallback validado; API/seed-local/index last-first inalterados; counts 2..5, widths 104..216, gaps 56..96/grid8, tops 376..440 monotônico, end<=980/corredor 96. Falha fechada se inviável.
+- Observação não-bloqueante: plan-failure seta PURSUIT_REPLAN_INTERVAL antes do retry, causando espera curta ao chegar no novo launch; e candidatos validados para landing_target antigo são apenas filtro — plano final é refeito no arrival/PREPARE.
+NEXT_STEP: Manter estado congelado; sem correção Luna necessária nesta frente.

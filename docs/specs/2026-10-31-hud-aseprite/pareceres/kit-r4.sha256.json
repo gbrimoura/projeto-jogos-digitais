@@ -1,0 +1,374 @@
+[
+  {
+    "file": "hud_caldeira_v1\\README.md",
+    "sha256": "A739827CBD4C23197865C66306A9C854B1E92B59A01883DD294DB8C936B50C04"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\bar-fill-player-90x8.png",
+    "sha256": "D656E03DDB1D48AAA7BE487C8F221D9C4601A958348B13F905B483834D351DE7"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\bar-fill-target-90x8.png",
+    "sha256": "507D16535F634BA9EF30742E282249D1E610823E25362BDF0D06E93C776FDBFD"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\bar-frame-96x14.png",
+    "sha256": "AA4F66253876315B1D04B470A3EF197C5F9440D568EB30E0EAD1573F17082A8C"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-states-sheet.png",
+    "sha256": "E123BB58E59637EDE75129AB457B8601161CA84B56DB0C8D395C92F19BDFE9EE"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-00.png",
+    "sha256": "0E341C481829ADE8737EE4EF44C9F7CCD46EFBAB5F1F44C06CE8BAA60EA826C4"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-01.png",
+    "sha256": "DDE32203B0F37C768AA2E4204B743EBD0E2FEDA8521D4AF849920ED88C20FC41"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-02.png",
+    "sha256": "4AED10B7D317031A9AB89F8023696827341C8D2D05102DBF6F97164D185E4B1D"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-03.png",
+    "sha256": "36E767A8B03F36538122E1A29FB4D364F3A6CF044C100BDFB1BD6FE11B92A61E"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-04.png",
+    "sha256": "66FF50E157C151E741372D8BFD4F3A890080255CA53C7FD3C059B7F7BD163BD9"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-05.png",
+    "sha256": "76BBCC1AE18594EADE7A17EBF8B312F89080D864A61BEDB322D0BA3985707137"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-06.png",
+    "sha256": "53BC55CAD32BA5013012D57E45E7A905F050A5D8F9D6ADFC61672E7AB2C3FCE8"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-07.png",
+    "sha256": "2BE3A947353E3EE66A279AB6455C7B70A0471BC2BC63B29294D39D53E59109D9"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-08.png",
+    "sha256": "D0239A530C920FCDC8C2292B984ED94A8B5284C059E232E3B128EF72C391F46D"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-09.png",
+    "sha256": "9A01F4A847AC1F1BB74015D72A430DE670F33DB454F892249666298925797531"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-10.png",
+    "sha256": "C1C1D9D01FBA42F85E65BCC307441AC10B14C11F5174971DCE5323E8BFE54CB4"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-11.png",
+    "sha256": "2E58FF0BB316FDB6FBD8ABC4D0ACFD69316198622510A11508F10969D277C9AC"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-12.png",
+    "sha256": "039B6EA223C16BB611CEE8D0DA92817713663E803653A7D9E4C426066186FC96"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-13.png",
+    "sha256": "C54FE3E34427EAB01E713253FD03EC896EB2B85E023DB49368AD57AAE9E992D7"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-14.png",
+    "sha256": "BF0C40C643AEAB2ECDAB4772F61527B38BC8DA84870199F9AA844D458B0AFF18"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-15.png",
+    "sha256": "436D5A46798CA39B1271E34C4362039B423CF5516ED1AE94C621021E25A927EC"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\clock-step-16.png",
+    "sha256": "C1FD64E78B7906E1EA2E92B36D328B061360B968AE93FB817CF4E834BF2F51F0"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\components-atlas.png",
+    "sha256": "37241F9F53318C7BDA783DBC48C54D39711594CF5A5FDB7452EE1C6B1E8450BB"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\components.json",
+    "sha256": "809119184BA8D751DF63C820C902E457CF52BC413238D3C97EDA9159EB5AB806"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\dash-icon-disabled-16.png",
+    "sha256": "E25D0BADA5F0B0253AB944360166E81F30EAFE0CC081C2A1CA3905A2E6E9A8DC"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\dash-icon-ready-16.png",
+    "sha256": "111601C111D67B56BD283865080AF7FA8E21304946618C02A3D0BDADFBE62EC2"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\font-atlas.png",
+    "sha256": "70DCC6053C577B91B9D383215278EC71C95E983CBD3A562349F1EA5226459521"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\font.json",
+    "sha256": "2BE6A95CD6C23A4463C5980E9ED0BE3C8C430FD7801D14B5374328BA0A609AEE"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-dial-37x20.png",
+    "sha256": "B152A5084391C5AEE64D78EC625C39FE758D5BC3C15373A2634D83BF3A2898B7"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-00.png",
+    "sha256": "F15EEC57533E74A83697673707B9AB35B2275166A30C9E9E701190D8207E3BCE"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-01.png",
+    "sha256": "3A4B87A9456EDDC5855D525265295FB3DF032D646C75FE8D543520D28A3DD4D1"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-02.png",
+    "sha256": "7612330753D129F13F650114A2E182077C4FFC888FC602D19A9BC8F1E9F0948A"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-03.png",
+    "sha256": "0105997BAB4EC0BD1E87067A54A0E6F9E4F6F08AF8757F2C12FC92C03DF420AB"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-04.png",
+    "sha256": "137F9209EBD985FF0D9F41C53BC6E718C460C3918C396AC433B3F08FB01477FC"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-05.png",
+    "sha256": "146A7604C7E9FDDF6F8450C0737D54ADB5091BFD13C7A200BEC1BCCF71EF4BBA"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-06.png",
+    "sha256": "EAE107081F5D7D63FCBF09E97FDDE66C06D41074B2E7E8D2F440E7742432A409"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-07.png",
+    "sha256": "68326F287F760129E22DCDB323368AC0EE335FE01CF4F2EE91D6B7C04141C90B"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-08.png",
+    "sha256": "646D62825FE9893DA5ECCA52DFEDFFB0944AC5B6195C11127797C3F5B8BA93CF"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\gauge-needle-states-sheet.png",
+    "sha256": "85D9AEB575B21BC6EC6DD82E19A285E0E29CD583A683B7D905F71DD9481EEA99"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\hud-overlay-1152.png",
+    "sha256": "D109B56AE6160E3857F8AD47F7A768B1F2DBAC5EEEF0E10CF00622A8FD3EE0BA"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\hud-overlay-576.png",
+    "sha256": "F442F863A18CFF622CC359E877BE02CB458AA9BA9CDAB4679646837EA06E2BB3"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\label-conceito-74x15.png",
+    "sha256": "0FDE926DFF9BDC17CCC478A8EE002FC291746CC26CCE5FE82C52EFFF8A3A9BE4"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\layout.json",
+    "sha256": "A34DC74694A61B6789FE3EE3F20B1782633383B9ECFD8A592F9FB98838D9841F"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\manifest.json",
+    "sha256": "B79F9D7ED9D90DC88BCCF461E8377B2D7826319FA7FE9176B1C28B03F125DA6C"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\palette.json",
+    "sha256": "6A093143524C97F9895006D2804297B3CEDD16C43C25A85901782D96EAD3A7BC"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\panel-9slice-24.png",
+    "sha256": "1F7CB3257AD8A58EE8816A2129BF3DE746FED560CB67CA3E1F16F2C7045ADFAB"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\panel-dash-144x40.png",
+    "sha256": "2D2305F477707642D73EEE6EB900E3243717F833D0CFE62E58A9BEB774F671C2"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\panel-gauge-84x60.png",
+    "sha256": "AFDE0FFAD3DEF86601EFE12E22B31E709C310A24D21ABC39B9CDD57AB8A2CA48"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\panel-player-144x40.png",
+    "sha256": "2D2305F477707642D73EEE6EB900E3243717F833D0CFE62E58A9BEB774F671C2"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\panel-rooms-84x36.png",
+    "sha256": "43DA0DA474FE2E49A77F525DD23CBCB878654FBECEFC9CE26FF9D89937AA4B4D"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\panel-target-144x40.png",
+    "sha256": "2D2305F477707642D73EEE6EB900E3243717F833D0CFE62E58A9BEB774F671C2"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\portrait-player-24.png",
+    "sha256": "63F644717C7A08288805F331C6FDA7BCE0B11AC9101A3CAFB2BA5DD02D3CE865"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\portrait-rivet-worker-24.png",
+    "sha256": "A6E048D095AB39CF9DD5EDD58F3CB21AE898986C9FDE8B81BFFC387DC3DAFD63"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\portrait-tranca-lata-24.png",
+    "sha256": "3DBFE0237D264FB627DC0F762B7D745DB0E5D823C21E6100795F854BA029C6A7"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\portrait-tranca-lata-32x28.png",
+    "sha256": "AE4A767D0021F99A208C191BC3B8AAE450418DD1A0227B41E096D160BC574AAE"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\portraits-atlas.png",
+    "sha256": "66BF92B896663BCD72D58F239E576B7EF66CFC8085A76F9347FB0E8C5D7626BC"
+  },
+  {
+    "file": "hud_caldeira_v1\\export\\portraits.json",
+    "sha256": "558A0B4B4DC1F1037DF91E79783E0A6162775BBE976D24E720A9746DDB418E75"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\.gdignore",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\context-seed-000-576.png",
+    "sha256": "981D7AFF64D8CE93C1EE72778F04525CC73E92DC92C7C092853B623D8DD0FDB3"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\dash-ready-state-432x120.png",
+    "sha256": "AAC08BE2C570E8C95DC37E524508DDB0C15E8C7ECAA975CE45AF38214E44032C"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-context-1152.png",
+    "sha256": "CADF9CBC4A9519C6C0366CD21A593E9A70A5477222254137AC1E5FFE884979C0"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-context-1728.png",
+    "sha256": "78B1A99CD3644A143D8BA588DDFD3600E58DB9A86F3C205CCEEFC82E13D03ED2"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-context-576.png",
+    "sha256": "03262E73C2772A7882E3601BE5192154C8DAA18DC6FF2F4EACDE21EBEA90C1AF"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-elements-1728x1728.png",
+    "sha256": "55BC1B828A88699A0EAF22DAE1B314D31799DBA5178D7DA5EA6813101B5450DB"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-elements-1728x2400.png",
+    "sha256": "93855DCCFE58A4AD7089C5C1B10087343B776EE94B2BE004CCF4ABF4AD91B5A2"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-elements-native-576x576.png",
+    "sha256": "C1AE5612DD18F9223CD7EBB261B5FDA6BF737D44CD3B711C2016DB20E08A6246"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-elements-native-576x800.png",
+    "sha256": "E8AAD2F0EE3F2F0C46C53FC39AC6891E6DDF5B39D5AB40EA8A39ED00E7F8F3FA"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-layout-alternative-context-1728.png",
+    "sha256": "733E11F6A22E7D8CD914534B3AA6BDB875BCF1EC1E1E2A3F51F978A20EDEF2A3"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-layout-alternative-overlay-576.png",
+    "sha256": "0F02D5FB4F651B3C4E89F25A091773CEB36EF0BD95E7AFFF95C35F09B1D59533"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-modules-compact-1728x432.png",
+    "sha256": "4ACA6EB50BE073C0089513C5A93323658C8A3B24B532459622300F90E1CCDF6B"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-modules-compact-native-576x144.png",
+    "sha256": "1CE2AA7E31C08A51B41A6ADE60E20854CD9F0CD00CDFAF8DE65B0E2DCE9C4AC5"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\hud-overlay-1728.png",
+    "sha256": "D384A6560BDC513C8920FA55768AA9DD2AECD84B1E6B7D198851D69AA80F9B65"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\portrait-candidates-player.png",
+    "sha256": "70C4A7EB8B7FAF3830B6AC80159C0B8F4585246E080D2F1B20D1382E5208D606"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\portrait-candidates-target-32x28.png",
+    "sha256": "EA31F11C87872DB0A44C8C54947B08E1BFFBB97DC2BECD68C30FED8445A83668"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\portrait-candidates-target.png",
+    "sha256": "3C0FDD93D7FABFABEB1CD6C0729CCBAECC90ED5DAB1494F53A10E60157440534"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\portrait-candidates-worker.png",
+    "sha256": "E826D9B13575E48EB4003E3FAC4B001162FD2DE2C5CD17B08DBFCC145C38110D"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\portraits-review-4x.png",
+    "sha256": "C45F0C1227F0B7BDEB7C632E31D900D0BCD9B8994E6E1693A3C5F29EBD461192"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\source-player-frame0-8x.png",
+    "sha256": "393F94E726277EAA223F711D6736D1D73B468ECC2E3A87ADBD2EF3975F1A1F91"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\source-rivet-worker-frame0-8x.png",
+    "sha256": "1FDDA1131C0EA05B02D6A19CA2727128F0EF0CE2D6BB0DDD87BDDBE5075F5031"
+  },
+  {
+    "file": "hud_caldeira_v1\\preview\\source-training-target-frame0-8x.png",
+    "sha256": "300986740A6CE614EC6AD09D6303917F4D04686416D8FF7E574508BF6C582977"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\.gdignore",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\aseprite-generate.stderr.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\aseprite-generate.stdout.log",
+    "sha256": "038E9C61CF903855B53BBE15FC243381B936BFECCD1417933FA9D5ADE8D10661"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\aseprite-production-error.log",
+    "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\aseprite-production.log",
+    "sha256": "A74D4C29B15CFEB191AE04F85A31EA57CF8E05E8F419211E09F22D9ED6BC6294"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\clock-states.aseprite",
+    "sha256": "12955E3EB25339AF38C8A2F501B630489AFD6D32D3E044EBF26ADFCDB7F2BC76"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\font-bitmap.aseprite",
+    "sha256": "308377EED8187B5D415686746269DDD38A677670AE310890D7058728E7A2BC0D"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\gauge-needle-states.aseprite",
+    "sha256": "F7085E4932565FCDC96F0CEC0DFC1104DDBB3E2252FDCCF9466AA4B035FBCC3B"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\generate_hud.lua",
+    "sha256": "A9962AB9A48AF3F18CF769224CD7FCC97429CD0C22419689DDC57FDB80405FA9"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\hud-components.aseprite",
+    "sha256": "CD84D8CCB3093D0A70D0ABBA7771B33FCA58E1BCFC852EBEBC96B932556F5C5E"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\hud-composition-alternative.aseprite",
+    "sha256": "C57BB33A1A6736B1E6ABF44D59EFFDAE02A6FA752197BA0CA242BE115C583C4B"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\hud-composition.aseprite",
+    "sha256": "EE1B873D78543A797B00D6960E0928F6F3E45CA4C3E26B65DB4CFBFF477434FB"
+  },
+  {
+    "file": "hud_caldeira_v1\\source\\hud-portraits.aseprite",
+    "sha256": "1C433C360D9A2CDF386005070F96E4ED31DC1C73145BC1754FB6E0AC83531EB6"
+  }
+]

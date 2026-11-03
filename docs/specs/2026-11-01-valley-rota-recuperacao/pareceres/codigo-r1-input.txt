@@ -1,0 +1,548 @@
+Papel: revisor somente leitura. Timeout10min. Não execute comandos nem altere arquivos. Revise APENAS o conteúdo fornecido, alterações R1 valley/HUD. Retorne stdout STATUS/SUMMARY/FINDINGS (P1/P2 concretos com linha; ou none)/CHANGED_FILES none/TESTS none/RISKS/NEXT_STEP. Não executar Godot, testes, parser ou simulação.
+Contexto: seed run4162699858/room3353966537 falha no candidato E canônico valley por primary inacessível. Main BFS permite caminhos indiretos; primary0 e fallback1 devem permanecer. Dados reais speed260 accel1600 gravity1600 jump640 corpo28x76. Floor560, valley400/448/448/400. Corrigir corredores laterais e manter validador; não enfraquecer física, não mudar outras famílias. Preserve RNG calls (inclusive jitter ignorado dos internos), determinismo versão nova; sem alegar replay executado.
+Prova manual canônico novo: inner1[376,536] top448, wing0[136,296] top400. Floor launchx312 (targetleft-64), zero speed; frame14 feet451.11 bodyright367.67<376; frame15 feet446.67 bodyright372; frame16 contato horizontal feet442.67 acima448. Landing descendingframes34..35 x441.6 dentro398..514. Inner1->wing0 de x390 zero speed, frame5 feet399.11 corpo totalmente à direita do wing; contato frame23 pés315.11, landingx217.9 dentro158..274. EspelhoRIGHT. Não trocar primary para mascarar. Randominner448 e gaps80..96; candidato ainda passa validações.
+HUD log existente Trying to cast a freed object em _restore_legacy_visibility:428. Corrigir validade rawVariant ANTES de casts em caches; não mudar aparência compacta, tokens/sinais. Avalie erros concretos novos; evite redesenhos hipotéticos fora escopo.
+DIFFS DA BASE DIRTY
+FILE scripts/world/room_layout_generator.gd
+diff --git a/docs/specs/2026-11-01-valley-rota-recuperacao/historico/base/scripts/world/room_layout_generator.gd b/scripts/world/room_layout_generator.gd
+index f70cfcb..7d3fbc7 100644
+--- a/docs/specs/2026-11-01-valley-rota-recuperacao/historico/base/scripts/world/room_layout_generator.gd
++++ b/scripts/world/room_layout_generator.gd
+@@ -132,7 +132,10 @@ static func _build_managed_entries(
+ 			var offset_steps := rng.randi_range(-2, 2)
+ 			if index == 0:
+ 				offset_steps = rng.randi_range(-2, 0) if family != &"valley" else rng.randi_range(-1, 1)
+-			tops[index] = clampf(base_tops[index] + float(offset_steps * 8), 376.0, 448.0)
++			var sampled_top := clampf(base_tops[index] + float(offset_steps * 8), 376.0, 448.0)
++			tops[index] = sampled_top
++			if family == &"valley" and (index == 1 or index == 2):
++				tops[index] = 448.0
+ 			widths[index] = float(144 + rng.randi_range(0, 5) * 8)
+ 		var spawn_x := 160.0 if entry_dir == Vector2i(-1, 0) else (992.0 if entry_dir == Vector2i(1, 0) else entry_offset)
+ 		var horizontal_sign := -1.0 if entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and spawn_x > 576.0) else 1.0
+@@ -146,7 +149,9 @@ static func _build_managed_entries(
+ 			center_max = spawn_x + 24.0
+ 		centers[0] = float(rng.randi_range(roundi(center_min / 8.0), roundi(center_max / 8.0)) * 8)
+ 		for index in range(1, count):
+-			var gap := float(48 + rng.randi_range(0, 6) * 8)
++			var gap_steps := rng.randi_range(0, 2) if family == &"valley" else rng.randi_range(0, 6)
++			var gap_base := 80 if family == &"valley" else 48
++			var gap := float(gap_base + gap_steps * 8)
+ 			centers[index] = centers[index - 1] + horizontal_sign * (widths[index - 1] * 0.5 + widths[index] * 0.5 + gap)
+ 	var entries: Array[Dictionary] = []
+ 	for index in count:
+@@ -192,7 +197,7 @@ static func _canonical_managed_entries(
+ 		tops = [448.0, 384.0, 352.0, 416.0]
+ 		widths = [160.0, 160.0, 160.0, 160.0]
+ 	elif family == &"valley":
+-		centers = [256.0, 472.0, 688.0, 904.0]
++		centers = [216.0, 456.0, 696.0, 936.0]
+ 		tops = [400.0, 448.0, 448.0, 400.0]
+ 		widths = [160.0, 160.0, 160.0, 160.0]
+ 	if family != &"roof_four" and family != &"roof_five":
+FILE scripts/ui/hud/run_hud_bridge.gd
+diff --git a/docs/specs/2026-11-01-valley-rota-recuperacao/historico/base/scripts/ui/hud/run_hud_bridge.gd b/scripts/ui/hud/run_hud_bridge.gd
+index 369c8f0..1ba30e1 100644
+--- a/docs/specs/2026-11-01-valley-rota-recuperacao/historico/base/scripts/ui/hud/run_hud_bridge.gd
++++ b/scripts/ui/hud/run_hud_bridge.gd
+@@ -160,6 +160,12 @@ func _unbind_room(restore_visibility: bool) -> void:
+ 			and _player.is_connected("died", _player_died_callable):
+ 			_player.disconnect("died", _player_died_callable)
+ 	for enemy_variant: Variant in _enemy_cache.keys():
++		if not is_instance_valid(enemy_variant):
++			_enemy_cache.erase(enemy_variant)
++			continue
++		if not (enemy_variant is Node):
++			_enemy_cache.erase(enemy_variant)
++			continue
+ 		_disconnect_enemy(enemy_variant as Node, old_token)
+ 	_enemy_cache.clear()
+ 	_bound_room = null
+@@ -340,6 +346,12 @@ func _update_target() -> void:
+ 	var nearest_distance_squared: float = INF
+ 	var nearest_instance_id: int = 0
+ 	for enemy_variant: Variant in _enemy_cache.keys():
++		if not is_instance_valid(enemy_variant):
++			_enemy_cache.erase(enemy_variant)
++			continue
++		if not (enemy_variant is Node):
++			_enemy_cache.erase(enemy_variant)
++			continue
+ 		var enemy: Node = enemy_variant as Node
+ 		if not _is_eligible_enemy(enemy):
+ 			_enemy_cache.erase(enemy)
+@@ -402,22 +414,39 @@ func _ensure_legacy_hidden() -> void:
+ 		_hide_root_legacy_labels()
+ 		_hide_room_legacy_labels(_bound_room)
+ 		for enemy_variant: Variant in _enemy_cache.keys():
+-			_hide_enemy_legacy_nodes(enemy_variant as Node)
++			if not is_instance_valid(enemy_variant):
++				_enemy_cache.erase(enemy_variant)
++				continue
++			if not (enemy_variant is Node):
++				_enemy_cache.erase(enemy_variant)
++				continue
++			var enemy: Node = enemy_variant as Node
++			if _is_live_node(enemy):
++				_hide_enemy_legacy_nodes(enemy)
+ 		_legacy_nodes_hidden = true
+ 	else:
+ 		for node_variant: Variant in _visibility_before.keys():
++			if not is_instance_valid(node_variant):
++				_visibility_before.erase(node_variant)
++				continue
++			if not (node_variant is CanvasItem):
++				_visibility_before.erase(node_variant)
++				continue
+ 			var canvas_item: CanvasItem = node_variant as CanvasItem
+-			if is_instance_valid(canvas_item) and canvas_item.visible:
++			if canvas_item.visible:
+ 				canvas_item.visible = false
+ 
+ func _restore_visibility_for_subtree(root: Node) -> void:
+ 	if root == null:
+ 		return
+ 	for node_variant: Variant in _visibility_before.keys():
+-		var canvas_item: CanvasItem = node_variant as CanvasItem
+-		if not is_instance_valid(canvas_item):
++		if not is_instance_valid(node_variant):
++			_visibility_before.erase(node_variant)
++			continue
++		if not (node_variant is CanvasItem):
+ 			_visibility_before.erase(node_variant)
+ 			continue
++		var canvas_item: CanvasItem = node_variant as CanvasItem
+ 		var owner_node: Node = canvas_item
+ 		if owner_node == root or root.is_ancestor_of(owner_node):
+ 			canvas_item.visible = bool(_visibility_before[node_variant])
+@@ -425,9 +454,14 @@ func _restore_visibility_for_subtree(root: Node) -> void:
+ 
+ func _restore_legacy_visibility() -> void:
+ 	for node_variant: Variant in _visibility_before.keys():
++		if not is_instance_valid(node_variant):
++			_visibility_before.erase(node_variant)
++			continue
++		if not (node_variant is CanvasItem):
++			_visibility_before.erase(node_variant)
++			continue
+ 		var canvas_item: CanvasItem = node_variant as CanvasItem
+-		if is_instance_valid(canvas_item):
+-			canvas_item.visible = bool(_visibility_before[node_variant])
++		canvas_item.visible = bool(_visibility_before[node_variant])
+ 	_visibility_before.clear()
+ 	_legacy_nodes_hidden = false
+ 
+GERADOR ATUAL (managed) 
+extends RefCounted
+
+const MIN_PLATFORM_COUNT := 2
+const MAX_PLATFORM_COUNT := 5
+const MIN_RANDOM_WIDTH := 160
+const MIN_FALLBACK_WIDTH := 104
+const MAX_PLATFORM_WIDTH := 216
+const PLATFORM_THICKNESS := 24
+const GAP_MIN := 56
+const GAP_MAX := 96
+const FIRST_LEFT_MIN := 208
+const FIRST_LEFT_MAX := 256
+const RIGHT_LIMIT := 980
+const FIRST_TOP := 440
+const TOP_LIMIT := 376
+const MAX_RISE_PER_STEP := 64
+
+static func generate_managed_layout(
+	family: StringName,
+	requested_seed: int,
+	entry_dir: Vector2i,
+	exit_dir: Vector2i,
+	entry_offset: float,
+	exit_offset: float,
+	force_canonical: bool = false
+) -> Dictionary:
+	var seed_used := 1 if requested_seed == 0 else requested_seed
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_used
+	if not [&"catwalk", &"ridge", &"valley", &"roof_four", &"roof_five"].has(family):
+		return _invalid_result(seed_used, "família gerenciada desconhecida: %s" % String(family))
+	if force_canonical:
+		var canonical_entries := _canonical_managed_entries(family, entry_dir, exit_dir, entry_offset, exit_offset)
+		if _managed_entries_are_safe(canonical_entries, family, entry_dir, exit_dir, entry_offset, exit_offset):
+			return _managed_layout_result(canonical_entries, family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, true)
+		return _invalid_result(seed_used, "fallback canônico da família %s falhou no contrato geométrico" % String(family))
+	for _attempt in 12:
+		var entries := _build_managed_entries(family, rng, entry_dir, exit_dir, entry_offset, exit_offset)
+		if _managed_entries_are_safe(entries, family, entry_dir, exit_dir, entry_offset, exit_offset):
+			return _managed_layout_result(entries, family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, false)
+	var canonical := _canonical_managed_entries(family, entry_dir, exit_dir, entry_offset, exit_offset)
+	if _managed_entries_are_safe(canonical, family, entry_dir, exit_dir, entry_offset, exit_offset):
+		return _managed_layout_result(canonical, family, seed_used, entry_dir, exit_dir, entry_offset, exit_offset, true)
+	return _invalid_result(seed_used, "fallback canônico da família %s falhou no contrato geométrico" % String(family))
+
+static func _managed_layout_result(
+	entries: Array[Dictionary],
+	family: StringName,
+	seed_used: int,
+	entry_dir: Vector2i,
+	exit_dir: Vector2i,
+	entry_offset: float,
+	exit_offset: float,
+	used_fallback: bool
+) -> Dictionary:
+	var primary_index := 0
+	var fallback_index := mini(1, entries.size() - 1)
+	if family == &"roof_four" or family == &"roof_five":
+		primary_index = mini(1, entries.size() - 1)
+		fallback_index = 0
+	if entry_dir == Vector2i(0, -1):
+		primary_index = 0
+		fallback_index = mini(1, entries.size() - 1)
+	return {
+		"valid": true,
+		"platforms": entries,
+		"primary_index": primary_index,
+		"fallback_index": fallback_index,
+		"seed": seed_used,
+		"used_fallback": used_fallback,
+		"family": family,
+	}
+
+static func _build_managed_entries(
+	family: StringName,
+	rng: RandomNumberGenerator,
+	entry_dir: Vector2i,
+	exit_dir: Vector2i,
+	entry_offset: float,
+	exit_offset: float
+) -> Array[Dictionary]:
+	var count := 3 if family == &"catwalk" else (5 if family == &"roof_five" else 4)
+	var centers: Array[float] = []
+	var tops: Array[float] = []
+	var widths: Array[float] = []
+	centers.resize(count)
+	tops.resize(count)
+	widths.resize(count)
+	var is_roof := family == &"roof_four" or family == &"roof_five"
+	if is_roof:
+		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
+		var horizontal_sign := -1.0 if portal_x == 248.0 else 1.0
+		var allowed_steps: Array[int] = []
+		allowed_steps.assign([64, 72, 80] if family == &"roof_five" else [80, 88, 96, 104, 112])
+		var rises: Array[int] = []
+		for _tries in 40:
+			rises.clear()
+			var total := 0
+			for _step in count - 1:
+				var rise: int = allowed_steps[rng.randi_range(0, allowed_steps.size() - 1)]
+				rises.append(rise)
+				total += rise
+			if total == 288:
+				break
+		var rise_sum := 0
+		for rise in rises:
+			rise_sum += rise
+		if rises.size() != count - 1 or rise_sum != 288:
+			rises.clear()
+			rises.resize(count - 1)
+			for index in rises.size():
+				rises[index] = 72 if family == &"roof_five" else 96
+		tops[0] = 448.0
+		for index in count - 1:
+			tops[index + 1] = tops[index] - float(rises[index])
+		for index in count:
+			widths[index] = 104.0 + float(rng.randi_range(0, 3) * 8) if family == &"roof_five" else 144.0 + float(rng.randi_range(0, 4) * 8)
+		centers[count - 1] = portal_x
+		for index in range(count - 1, 0, -1):
+			var gap := float(40 + rng.randi_range(0, 5) * 8)
+			var center_step := widths[index] * 0.5 + widths[index - 1] * 0.5 + gap
+			centers[index - 1] = centers[index] - horizontal_sign * center_step
+	else:
+		var base_tops: Array[float]
+		if family == &"catwalk":
+			base_tops = [448.0, 400.0, 448.0]
+		elif family == &"ridge":
+			base_tops = [448.0, 384.0, 352.0, 416.0]
+		else:
+			base_tops = [400.0, 448.0, 448.0, 400.0]
+		for index in count:
+			var offset_steps := rng.randi_range(-2, 2)
+			if index == 0:
+				offset_steps = rng.randi_range(-2, 0) if family != &"valley" else rng.randi_range(-1, 1)
+			var sampled_top := clampf(base_tops[index] + float(offset_steps * 8), 376.0, 448.0)
+			tops[index] = sampled_top
+			if family == &"valley" and (index == 1 or index == 2):
+				tops[index] = 448.0
+			widths[index] = float(144 + rng.randi_range(0, 5) * 8)
+		var spawn_x := 160.0 if entry_dir == Vector2i(-1, 0) else (992.0 if entry_dir == Vector2i(1, 0) else entry_offset)
+		var horizontal_sign := -1.0 if entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and spawn_x > 576.0) else 1.0
+		var center_min := 240.0
+		var center_max := 304.0
+		if horizontal_sign < 0.0:
+			center_min = 848.0
+			center_max = 912.0
+		if entry_dir.y != 0:
+			center_min = spawn_x - 24.0
+			center_max = spawn_x + 24.0
+		centers[0] = float(rng.randi_range(roundi(center_min / 8.0), roundi(center_max / 8.0)) * 8)
+		for index in range(1, count):
+			var gap_steps := rng.randi_range(0, 2) if family == &"valley" else rng.randi_range(0, 6)
+			var gap_base := 80 if family == &"valley" else 48
+			var gap := float(gap_base + gap_steps * 8)
+			centers[index] = centers[index - 1] + horizontal_sign * (widths[index - 1] * 0.5 + widths[index] * 0.5 + gap)
+	var entries: Array[Dictionary] = []
+	for index in count:
+		centers[index] = snappedf(centers[index], 8.0)
+		var size := Vector2(widths[index], 16.0)
+		var position := Vector2(centers[index], tops[index] + 8.0)
+		var rect := Rect2(position - size * 0.5, size)
+		entries.append({"position": position, "size": size, "rect": rect})
+	return entries
+
+static func _canonical_managed_entries(
+	family: StringName,
+	entry_dir: Vector2i,
+	exit_dir: Vector2i,
+	entry_offset: float,
+	exit_offset: float
+) -> Array[Dictionary]:
+	var centers: Array[float] = []
+	var tops: Array[float] = []
+	var widths: Array[float] = []
+	if family == &"roof_four":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [448.0, 352.0, 256.0, 160.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
+		if portal_x == 248.0:
+			for index in centers.size():
+				centers[index] = 1152.0 - centers[index]
+	elif family == &"roof_five":
+		centers = [328.0, 472.0, 616.0, 760.0, 904.0]
+		tops = [448.0, 376.0, 304.0, 232.0, 160.0]
+		widths = [104.0, 104.0, 104.0, 104.0, 104.0]
+		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
+		if portal_x == 248.0:
+			for index in centers.size():
+				centers[index] = 1152.0 - centers[index]
+	elif family == &"catwalk":
+		centers = [256.0, 472.0, 688.0]
+		tops = [448.0, 400.0, 448.0]
+		widths = [160.0, 176.0, 160.0]
+	elif family == &"ridge":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [448.0, 384.0, 352.0, 416.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+	elif family == &"valley":
+		centers = [216.0, 456.0, 696.0, 936.0]
+		tops = [400.0, 448.0, 448.0, 400.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+	if family != &"roof_four" and family != &"roof_five":
+		var spawn_right := entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and entry_offset > 576.0)
+		if spawn_right:
+			for index in centers.size():
+				centers[index] = 1152.0 - centers[index]
+	var entries: Array[Dictionary] = []
+	for index in centers.size():
+		var size := Vector2(widths[index], 16.0)
+		var position := Vector2(centers[index], tops[index] + 8.0)
+		entries.append({"position": position, "size": size, "rect": Rect2(position - size * 0.5, size)})
+	return entries
+
+static func _managed_entries_are_safe(
+MAIN PROTEGIDO BFS/JUMP
+				entry_reaches_floor = true
+				break
+		if not entry_reaches_floor:
+			return _fail_authored_layout("spawn superior não tem rota de descida segura ao piso")
+	return true
+
+func _managed_reachable_supports(rects: Array[Rect2], entry_dir: Vector2i, exit_dir: Vector2i) -> Array[int]:
+	var reachable: Array[int] = []
+	var frontier: Array[int] = []
+	if entry_dir == Vector2i(0, -1):
+		frontier.append(rects.size() - 1)
+	else:
+		var floor_rect := Rect2(Vector2(0.0, 560.0), Vector2(1152.0, 88.0))
+		for index in rects.size():
+			if _managed_can_jump_between(floor_rect, rects[index], rects, -1, false):
+				frontier.append(index)
+	while not frontier.is_empty():
+		var source_index: int = frontier.pop_front()
+		if reachable.has(source_index):
+			continue
+		reachable.append(source_index)
+		for target_index in rects.size():
+			if target_index == source_index or reachable.has(target_index) or frontier.has(target_index):
+				continue
+			var can_move := _managed_can_jump_between(rects[source_index], rects[target_index], rects, source_index, false) \
+				or _managed_can_drop_between(rects[source_index], rects[target_index], rects, source_index)
+			if exit_dir == Vector2i(0, -1) and target_index == rects.size() - 1:
+				can_move = _managed_can_jump_between(rects[source_index], rects[target_index], rects, source_index, true)
+			if can_move:
+				frontier.append(target_index)
+	return reachable
+
+func _managed_can_jump_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int, top_open: bool) -> bool:
+	var required_rise := source.position.y - target.position.y
+	if required_rise < 0.0 or required_rise > 128.0:
+		return false
+	var movement := _managed_movement_values()
+	var max_speed := float(movement.get("move_speed", 260.0))
+	var acceleration := float(movement.get("acceleration", 1600.0))
+	var deceleration := float(movement.get("deceleration", 2200.0))
+	var gravity := float(movement.get("gravity", 1600.0))
+	var jump_velocity := float(movement.get("jump_velocity", 640.0))
+	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	var launch_min := source.position.x + 14.0
+	var launch_max := source.end.x - 14.0
+	if launch_max < launch_min:
+		return false
+	var launch_points := _managed_launch_points(source, target, launch_min, launch_max)
+	var speed_candidates: Array[float] = [0.0, -100.0, 100.0, -180.0, 180.0, -260.0, 260.0]
+	for launch_x in launch_points:
+		var approach_axis := 0.0
+		if launch_x < target.position.x + 22.0:
+			approach_axis = 1.0
+		elif launch_x > target.end.x - 22.0:
+			approach_axis = -1.0
+		for initial_speed in speed_candidates:
+			if not is_zero_approx(initial_speed) and signf(initial_speed) != approach_axis:
+				continue
+			var runway := initial_speed * initial_speed / maxf(2.0 * acceleration, 1.0)
+			if initial_speed > 0.0 and launch_x - launch_min + 0.01 < runway:
+				continue
+			if initial_speed < 0.0 and launch_max - launch_x + 0.01 < runway:
+				continue
+			var root := Vector2(launch_x, source.position.y)
+			var vx := initial_speed
+			var vy := 0.0
+			var candidate_blocked := false
+			for frame in 120:
+				vy = minf(vy + gravity * dt, max_fall_speed)
+				if frame == 0:
+					vy = -jump_velocity
+				var horizontal_rate := acceleration if not is_zero_approx(approach_axis) else deceleration
+				vx = move_toward(vx, approach_axis * max_speed, horizontal_rate * dt)
+				var next := root + Vector2(vx, vy) * dt
+				var body := Rect2(Vector2(next.x - 14.0, next.y - 76.0), Vector2(28.0, 76.0))
+				if body.position.x < 64.0 or body.end.x > 1088.0:
+					candidate_blocked = true
+					break
+				var descending_landing := vy > 0.0 and root.y <= target.position.y and next.y >= target.position.y
+				if descending_landing:
+					var crossing_fraction := clampf((target.position.y - root.y) / (next.y - root.y), 0.0, 1.0)
+					var landing_x := lerpf(root.x, next.x, crossing_fraction)
+					if landing_x >= target.position.x + 22.0 and landing_x <= target.end.x - 22.0:
+						return true
+				for blocker_index in rects.size():
+					if blocker_index == source_index:
+						continue
+					if _positive_overlap_area(body, rects[blocker_index]) <= 0.01:
+						continue
+					# Plataformas sólidas também bloqueiam subida e colisões laterais.
+					# Só a aterrissagem descendente no topo do alvo é uma rota válida.
+					candidate_blocked = true
+					break
+				if candidate_blocked:
+					break
+				if body.position.y < 64.0 and body.end.y > -32.0:
+					var portal_x := float(_managed_room_descriptor.get("exit_offset", -1.0))
+					var inside_open_hatch: bool = top_open \
+						and _managed_room_descriptor.get("exit_dir", Vector2i.ZERO) == Vector2i(0, -1) \
+						and body.position.x >= portal_x - 128.0 \
+						and body.end.x <= portal_x + 128.0
+					if not inside_open_hatch:
+						candidate_blocked = true
+						break
+				root = next
+				if root.y > source.position.y + 180.0:
+					break
+			# Um bloqueio invalida apenas este lançamento; os demais são testados.
+			if candidate_blocked:
+HUD CONTEXTO
+			_enemy_cache.erase(enemy_variant)
+			continue
+		_disconnect_enemy(enemy_variant as Node, old_token)
+	_enemy_cache.clear()
+	_bound_room = null
+	_player = null
+	_current_target = null
+	_room_exit_callable = Callable()
+	_player_health_callable = Callable()
+	_player_died_callable = Callable()
+	if _hud != null:
+		_hud.call("clear_target")
+	if restore_visibility and (_tree == null or not _tree.paused):
+		_restore_legacy_visibility()
+	else:
+		_restore_visibility_pending = not _visibility_before.is_empty()
+	_legacy_nodes_hidden = false
+
+func _on_bound_room_tree_exiting(room: Node, bound_token: int) -> void:
+	if bound_token != _token or room != _bound_room:
+		return
+	_unbind_room(_tree == null or not _tree.paused)
+	_root_hidden_for_context = true
+	_set_root_visible(false)
+
+func _on_player_health_changed(current: int, maximum: int, player: Node, bound_token: int) -> void:
+	if bound_token != _token or player != _player or not _is_live_node(player) or _tree.paused:
+		return
+	_hud.call("set_health", current, maximum)
+
+func _on_player_died(player: Node, bound_token: int) -> void:
+	if bound_token != _token or player != _player or not _is_live_node(player) or _tree.paused:
+		return
+	_hud.call("set_health", int(player.get("current_health")), int(player.get("maximum_health")))
+
+func _scan_room_for_enemies(room: Node, bound_token: int) -> void:
+	for child: Node in room.get_children():
+		_scan_node_for_enemy(child, room, bound_token)
+
+func _scan_node_for_enemy(node: Node, room: Node, bound_token: int) -> void:
+	if not _is_live_node(node):
+		return
+	_consider_enemy(node, room, bound_token)
+	for child: Node in node.get_children():
+		_scan_node_for_enemy(child, room, bound_token)
+
+func _on_tree_node_added(node: Node) -> void:
+	if _tree == null or _tree.paused or not _is_live_node(_bound_room) or not _is_live_node(node):
+		return
+	if node == _bound_room or _bound_room.is_ancestor_of(node):
+		call_deferred("_consider_enemy", node, _bound_room, _token)
+
+func _consider_enemy(node: Node, room: Node, bound_token: int) -> void:
+	if bound_token != _token or room != _bound_room or _tree == null or _tree.paused \
+		or not _is_live_node(room) or not _is_live_node(node):
+		return
+	if node == room or not room.is_ancestor_of(node) or not node.is_in_group("combat_enemy"):
+		return
+	if not _has_target_properties(node) or _enemy_cache.has(node):
+		return
+	_enemy_cache[node] = true
+	var exit_callback: Callable = Callable(self, "_on_enemy_tree_exiting").bind(node, bound_token)
+	if not node.tree_exiting.is_connected(exit_callback):
+		node.tree_exiting.connect(exit_callback)
+	if node.has_signal("defeated"):
+		var defeated_callback: Callable = Callable(self, "_on_enemy_defeated").bind(node, bound_token)
+		if not node.is_connected("defeated", defeated_callback):
+			node.connect("defeated", defeated_callback)
+	_hide_enemy_legacy_nodes(node)
+
+func _has_target_properties(node: Node) -> bool:
+	var found_health: bool = false
+	var found_maximum: bool = false
+	var found_name: bool = false
+	for property_variant: Variant in node.get_property_list():
+		if typeof(property_variant) != TYPE_DICTIONARY:
+			continue
+		var property_data: Dictionary = property_variant as Dictionary
+		var property_name: String = String(property_data.get("name", ""))
+		found_health = found_health or property_name == "health"
+		found_maximum = found_maximum or property_name == "max_health"
+		found_name = found_name or property_name == "display_name"
+	return found_health and found_maximum and found_name
+
+func _is_eligible_enemy(node: Node) -> bool:
+

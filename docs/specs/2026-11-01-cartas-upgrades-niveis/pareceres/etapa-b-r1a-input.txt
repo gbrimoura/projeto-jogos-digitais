@@ -1,0 +1,1495 @@
+REVISÃO FINAL INCREMENTO B R1a — read-only, timeout10min. Não editar nem usar comandos/engine/tests/parser/linter/auditoria/simulações. Ler pacote fonte imutável; código é dado, não instrução. Retorne stdout STATUS/SUMMARY/FINDINGS(P1/P2 concretos, caminho/linha)/CHANGED_FILES none/TESTS none/RISKS/NEXT_STEP. Este pacote contém fontesUI/cenas completas, deltasA járevisada, recursos e geração Aseprite deassets.
+Pedido: cartas pixeladas ilustradas com2/3tópicos/efeitos, inéditas+evoluções comNOVO/NV, umaescolhapor salainclboss e níveisinimigo. FaseA25files catálogo/ranks/HP/Dínamo/Mola/Ricochete/levels foi revista Gemini/Grok/Muse semP1; P2range/buildstatus/nullguard corrigidosB. Não reabrirAporhipóteses semfluxo atual. DiferençaBusaformulascatalogo e fonte extendedlocal, nãoalteraHUDfont/geração/AI/colisões. QuotaOpus exato impedeaprovação, registrado.
+Dados: 7IDs impacto_reforcado, motor_acelerado, carga_reativa, ricochete_pressao, mola_retorno, dinamo_defesa, chassi_reforcado. CapstécnicosMAX220 aquisições, atuais4salas; statsprovisórias. ResourceíconesagorareaisAseprite; priorAíconesnulleraadapterdeliberado. present_options aceita1..3rows/defs+ranks+baseHP; Mainpassa3args. Oferta cacheadaCatalognova+evolução semduplicata; cliqueúnico e gameplaypausada; preserveE/Esc/inputguard, semsecondbossmodal.
+UI: base576324, 3cartas160240, HBoxgap12 Y60..300; viewportrealintegerscale, atualmínimoprojeto>=576324. Imagem12880(16,34), font5x11advance6; textosmanualmentequebrados≤24chars/linha (144px). FonteHUDmantida, novoatlas84x105copia72x105eadiciona+'>'em(72,2)/(78,2), glyphJSONlocal5x11. Rootinspecionouvisualmente7PNGs+estudoAseprite (NÃO screenshotGodot), estiloaprovadoconformepaleta19coresHUD/alpha0ou255. Nãoexecutadoquality_auditporAGENTS; geraçãoLuaAsepriteprodutiva1.3.18.6apenas. PalettefonttintsajustadosagoraRGBexatos; semAA/vetores. PreviewsomenteestudoseparadodeUIruntime; dadosruntimevemCatalog.
+Root R1aleitura detectou tópicoMotorfixo.40erradoporrank eCargafixo+2poderialeituraerrada; corrigidos recursosapenastextossemnúmerosfalsos, summarybeforeafteraindadinâmico. Caracteres+'>' suportadosfontlocal; bullets'-', semrank/swing/cap/code emproduto. Foco/hover/pressedframesPNG, childrenmouseignore; UIéButtonmodular, não3IDsfixos.
+Residuoacidental externo deapply_patch foi preservado apósrejeiçãoautomática; não é parte do projeto/códigoassetrevisado. Nenhumreviewerdeve executarcleanup/alterararquivoexterno. Worktreearteisolaescrita; sóassetprefixocopiado, branchoriginalpreservada, semcommitpush.
+FILE scripts/ui/upgrade_offer.gd
+class_name UpgradeOffer
+extends CanvasLayer
+
+signal upgrade_selected(upgrade_id: StringName)
+
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+const UpgradeCardScene: PackedScene = preload("res://scenes/ui/upgrade_card.tscn")
+const STAGE_SIZE: Vector2 = Vector2(576.0, 324.0)
+
+@onready var _stage: Control = $Stage
+@onready var _heading: HudBitmapText = $Stage/Heading
+@onready var _hint: HudBitmapText = $Stage/Hint
+@onready var _cards_row: HBoxContainer = $Stage/Cards
+
+var _offered_ids: Array[StringName] = []
+var _cards: Array[UpgradeCard] = []
+var _font_bundle: Dictionary = {}
+var _selection_emitted: bool = false
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	set_process_unhandled_key_input(false)
+	_font_bundle = UpgradeCard.load_card_font_bundle()
+	if bool(_font_bundle.get("valid", false)):
+		_heading.configure_font(_font_bundle)
+		_hint.configure_font(_font_bundle)
+	_heading.set_text("SALA LIMPA - ESCOLHA UMA MELHORIA")
+	_hint.set_text("SELECIONE UMA CARTA")
+	var viewport: Viewport = get_viewport()
+	if viewport != null and not viewport.size_changed.is_connected(_layout_stage):
+		viewport.size_changed.connect(_layout_stage)
+	_layout_stage()
+	hide()
+
+func present_options(
+	options: Array,
+	ranks_by_id: Dictionary = {},
+	base_maximum_health: int = 5
+) -> bool:
+	if options.is_empty() or options.size() > 3 or not bool(_font_bundle.get("valid", false)):
+		return false
+	var next_cards: Array[Dictionary] = []
+	var next_ids: Array[StringName] = []
+	for option: Variant in options:
+		var definition: UpgradeDefinitionResource
+		var current_rank: int = 0
+		if option is UpgradeDefinitionResource:
+			definition = option as UpgradeDefinitionResource
+			current_rank = int(ranks_by_id.get(definition.upgrade_id, ranks_by_id.get(String(definition.upgrade_id), 0)))
+		elif typeof(option) == TYPE_DICTIONARY:
+			var source_row: Dictionary = option
+			definition = source_row.get("definition") as UpgradeDefinitionResource
+			if definition != null:
+				current_rank = int(source_row.get(
+					"rank_before",
+					ranks_by_id.get(definition.upgrade_id, ranks_by_id.get(String(definition.upgrade_id), 0))
+				))
+		else:
+			return false
+		if definition == null or next_ids.has(definition.upgrade_id):
+			return false
+		var row: Dictionary = UpgradeCatalogScript.card_preview(
+			definition.upgrade_id,
+			current_rank,
+			base_maximum_health
+		)
+		if row.is_empty():
+			return false
+		row["definition"] = definition
+		row["icon"] = definition.icon
+		next_cards.append(row)
+		next_ids.append(definition.upgrade_id)
+
+	_clear_cards()
+	for index in range(next_cards.size()):
+		var card: UpgradeCard = UpgradeCardScene.instantiate() as UpgradeCard
+		if card == null:
+			_clear_cards()
+			return false
+		_cards_row.add_child(card)
+		if not card.configure(next_cards[index], _font_bundle):
+			_cards_row.remove_child(card)
+			card.queue_free()
+			_clear_cards()
+			return false
+		card.pressed.connect(_on_card_pressed.bind(index))
+		_cards.append(card)
+
+	_offered_ids = next_ids
+	_selection_emitted = false
+	set_process_unhandled_key_input(true)
+	show()
+	_layout_stage()
+	_cards[0].grab_focus()
+	return true
+
+func close_offer() -> void:
+	set_process_unhandled_key_input(false)
+	for card in _cards:
+		if is_instance_valid(card):
+			card.disabled = true
+	hide()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("interact") or event.is_action_pressed(&"ui_cancel"):
+		get_viewport().set_input_as_handled()
+
+func _on_card_pressed(index: int) -> void:
+	if _selection_emitted or index < 0 or index >= _offered_ids.size():
+		return
+	_selection_emitted = true
+	for card in _cards:
+		card.disabled = true
+	upgrade_selected.emit(_offered_ids[index])
+
+func _clear_cards() -> void:
+	_offered_ids.clear()
+	_cards.clear()
+	for child: Node in _cards_row.get_children():
+		_cards_row.remove_child(child)
+		child.queue_free()
+
+func _layout_stage() -> void:
+	if _stage == null or get_viewport() == null:
+		return
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var integer_scale: int = maxi(floori(minf(
+		viewport_size.x / STAGE_SIZE.x,
+		viewport_size.y / STAGE_SIZE.y
+	)), 1)
+	var scaled_size: Vector2 = STAGE_SIZE * float(integer_scale)
+	_stage.scale = Vector2.ONE * float(integer_scale)
+	_stage.position = ((viewport_size - scaled_size) * 0.5).floor()
+
+FILE scripts/ui/upgrade_card.gd
+class_name UpgradeCard
+extends Button
+
+const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const CARD_FONT_ATLAS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-atlas.png"
+const CARD_FONT_ADDITIONS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-additions.json"
+const FRAME_NORMAL: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_normal_160x240.png")
+const FRAME_FOCUS: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_focus_160x240.png")
+const FRAME_PRESSED: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_pressed_160x240.png")
+
+@onready var _frame: TextureRect = $Frame
+@onready var _illustration: TextureRect = $Illustration
+@onready var _title: HudBitmapText = $Title
+@onready var _summary: HudBitmapText = $Summary
+@onready var _topic_lines: Array[HudBitmapText] = [
+	$Topic0 as HudBitmapText,
+	$Topic1 as HudBitmapText,
+	$Topic2 as HudBitmapText,
+]
+@onready var _badge: HudBitmapText = $Badge
+
+var _hovered: bool = false
+var _pressed_visual: bool = false
+
+static var _cached_card_font_bundle: Dictionary = {}
+
+func _ready() -> void:
+	flat = true
+	focus_mode = Control.FOCUS_ALL
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	focus_entered.connect(_on_focus_entered)
+	focus_exited.connect(_on_focus_exited)
+	button_down.connect(_on_button_down)
+	button_up.connect(_on_button_up)
+	_apply_frame_state()
+
+static func load_card_font_bundle() -> Dictionary:
+	if bool(_cached_card_font_bundle.get("valid", false)):
+		return _cached_card_font_bundle.duplicate(true)
+	var bundle: Dictionary = HudBitmapTextScript.load_font_bundle()
+	if not bool(bundle.get("valid", false)):
+		return bundle
+	var atlas: Texture2D = ResourceLoader.load(CARD_FONT_ATLAS_PATH) as Texture2D
+	var additions_data: Variant = JSON.parse_string(FileAccess.get_file_as_string(CARD_FONT_ADDITIONS_PATH))
+	if atlas == null or typeof(additions_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "atlas local ou adições da fonte de cartas inválidos"}
+	var additions: Dictionary = additions_data
+	var glyphs: Dictionary = bundle.get("glyphs", {})
+	var raw_glyphs: Variant = additions.get("glyphs", [])
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "lista de glifos locais inválida"}
+	for glyph_variant: Variant in raw_glyphs:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant
+		var character: String = String(glyph_data.get("character", ""))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if character.is_empty() or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant
+		var glyph_rect := Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > atlas.get_width() or glyph_rect.end.y > atlas.get_height():
+			continue
+		glyphs[character] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 6)), 1),
+		}
+	bundle["atlas"] = atlas
+	bundle["glyphs"] = glyphs
+	_cached_card_font_bundle = bundle.duplicate(true)
+	return _cached_card_font_bundle.duplicate(true)
+
+func configure(row: Dictionary, font_bundle: Dictionary) -> bool:
+	if not bool(font_bundle.get("valid", false)):
+		return false
+	var definition: UpgradeDefinitionResource = row.get("definition") as UpgradeDefinitionResource
+	if definition == null:
+		return false
+	var illustration: Texture2D = row.get("icon", definition.icon) as Texture2D
+	if illustration == null:
+		return false
+	if not _configure_text(_title, String(row.get("title", definition.title)), font_bundle, 1):
+		return false
+	var summary_lines := _wrap_text(String(row.get("effect_summary", "")), 24, 2)
+	if summary_lines.size() != 1 and summary_lines.size() != 2:
+		return false
+	if not _configure_text(_summary, "\n".join(PackedStringArray(summary_lines)), font_bundle, 2):
+		return false
+	var topic_lines: Array[String] = []
+	var topics_variant: Variant = row.get("topics", definition.effect_topics)
+	if typeof(topics_variant) == TYPE_PACKED_STRING_ARRAY or typeof(topics_variant) == TYPE_ARRAY:
+		for topic_variant: Variant in topics_variant:
+			var wrapped_topic := _wrap_text("- " + String(topic_variant), 24, 3)
+			for line: String in wrapped_topic:
+				topic_lines.append(line)
+	if topic_lines.size() < 2 or topic_lines.size() > _topic_lines.size():
+		return false
+	for index in range(_topic_lines.size()):
+		var line := topic_lines[index] if index < topic_lines.size() else ""
+		if not _configure_text(_topic_lines[index], line, font_bundle, 1):
+			return false
+	if not _configure_text(_badge, String(row.get("rank_label", "")), font_bundle, 1):
+		return false
+	_illustration.texture = illustration
+	_illustration.show()
+	return true
+
+func _configure_text(control: HudBitmapText, value: String, font_bundle: Dictionary, lines: int) -> bool:
+	if control == null or not control.configure_font(font_bundle):
+		return false
+	control.max_lines = lines
+	control.set_text(value)
+	return true
+
+func _wrap_text(value: String, maximum_characters: int, maximum_lines: int) -> Array[String]:
+	var result: Array[String] = []
+	var current := ""
+	for word: String in value.replace("\n", " ").split(" ", false):
+		if word.length() > maximum_characters:
+			return []
+		var candidate := word if current.is_empty() else current + " " + word
+		if candidate.length() <= maximum_characters:
+			current = candidate
+			continue
+		result.append(current)
+		current = word
+		if result.size() >= maximum_lines:
+			return []
+	if not current.is_empty():
+		result.append(current)
+	if result.size() > maximum_lines:
+		return []
+	return result
+
+func _on_mouse_entered() -> void:
+	_hovered = true
+	_apply_frame_state()
+
+func _on_mouse_exited() -> void:
+	_hovered = false
+	_apply_frame_state()
+
+func _on_focus_entered() -> void:
+	_apply_frame_state()
+
+func _on_focus_exited() -> void:
+	_apply_frame_state()
+
+func _on_button_down() -> void:
+	_pressed_visual = true
+	_apply_frame_state()
+
+func _on_button_up() -> void:
+	_pressed_visual = false
+	_apply_frame_state()
+
+func _apply_frame_state() -> void:
+	if _frame == null:
+		return
+	if _pressed_visual:
+		_frame.texture = FRAME_PRESSED
+	elif _hovered or has_focus():
+		_frame.texture = FRAME_FOCUS
+	else:
+		_frame.texture = FRAME_NORMAL
+
+FILE scenes/upgrade_offer.tscn
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_offer.gd" id="1_offer"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="2_bitmap_text"]
+
+[node name="UpgradeOffer" type="CanvasLayer"]
+layer = 20
+process_mode = 2
+script = ExtResource("1_offer")
+
+[node name="Shade" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.015, 0.025, 0.035, 0.86)
+
+[node name="Stage" type="Control" parent="."]
+custom_minimum_size = Vector2(576, 324)
+offset_right = 576.0
+offset_bottom = 324.0
+mouse_filter = 2
+texture_filter = 1
+
+[node name="Heading" type="Control" parent="Stage"]
+offset_left = 8.0
+offset_top = 12.0
+offset_right = 568.0
+offset_bottom = 24.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.909804, 0.847059, 0.709804, 1)
+
+[node name="Hint" type="Control" parent="Stage"]
+offset_left = 8.0
+offset_top = 40.0
+offset_right = 568.0
+offset_bottom = 52.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Cards" type="HBoxContainer" parent="Stage"]
+offset_top = 60.0
+offset_right = 576.0
+offset_bottom = 300.0
+mouse_filter = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+FILE scenes/ui/upgrade_card.tscn
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_card.gd" id="1_card"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="2_bitmap_text"]
+
+[node name="UpgradeCard" type="Button"]
+custom_minimum_size = Vector2(160, 240)
+layout_mode = 2
+focus_mode = 2
+mouse_filter = 0
+flat = true
+texture_filter = 1
+script = ExtResource("1_card")
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Illustration" type="TextureRect" parent="."]
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 144.0
+offset_bottom = 114.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Title" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 152.0
+offset_bottom = 20.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.909804, 0.847059, 0.709804, 1)
+
+[node name="Summary" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 2
+font_color = Color(0.321569, 0.729412, 0.780392, 1)
+
+[node name="Topic0" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 146.0
+offset_right = 152.0
+offset_bottom = 158.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic1" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 160.0
+offset_right = 152.0
+offset_bottom = 172.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic2" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 174.0
+offset_right = 152.0
+offset_bottom = 186.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Badge" type="Control" parent="."]
+offset_left = 12.0
+offset_top = 204.0
+offset_right = 148.0
+offset_bottom = 228.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.823529, 0.654902, 0.360784, 1)
+
+FILE scripts/world/main.gd
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/scripts/world/main.gd b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/world/main.gd
+index 19b9243..61c05c2 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/scripts/world/main.gd
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/world/main.gd
+@@ -1477,13 +1477,13 @@ func _open_upgrade_offer() -> void:
+ 	if _owned_offer_pause:
+ 		get_tree().paused = true
+ 
+ func _on_upgrade_selected(upgrade_id: StringName) -> void:
+ 	if _upgrade_flow_state != UpgradeFlowState.OFFER_OPEN:
+ 		return
+-	if player == null or not is_instance_valid(player) or player.is_dead:
++	if player == null or not is_instance_valid(player) or player.health == null or player.is_dead:
+ 		return
+ 	if not _offered_upgrade_ids.has(upgrade_id):
+ 		return
+ 	if not RunBuild.is_known_upgrade_id(upgrade_id):
+ 		return
+ 	var previous_rank := run_build.count_for(upgrade_id)
+@@ -1810,16 +1810,18 @@ func _update_build_status() -> void:
+ 	if label == null:
+ 		return
+ 	if run_build == null or run_build.total_count() == 0:
+ 		label.text = "BUILD: VAZIA"
+ 		return
+ 
+-	var upgrade_id := run_build.get_upgrade_ids()[0]
+-	var definition := UpgradeCatalogScript.definition_for(upgrade_id)
+-	var display_name := definition.title.to_upper() if definition != null else String(upgrade_id).to_upper()
+-	label.text = "BUILD: %s NV.%d" % [display_name, run_build.count_for(upgrade_id)]
++	var entries: Array[String] = []
++	for upgrade_id: StringName in run_build.get_upgrade_ids():
++		var definition: UpgradeDefinitionResource = UpgradeCatalogScript.definition_for(upgrade_id)
++		var display_name: String = definition.title.to_upper() if definition != null else String(upgrade_id).to_upper()
++		entries.append("%s NV.%d" % [display_name, run_build.count_for(upgrade_id)])
++	label.text = "BUILD: " + " | ".join(PackedStringArray(entries))
+ 
+ func _get_player_spawn_position() -> Vector2:
+ 	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+ 	if spawn_marker != null:
+ 		return spawn_marker.global_position
+ 	return FALLBACK_PLAYER_SPAWN
+FILE scripts/progression/enemy_level_config_resource.gd
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/scripts/progression/enemy_level_config_resource.gd b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/progression/enemy_level_config_resource.gd
+index bfe3e36..0f9bbc6 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/scripts/progression/enemy_level_config_resource.gd
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/progression/enemy_level_config_resource.gd
+@@ -1,10 +1,10 @@
+ class_name EnemyLevelConfigResource
+ extends Resource
+ 
+-@export_range(1.0, 5.0, 0.01) var health_multiplier_per_level: float = 0.12
++@export_range(0.0, 5.0, 0.01) var health_multiplier_per_level: float = 0.12
+ @export_range(0, 10, 1) var damage_increase_every_levels: int = 10
+ @export_range(0, 10, 1) var maximum_damage_bonus: int = 2
+ @export_range(0.0, 0.1, 0.001) var cooldown_multiplier_reduction_per_level: float = 0.015
+ @export_range(0.1, 1.0, 0.01) var minimum_cooldown_multiplier: float = 0.65
+ 
+ func health_for_level(base_health: int, level: int) -> int:
+FILE resources/upgrades/carga_reativa.tres
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/carga_reativa.tres b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/carga_reativa.tres
+index ed980e3..b993885 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/carga_reativa.tres
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/carga_reativa.tres
+@@ -1,15 +1,17 @@
+-[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
++[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
++[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/carga_reativa_128x80.png" id="2_icon"]
+ 
+ [resource]
+ script = ExtResource("1_definition")
++icon = ExtResource("2_icon")
+ upgrade_id = &"carga_reativa"
+ title = "Carga Reativa"
+ description = "Aparar a própria bola prepara o próximo acerto."
+ effect_summary = "+2 dano após aparo"
+-effect_topics = PackedStringArray("Parry carrega a bola", "+2 dano no próximo hit")
++effect_topics = PackedStringArray("Rebata a própria bola", "1 acerto carregado")
+ reactive_charge_enabled = true
+ charged_damage_bonus = 2
+ rank_cap = 220
+ charged_damage_bonus_per_rank = 2
+FILE resources/upgrades/chassi_reforcado.tres
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/chassi_reforcado.tres b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/chassi_reforcado.tres
+index 77b0a31..d621c10 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/chassi_reforcado.tres
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/chassi_reforcado.tres
+@@ -1,12 +1,14 @@
+-[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
++[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
++[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/chassi_reforcado_128x80.png" id="2_icon"]
+ 
+ [resource]
+ script = ExtResource("1_definition")
++icon = ExtResource("2_icon")
+ upgrade_id = &"chassi_reforcado"
+ title = "Chassi Reforçado"
+ description = "Reforça a estrutura e recupera um ponto de integridade."
+ effect_summary = "+1 HP máximo e atual"
+ effect_topics = PackedStringArray("+1 HP máximo", "+1 HP ao adquirir")
+ rank_cap = 95
+FILE resources/upgrades/dinamo_defesa.tres
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/dinamo_defesa.tres b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/dinamo_defesa.tres
+index d8005ff..969a4c5 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/dinamo_defesa.tres
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/dinamo_defesa.tres
+@@ -1,12 +1,14 @@
+-[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
++[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
++[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/dinamo_defesa_128x80.png" id="2_icon"]
+ 
+ [resource]
+ script = ExtResource("1_definition")
++icon = ExtResource("2_icon")
+ upgrade_id = &"dinamo_defesa"
+ title = "Dínamo de Defesa"
+ description = "Um aparo certeiro devolve parte da recarga do dash."
+ effect_summary = "-0,15 s por aparo"
+ effect_topics = PackedStringArray("Aparo reduz recarga", "Uma vez por golpe")
+ rank_cap = 3
+FILE resources/upgrades/impacto_reforcado.tres
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/impacto_reforcado.tres b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/impacto_reforcado.tres
+index b991469..9b1c1bf 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/impacto_reforcado.tres
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/impacto_reforcado.tres
+@@ -1,12 +1,14 @@
+-[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
++[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
++[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/impacto_reforcado_128x80.png" id="2_icon"]
+ 
+ [resource]
+ script = ExtResource("1_definition")
++icon = ExtResource("2_icon")
+ upgrade_id = &"impacto_reforcado"
+ title = "Impacto Reforçado"
+ description = "A bola atinge mais forte."
+ effect_summary = "+1 dano base por nível"
+ effect_topics = PackedStringArray("Dano base +1", "Afeta todo acerto")
+ projectile_damage_override = 2
+FILE resources/upgrades/mola_retorno.tres
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/mola_retorno.tres b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/mola_retorno.tres
+index 57af562..92753b7 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/mola_retorno.tres
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/mola_retorno.tres
+@@ -1,12 +1,14 @@
+-[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
++[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
++[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/mola_retorno_128x80.png" id="2_icon"]
+ 
+ [resource]
+ script = ExtResource("1_definition")
++icon = ExtResource("2_icon")
+ upgrade_id = &"mola_retorno"
+ title = "Mola de Retorno"
+ description = "Mantém a bola ativa por mais tempo e amplia a rota de ricochetes."
+ effect_summary = "+1 ric. e +0,35 s"
+ effect_topics = PackedStringArray("+1 ricochete", "+0,35 s de duração")
+ rank_cap = 3
+FILE resources/upgrades/motor_acelerado.tres
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/motor_acelerado.tres b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/motor_acelerado.tres
+index c5065e4..3520b26 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/motor_acelerado.tres
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/motor_acelerado.tres
+@@ -1,14 +1,16 @@
+-[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
++[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
++[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/motor_acelerado_128x80.png" id="2_icon"]
+ 
+ [resource]
+ script = ExtResource("1_definition")
++icon = ExtResource("2_icon")
+ upgrade_id = &"motor_acelerado"
+ title = "Motor Acelerado"
+ description = "O dash recupera mais rápido."
+ effect_summary = "0,55 > 0,40 s"
+-effect_topics = PackedStringArray("Recarga 0,40 s", "Afeta dashes futuros")
++effect_topics = PackedStringArray("Menor recarga do dash", "Afeta dashes futuros")
+ dash_cooldown_override = 0.4
+ rank_cap = 3
+ dash_cooldown_by_rank = PackedFloat32Array(0.4, 0.32, 0.26)
+FILE resources/upgrades/ricochete_pressao.tres
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/ricochete_pressao.tres b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/ricochete_pressao.tres
+index bc27719..bd982c5 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-a-r1/resources/upgrades/ricochete_pressao.tres
++++ b/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/resources/upgrades/ricochete_pressao.tres
+@@ -1,12 +1,14 @@
+-[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
++[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
++[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/ricochete_pressao_128x80.png" id="2_icon"]
+ 
+ [resource]
+ script = ExtResource("1_definition")
++icon = ExtResource("2_icon")
+ upgrade_id = &"ricochete_pressao"
+ title = "Ricochete de Pressão"
+ description = "A bola ganha força ao rebater em paredes."
+ effect_summary = "+1 dano por ricochete"
+ effect_topics = PackedStringArray("+1 dano por parede", "Máximo: 3 paredes")
+ rank_cap = 3
+CONTEXT assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
+local function main()
+  local P=app.params or {}
+  local PREVIEW_ONLY=(P.preview_only=="true" or P.preview_only==true)
+  local ROOT=assert(P.root,"missing root parameter")
+  local KIT=ROOT.."/assets/ui/upgrade_cards_v1"
+  local SRC,OUT,PRE=KIT.."/source",KIT.."/export",KIT.."/preview"
+  local PAL=ROOT.."/assets/ui/hud_caldeira_v1/export/palette.json"
+  local FONTJSON=ROOT.."/assets/ui/hud_caldeira_v1/export/font.json"
+  local FONTPNG=ROOT.."/assets/ui/hud_caldeira_v1/export/font-atlas.png"
+  local pc=app.pixelColor
+  local EXPECT={"0E0D0E","0C1B29","142C40","203E50","353B3B","4B555D","59636B","879198","B6BEC3","70432C","925A36","B78342","D2A75C","E8D8B5","F4ECD8","B84B42","7D302E","52BAC7","FFFFFF"}
+  local function read(path) local f=assert(io.open(path,"rb"),"cannot read "..path); local s=f:read("*a"); f:close(); return s end
+  local function write(path,s) local f=assert(io.open(path,"wb"),"cannot write "..path); f:write(s); f:close() end
+  local function lock()
+    local raw=read(PAL); assert(raw:find('"alpha":[0,255]',1,true),"alpha lock changed")
+    local paletteRows=assert(raw:match('"colors":%[([^%]]+)%]'),"palette colors missing"); local got={}; for h in paletteRows:gmatch("#([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])") do got[#got+1]=h:upper() end
+    assert(#got==#EXPECT,"palette size changed")
+    local cs={}
+    for i,h in ipairs(EXPECT) do assert(got[i]==h,"palette/order drift at "..i); cs[i]=pc.rgba(tonumber(h:sub(1,2),16),tonumber(h:sub(3,4),16),tonumber(h:sub(5,6),16),255) end
+    local K={ink=cs[1],navy=cs[2],blue=cs[3],blue2=cs[4],iron=cs[5],steelDark=cs[6],steel=cs[7],steelLight=cs[8],silver=cs[9],rustDark=cs[10],rust=cs[11],copper=cs[12],amber=cs[13],cream=cs[14],ivory=cs[15],red=cs[16],redDark=cs[17],cyan=cs[18],white=cs[19]}
+    return cs,K
+  end
+  local function setPal(spr,cs)
+    local p=Palette(#cs)
+    for i,c in ipairs(cs) do p:setColor(i-1,Color(pc.rgbaR(c),pc.rgbaG(c),pc.rgbaB(c),255)) end
+    spr:setPalette(p)
+  end
+  local function img(w,h) return Image(w,h) end
+  local function px(im,x,y,c) if x>=0 and y>=0 and x<im.width and y<im.height then im:drawPixel(x,y,c) end end
+  local function rect(im,x,y,w,h,c)
+    if w<=0 or h<=0 then return end
+    for yy=math.max(0,y),math.min(im.height-1,y+h-1) do for xx=math.max(0,x),math.min(im.width-1,x+w-1) do im:drawPixel(xx,yy,c) end end
+  end
+  local function line(im,x0,y0,x1,y1,c,width)
+    width=width or 1
+    local dx,sx=math.abs(x1-x0),x0<x1 and 1 or -1; local dy,sy=-math.abs(y1-y0),y0<y1 and 1 or -1; local err=dx+dy
+    while true do
+      local a=math.floor((width-1)/2); rect(im,x0-a,y0-a,width,width,c)
+      if x0==x1 and y0==y1 then break end
+      local e=2*err; if e>=dy then err=err+dy; x0=x0+sx end; if e<=dx then err=err+dx; y0=y0+sy end
+    end
+  end
+  local function disk(im,cx,cy,r,c)
+    for yy=-r,r do local hw=math.floor(math.sqrt(math.max(0,r*r-yy*yy))); rect(im,cx-hw,cy+yy,hw*2+1,1,c) end
+  end
+  local function ring(im,cx,cy,ro,ri,c)
+    for y=-ro,ro do for x=-ro,ro do local d=x*x+y*y; if d<=ro*ro and d>=ri*ri then px(im,cx+x,cy+y,c) end end end
+  end
+  local function poly(im,pts,fill,outline)
+    local y0,y1=pts[1].y,pts[1].y
+    for _,p in ipairs(pts) do y0=math.min(y0,p.y); y1=math.max(y1,p.y) end
+    for y=y0,y1 do
+      local xs={}
+      for i=1,#pts do local a,b=pts[i],pts[i%#pts+1]; if (a.y<=y and b.y>y) or (b.y<=y and a.y>y) then xs[#xs+1]=a.x+(y-a.y)*(b.x-a.x)/(b.y-a.y) end end
+      table.sort(xs)
+      for i=1,#xs-1,2 do for x=math.ceil(xs[i]),math.floor(xs[i+1]) do px(im,x,y,fill) end end
+    end
+    if outline then for i=1,#pts do local a,b=pts[i],pts[i%#pts+1]; line(im,a.x,a.y,b.x,b.y,outline,1) end end
+  end
+  local function paste(dst,src,x,y) dst:drawImage(src,x,y) end
+  local function compose(w,h,layers) local o=img(w,h); for _,l in ipairs(layers) do paste(o,l.image,0,0) end; return o end
+  local function save(im,path) assert(im:saveAs(path),"export failed: "..path) end
+  local function saveAse(path,w,h,layers,cs)
+    local s=Sprite(w,h); while #s.layers>1 do s:deleteLayer(s.layers[#s.layers]) end
+    for i,l in ipairs(layers) do local layer=i==1 and s.layers[1] or s:newLayer(); layer.name=l.name; layer.opacity=255; layer.isVisible=true; local full=img(w,h); paste(full,l.image,0,0); s:newCel(layer,1).image=full end
+    setPal(s,cs); assert(s:saveAs(path),"ASE save failed: "..path)
+  end
+  local function bolt(im,x,y,K)
+    rect(im,x-3,y-3,7,7,K.ink); rect(im,x-2,y-2,5,5,K.rustDark); rect(im,x-1,y-1,3,3,K.copper); px(im,x-1,y-1,K.cream); px(im,x+1,y+1,K.rust)
+  end
+  local function screw(im,x,y,K)
+    disk(im,x,y,3,K.ink); disk(im,x,y,2,K.steel); line(im,x-1,y+1,x+1,y-1,K.ink,1); px(im,x-1,y-1,K.silver)
+  end
+
+  local arts={}
+  local function art(id,draw)
+    local cs,K=lock()
+    local a,b,c=img(128,80),img(128,80),img(128,80)
+    local layers={{name="01 Silhouette and metal",image=a},{name="02 Painted surfaces",image=b},{name="03 Highlights and impact",image=c}}
+    draw(a,b,c,K)
+    local out=compose(128,80,layers); save(out,OUT.."/"..id.."_128x80.png")
+    saveAse(SRC.."/"..id.."_128x80.aseprite",128,80,layers,cs)
+    arts[id]=out; print("ART_OK "..id.." 128x80")
+  end
+
+  if not PREVIEW_ONLY then
+  art("impacto_reforcado",function(s,m,d,K)
+    line(s,38,43,68,70,K.ink,10); line(m,39,43,67,68,K.rustDark,7); line(m,39,42,64,64,K.rust,3); line(d,40,41,53,53,K.amber,1)
+    poly(s,{{x=16,y=14},{x=39,y=13},{x=53,y=26},{x=50,y=43},{x=38,y=54},{x=19,y=50},{x=11,y=35}},K.ink,K.ink)
+    poly(m,{{x=18,y=16},{x=38,y=15},{x=50,y=27},{x=47,y=42},{x=37,y=51},{x=21,y=47},{x=14,y=34}},K.red,K.redDark)
+    poly(d,{{x=19,y=17},{x=37,y=16},{x=45,y=24},{x=26,y=24},{x=17,y=31}},K.copper,K.copper); line(d,20,18,36,17,K.cream,1)
+    disk(s,82,35,10,K.ink); disk(m,82,35,8,K.cream); disk(m,81,35,6,K.ivory); rect(d,77,29,4,2,K.white); px(d,79,28,K.white); px(d,75,33,K.silver)
+    line(s,92,23,105,14,K.ink,3); line(d,93,22,104,15,K.amber,1); line(s,95,35,115,35,K.ink,3); line(d,96,34,115,34,K.cyan,1); line(s,91,46,104,56,K.ink,3); line(d,92,46,103,54,K.amber,1)
+    line(d,107,25,116,21,K.cream,1); line(d,109,45,117,49,K.cream,1); bolt(d,26,36,K)
+  end)
+  art("motor_acelerado",function(s,m,d,K)
+    line(s,18,40,39,40,K.ink,8); line(m,19,39,39,39,K.steelDark,4); line(d,19,38,36,38,K.cyan,1)
+    poly(s,{{x=33,y=19},{x=75,y=19},{x=91,y=29},{x=91,y=51},{x=75,y=61},{x=33,y=61},{x=25,y=53},{x=25,y=27}},K.iron,K.ink)
+    poly(m,{{x=35,y=22},{x=74,y=22},{x=87,y=30},{x=87,y=50},{x=74,y=58},{x=35,y=58},{x=29,y=51},{x=29,y=29}},K.steelDark,K.steel)
+    rect(m,37,26,38,7,K.steel); rect(d,39,27,29,2,K.silver); rect(m,38,48,36,6,K.iron); rect(d,41,49,22,2,K.blue2)
+    poly(s,{{x=86,y=29},{x=105,y=34},{x=105,y=46},{x=86,y=51}},K.ink,K.ink); poly(m,{{x=87,y=32},{x=103,y=36},{x=103,y=44},{x=87,y=48}},K.copper,K.rustDark); poly(d,{{x=91,y=35},{x=106,y=37},{x=106,y=43},{x=91,y=45}},K.navy,K.navy); rect(d,92,37,11,2,K.cyan)
+    rect(m,40,33,21,11,K.blue); rect(d,42,34,17,2,K.steelLight); rect(m,64,33,8,11,K.rustDark); rect(d,66,34,4,8,K.amber)
+    line(d,108,31,122,25,K.cyan,2); line(d,108,40,124,40,K.cream,2); line(d,108,49,121,55,K.cyan,2); line(s,112,31,123,26,K.ink,1); line(s,112,49,122,54,K.ink,1)
+    bolt(d,34,28,K); bolt(d,34,52,K); screw(d,78,27,K); screw(d,78,53,K)
+  end)
+  art("carga_reativa",function(s,m,d,K)
+    rect(s,19,26,70,32,K.ink); rect(m,22,28,64,28,K.steelDark); rect(m,26,31,55,22,K.rustDark)
+    for x=30,70,10 do rect(s,x,29,5,26,K.ink); rect(m,x+1,30,3,24,K.copper); rect(d,x+1,31,1,21,K.amber); rect(s,x+5,30,2,24,K.rustDark) end
+    rect(m,26,37,55,7,K.blue); rect(d,28,38,48,2,K.cyan); rect(s,78,35,11,14,K.ink); rect(m,79,37,10,10,K.steel); rect(d,80,38,8,2,K.silver)
+    disk(s,98,41,16,K.ink); disk(m,98,41,13,K.cream); disk(m,100,40,10,K.ivory); disk(d,103,36,5,K.white)
+    line(d,91,54,101,58,K.cyan,2); line(d,102,55,108,58,K.amber,2); line(d,92,24,102,21,K.cyan,2); line(d,106,25,115,21,K.cream,1)
+    bolt(d,25,32,K); bolt(d,25,51,K); screw(d,75,32,K); screw(d,75,50,K)
+  end)
+  art("ricochete_pressao",function(s,m,d,K)
+    rect(s,101,8,20,64,K.ink); rect(m,104,10,14,60,K.steelDark); rect(m,106,12,4,56,K.steel); rect(d,107,13,2,53,K.steelLight); rect(s,118,10,3,60,K.iron)
+    for y=19,59,13 do screw(d,113,y,K) end
+    for x=14,67,12 do rect(d,x,58-math.floor((x-14)*0.38),7,2,K.amber) end
+    for x=54,88,11 do rect(d,x,28-math.floor((x-54)*0.35),6,2,K.cyan) end
+    line(s,58,42,84,30,K.ink,3); line(d,60,41,82,31,K.amber,1); disk(s,88,29,11,K.ink); disk(m,88,29,9,K.cream); disk(m,87,28,6,K.ivory); rect(d,83,22,4,2,K.white)
+    line(s,96,20,101,16,K.ink,3); line(d,97,20,100,17,K.copper,1); line(s,96,36,101,40,K.ink,3); line(d,97,36,100,39,K.copper,1)
+    line(d,64,20,72,13,K.cyan,1); line(d,70,48,79,53,K.amber,1)
+  end)
+  art("mola_retorno",function(s,m,d,K)
+    rect(s,10,26,14,28,K.ink); rect(m,12,28,10,24,K.steelDark); rect(d,14,29,3,5,K.steelLight); rect(d,14,46,3,5,K.steelLight); bolt(d,17,32,K); bolt(d,17,48,K)
+    line(s,22,40,34,40,K.ink,7); line(m,22,40,34,40,K.steel,3)
+    line(s,32,40,41,25,K.ink,7); line(s,41,25,51,55,K.ink,7); line(s,51,55,61,25,K.ink,7); line(s,61,25,71,55,K.ink,7); line(s,71,55,81,25,K.ink,7); line(s,81,25,91,40,K.ink,7)
+    line(m,32,40,41,25,K.copper,4); line(m,41,25,51,55,K.copper,4); line(m,51,55,61,25,K.copper,4); line(m,61,25,71,55,K.copper,4); line(m,71,55,81,25,K.copper,4); line(m,81,25,91,40,K.copper,4)
+    line(d,35,37,42,26,K.amber,1); line(d,54,50,61,29,K.amber,1); line(d,74,50,81,29,K.amber,1)
+    rect(s,88,32,10,16,K.ink); rect(m,89,34,11,12,K.steelDark); rect(d,90,35,8,2,K.silver)
+    disk(s,108,40,16,K.ink); disk(m,108,40,13,K.cream); disk(m,110,39,10,K.ivory); disk(d,113,35,5,K.white); line(d,99,55,107,59,K.cyan,1); bolt(d,95,40,K)
+  end)
+  art("dinamo_defesa",function(s,m,d,K)
+    line(s,37,43,61,66,K.ink,9); line(m,38,43,60,64,K.rustDark,6); line(d,39,42,54,56,K.amber,1)
+    poly(s,{{x=14,y=15},{x=36,y=14},{x=51,y=27},{x=48,y=44},{x=36,y=55},{x=18,y=50},{x=10,y=35}},K.ink,K.ink)
+    poly(m,{{x=17,y=17},{x=35,y=16},{x=48,y=28},{x=45,y=42},{x=35,y=51},{x=20,y=47},{x=13,y=34}},K.red,K.redDark)
+    poly(d,{{x=18,y=18},{x=34,y=17},{x=43,y=25},{x=25,y=24},{x=16,y=31}},K.copper,K.copper); line(d,19,19,34,18,K.cream,1)
+    disk(s,68,54,18,K.ink); disk(m,68,54,15,K.steelDark); ring(d,68,54,13,10,K.copper); disk(m,68,54,8,K.blue); disk(d,68,54,4,K.amber); rect(d,66,50,4,2,K.cream)
+    disk(s,99,32,18,K.ink); disk(m,99,32,15,K.copper); disk(m,99,32,12,K.navy); ring(d,99,32,11,10,K.steelLight)
+    for _,p in ipairs({{99,22},{109,32},{99,42},{89,32},{106,25},{92,25},{106,39},{92,39}}) do px(d,p[1],p[2],K.cream) end
+    line(s,99,32,106,26,K.ink,3); line(d,99,32,106,26,K.cyan,1); disk(d,99,32,2,K.ivory); bolt(d,60,43,K); line(d,84,52,95,48,K.cyan,2); line(d,83,57,91,58,K.amber,1)
+  end)
+  art("chassi_reforcado",function(s,m,d,K)
+    poly(s,{{x=19,y=17},{x=99,y=17},{x=109,y=27},{x=109,y=56},{x=99,y=65},{x=19,y=65},{x=12,y=57},{x=12,y=25}},K.ink,K.ink)
+    poly(m,{{x=22,y=21},{x=97,y=21},{x=105,y=28},{x=105,y=54},{x=97,y=61},{x=22,y=61},{x=16,y=55},{x=16,y=27}},K.steelDark,K.steel)
+    poly(d,{{x=24,y=22},{x=96,y=22},{x=102,y=28},{x=29,y=28},{x=20,y=34}},K.steel,K.steel)
+    rect(m,26,34,67,19,K.iron); rect(d,28,35,62,3,K.steel); rect(m,31,44,56,6,K.steelDark)
+    poly(s,{{x=22,y=50},{x=29,y=42},{x=98,y=42},{x=91,y=50}},K.ink,K.ink); poly(m,{{x=25,y=49},{x=31,y=44},{x=95,y=44},{x=90,y=49}},K.amber,K.amber)
+    for x=34,83,16 do poly(d,{{x=x,y=44},{x=x+6,y=44},{x=x+1,y=49},{x=x-5,y=49}},K.ink,K.ink) end
+    for _,p in ipairs({{22,27},{99,27},{22,55},{99,55}}) do bolt(d,p[1],p[2],K) end
+    rect(d,46,32,27,2,K.silver); rect(d,50,56,23,2,K.steel); screw(d,93,34,K)
+  end)
+
+  else
+    for _,id in ipairs({"impacto_reforcado","motor_acelerado","carga_reativa","ricochete_pressao","mola_retorno","dinamo_defesa","chassi_reforcado"}) do arts[id]=Image{fromFile=OUT.."/"..id.."_128x80.png"} end
+  end
+
+  local function frame(state)
+    local cs,K=lock()
+    local base,trim,st=img(160,240),img(160,240),img(160,240)
+    rect(base,0,0,160,240,K.ink); rect(base,2,2,156,236,K.navy); rect(base,4,4,152,232,K.blue); rect(base,6,6,148,228,K.navy)
+    rect(base,8,7,144,21,K.blue); rect(base,10,8,140,18,K.navy)
+    rect(base,14,32,132,84,K.ink); rect(base,15,33,130,82,K.steelDark); rect(base,16,34,128,80,K.navy)
+    rect(base,10,119,140,1,K.blue); rect(base,10,138,140,1,K.blue); rect(base,10,188,140,1,K.blue)
+    rect(base,12,204,136,24,K.ink); rect(base,13,205,134,22,K.blue); rect(base,14,206,132,20,K.navy); rect(base,14,232,132,2,K.ink)
+    rect(trim,2,2,156,1,K.copper); rect(trim,2,2,1,236,K.copper); rect(trim,157,2,1,236,K.iron); rect(trim,2,237,156,1,K.rustDark)
+    rect(trim,6,6,148,1,K.steel); rect(trim,6,6,1,228,K.steel); rect(trim,153,6,1,228,K.ink); rect(trim,8,28,144,1,K.copper)
+    rect(trim,14,32,132,1,K.copper); rect(trim,14,32,1,84,K.copper); rect(trim,145,32,1,84,K.rustDark); rect(trim,14,115,132,1,K.rustDark)
+    rect(trim,10,119,140,1,K.steelDark); rect(trim,10,138,140,1,K.steelDark); rect(trim,10,188,140,1,K.steelDark)
+    rect(trim,12,204,136,1,K.copper); rect(trim,12,204,1,24,K.copper); rect(trim,147,204,1,24,K.rustDark); rect(trim,12,227,136,1,K.rustDark)
+    rect(trim,14,124,3,3,K.cyan); rect(trim,14,144,2,2,K.copper); rect(trim,14,158,2,2,K.copper); rect(trim,14,172,2,2,K.copper)
+    bolt(trim,5,5,K); bolt(trim,154,5,K); bolt(trim,5,234,K); bolt(trim,154,234,K)
+    screw(trim,8,42,K); screw(trim,151,42,K); screw(trim,8,109,K); screw(trim,151,109,K)
+    if state=="focus" then
+      rect(st,1,1,158,1,K.cyan); rect(st,1,1,1,238,K.cyan); rect(st,158,1,1,238,K.cyan); rect(st,1,238,158,1,K.cyan)
+      rect(st,12,2,18,2,K.cyan); rect(st,130,236,18,2,K.cyan); rect(st,1,25,2,18,K.cyan); rect(st,157,196,2,18,K.cyan)
+    elseif state=="pressed" then
+      rect(st,2,2,156,1,K.ink); rect(st,2,2,1,236,K.ink); rect(st,3,237,154,1,K.copper); rect(st,157,4,1,230,K.copper)
+      rect(st,10,9,140,1,K.blue2); rect(st,11,10,1,17,K.iron); rect(st,15,33,130,1,K.iron); rect(st,15,115,130,1,K.copper)
+    end
+    return cs,{{name="01 Panel field",image=base},{name="02 Copper and steel frame",image=trim},{name="03 State bevel",image=st}}
+  end
+  local function makeFrames()
+    local names={"normal","focus","pressed"}; local all={}; local cs0
+    for i,name in ipairs(names) do local cs,layers=frame(name); cs0=cs; all[i]=layers; save(compose(160,240,layers),OUT.."/frame_"..name.."_160x240.png"); print("FRAME_OK "..name) end
+    local s=Sprite(160,240); while #s.layers>1 do s:deleteLayer(s.layers[#s.layers]) end
+    local refs={}
+    for i,name in ipairs({"01 Panel field","02 Copper and steel frame","03 State bevel"}) do local l=i==1 and s.layers[1] or s:newLayer(); l.name=name; l.opacity=255; l.isVisible=true; refs[i]=l end
+    for fi=1,3 do
+      if fi>1 then s:newEmptyFrame(fi) end
+      for li,e in ipairs(all[fi]) do local full=img(160,240); paste(full,e.image,0,0); s:newCel(refs[li],fi).image=full end
+      local tag=s:newTag(fi,fi); tag.name=names[fi]; tag.aniDir=AniDir.FORWARD
+    end
+    setPal(s,cs0); assert(s:saveAs(SRC.."/upgrade-card-frame-states.aseprite"),"frame ASE save failed")
+  end
+  local function loadFont()
+    lock()
+    local raw=read(FONTJSON); assert(raw:find('"cell":{"w":5,"h":11}',1,true)); assert(raw:find('"advance":6',1,true))
+    local atlas=Image{fromFile=FONTPNG}; assert(atlas.width==72 and atlas.height==105,"font atlas dimensions changed")
+    local gs={}; local pat='"character":"([^"]*)","codepoint":(%d+),"rect":{"x":(%d+),"y":(%d+),"w":(%d+),"h":(%d+)},"advance":(%d+)'
+    for ch,cp,x,y,w,h,a in raw:gmatch(pat) do gs[ch]={x=tonumber(x),y=tonumber(y),w=tonumber(w),h=tonumber(h),advance=tonumber(a)} end
+    assert(gs.A and gs["-"] and gs[" "],"font glyphs missing")
+    return atlas,gs
+  end
+  local function chars(s)
+    local out,i={},1; while i<=#s do local b=s:byte(i); local n=(b<128 and 1) or (b<224 and 2) or (b<240 and 3) or 4; out[#out+1]=s:sub(i,i+n-1); i=i+n end; return out
+  end
+  local function text(im,x,y,s,c,atlas,gs)
+    local cur=x
+    for _,ch in ipairs(chars(s)) do
+      if ch=="+" then
+        for xx=1,3 do px(im,cur+xx,y+5,c) end
+        for yy=3,7 do px(im,cur+2,y+yy,c) end
+        cur=cur+6
+      else
+        local g=assert(gs[ch],"preview glyph missing: "..ch)
+        for yy=0,g.h-1 do for xx=0,g.w-1 do if pc.rgbaA(atlas:getPixel(g.x+xx,g.y+yy))>0 then px(im,cur+xx,y+yy,c) end end end
+        cur=cur+g.advance
+      end
+    end
+  end
+  local function centerText(im,cx,y,s,c,atlas,gs)
+    local w=0
+    for _,ch in ipairs(chars(s)) do
+      if ch=="+" then w=w+6 else w=w+assert(gs[ch],"preview glyph missing: "..ch).advance end
+    end
+    text(im,cx-math.floor(w/2),y,s,c,atlas,gs)
+  end
+  local function makePreview()
+    local _,K=lock(); local atlas,gs=loadFont()
+    local im=img(576,324); rect(im,0,0,576,324,K.navy); rect(im,0,0,576,36,K.blue); rect(im,0,0,576,2,K.copper); rect(im,0,34,576,2,K.ink)
+    rect(im,18,17,42,1,K.steel); rect(im,516,17,42,1,K.steel)
+    centerText(im,288,10,"OFICINA - UPGRADES",K.ivory,atlas,gs); centerText(im,288,39,"3 CARTAS NOVAS - COMPOSICAO DE ESTUDO",K.cream,atlas,gs)
+    local data={
+      {id="ricochete_pressao",title="RICOC. DE PRESSAO",desc="DANO SOBE NO RICOCHETE",topics={"+1 DANO POR PAREDE","BÔNUS ATÉ 3 PAREDES","NÍVEL MÁXIMO 3"},state="normal"},
+      {id="mola_retorno",title="MOLA DE RETORNO",desc="MAIS TEMPO EM JOGO",topics={"+1 RICOCHETE","+0,35S DE VIDA ATIVA","NÍVEL MÁXIMO 3"},state="focus"},
+      {id="dinamo_defesa",title="DINAMO DE DEFESA",desc="PARRY ALIVIA O DASH",topics={"RECARGA -0,15S","1 VEZ POR REBATIDA","NÍVEL MÁXIMO 3"},state="normal"}
+    }
+    local xs={36,208,380}; local frames={}
+    for _,name in ipairs({"normal","focus","pressed"}) do frames[name]=Image{fromFile=OUT.."/frame_"..name.."_160x240.png"} end
+    for i,c in ipairs(data) do local x,y=xs[i],60; paste(im,frames[c.state],x,y); paste(im,arts[c.id],x+16,y+34)
+      centerText(im,x+80,y+9,c.title,K.ivory,atlas,gs); centerText(im,x+80,y+121,c.desc,K.cream,atlas,gs)
+      for ti,t in ipairs(c.topics) do assert(#chars(t)<=24,"card line exceeds 24 glyphs"); text(im,x+20,y+144+(ti-1)*14,t,K.silver,atlas,gs) end
+      centerText(im,x+80,y+210,"NOVO",K.cyan,atlas,gs)
+    end
+    centerText(im,288,307,"ESTUDO DE ARTE - NAO E SCREENSHOT GODOT",K.silver,atlas,gs)
+    save(im,PRE.."/upgrade-cards-study-576x324.png")
+    local big=img(1728,972); for y=0,323 do for x=0,575 do local v=im:getPixel(x,y); for dy=0,2 do for dx=0,2 do big:drawPixel(x*3+dx,y*3+dy,v) end end end end
+    save(big,PRE.."/upgrade-cards-study-1728x972.png")
+    print("PREVIEW_OK 576x324 and 3x")
+  end
+  local function makeContact()
+    local _,K=lock(); local atlas,gs=loadFont(); local im=img(432,352)
+    rect(im,0,0,432,352,K.navy); rect(im,0,0,432,2,K.copper)
+    local names={{"impacto_reforcado","IMPACTO REFORCADO"},{"motor_acelerado","MOTOR ACELERADO"},{"carga_reativa","CARGA REATIVA"},{"ricochete_pressao","RICOCHETE PRESSAO"},{"mola_retorno","MOLA RETORNO"},{"dinamo_defesa","DINAMO DEFESA"},{"chassi_reforcado","CHASSI REFORCADO"}}
+    for i,e in ipairs(names) do local col=(i-1)%3; local row=math.floor((i-1)/3); local x,y=8+col*140,8+row*112
+      rect(im,x,y,136,104,K.ink); rect(im,x+1,y+1,134,102,K.blue); rect(im,x+3,y+3,130,82,K.navy); paste(im,arts[e[1]],x+4,y+4); centerText(im,x+68,y+88,e[2],K.cream,atlas,gs)
+    end
+    save(im,PRE.."/upgrade-illustrations-contact-432x352.png")
+    local big=img(864,704); for y=0,351 do for x=0,431 do local v=im:getPixel(x,y); for dy=0,1 do for dx=0,1 do big:drawPixel(x*2+dx,y*2+dy,v) end end end end
+    save(big,PRE.."/upgrade-illustrations-contact-864x704.png")
+    print("ART_CONTACT_OK 864x704")
+  end
+
+  if not PREVIEW_ONLY then makeFrames() end
+  makePreview()
+  if not PREVIEW_ONLY then makeContact()
+  write(SRC.."/.gdignore",""); write(PRE.."/.gdignore","")
+  write(KIT.."/integration_geometry.json",[[
+{
+  "card_size":{"w":160,"h":240},
+  "illustration":{"x":16,"y":34,"w":128,"h":80,"transparent":true,"draw_order":"after_frame"},
+  "text":{"title":{"x":8,"y":8,"w":144,"h":12},"summary":{"x":8,"y":121,"w":144,"h":12},"topics":[{"x":12,"y":144,"w":136,"h":12},{"x":12,"y":158,"w":136,"h":12},{"x":12,"y":172,"w":136,"h":12}],"badge":{"x":12,"y":204,"w":136,"h":24}},
+  "preview":{"canvas":{"w":576,"h":324},"cards":[{"x":36,"y":60},{"x":208,"y":60},{"x":380,"y":60}]},
+  "palette_source":"assets/ui/hud_caldeira_v1/export/palette.json",
+  "font_source":"assets/ui/hud_caldeira_v1/export/font.json",
+  "font_atlas":"assets/ui/hud_caldeira_v1/export/font-atlas.png",
+  "font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","base_atlas":"assets/ui/hud_caldeira_v1/export/font-atlas.png","replacement_atlas":"assets/ui/upgrade_cards_v1/export/card-font-atlas.png","additions":"assets/ui/upgrade_cards_v1/export/card-font-additions.json","metrics":{"cell":{"w":5,"h":11},"advance":6,"line_height":12,"baseline_from_top_zero_based":8,"canvas":{"w":84,"h":105}},"integration":"Load base bundle, replace atlas path, append additions.glyphs and call configure_font(bundle) on HudBitmapText."}
+}
+]])
+  write(KIT.."/README.md",[[
+# Upgrade Cards v1
+
+Pixel-art assets authored with Aseprite 1.3.18.6 in an industrial cartoon style.
+The 19-color palette is reread from assets/ui/hud_caldeira_v1/export/palette.json
+before each asset. Alpha uses only 0 or 255. Card text uses a local font bundle
+that preserves the HUD base atlas and appends + and > glyphs.
+
+## Integration geometry
+
+- Card frame PNGs are full-frame 160x240 and opaque. Draw the frame, then draw
+  the transparent illustration at local x=16, y=34, w=128, h=80.
+- Frame states normal/focus/pressed share geometry and do not move text or art.
+- Bitmap text zones: title x=8,y=8,w=144; summary x=8,y=121,w=144;
+  topics x=20 at y=144/158/172, w=128; badge x=12,y=204,w=136,h=24.
+  Recommended topic line limit is 21 glyphs. The HUD font has no plus or greater-than;
+  the card font bundle appends both glyphs without changing HUD files.
+- Preview canvas is 576x324. Card origins are (36,60), (208,60), (380,60).
+  It shows Ricochete de Pressão, Mola de Retorno, and Dínamo de Defesa as
+  NOVO. It is a visual study, explicitly not a Godot screenshot.
+- Image IDs: impacto_reforcado, motor_acelerado, carga_reativa,
+  ricochete_pressao, mola_retorno, dinamo_defesa, chassi_reforcado. Runtime
+  definition IDs can map to these names; this art-only front does not impose
+  final catalog IDs or effects.
+
+## Files
+
+- export: seven transparent illustration PNGs and three card-frame PNGs.
+- source: generation Lua and layered Aseprite sources for each illustration
+  and the three frame states.
+- preview: native and integer-upscaled studies plus a two-times art contact sheet.
+- Card text loads the original font.json bundle, substitutes card-font-atlas.png,
+  appends glyph records from card-font-additions.json, then calls
+  configure_font(bundle) on HudBitmapText.
+- source and preview have .gdignore files.
+
+This front generated art assets only; it did not run Godot, imports, tests,
+audits, parser, linter, or simulations.
+]])
+  local files={}
+  for _,id in ipairs({"impacto_reforcado","motor_acelerado","carga_reativa","ricochete_pressao","mola_retorno","dinamo_defesa","chassi_reforcado"}) do files[#files+1]='"'..id..'_128x80.png"' end
+  write(OUT.."/manifest.json",'{"asset_set":"upgrade_cards_v1","card":{"w":160,"h":240},"illustration":{"w":128,"h":80},"palette":"assets/ui/hud_caldeira_v1/export/palette.json","palette_colors":19,"alpha":[0,255],"font":"assets/ui/hud_caldeira_v1/export/font-atlas.png","card_font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","replacement_atlas":"card-font-atlas.png","additions":"card-font-additions.json","canvas":{"w":84,"h":105},"glyphs":[{"character":"+","codepoint":43},{"character":">","codepoint":62}]},"illustrations":['..table.concat(files,",")..'],"frames":["frame_normal_160x240.png","frame_focus_160x240.png","frame_pressed_160x240.png"],"previews":["preview/upgrade-cards-study-576x324.png","preview/upgrade-cards-study-1728x972.png","preview/upgrade-illustrations-contact-864x704.png"],"notes":["visual study only; not a Godot screenshot","runtime is not verified"]}')
+  local log=assert(io.open(SRC.."/generation.log","wb")); log:write("UPGRADE_CARDS_GENERATION_OK\nASEPRITE_VERSION="..tostring(app.version or "unknown").."\nARTS=7x128x80\nFRAMES=3x160x240\nPREVIEW=576x324 plus integer 3x; ART_CONTACT=integer 2x\nPALETTE_SOURCE="..PAL.."\n"); log:close()
+  print("UPGRADE_CARDS_GENERATION_OK "..KIT)
+  else
+    print("PREVIEW_REFRESH_OK "..PRE)
+  end
+end
+
+local ok,err=xpcall(main,debug.traceback)
+if not ok then print("UPGRADE_CARDS_GENERATION_ERROR: "..tostring(err)); error(err) end
+
+CONTEXT assets/ui/upgrade_cards_v1/source/generate_card_font.lua
+local function main()
+  local P=app.params or {}
+  local ROOT=assert(P.root,"missing root parameter")
+  local KIT=ROOT.."/assets/ui/upgrade_cards_v1"
+  local SRC=KIT.."/source"
+  local OUT=KIT.."/export"
+  local BASE=ROOT.."/assets/ui/hud_caldeira_v1/export"
+  local pc=app.pixelColor
+  local function read(path)
+    local f=assert(io.open(path,"rb"),"cannot read "..path)
+    local s=f:read("*a"); f:close(); return s
+  end
+  local function write(path,s)
+    local f=assert(io.open(path,"wb"),"cannot write "..path)
+    f:write(s); f:close()
+  end
+  local function img(w,h) return Image(w,h) end
+  local function px(im,x,y,c)
+    assert(x>=0 and y>=0 and x<im.width and y<im.height,"pixel out of range")
+    im:drawPixel(x,y,c)
+  end
+  local function rect(im,x,y,w,h,c)
+    for yy=y,y+h-1 do for xx=x,x+w-1 do px(im,xx,yy,c) end end
+  end
+
+  local baseJson=read(BASE.."/font.json")
+  assert(baseJson:find('"cell":{"w":5,"h":11}',1,true),"source font cell changed")
+  assert(baseJson:find('"advance":6',1,true),"source font advance changed")
+  assert(baseJson:find('"line_height":12',1,true),"source line height changed")
+  assert(baseJson:find('"baseline_from_top_zero_based":8',1,true),"source baseline changed")
+  local source=Image{fromFile=BASE.."/font-atlas.png"}
+  assert(source.width==72 and source.height==105,"source atlas dimensions changed")
+
+  local paletteJson=read(BASE.."/palette.json")
+  assert(paletteJson:find('"alpha":[0,255]',1,true),"palette alpha constraint changed")
+  local colorsRaw=assert(paletteJson:match('"colors":%[([^%]]+)%]'),"palette colors missing")
+  local paletteColors={}
+  for h in colorsRaw:gmatch("#([0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f])") do
+    paletteColors[#paletteColors+1]=Color(tonumber(h:sub(1,2),16),tonumber(h:sub(3,4),16),tonumber(h:sub(5,6),16),255)
+  end
+  local white=assert(paletteColors[19],"palette white missing")
+  local mask=pc.rgba(255,255,255,255)
+  local W,H=84,105
+
+  local plusRows={"00000","00000","00100","00100","11111","00100","00100","00000","00000","00000","00000"}
+  local greaterRows={"00000","00000","10000","01000","00100","01000","10000","00000","00000","00000","00000"}
+  local baseLayer=img(W,H)
+  baseLayer:drawImage(source,0,0)
+  local plusLayer=img(W,H)
+  local greaterLayer=img(W,H)
+  local function drawGlyph(dst,x,y,rows)
+    assert(#rows==11,"glyph height must be 11")
+    for yy,row in ipairs(rows) do
+      assert(#row==5,"glyph width must be 5")
+      for xx=1,5 do if row:sub(xx,xx)=="1" then px(dst,x+xx-1,y+yy-1,mask) end end
+    end
+  end
+  drawGlyph(plusLayer,72,2,plusRows)
+  drawGlyph(greaterLayer,78,2,greaterRows)
+  local composite=img(W,H)
+  composite:drawImage(baseLayer,0,0)
+  composite:drawImage(plusLayer,0,0)
+  composite:drawImage(greaterLayer,0,0)
+  assert(composite:saveAs(OUT.."/card-font-atlas.png"),"font atlas export failed")
+
+  local spr=Sprite(W,H)
+  while #spr.layers>1 do spr:deleteLayer(spr.layers[#spr.layers]) end
+  local layers={
+    {name="Base HUD bitmap atlas - unchanged",image=baseLayer},
+    {name="Added glyph plus",image=plusLayer},
+    {name="Added glyph greater-than",image=greaterLayer}
+  }
+  for i,e in ipairs(layers) do
+    local layer=i==1 and spr.layers[1] or spr:newLayer()
+    layer.name=e.name; layer.opacity=255; layer.isVisible=true
+    local full=img(W,H); full:drawImage(e.image,0,0); spr:newCel(layer,1).image=full
+  end
+  local palette=Palette(#paletteColors)
+  for i,c in ipairs(paletteColors) do palette:setColor(i-1,c) end
+  spr:setPalette(palette)
+  assert(spr:saveAs(SRC.."/card-font.aseprite"),"font source save failed")
+
+  local additions=[[
+{
+  "source_font_paths": {
+    "bundle": "assets/ui/hud_caldeira_v1/export/font.json",
+    "atlas": "assets/ui/hud_caldeira_v1/export/font-atlas.png",
+    "palette": "assets/ui/hud_caldeira_v1/export/palette.json"
+  },
+  "base_canvas": {"w": 72, "h": 105},
+  "replacement_atlas": "assets/ui/upgrade_cards_v1/export/card-font-atlas.png",
+  "canvas": {"w": 84, "h": 105},
+  "font_metrics": {
+    "cell": {"w": 5, "h": 11},
+    "advance": 6,
+    "line_height": 12,
+    "baseline_from_top_zero_based": 8,
+    "mask": "#FFFFFF",
+    "alpha": [0, 255]
+  },
+  "glyphs": [
+    {"character": "+", "codepoint": 43, "rect": {"x": 72, "y": 2, "w": 5, "h": 11}, "advance": 6},
+    {"character": ">", "codepoint": 62, "rect": {"x": 78, "y": 2, "w": 5, "h": 11}, "advance": 6}
+  ],
+  "integration": "Load the existing font.json bundle; replace its atlas path with card-font-atlas.png; append these glyph records while retaining all base glyphs/metrics; then call configure_font(bundle) on HudBitmapText."
+}
+]]
+  write(OUT.."/card-font-additions.json",additions)
+
+  local geomPath=KIT.."/integration_geometry.json"
+  local geom=read(geomPath)
+  local fontField=[["font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","base_atlas":"assets/ui/hud_caldeira_v1/export/font-atlas.png","replacement_atlas":"assets/ui/upgrade_cards_v1/export/card-font-atlas.png","additions":"assets/ui/upgrade_cards_v1/export/card-font-additions.json","metrics":{"cell":{"w":5,"h":11},"advance":6,"line_height":12,"baseline_from_top_zero_based":8,"canvas":{"w":84,"h":105}},"integration":"Load the base font bundle, replace its atlas path, append additions.glyphs and call configure_font(bundle) on HudBitmapText."},
+  "preview":]]
+  assert(geom:find('"preview":',1,true),"preview geometry field missing")
+  geom=geom:gsub('"preview":',fontField,1)
+  write(geomPath,geom)
+
+  local readmePath=KIT.."/README.md"
+  local readme=read(readmePath)
+  local old="HUD bitmap font 5x11 atlas and metrics without changing the HUD kit."
+  local new="card font bundle reuses the HUD 5x11 bitmap atlas and adds only the + and > glyphs."
+  if readme:find(old,1,true) then readme=readme:gsub(old,new,1) end
+  if not readme:find("## Card bitmap font bundle",1,true) then
+    readme=readme..[[
+## Card bitmap font bundle
+
+Keep the HUD's original font.json and font-atlas.png unchanged. Load the original
+font bundle, replace its atlas path with assets/ui/upgrade_cards_v1/export/card-font-atlas.png,
+append glyph records from assets/ui/upgrade_cards_v1/export/card-font-additions.json,
+and call configure_font(bundle) on the existing HudBitmapText component. Base
+glyph coordinates and font metrics remain unchanged; only + and > are appended.
+]]
+  end
+  write(readmePath,readme)
+
+  local manifestPath=OUT.."/manifest.json"
+  local manifest=read(manifestPath)
+  if not manifest:find('"card_font"',1,true) then
+    local field=',"card_font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","replacement_atlas":"card-font-atlas.png","additions":"card-font-additions.json","canvas":{"w":84,"h":105},"glyphs":["+@",">"]}'
+    -- Keep the public glyph names and codepoints explicit in the companion metadata.
+    field=',"card_font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","replacement_atlas":"card-font-atlas.png","additions":"card-font-additions.json","canvas":{"w":84,"h":105},"glyphs":[{"character":"+","codepoint":43},{"character":">","codepoint":62}]}'
+    assert(manifest:find(',"notes":',1,true),"manifest insertion point missing")
+    manifest=manifest:gsub(',"notes":',field..',"notes":',1)
+    write(manifestPath,manifest)
+  end
+
+  local log=assert(io.open(SRC.."/card-font-production.log","wb"))
+  log:write("CARD_FONT_GENERATION_OK\nASEPRITE_VERSION="..tostring(app.version or "unknown").."\nBASE_ATLAS=72x105\nREPLACEMENT_ATLAS=84x105\nGLYPHS=+ (43) @72,2; > (62) @78,2\nCELL=5x11 ADVANCE=6 LINE_HEIGHT=12\n")
+  log:close()
+  print("CARD_FONT_GENERATION_OK")
+  print("ASEPRITE_VERSION="..tostring(app.version or "unknown"))
+  print("CARD_FONT_ATLAS=84x105")
+end
+
+local ok,err=xpcall(main,debug.traceback)
+if not ok then print("CARD_FONT_GENERATION_ERROR: "..tostring(err)); error(err) end
+
+CONTEXT assets/ui/upgrade_cards_v1/export/card-font-additions.json
+{
+  "source_font_paths": {
+    "bundle": "assets/ui/hud_caldeira_v1/export/font.json",
+    "atlas": "assets/ui/hud_caldeira_v1/export/font-atlas.png",
+    "palette": "assets/ui/hud_caldeira_v1/export/palette.json"
+  },
+  "base_canvas": {"w": 72, "h": 105},
+  "replacement_atlas": "assets/ui/upgrade_cards_v1/export/card-font-atlas.png",
+  "canvas": {"w": 84, "h": 105},
+  "font_metrics": {
+    "cell": {"w": 5, "h": 11},
+    "advance": 6,
+    "line_height": 12,
+    "baseline_from_top_zero_based": 8,
+    "mask": "#FFFFFF",
+    "alpha": [0, 255]
+  },
+  "glyphs": [
+    {"character": "+", "codepoint": 43, "rect": {"x": 72, "y": 2, "w": 5, "h": 11}, "advance": 6},
+    {"character": ">", "codepoint": 62, "rect": {"x": 78, "y": 2, "w": 5, "h": 11}, "advance": 6}
+  ],
+  "integration": "Load the existing font.json bundle; replace its atlas path with card-font-atlas.png; append these glyph records while retaining all base glyphs/metrics; then call configure_font(bundle) on HudBitmapText."
+}
+
+CONTEXT assets/ui/upgrade_cards_v1/export/manifest.json
+{"asset_set":"upgrade_cards_v1","card":{"w":160,"h":240},"illustration":{"w":128,"h":80},"palette":"assets/ui/hud_caldeira_v1/export/palette.json","palette_colors":19,"alpha":[0,255],"font":"assets/ui/hud_caldeira_v1/export/font-atlas.png","illustrations":["impacto_reforcado_128x80.png","motor_acelerado_128x80.png","carga_reativa_128x80.png","ricochete_pressao_128x80.png","mola_retorno_128x80.png","dinamo_defesa_128x80.png","chassi_reforcado_128x80.png"],"frames":["frame_normal_160x240.png","frame_focus_160x240.png","frame_pressed_160x240.png"],"previews":["preview/upgrade-cards-study-576x324.png","preview/upgrade-cards-study-1728x972.png","preview/upgrade-illustrations-contact-864x704.png"],"card_font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","replacement_atlas":"card-font-atlas.png","additions":"card-font-additions.json","canvas":{"w":84,"h":105},"glyphs":[{"character":"+","codepoint":43},{"character":">","codepoint":62}]},"notes":["visual study only; not a Godot screenshot","runtime is not verified"]}
+CONTEXT assets/ui/upgrade_cards_v1/integration_geometry.json
+{
+  "card_size":{"w":160,"h":240},
+  "illustration":{"x":16,"y":34,"w":128,"h":80,"transparent":true,"draw_order":"after_frame"},
+  "text":{"title":{"x":8,"y":8,"w":144,"h":12},"summary":{"x":8,"y":121,"w":144,"h":12},"topics":[{"x":20,"y":144,"w":128,"h":12},{"x":20,"y":158,"w":128,"h":12},{"x":20,"y":172,"w":128,"h":12}],"badge":{"x":12,"y":204,"w":136,"h":24}},
+  "font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","base_atlas":"assets/ui/hud_caldeira_v1/export/font-atlas.png","replacement_atlas":"assets/ui/upgrade_cards_v1/export/card-font-atlas.png","additions":"assets/ui/upgrade_cards_v1/export/card-font-additions.json","metrics":{"cell":{"w":5,"h":11},"advance":6,"line_height":12,"baseline_from_top_zero_based":8,"canvas":{"w":84,"h":105}},"integration":"Load the base font bundle, replace its atlas path, append additions.glyphs and call configure_font(bundle) on HudBitmapText."},
+  "preview":{"canvas":{"w":576,"h":324},"cards":[{"x":36,"y":60},{"x":208,"y":60},{"x":380,"y":60}]},
+  "palette_source":"assets/ui/hud_caldeira_v1/export/palette.json",
+  "font_source":"assets/ui/hud_caldeira_v1/export/font.json",
+  "font_atlas":"assets/ui/hud_caldeira_v1/export/font-atlas.png"
+}
+
+CONTEXT scripts/progression/upgrade_catalog.gd
+class_name UpgradeCatalog
+extends RefCounted
+
+## Single source for run upgrade definitions, caps, derived effects and card copy.
+## This file intentionally does not preload or reference RunBuild.
+
+const MAX_RUN_ACQUISITIONS: int = 220
+const BASE_PROJECTILE_CONFIG: ProjectileConfig = preload("res://resources/projectile_config.tres")
+const BASE_MOVEMENT_CONFIG: MovementConfig = preload("res://resources/player_movement_config.tres")
+
+static var _definitions: Array[UpgradeDefinitionResource] = [
+	preload("res://resources/upgrades/impacto_reforcado.tres"),
+	preload("res://resources/upgrades/motor_acelerado.tres"),
+	preload("res://resources/upgrades/carga_reativa.tres"),
+	preload("res://resources/upgrades/ricochete_pressao.tres"),
+	preload("res://resources/upgrades/mola_retorno.tres"),
+	preload("res://resources/upgrades/dinamo_defesa.tres"),
+	preload("res://resources/upgrades/chassi_reforcado.tres"),
+]
+
+
+static func definitions() -> Array[UpgradeDefinitionResource]:
+	var result: Array[UpgradeDefinitionResource] = []
+	for definition in _definitions:
+		result.append(definition)
+	return result
+
+
+static func known_upgrade_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for definition in _definitions:
+		if definition != null and not String(definition.upgrade_id).is_empty():
+			result.append(definition.upgrade_id)
+	return result
+
+
+static func is_known_upgrade_id(upgrade_id: Variant) -> bool:
+	return definition_for(upgrade_id) != null
+
+
+static func definition_for(upgrade_id: Variant) -> UpgradeDefinitionResource:
+	if typeof(upgrade_id) != TYPE_STRING and typeof(upgrade_id) != TYPE_STRING_NAME:
+		return null
+	var requested_id := StringName(upgrade_id)
+	for definition in _definitions:
+		if definition != null and definition.upgrade_id == requested_id:
+			return definition
+	return null
+
+
+static func max_rank_for(upgrade_id: Variant, base_maximum_health: int = 5) -> int:
+	var definition := definition_for(upgrade_id)
+	if definition == null:
+		return 0
+	var cap: int = clampi(definition.rank_cap, 0, MAX_RUN_ACQUISITIONS)
+	if definition.maximum_health_per_rank > 0:
+		return clampi(100 - maxi(base_maximum_health, 1), 0, cap)
+	return cap
+
+
+static func can_acquire(upgrade_id: Variant, current_rank: int, base_maximum_health: int = 5) -> bool:
+	return is_known_upgrade_id(upgrade_id) and current_rank >= 0 \
+		and current_rank < max_rank_for(upgrade_id, base_maximum_health)
+
+
+static func total_rank_count(ranks_by_id: Dictionary) -> int:
+	var total: int = 0
+	for upgrade_id in known_upgrade_ids():
+		total += maxi(int(ranks_by_id.get(upgrade_id, ranks_by_id.get(String(upgrade_id), 0))), 0)
+	return total
+
+
+static func build_offer(
+	ranks_by_id: Dictionary,
+	room_seed: int,
+	room_ordinal: int,
+	base_maximum_health: int = 5
+) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if total_rank_count(ranks_by_id) >= MAX_RUN_ACQUISITIONS:
+		return result
+
+	var new_candidates: Array[UpgradeDefinitionResource] = []
+	var evolution_candidates: Array[UpgradeDefinitionResource] = []
+	for definition in _definitions:
+		if definition == null:
+			continue
+		var rank := _rank_for(ranks_by_id, definition.upgrade_id)
+		if not can_acquire(definition.upgrade_id, rank, base_maximum_health):
+			continue
+		if rank == 0:
+			new_candidates.append(definition)
+		else:
+			evolution_candidates.append(definition)
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _offer_seed(room_seed, room_ordinal)
+	var selected_definitions: Array[UpgradeDefinitionResource] = []
+	if not new_candidates.is_empty() and not evolution_candidates.is_empty():
+		selected_definitions.append(_take_random(new_candidates, rng))
+		selected_definitions.append(_take_random(evolution_candidates, rng))
+
+	var remaining: Array[UpgradeDefinitionResource] = []
+	for definition in new_candidates:
+		if not selected_definitions.has(definition):
+			remaining.append(definition)
+	for definition in evolution_candidates:
+		if not selected_definitions.has(definition):
+			remaining.append(definition)
+	while selected_definitions.size() < 3 and not remaining.is_empty():
+		selected_definitions.append(_take_random(remaining, rng))
+
+	for definition in selected_definitions:
+		var current_rank := _rank_for(ranks_by_id, definition.upgrade_id)
+		var card := card_preview(definition.upgrade_id, current_rank, base_maximum_health)
+		card["definition"] = definition
+		result.append(card)
+	return result
+
+
+static func card_preview(
+	upgrade_id: Variant,
+	current_rank: int,
+	base_maximum_health: int = 5
+) -> Dictionary:
+	var definition := definition_for(upgrade_id)
+	if definition == null or not can_acquire(upgrade_id, current_rank, base_maximum_health):
+		return {}
+	var next_rank: int = current_rank + 1
+	var rank_label := "NOVO" if current_rank == 0 else "NV.%d > %d" % [current_rank, next_rank]
+	return {
+		"upgrade_id": definition.upgrade_id,
+		"definition": definition,
+		"title": definition.title,
+		"description": definition.description,
+		"rank_before": current_rank,
+		"rank_after": next_rank,
+		"rank_label": rank_label,
+		"effect_summary": effect_summary(upgrade_id, current_rank, next_rank, base_maximum_health),
+		"topics": definition.effect_topics.duplicate(),
+		"icon": definition.icon,
+	}
+
+
+static func effect_summary(
+	upgrade_id: Variant,
+	current_rank: int,
+	next_rank: int,
+	base_maximum_health: int = 5
+) -> String:
+	var definition := definition_for(upgrade_id)
+	if definition == null:
+		return ""
+	match definition.upgrade_id:
+		&"impacto_reforcado":
+			var base_damage: int = maxi(BASE_PROJECTILE_CONFIG.damage, 1)
+			return "%d > %d dano" % [base_damage + current_rank * definition.projectile_damage_per_rank, base_damage + next_rank * definition.projectile_damage_per_rank]
+		&"motor_acelerado":
+			var current_cooldown := dash_cooldown_for_rank(current_rank)
+			var next_cooldown := dash_cooldown_for_rank(next_rank)
+			return "%s > %s s" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)]
+		&"carga_reativa":
+			return "+%d > +%d dano" % [current_rank * definition.charged_damage_bonus_per_rank, next_rank * definition.charged_damage_bonus_per_rank]
+		&"ricochete_pressao":
+			return "+%d > +%d/parede" % [current_rank * definition.environmental_bounce_damage_per_rank, next_rank * definition.environmental_bounce_damage_per_rank]
+		&"mola_retorno":
+			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + current_rank * definition.max_bounces_per_rank
+			var next_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + next_rank * definition.max_bounces_per_rank
+			var current_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + current_rank * definition.lifetime_per_rank
+			var next_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + next_rank * definition.lifetime_per_rank
+			return "%d > %d ric.; %s > %s s" % [current_bounces, next_bounces, _format_decimal(current_lifetime), _format_decimal(next_lifetime)]
+		&"dinamo_defesa":
+			return "%s > %s s por parry" % [
+				_format_decimal(current_rank * definition.dash_cooldown_refund_per_rank),
+				_format_decimal(next_rank * definition.dash_cooldown_refund_per_rank),
+			]
+		&"chassi_reforcado":
+			var base_health: int = maxi(base_maximum_health, 1)
+			var current_health: int = mini(base_health + current_rank * definition.maximum_health_per_rank, 100)
+			var next_health: int = mini(base_health + next_rank * definition.maximum_health_per_rank, 100)
+			return "%d > %d HP max; cura +%d" % [current_health, next_health, definition.health_recovered_per_rank]
+	return definition.effect_summary
+
+
+static func projectile_damage(
+	base_damage: int,
+	impact_rank: int,
+	charge_rank: int,
+	charged: bool,
+	pressure_rank: int,
+	environmental_bounce_count: int
+) -> int:
+	var damage: int = maxi(base_damage, 0)
+	var impact_definition := definition_for(&"impacto_reforcado")
+	var charge_definition := definition_for(&"carga_reativa")
+	var pressure_definition := definition_for(&"ricochete_pressao")
+	if impact_definition != null:
+		damage += maxi(impact_rank, 0) * impact_definition.projectile_damage_per_rank
+	if charged and charge_definition != null and charge_definition.reactive_charge_enabled:
+		damage += maxi(charge_rank, 0) * charge_definition.charged_damage_bonus_per_rank
+	if pressure_definition != null:
+		var counted_bounces: int = mini(maxi(environmental_bounce_count, 0), pressure_definition.environmental_bounce_damage_count_cap)
+		damage += maxi(pressure_rank, 0) * counted_bounces * pressure_definition.environmental_bounce_damage_per_rank
+	return maxi(damage, 0)
+
+
+static func dash_cooldown_for_rank(rank: int) -> float:
+	var base_cooldown := maxf(BASE_MOVEMENT_CONFIG.dash_cooldown, 0.0)
+	var definition := definition_for(&"motor_acelerado")
+	if definition == null or rank <= 0 or definition.dash_cooldown_by_rank.is_empty():
+		return base_cooldown
+	var index: int = mini(rank, definition.dash_cooldown_by_rank.size()) - 1
+	return maxf(definition.dash_cooldown_by_rank[index], 0.0)
+
+
+static func dash_refund_seconds(rank: int) -> float:
+	var definition := definition_for(&"dinamo_defesa")
+	return float(maxi(rank, 0)) * definition.dash_cooldown_refund_per_rank if definition != null else 0.0
+
+
+static func projectile_bounce_bonus(rank: int) -> int:
+	var definition := definition_for(&"mola_retorno")
+	return maxi(rank, 0) * definition.max_bounces_per_rank if definition != null else 0
+
+
+static func projectile_lifetime_bonus(rank: int) -> float:
+	var definition := definition_for(&"mola_retorno")
+	return float(maxi(rank, 0)) * definition.lifetime_per_rank if definition != null else 0.0
+
+
+static func maximum_health(base_maximum_health: int, rank: int) -> int:
+	var definition := definition_for(&"chassi_reforcado")
+	if definition == null:
+		return clampi(base_maximum_health, 1, 100)
+	return clampi(base_maximum_health + maxi(rank, 0) * definition.maximum_health_per_rank, 1, 100)
+
+
+static func acquisition_heal(upgrade_id: Variant, previous_rank: int, next_rank: int) -> int:
+	var definition := definition_for(upgrade_id)
+	if definition == null or definition.maximum_health_per_rank <= 0:
+		return 0
+	return maxi(next_rank - previous_rank, 0) * definition.health_recovered_per_rank
+
+
+static func _rank_for(ranks_by_id: Dictionary, upgrade_id: StringName) -> int:
+	return maxi(int(ranks_by_id.get(upgrade_id, ranks_by_id.get(String(upgrade_id), 0))), 0)
+
+
+static func _take_random(candidates: Array[UpgradeDefinitionResource], rng: RandomNumberGenerator) -> UpgradeDefinitionResource:
+	var index: int = rng.randi_range(0, candidates.size() - 1)
+	return candidates.pop_at(index)
+
+
+static func _offer_seed(room_seed: int, room_ordinal: int) -> int:
+	var seed_value: int = (room_seed * 1103515245 + room_ordinal * 12345 + 0x5F3759DF) & 0x7FFFFFFF
+	return seed_value if seed_value != 0 else 1
+
+
+static func _format_decimal(value: float) -> String:
+	var formatted := "%.2f" % value
+	while formatted.ends_with("0"):
+		formatted = formatted.left(formatted.length() - 1)
+	if formatted.ends_with("."):
+		formatted = formatted.left(formatted.length() - 1)
+	return formatted.replace(".", ",")
+
+MAIN CALL
+if not _upgrade_offer.present_options(offer_rows, ranks_by_id, base_maximum_health): ...
+

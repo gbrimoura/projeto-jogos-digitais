@@ -1,0 +1,8 @@
+STATUS: STABLE - no P1/P2 open
+SUMMARY:
+- P1 `Array generic assigned to Array[Color]` in `_make_topic_line`: FIXED. Evidence `scripts/ui/upgrade_card.gd:_make_topic_line`: `var colors:Array[Color]=[]` + `colors.append(TOPIC_DASH_COLOR if first_line else TOPIC_TEXT_COLOR)` + `colors.append(TOPIC_TEXT_COLOR)` + `colors.append_array(content_colors)` vs baseline `var colors:Array[Color]=[A,B] if first_line else [B,B]` which infers generic `Array`.
+- P2 prism caps/recovery/rank: STABLE. Evidence `scripts/ui/upgrade_rank_prisms.gd:configure_rank`: `if reward_kind==&"recovery": _hide_prisms() return true`, `if rank_before<0 or rank_after<=rank_before or rank_max<rank_after`: `return false`, `_slots_for_maximum`: only `3/5/10 else 0` + hide, matches `allcore 3, postattributes 5/10`. `rank_after=rank_before+1` satisfied by validator. No yellow bullets: `_make_topic_line: prefix="- " if first_line else "  "` with `TOPIC_DASH_COLOR=52BAC7`, `TOPIC_TEXT_COLOR=B6BEC3`, `TOPIC_VALUE_COLOR=D2A75C`.
+CHANGED_FILES: none
+TESTS: none - read-only, no Godot/tests executed per timeout 10min constraint
+RISKS: low - unknown `rank_max` silently hides (`return true`); `configure()` hard-fails on `summary!=1-2 lines` / `topics empty/>3` / `word>22/24 chars`; no balance/Catalog/Offer edits needed.
+NEXT_STEP: approve as-is; optional in-engine visual check only.

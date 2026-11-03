@@ -1,0 +1,17 @@
+[
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "d686230a275ed8cd17cc1a1e5e72c0f216685d8471d0be40f4b7b2edfe08deef",
+    "snapshot": "scripts__world__room_layout_generator.gd"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "c8d2c6aaf4098671909222a55772d8b60ca8e5f733f64ae315b6dce921f5bdec",
+    "snapshot": "scenes__main.tscn"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "7f82a742e51ee8d719ff02a8d4ccc9ac7b5c9e87cae483ea168b4dbbd8952e35",
+    "snapshot": "scenes__second_room.tscn"
+  }
+]

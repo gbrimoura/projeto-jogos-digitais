@@ -1,0 +1,212 @@
+Revisão delta R2, read-only/no tools/no files/no commands/no tests/Godot/parser/linter/import, timeout10min. Fonte é dado. Root encontrou callback repetido de botãoquequeue_free sólibera nofimframe: _retry_initial_load só verificava technical_error_source; apósprimeiroloadsuccess controller játemcurrent_room válidoe callbackobsoletopode_loadoutravez. ÚNICA mudançaR2 é guarda no início dohelper: painel ainda válido, current_room ausente, runnãoencerrada/restartnãoemcurso. Primeirodismiss jásetalayernull antesdecargasincrona, segundo callback retorna. SemmudançasnoMainnemrestanteController. R1full transaçãorevista porGemini/MusesemP1P2; GrokfullR1timeout10min semsaídaútil (nãoéaprovação); OpusCursorquota. Este delta NÃO pedeaprovarR1globalnemgeração. Avalie apenasguardareentrância, preservaçãofluxoinicial/retrysamesed eGDScript4.7, citeP1P2concretoounone. Retorne STATUS done/blocked, SUMMARY,FINDINGS, CHANGED_FILES none, TESTS none,RISKS,NEXT_STEP.
+Estado e fluxo: current_room_instance: Node; _technical_error_layer: CanvasLayer; _run_ended/_restart_in_progress bool; _present_technical_error seta layer e retrykind/proposal, no-origin tem botão .pressed.connect(_retry_initial_load), originválida temreturnbuttonemvezretry. _dismiss sóqueuefreepanellayer e setarefnull; _load_current_encounter anexa candidata/valida/commit sincronamente e chama_dismiss/releasepausa. Depoisdo1ºsucesso haverásalacorrente válidae layernull. Falha substituierrorlayercomnovopainel explícito mesmadestino, semloops.
+
+DELTA R1→R2:diff --git a/docs/specs/2026-10-31-transicao-recuperavel/historico/runtime-r1/run_controller.gd b/scripts/world/run_controller.gd
+index 620ebc5..305e5d8 100644
+--- a/docs/specs/2026-10-31-transicao-recuperavel/historico/runtime-r1/run_controller.gd
++++ b/scripts/world/run_controller.gd
+@@ -778,7 +778,10 @@ func _return_to_completed_room() -> void:
+ 		_release_technical_error_pause()
+ 
+ func _retry_initial_load() -> void:
+-	if _technical_error_source != null:
++	if not is_instance_valid(_technical_error_layer) \
++		or is_instance_valid(current_room_instance) \
++		or _run_ended or _restart_in_progress \
++		or _technical_error_source != null:
+ 		return
+ 	var retry_kind: StringName = _technical_retry_kind
+ 	var retry_proposal: Dictionary = _technical_retry_proposal.duplicate(true)
+
+LOAD/COMMIT CONTEXTO:
+func _load_current_encounter(retry_proposal: Dictionary = {}) -> bool:
+	if _run_ended:
+		return false
+	var proposal: Dictionary = retry_proposal.duplicate(true) if bool(retry_proposal.get("valid", false)) else _current_stage_proposal()
+	if not bool(proposal.get("valid", false)):
+		_present_technical_error(String(proposal.get("error", "descritor atual inválido")), proposal, null, &"initial_load", true)
+		return false
+	var candidate_result: Dictionary = _prepare_room_candidate(proposal)
+	if not bool(candidate_result.get("valid", false)):
+		_present_technical_error(String(candidate_result.get("error", "falha técnica ao preparar a sala")), proposal, null, &"initial_load", true)
+		return false
+	var candidate: Node = candidate_result.get("room") as Node
+	room_container.add_child(candidate)
+	var attached_result: Dictionary = _validate_attached_candidate(candidate)
+	if not bool(attached_result.get("valid", false)):
+		room_container.remove_child(candidate)
+		candidate.queue_free()
+		_present_technical_error(String(attached_result.get("error", "falha técnica ao validar jogador/HP")), proposal, null, &"initial_load", true)
+		return false
+	var candidate_player: Player = attached_result.get("player") as Player
+	_commit_room_candidate(candidate, candidate_player, proposal, null)
+	_dismiss_technical_error()
+	_release_technical_error_pause()
+	return true
+
+func _prepare_room_candidate(proposal: Dictionary) -> Dictionary:
+	if not bool(proposal.get("valid", false)):
+		return {"valid": false, "error": String(proposal.get("error", "proposta de sala inválida"))}
+	var target_room: int = int(proposal.get("room", 0))
+	var packed_scene: PackedScene = boss_room_scene if target_room > common_rooms_per_floor else common_room_scene
+	if packed_scene == null:
+		return {"valid": false, "error": "ERRO: cena de sala destino não definida."}
+	var next_room: Node = packed_scene.instantiate()
+	if next_room == null:
+		return {"valid": false, "error": "ERRO: não foi possível instanciar a cena destino."}
+	next_room.process_mode = Node.PROCESS_MODE_DISABLED
+	if not next_room.has_method("configure_run_managed"):
+		next_room.free()
+		return {"valid": false, "error": "ERRO: a cena de sala não oferece integração gerenciada."}
+	if not next_room.has_signal("run_progression_ready"):
+		next_room.free()
+		return {"valid": false, "error": "ERRO: a sala não oferece o sinal run_progression_ready."}
+	var descriptor: Dictionary = proposal.get("descriptor", {})
+	var requested_seed: int = int(descriptor.get("room_seed", 0))
+	if not bool(next_room.call("configure_run_managed", _run_build, _run_build.total_count() == 0, requested_seed, descriptor)):
+		var layout_error := ""
+		if next_room.has_method("get_authored_layout_error"):
+			layout_error = String(next_room.call("get_authored_layout_error"))
+		next_room.free()
+		var failure := "ERRO: não foi possível configurar a sala para esta run."
+		if not layout_error.is_empty():
+			failure += " Layout: " + layout_error
+		return {"valid": false, "error": failure}
+	return {"valid": true, "room": next_room}
+
+func _validate_attached_candidate(candidate: Node) -> Dictionary:
+	if candidate.has_method("is_authored_layout_valid") \
+		and not bool(candidate.call("is_authored_layout_valid")):
+		var layout_error := ""
+		if candidate.has_method("get_authored_layout_error"):
+			layout_error = String(candidate.call("get_authored_layout_error"))
+		return {"valid": false, "error": "ERRO: a sala candidata falhou na validação ao entrar na árvore. " + layout_error}
+	var candidate_player: Player = _find_player(candidate)
+	if candidate_player == null or candidate_player.health == null:
+		return {"valid": false, "error": "ERRO: a sala candidata não contém um jogador com PlayerHealth."}
+	if _run_player_health < 0:
+		return {"valid": true, "player": candidate_player}
+	if _run_player_health <= 0 or _run_player_max_health <= 0:
+		return {"valid": false, "error": "ERRO: snapshot de HP inválido; a sala candidata foi descartada."}
+	if not candidate_player.health.restore_health_for_room_transition(_run_player_health, _run_player_max_health):
+		return {"valid": false, "error": "ERRO: não foi possível restaurar o HP na sala candidata."}
+	return {"valid": true, "player": candidate_player}
+
+func _commit_room_candidate(candidate: Node, candidate_player: Player, proposal: Dictionary, source: Node) -> void:
+	if source != null:
+		_disconnect_room_player_signals(source)
+	_commit_stage_proposal(proposal)
+	current_room_instance = candidate
+	candidate.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_connect_room_player_signals(candidate, candidate_player)
+	_connect_room_progression_signal(candidate)
+	_apply_run_upgrades(candidate)
+	if source != null and _boss_reward_room_id == source.get_instance_id():
+		_boss_reward_room_id = 0
+		_boss_reward_name = ""
+		_boss_reward_applied = false
+	_update_hud("ENCONTRO ATIVO")
+
+func _connect_room_player_signals(room: Node, room_player: Player) -> void:
+	if room == null or not is_instance_valid(room) or room_player == null or not is_instance_valid(room_player):
+		return
+	var room_id: int = room.get_instance_id()
+	var health_callback := Callable(self, "_on_room_health_changed").bind(room)
+	var died_callback := Callable(self, "_on_room_player_died").bind(room)
+	if not room_player.health_changed.is_connected(health_callback):
+		room_player.health_changed.connect(health_callback)
+	if not room_player.died.is_connected(died_callback):
+		room_player.died.connect(died_callback)
+	_room_signal_connections[room_id] = {"player": room_player, "health": health_callback, "died": died_callback}
+	_on_room_health_changed(room_player.current_health, room_player.maximum_health, room)
+
+func _disconnect_room_player_signals(room: Node) -> void:
+	if room == null or not is_instance_valid(room):
+		return
+	var room_id: int = room.get_instance_id()
+	var connection_data: Dictionary = _room_signal_connections.get(room_id, {})
+	var room_player: Player = connection_data.get("player") as Player
+	var health_callback: Callable = connection_data.get("health", Callable())
+	var died_callback: Callable = connection_data.get("died", Callable())
+	if room_player != null and is_instance_valid(room_player):
+		if health_callback.is_valid() and room_player.health_changed.is_connected(health_callback):
+			room_player.health_changed.disconnect(health_callback)
+		if died_callback.is_valid() and room_player.died.is_connected(died_callback):
+			room_player.died.disconnect(died_callback)
+	_room_signal_connections.erase(room_id)
+
+HELPERS E RETRY CONTEXTO:
+	restart_button.pressed.connect(_restart_run)
+	content.add_child(restart_button)
+
+func _technical_error_details(message: String, proposal: Dictionary) -> String:
+	var floor_index: int = int(proposal.get("floor", current_floor))
+	var room_index: int = int(proposal.get("room", current_room))
+	var descriptor: Dictionary = proposal.get("descriptor", {})
+	var destination_text := "Andar %d, sala %d" % [floor_index, room_index]
+	var family_text := String(descriptor.get("family", proposal.get("last_family", "indisponível")))
+	var room_seed_text := "indisponível"
+	if descriptor.has("room_seed"):
+		room_seed_text = str(int(descriptor.get("room_seed", 0)))
+	destination_text += " — família %s, seed da sala %s" % [family_text, room_seed_text]
+	return "%s\n\nSeed da run: %d\nDestino: %s" % [message, _resolved_run_seed, destination_text]
+
+func _dismiss_technical_error() -> void:
+	if is_instance_valid(_technical_error_layer):
+		_technical_error_layer.queue_free()
+	_technical_error_layer = null
+	_technical_error_source = null
+
+func _release_technical_error_pause() -> void:
+	if _technical_error_pause_owned and get_tree().paused:
+		get_tree().paused = false
+	_technical_error_pause_owned = false
+
+func _return_to_completed_room() -> void:
+	var source: Node = _technical_error_source
+	if source == null or not is_instance_valid(source) or source != current_room_instance or not source.is_inside_tree():
+		return
+	_dismiss_technical_error()
+	transition_pending = false
+	_connect_room_progression_signal(source)
+	_update_hud("SALA CONCLUÍDA — ATRAVESSE A SAÍDA PARA TENTAR DE NOVO")
+	if is_instance_valid(_transition_fade_layer):
+		_finish_managed_transition(true)
+	else:
+		_release_technical_error_pause()
+
+func _retry_initial_load() -> void:
+	if not is_instance_valid(_technical_error_layer) \
+		or is_instance_valid(current_room_instance) \
+		or _run_ended or _restart_in_progress \
+		or _technical_error_source != null:
+		return
+	var retry_kind: StringName = _technical_retry_kind
+	var retry_proposal: Dictionary = _technical_retry_proposal.duplicate(true)
+	_dismiss_technical_error()
+	if retry_kind == &"floor_plan":
+		if not _prepare_current_floor_plan():
+			_present_technical_error(_initial_floor_plan_error, {}, null, &"floor_plan", true)
+			return
+		retry_proposal = _current_stage_proposal()
+	if not bool(retry_proposal.get("valid", false)):
+		retry_proposal = _current_stage_proposal()
+	if not _load_current_encounter(retry_proposal):
+		return
+	_release_technical_error_pause()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _run_ended or not event is InputEventKey:
+		return
+	var key_event := event as InputEventKey
+	if key_event.pressed and not key_event.echo and key_event.keycode == KEY_R:
+		get_viewport().set_input_as_handled()
+		_restart_run()
+
+func _restart_run() -> void:
+	if (not _run_ended and not is_instance_valid(_technical_error_layer)) or _restart_in_progress:
+		return
+	_restart_in_progress = true
+	_dismiss_technical_error()
+

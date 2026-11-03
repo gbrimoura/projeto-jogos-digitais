@@ -1,0 +1,21 @@
+{
+  "baseline_manifest": "historico/base/sha256-before.json",
+  "state": "runtime-r1",
+  "files": [
+    {
+      "path": "scripts/world/training_target.gd",
+      "sha256": "A92466D96F0DEF3C20C70911E14F7E763A68F4ACC4E8EAEE7CAFA5B0C3D81E7C",
+      "snapshot": "scripts/world/training_target.gd"
+    },
+    {
+      "path": "scripts/enemy/containment_attack_visual.gd",
+      "sha256": "0F7D8071764848FF18C57B21442D2668CFAF4EE1C68C3A14DFC94106262946AD",
+      "snapshot": "scripts/enemy/containment_attack_visual.gd"
+    },
+    {
+      "path": "scenes/training_target.tscn",
+      "sha256": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE",
+      "snapshot": "scenes/training_target.tscn"
+    }
+  ]
+}

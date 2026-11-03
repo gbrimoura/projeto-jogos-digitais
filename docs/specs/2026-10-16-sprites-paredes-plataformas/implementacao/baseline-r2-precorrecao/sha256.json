@@ -1,0 +1,12 @@
+[
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "99e7d23e5f76255a95b6e1bffe9d7c30fc7ec9a7d674e4c870934af66e36fe72",
+    "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r2-precorrecao/scenes/main.tscn"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "36076d4731f7949ee6e6e953b797535bba386f3bded4b1ae0a29a34151fb49bf",
+    "snapshot": "docs/specs/2026-10-16-sprites-paredes-plataformas/implementacao/baseline-r2-precorrecao/scripts/world/main.gd"
+  }
+]

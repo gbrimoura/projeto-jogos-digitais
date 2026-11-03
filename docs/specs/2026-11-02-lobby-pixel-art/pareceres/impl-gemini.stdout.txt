@@ -1,0 +1,116 @@
+### STATUS
+**APPROVED WITH P1 INTEGRATION PREREQUISITE & P2 GENERATOR DEFECTS NOTED**
+
+---
+
+### SUMMARY
+Comprehensive read-only review of the inline integration for `scripts/world/lobby_visual.gd`, `assets/environment/factory_v1/lobby_v1/source/generate_lobby.lua`, and `MANIFEST_CORE`. 
+
+The visual overhaul successfully satisfies all architectural visual contracts:
+- Native assets authored at $576 \times 324$ (backdrop) and $32 \times 56$ (doors), scaling by exactly $2\times$ integer nearest-neighbor to $1152 \times 648$ and $64 \times 112$.
+- Palette strict adherence: 20 colors total (17 factory floor + 3 accents: ivory `#E8D8B5`, silver `#879198`, cyan `#52BAC7`), with cyan strictly isolated to a single maintenance LED (`generate_lobby.lua:217`).
+- Alpha transparency contract strictly met: backdrop upper field $y \in [0, 279]$ is fully opaque ($A=255$), while the lower floor strip $y \ge 280$ native ($y \ge 560$ world) is completely empty ($A=0$), under which `_draw_world()` lays deterministic `NIGHT` fill and continuous 32px atlas tiles.
+- Elevator opening ($[912, 448, 128, 112]$) and sliding door kinematics ($travel \in [0.0, 1.0]$ meeting seamlessly at $x=976$) are mathematically aligned between generator, manifest, and GDScript.
+- User dynamic plaque, lamps, and APIs are preserved.
+
+---
+
+### CHANGED_FILES: none
+*(Frozen review mode; no files modified)*
+
+---
+
+### TESTS: none
+*(Static review mode; no tools/edits/Godot/import/test execution performed)*
+
+---
+
+### DEFECTS & SOURCE EVIDENCE (P1 / P2)
+
+#### [P1] Godot Engine Import Dependency with `preload()`
+- **Source Evidence**: 
+  - `scripts/world/lobby_visual.gd` lines 4–6:
+    ```gdscript
+    const BACKDROP_TEXTURE: Texture2D = preload("res://assets/environment/factory_v1/lobby_v1/export/lobby-backdrop-576x324.png")
+    const LEFT_DOOR_TEXTURE: Texture2D = preload("res://assets/environment/factory_v1/lobby_v1/export/elevator-door-left-32x56.png")
+    const RIGHT_DOOR_TEXTURE: Texture2D = preload("res://assets/environment/factory_v1/lobby_v1/export/elevator-door-right-32x56.png")
+    ```
+  - Prompt/Manifest contract: `"no engine import performed"` / `"no Godot/import/runtime validation run."`
+- **Impact**: In Godot 4.x, `preload("res://...png")` resolves through Godot’s asset pipeline (`.godot/imported/` and corresponding `.png.import` files). Because the PNG files were written exclusively by the external Aseprite binary without a Godot headless import pass, launching the game or compiling `lobby_visual.gd` before Godot scans the project will trigger parser load errors on those missing import artifacts.
+
+---
+
+#### [P2] 1px Native (2px World) Vertical Plaque Backing Delta
+- **Source Evidence**:
+  - `generate_lobby.lua` lines 183–184:
+    ```lua
+    rect(E,441,214,94,10,K.steelDark); rect(E,444,193,88,19,K.iron)
+    rect(E,444,193,88,19,K.iron) -- reserved panel backing; dynamic amber frame/text remain over it
+    ```
+  - `MANIFEST_CORE`: `"sign_backing_reserved":[444,193,88,19]`
+  - `scripts/world/lobby_visual.gd` line 48:
+    ```gdscript
+    draw_rect(Rect2(888, 384, 176, 40), INK)
+    ```
+  - `generate_lobby.lua` line 228 & line 250 (preview studies):
+    ```lua
+    rect(context,444,192,88,20,K.ink)
+    rect(world,888,384,176,40,K.ink)
+    ```
+- **Impact**: The backdrop’s reserved iron backing plate in layer `E` starts at native $y=193$ ($h=19$), whereas the runtime GDScript amber plaque and preview studies start at $y=384$ (native $y=192$, $h=20$). Because `_draw_world()` draws an opaque `INK` box over `Rect2(888, 384, 176, 40)`, this 1px/2px offset is fully covered in-game, but represents an authoring discrepancy between generator layer `E` and the logical plaque coordinates.
+
+---
+
+#### [P2] Redundant Duplicate Draw Calls & File Exports in Generator
+- **Source Evidence**:
+  - `generate_lobby.lua` lines 183–184:
+    ```lua
+    rect(E,441,214,94,10,K.steelDark); rect(E,444,193,88,19,K.iron)
+    rect(E,444,193,88,19,K.iron)
+    ```
+  - `generate_lobby.lua` lines 282–285:
+    ```lua
+    nearestScale(backdrop,2):saveAs(PRE.."/lobby-backdrop-2x.png")
+    nearestScale(backdrop,3):saveAs(PRE.."/lobby-backdrop-3x.png")
+    nearestScale(backdrop,2):saveAs(PRE.."/lobby-backdrop-2x.png")
+    nearestScale(backdrop,3):saveAs(PRE.."/lobby-backdrop-3x.png")
+    ```
+- **Impact**: Redundant identical operations executed back-to-back in `generate_lobby.lua`. Harmless to image contents, but unnecessary code clutter.
+
+---
+
+#### [P2] Brittle Default Fallback Root Path in Generator
+- **Source Evidence**:
+  - `generate_lobby.lua` line 7:
+    ```lua
+    local ROOT = params.root or "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais"
+    ```
+- **Impact**: The fallback hardcodes `/projeto-jogos-digitais`. If executed without explicit `--script-param "root=..."`, reference asset loads (`tileset-fabrica-v1-atlas.png`, `player-animations.png`, `font-atlas.png`) fail if run from the parent workspace root.
+
+---
+
+#### [P2] Palette Definition Divergence in GDScript Constants
+- **Source Evidence**:
+  - `scripts/world/lobby_visual.gd` lines 11–12:
+    ```gdscript
+    const NIGHT: Color = Color("#0E0D0E")
+    const INK: Color = Color("#0C1B29")
+    ```
+  - `generate_lobby.lua` lines 15, 23 & `MANIFEST_CORE`:
+    ```lua
+    HEX = {"0E0D0E", "171719", ...}
+    K.ink = C[1] -- #0E0D0E
+    K.night = C[2] -- #171719
+    ```
+- **Impact**: In the locked 20-color production palette, `#0E0D0E` is `ink`, whereas `lobby_visual.gd` defines `NIGHT` as `#0E0D0E` and retains `#0C1B29` as `INK` (from the legacy pre-overhaul palette). Visually consistent with user-retained plaque constraints, but divergent from manifest token nomenclature.
+
+---
+
+### RISKS
+1. **Engine Import Pass Requirement**: Launching Godot without triggering an initial import pass will result in script parse failure due to missing `.import` files for the 3 new PNG exports.
+2. **Viewport Boundary Bleed**: Floor tiles at row 2 ($y=624$) and side wall tiles at column 20 ($y=640$) extend beyond $648\text{ px}$ ($y=656$ and $y=672$). This relies entirely on Godot’s viewport clipping, matching the user's legacy piso loops.
+
+---
+
+### NEXT_STEP
+Execute a single Godot headless editor import pass (`godot --headless --editor --quit`) to generate standard `.import` artifacts for `lobby-backdrop-576x324.png`, `elevator-door-left-32x56.png`, and `elevator-door-right-32x56.png`, enabling `lobby_visual.gd` to compile cleanly in-engine.

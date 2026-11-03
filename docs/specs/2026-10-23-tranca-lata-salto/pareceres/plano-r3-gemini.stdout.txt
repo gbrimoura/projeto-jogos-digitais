@@ -1,0 +1,52 @@
+### Parecer Técnico de Revisão Arquitetural (Read-Only)
+
+**Alvo:** Plano prospectivo de locomoção com salto real entre plataformas e ampliação visual de 25% da onda de impacto do Tranca-Lata (`TrainingTarget`).  
+**Entradas Avaliadas:** Especificação R1, Delta R2 (precisões aceitas) e Decisões de Consolidação R3 do Principal.  
+**Modo:** Somente Leitura (sem alteração de arquivos, sem execução de comandos/testes/Godot).
+
+---
+
+### 1. Avaliação Geral da Consolidação (R1 + R2 + R3)
+
+O plano consolidado com as diretrizes R3 resolve as ambiguidades e os bloqueios conceituais levantados nas rodadas anteriores:
+1. **Modelo de Física:** A recomendação R3 (#7) pelo uso de subpassos analíticos discretizados com `move_and_collide` elimina a dependência frágil de `is_on_floor()` stale e flags de `GROUNDED` em corpos nativamente `FLOATING`, mitigando os riscos de transição de modo de movimento.
+2. **Coerência de Tipos de Suporte:** A confirmação de que `Floor` instancia `SolidPlatform` elimina a suposta inconsistência estrutural; o piso atua legitimamente como origem e plano de recuperação física, mantendo a regra de que não é alvo normal de salto preferencial.
+3. **Interlock de Combate:** O cancelamento estrito do salto no tick de `PREPARO` caso o Player entre em LOS/alcance, revertendo para `WINDUP` terrestre com reset de cooldown, preserva a integridade da máquina de estados do teaser.
+4. **Impacto Visual:** A separação limpa entre escala de visualização (`shockwave_visual_scale = 1.25` em `AnimatedSprite2D`) e raio físico imutável (`_radius = 140`) preserva consultas, dano e timing sem quebrar o sprite original de 6 quadros.
+
+---
+
+### 2. Defeitos e Precisões Concretas Identificadas
+
+#### Bloqueadores P1 (Impedimentos de Plano): **NENHUM**
+A formulação R1+R2+R3 não apresenta contradições insolúveis ou que impeçam a liberação da escrita.
+
+#### Apontamentos P2 (Bordas Físicas e Detalhes Concretos de Implementação):
+
+1. **P2 — Restauração de Exceção de Origem em Queda Prematura / Head-Bump (Teto):**
+   - *Cenário:* Se o corpo colidir com teto nos primeiros subpassos de subida antes de atingir `bottom <= support.top - max(safe_margin, 0) - 0.1px`, a velocidade vertical inverte (`Vy > 0`) imediatamente.
+   - *Precisão necessária:* A regra "antes da descida garantir origem novamente colidível" (R3 #2) deve reativar a colisão com o suporte de origem assim que `Vy >= 0`. O algoritmo deve garantir que o corpo não sofra ejeção abrupta (*depenetration glitch*) se a posição dos pés ainda estiver na faixa de transição do topo da plataforma de origem.
+
+2. **P2 — Ocupação Dinâmica do Destino por Outro Inimigo (Layer 8) Durante o Voo:**
+   - *Cenário:* O pré-lançamento valida desobstrução com máscara 11 (World + Player + Inimigos). Porém, durante o tempo de voo físico (~0.5s–1.2s), um inimigo terrestre pode se mover para a zona de aterrissagem.
+   - *Precisão necessária:* Como a máscara de colisão física ativa em voo é 3 (World + Player), o corpo colidirá com a `SolidPlatform` sólida (Layer 1). A checagem de aterrissagem não pode rejeitar o contato com a plataforma e manter o corpo preso indefinidamente em estado `VOO` no ar. Se o topo sólido for confirmado, a aterrissagem física deve ser concluída; se os bounds de patrulha estiverem obstruídos pelo outro corpo, ele deve assumir repouso estacionário (`CHÃO` sem patrulha), apto a atacar e saltar novamente após o cooldown.
+
+3. **P2 — Filtro Rápido de Alcance Vertical vs. Geometria das Salas:**
+   - *Cenário:* Com `rise_max = 144px`, um Tranca-Lata localizado no `Floor` (`top = 560px`) não tem alcance para plataformas de topo alto (`top = 376px`, $\Delta y = 184\text{px} > 144\text{px}$), alcançando apenas plataformas com `top >= 416px` (ex.: plataformas em 440px, $\Delta y = 120\text{px}$).
+   - *Precisão necessária:* O seletor de rotas deve descartar candidatos onde `origin.top - dest.top > rise_max` antes de executar a série de shape casts ao longo da parábola, economizando queries de física estéreis.
+
+4. **P2 — Momento Exato de Bind no Impacto de Pouso:**
+   - *Precisão necessária:* O vínculo (`bind`) da nova plataforma e o recálculo dos bounds locais devem ocorrer no momento do impacto que dispara a fase `POUSO` (180ms), garantindo que durante os 180ms da animação de compressão o inimigo já esteja ancorado ao novo suporte com velocidade física zerada, e não em estado órfão.
+
+---
+
+### Handoff
+
+```text
+STATUS: done
+SUMMARY: Plano prospectivo R1+R2+R3 do Tranca-Lata aprovado sem bloqueios P1; delta R3 resolveu modelo físico e tipos; 4 precisões P2 de borda física e interrupção registradas para a implementação.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Descompasso visual de 35px da onda decorativa vs hitbox já aceito documentalmente; risco de colisão precoce com teto em salas de headroom baixo exige validação estrita da parábola no pré-lançamento.
+NEXT_STEP: Principal liberar a frente de escrita para o subagente gpt-6-luna (produção do atlas de salto Aseprite e integração runtime conforme allowlist).
+```

@@ -1,0 +1,32 @@
+[
+  {
+    "path": "assets/ui/upgrade_cards_v1/source/upgrade-card-frame-states.aseprite",
+    "before": "8819175C1767CC7ED6D3D16380FE386B5AA8238C4C46A0A63207803772B29994",
+    "after": "8819175C1767CC7ED6D3D16380FE386B5AA8238C4C46A0A63207803772B29994",
+    "preserved": true
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/frame_normal_160x240.png",
+    "before": "4E2D30C66B6E4169E51E0EA9B4CD7F5659C579896DDCB659E58BA8019C4737BC",
+    "after": "4E2D30C66B6E4169E51E0EA9B4CD7F5659C579896DDCB659E58BA8019C4737BC",
+    "preserved": true
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/frame_focus_160x240.png",
+    "before": "2FE1F63FBBBD39A233F25F3F7240C4B10B292C757A50DA9CB53C30D66AC26B87",
+    "after": "2FE1F63FBBBD39A233F25F3F7240C4B10B292C757A50DA9CB53C30D66AC26B87",
+    "preserved": true
+  },
+  {
+    "path": "assets/ui/upgrade_cards_v1/export/frame_pressed_160x240.png",
+    "before": "EBD5543C22CDC8960EFF1A6EF7E356195FD6FABA14C7E04FD1C955BF74F9C801",
+    "after": "EBD5543C22CDC8960EFF1A6EF7E356195FD6FABA14C7E04FD1C955BF74F9C801",
+    "preserved": true
+  },
+  {
+    "path": "scripts/ui/upgrade_stat_text.gd",
+    "before": "2802D3923CDF5F2BFDE84C21A8CAEEF70DD32B4B19AFB8B58B507133BE3E81AB",
+    "after": "2802D3923CDF5F2BFDE84C21A8CAEEF70DD32B4B19AFB8B58B507133BE3E81AB",
+    "preserved": true
+  }
+]

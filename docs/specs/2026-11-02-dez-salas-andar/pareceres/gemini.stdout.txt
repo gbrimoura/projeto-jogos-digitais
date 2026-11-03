@@ -1,0 +1,19 @@
+**STATUS**: APPROVED
+
+**SUMMARY**:
+The two-line configuration change updating `common_rooms_per_floor` from 3 to 10 in [run_root.tscn](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scenes/run_root.tscn) and [run_controller.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd) is completely stable and produces no concrete code regressions:
+- **Topology & Pathing**: [`RoomRunLayout.build_floor()`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/room_run_layout.gd) operates with `room_count = 11` (10 common + 1 boss). Column-based step validation and direction legality guarantee no dead ends or empty candidate loops regardless of path length.
+- **Boss Predicates**: `_is_boss_room()` correctly triggers when `current_room > 10` (room 11), preserving the single boss encounter per floor.
+- **Room Ordinals & Scaling**: Formula `1 + (floor_index - 1) * 11 + (room_index - 1)` scales monotonically and correctly indexes enemy levels.
+- **Budget Bounds**: At script default (8 floors), total encounters equal 88; at maximum exported range (20 floors), total encounters equal exactly 220, matching [`UpgradeCatalog.MAX_RUN_ACQUISITIONS`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/progression/upgrade_catalog.gd) (220).
+
+**CHANGED_FILES**: none
+
+**TESTS**: none
+
+**RISKS**:
+- **Pacing & Attrition**: 11 rooms per floor (up from 4) significantly increases floor duration and enemy level growth per floor before the first boss/rest, which affects player health pool attrition until varied events and enemy count adjustments are added.
+- **Export Ceiling**: `@export_range(1, 10)` sets the Inspector ceiling at exactly 10; increasing beyond 10 in the future will require editing the export hint and `MAX_RUN_ACQUISITIONS`.
+
+**NEXT_STEP**:
+Apply the two-line config change (`common_rooms_per_floor = 10`) to [run_root.tscn](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scenes/run_root.tscn) and [run_controller.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd).

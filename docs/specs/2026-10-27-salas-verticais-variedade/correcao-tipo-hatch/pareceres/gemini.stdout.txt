@@ -1,0 +1,16 @@
+STATUS: done
+SUMMARY: Revisão estática da substituição de inferência de tipo (`:=`) por tipagem estática explícita (`: bool =`) na variável `inside_open_hatch` em `_managed_can_jump_between` (`scripts/world/main.gd:575`). A alteração resolve diretamente o erro de compilação/análise do GDScript sem alterar semântica, precedência ou avaliação de curto-circuito.
+
+FINDINGS:
+- Sem achados P1/P2 no delta analisado.
+- Análise técnica do delta:
+  1. **Resolução da Inferência**: No GDScript (Godot 4.x), a inferência estática `:=` falha quando uma expressão encadeia retornos não tipados (`Dictionary.get` retorna `Variant`). A anotação explícita `var inside_open_hatch: bool = ...` elimina a necessidade de dedução de tipo pelo analisador estático, sanando o erro `Cannot infer the type of inside_open_hatch` que impedia o carregamento do script `main.gd`.
+  2. **Preservação Semântica e Curto-circuito**: A expressão à direita (`top_open and ... and ... and ...`) permanece idêntica. Todos os operandos resultam em valores booleanos e a semântica de curto-circuito (`short-circuit evaluation`) de operadores lógicos `and` do GDScript é preservada integralmente.
+  3. **Impacto Sistêmico**: A falha prévia de compilação em `main.gd` inviabilizava a instanciação do nó correspondente em `main.tscn`, gerando a falha consequente de `has_method("configure_run_managed")` relatada em `RunController`. A correção desbloqueia a compilação do script sem introduzir efeitos colaterais locais.
+
+CHANGED_FILES: none
+TESTS: none (read-only)
+RISKS:
+- Baixo. A revisão confirma a correção estática do erro de inferência no delta; no entanto, por ser estática e de escopo exclusivo nesta linha, não comprova por si só a execução completa do runtime nem a ausência de outros erros lógicos ou de compilação fora do trecho avaliado.
+
+NEXT_STEP: Aplicar o patch no repositório e prosseguir com a validação/carregamento da cena no Godot para certificar a resolução da falha em `RunController`.

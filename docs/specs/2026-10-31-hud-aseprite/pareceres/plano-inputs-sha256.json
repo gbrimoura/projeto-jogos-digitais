@@ -1,0 +1,12 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "2726B8FCBDA37122502334F75462EA1F9E269F0BAB0842A3EE85C41F5D696F12",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-hud-aseprite\\pareceres\\plano-r1-input.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "FC97EB304F9BF3C9A6CB8FD9106109C5425FFBFFED25464111DCC47B2847B8FE",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-hud-aseprite\\pareceres\\plano-r2-opus-input.txt"
+  }
+]

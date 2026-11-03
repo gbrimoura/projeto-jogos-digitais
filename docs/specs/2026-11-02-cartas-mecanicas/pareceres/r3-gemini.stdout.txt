@@ -1,0 +1,36 @@
+### Parecer de Revisão Estática R3 — Cartas Mecânicas
+
+Avaliação estática das correções aplicadas no delta R3 em relação aos apontamentos de R2.
+
+---
+
+### 1. Resolução dos Achados R2
+
+- **Estouro de paleta em `ricochete_pressao` (Muse)**: **Resolvido**.
+  - A unificação da borda do mostrador em `ivory` (eliminando `cream`) e do cubo central da agulha em `red` (eliminando o tom dark-red) reduziu a contagem de cores para exatamente 10 entradas distintas (`ink`, `steel`, `steelLight`, `copper`, `copperDark`, `amber`, `iron`, `brass`, `ivory`, `red`), respeitando rigorosamente o limite de `max_colors_per_icon: 10`.
+- **Cálculo de largura em `oval_band` e renderização da mola (Gemini)**: **Resolvido**.
+  - A fórmula de largura lateral foi corrigida para `outer_half - inner_half` para ambos os lados (`left_width` e `right_width`), eliminando larguras negativas.
+  - A condição `math.abs(y) <= inner_ry` combinada com o preenchimento sólido nos polos preserva a cavidade interna dos anéis sem oclusão central, restaurando a volumetria correta de `mola_retorno`.
+- **Ordem de sobreposição e oclusão de ferragens/destaques (Gemini)**: **Resolvido**.
+  - `bolt`: O helper agora desenha contorno (`radius + 1`), cabeça em cobre (`radius`) e pontos de brilho (`amber`, `cream`) estritamente na camada de ferragens (`a`).
+  - `ricochete_pressao`: Os traços de escala do manômetro (`line` em `iron`) desenham na camada `a`, sobrepondo adequadamente a face do mostrador (`sh`/`hi`).
+  - `chassi_reforcado`, `dinamo_defesa` e `carga_reativa`: Painéis rebaixados, raios/cubo do volante e cintas/faíscas renderizam na camada superior de hardware (`a`), evitando que sombras ou preenchimentos básicos sobreponham elementos finos.
+- **Coerência de iluminação no motor e previews de contato (Muse / Root)**: **Resolvido**.
+  - As aletas laterais de `motor_acelerado` aplicam `steelLight` à esquerda e `silver` à direita, alinhadas à iluminação do quadrante superior direito.
+  - O manifesto e os metadados incluem formalmente ambos os tamanhos de prancha de contato (`432x352` e `864x704`).
+
+---
+
+### 2. Problemas Concretos Remanescentes e Limites
+
+- **Problemas remanescentes**: Nenhum erro sintático, matemático ou de extrapolação de orçamento detectado no código delta.
+- **Limites da análise**: Análise documental e estática do delta Lua, paletas e manifesto inline, sem execução de runtime Godot ou bateria de testes automatizados (em conformidade com a restrição estrita de somente-leitura). A integridade visual final baseia-se na aprovação dos PNGs inspecionados pelo usuário.
+
+---
+
+STATUS: done
+SUMMARY: Correções R3 analisadas com sucesso; orçamento de cores de ricochete_pressao estabilizado em 10, simetria de oval_band corrigida, oclusões de ferragens resolvidas e conformidade com iluminação e manifesto validada sem novos defeitos.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco impeditivo identificado no pacote inline do delta R3.
+NEXT_STEP: Proceder com a integração e congelamento do pacote final de cartas mecânicas v1 no branch de trabalho autorizado.

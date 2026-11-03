@@ -1,0 +1,37 @@
+[
+  {
+    "ProcessId": 24580,
+    "ParentProcessId": 27304,
+    "Name": "pwsh.exe"
+  },
+  {
+    "ProcessId": 43672,
+    "ParentProcessId": 24580,
+    "Name": "conhost.exe"
+  },
+  {
+    "ProcessId": 35868,
+    "ParentProcessId": 24580,
+    "Name": "node.exe"
+  },
+  {
+    "ProcessId": 41344,
+    "ParentProcessId": 35868,
+    "Name": "node.exe"
+  },
+  {
+    "ProcessId": 4016,
+    "ParentProcessId": 41344,
+    "Name": "conhost.exe"
+  },
+  {
+    "ProcessId": 17584,
+    "ParentProcessId": 41344,
+    "Name": "cmd.exe"
+  },
+  {
+    "ProcessId": 20168,
+    "ParentProcessId": 17584,
+    "Name": "conhost.exe"
+  }
+]

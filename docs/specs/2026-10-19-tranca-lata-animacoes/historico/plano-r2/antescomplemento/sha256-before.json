@@ -1,0 +1,21 @@
+{
+  "captured_at": "2026-10-19",
+  "description": "Frozen R2 document state before R3 complement",
+  "files": [
+    {
+      "source": "plano.md",
+      "snapshot": "plano.md",
+      "sha256": "FEF19CE54724184C5DCA0687588DDBD69AF760B22934CF6D77D11DC3255A4F25"
+    },
+    {
+      "source": "spec.md",
+      "snapshot": "spec.md",
+      "sha256": "0EF6439D2F0D9A45944A24806971403B9EE92D2182AC18317E60B186B9AFFA8A"
+    },
+    {
+      "source": "registro.md",
+      "snapshot": "registro.md",
+      "sha256": "FE3BB3E03B8542A13FFA9FEDBC4AE3E6B8002426BE08E749F4195237273A9E73"
+    }
+  ]
+}

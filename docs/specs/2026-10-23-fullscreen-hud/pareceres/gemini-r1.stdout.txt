@@ -1,0 +1,46 @@
+### Parecer de Revisão Estática — Configuração Godot e Direção de HUD
+**Revisor:** Gemini 3.8 Flash (High) — Antigravity (Modo Read-Only / Plan)  
+**Escopo:** `project.godot` e SPEC (`display` e direção conceitual de HUD)  
+**Limitações:** Modo somente leitura; sem alteração de arquivos; sem execução de Godot ou testes.
+
+---
+
+### 1. Análise Técnica da Configuração (`project.godot`)
+
+* **Base Lógica (`viewport_width=1152`, `viewport_height=648`):**  
+  A explicitação do tamanho lógico fixa o sistema de coordenadas de desenho 2D. Para salas construídas sem `Camera2D`, a visualização padrão do viewport raiz permanece idêntica à composição original (1152×648), prevenindo qualquer descolamento de limites ou alteração no enquadramento.
+* **Tamanho de Janela (`window_width_override=1920`, `window_height_override=1080`):**  
+  Em Godot 4.x, as chaves `window_width_override` e `window_height_override` definem corretamente o tamanho inicial da janela no sistema operacional quando o modo de janela estiver ativo, sem interferir na resolução lógica interna.
+* **Modo de Exibição (`mode=3`):**  
+  O valor `3` mapeia diretamente para `DisplayServer.WINDOW_MODE_FULLSCREEN` (fullscreen convencional na resolução corrente/desktop do monitor, sem troca exclusiva de modo de vídeo do SO), atendendo com precisão à exigência.
+* **Escala e Proporção (`stretch/mode="canvas_items"`, `stretch/aspect="keep"`):**  
+  A manutenção de `canvas_items` respeita a baseline preexistente do projeto, enquanto `keep` garante a integridade da proporção 16:9, aplicando barras pretas (letterbox/pillarbox) em monitores com proporções distintas (16:10, 21:9) e evitando qualquer distorção visual.
+
+---
+
+### 2. Análise da Direção Conceitual de HUD
+
+* **Aderência ao Escopo e Regras:** O documento limita-se estritamente à direção conceitual sem alterar código, cenas ou regras de jogo.
+* **Respeito ao GDD e Governança:**  
+  * Não inventa slots fictícios vazios (adota build compacta com itens adquiridos).
+  * Não inventa regras ou acúmulos econômicos (prevê separação visual de duas moedas apenas para quando a economia for implementada).
+  * Identifica corretamente o débito de duplicação entre `RunRoot` e `CombatRoom` para resolução em etapa posterior.
+
+---
+
+### 3. Classificação de Defeitos
+
+* **Defeitos P1 (Críticos / Impeditivos):** 0 (Nenhum).
+* **Defeitos P2 (Funcionais / Inconsistências):** 0 (Nenhum).
+* **Declaração:** Configuração e especificação aprovadas sem defeitos P1/P2.
+
+---
+
+```text
+STATUS: done
+SUMMARY: Configuração de display em project.godot validada e aprovada sem defeitos P1/P2. O viewport lógico 1152x648 preserva o enquadramento de salas sem Camera2D, mode=3 assegura fullscreen convencional no monitor nativo e stretch canvas_items/keep mantém a proporção 16:9. A discussão de HUD permanece puramente conceitual e alinhada ao GDD.
+CHANGED_FILES: none
+TESTS: none
+RISKS: 1. A escala de 1152x648 para 1080p é fracionária (5/3); o modo canvas_items pode exibir filtragem ou ligeiro shimmer em pixel art, demandando validação estética em execução futura; 2. Em telas não 16:9, aspect keep exibirá letterbox/pillarbox por projeto.
+NEXT_STEP: Prosseguir com as demais revisões externas programadas (Grok, Muse, Opus) ou consolidar a etapa conforme a orquestração do projeto.
+```

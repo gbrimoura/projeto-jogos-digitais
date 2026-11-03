@@ -1,0 +1,60 @@
+```text
+STATUS: done
+SUMMARY: Revisão estática somente leitura do plano e especificação de variedade e sequência vertical. Identificados 4 achados P1 (bloqueantes de colisão/física/transição) e 4 achados P2 (robustez de layout/grid/standalone), com correções concretas propostas mantendo a física, limites e integridade do repositório.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Risco de falso aborto/recuo na saída UP por balística gravitacional no ápice; risco de softlock em saída DOWN por gravidade na contenção externa se validação diferida falhar; risco de colisão de cabeça com teto sólido na plataforma y=152 fora da projeção do hatch.
+NEXT_STEP: Ajustar o plano e a especificação com as correções P1/P2 antes de autorizar a implementação pelo escritor runtime.
+```
+
+---
+
+### Achados Concretos P1 (Bloqueantes / Falhas Técnicas de Física e Geometria)
+
+#### [P1-01] Descompasso de Rollback/Recuo sob Gravidade na Saída DOWN (Piso)
+* **Contexto/Justificativa:** Em portas horizontais (LEFT/RIGHT), a mecânica de `armar/recuar/retry` funciona porque o Player recua sobre o piso contínuo mantendo apoio físico. Na saída DOWN, o gate do piso se abre (vão de 128 px em $y=560$) pós-clear. Ao cruzar o sensor em queda, a gravidade ($1600\,\text{px/s}^2$) puxa o Player para dentro da contenção externa ($y > 560$). Se a validação diferida (`deferred validation`) em `Main` falhar ou se o Player tentar recuar, ele não possui apoio para retornar a pé e a colisão inferior da borda do piso impede o salto de volta a partir de baixo, resultando em softlock ou queda irreversível.
+* **Correção Proposta:** Definir formalmente no contrato da porta DOWN que qualquer recuo, cancelamento ou falha na validação diferida execute um reposicionamento imediato (rollback seguro) para a margem sólida do piso acima do vão ($y=560$), em vez de depender de recuo físico do corpo pela gravidade. A contenção externa deve apenas amparar o corpo durante o frame do *latch*, sem permitir queda desgovernada.
+
+---
+
+#### [P1-02] Falso-Positivo de "Recuar" no Latch da Saída UP devido à Desaceleração Balística
+* **Contexto/Justificativa:** A rota UP exige que o centro do Player suba de $y=114$ (no apoio $152$) até cruzar a linha $y=32$ ($\Delta y = 82\,\text{px}$, dentro do ápice teórico de $128\,\text{px}$). Como a gravidade desacelera o salto e inverte a velocidade vetorial no ápice, se a validação diferida aguardar múltiplos frames ou depender de velocidade ascendente positiva contínua sem travar o estado no momento do primeiro cruzamento, a inversão da gravidade fará o Player recair abaixo de $y=32$ no frame subsequente. O sensor interpretará essa trajetória natural como evento de "recuar" e abortará a transição indevidamente.
+* **Correção Proposta:** Para saídas verticais UP, o evento de cruzamento da normal orientada deve disparar imediatamente o travamento de estado (`latch` irreversível) e desativar a influência gravitacional/movimento (`freeze/lock`) no momento do contato, antes de aguardar o flush de validação do `Main`, eliminando o risco de rejeição por oscilação balística.
+
+---
+
+#### [P1-03] Necessidade de Decomposição Estrutural dos Colisores de Teto e Piso (Composite Shapes)
+* **Contexto/Justificativa:** O plano prevê "recorte no teto em ambas Ceiling e CeilingBand, recorte no piso com gate" e "shapes/resources locais por instância; nenhuma mutação compartilhada". No Godot, um `StaticBody2D` padrão com um `RectangleShape2D` não suporta corte interno/perfuração por mera alteração de dimensões. Reduzir ou mover o retângulo único deixaria um lado inteiro da sala sem teto ou piso sólido.
+* **Correção Proposta:** Explicitar no contrato geométrico que o recorte do teto e do piso será implementado dividindo a colisão estática em pares desacoplados de `CollisionShape2D` por instância (`CeilingLeft` e `CeilingRight`; `FloorLeft` e `FloorRight`), mantendo os vãos de 128 px estritamente alinhados aos limites do hatch, ou via substituição procedural de `CollisionPolygon2D` local sem mutação de recursos compartilhados.
+
+---
+
+#### [P1-04] Folga Crítica de Cabeça (*Head Clearance*) e Ângulo de Salto no Apoio $y=152$
+* **Contexto/Justificativa:** A spec estipula o teto visível em $0..64$ (base do teto em $y=64$) e a plataforma mais alta em $y=152$. Com a cápsula do Player medindo $76\,\text{px}$ de altura, ao pousar na plataforma $152$, o topo da cabeça fica posicionado exatamente em $y = 152 - 76 = 76$. A folga livre até o teto sólido é de apenas $12\,\text{px}$ ($76 - 64 = 12$). Qualquer impulso vertical fora do vão de 128 px do hatch resultará em colisão imediata com o teto. Se a plataforma $152$ não estiver estritamente contida dentro da largura projetada do hatch, ou se o salto vindo da plataforma $248$ exigir um arco parabólico que passe sob o teto fechado, o Player baterá a cabeça e não alcançará o apoio.
+* **Correção Proposta:** O layout procedural deve garantir que a plataforma $y=152$ esteja horizontalmente alinhada com a abertura do hatch no teto, ou o vão do teto deve ter sua largura estendida para além de 128 px para acomodar o arco de aproximação lateral vindo de $y=248$ com margem de segurança corporal ($\ge 28\,\text{px}$).
+
+---
+
+### Achados Concretos P2 (Robustez de Layout, Grid e Retrocompatibilidade)
+
+#### [P2-01] Restrição de Sobreposição Horizontal (*X-Staggering*) entre Degraus Consecutivos
+* **Contexto/Justificativa:** Os degraus verticais possuem espaçamento de $\Delta y = 96\,\text{px}$ ($440 \to 344 \to 248 \to 152$). Se duas plataformas consecutivas se sobrepuserem horizontalmente no eixo X, a espessura física da plataforma superior (tipicamente $24$ a $32\,\text{px}$) reduzirá a altura livre de passagem para $64..72\,\text{px}$, valor inferior à altura da cápsula do Player ($76\,\text{px}$), impedindo a locomoção do personagem sob a plataforma.
+* **Correção Proposta:** Definir como invariante da geração das famílias em ziguezague/escada que plataformas consecutivas devem manter afastamento horizontal mútuo (*staggering*), proibindo sobreposição no eixo X que reduza o vão vertical abaixo de $76\,\text{px} + \text{margem}$ de tolerância.
+
+---
+
+#### [P2-02] Risco de Encurralamento (*Dead-End*) na Geração Passo-a-Passo do Grid
+* **Contexto/Justificativa:** O plano estabelece caminho linear em grid sem reocupar coordenadas e sem ramificações, com algoritmo limitado e garantia de ao menos um link vertical para $\ge 2$ links. Um algoritmo guloso estocástico de passo único (*self-avoiding walk*) pode facilmente se auto-bloquear antes de atingir a contagem total de salas estipulada pela run.
+* **Correção Proposta:** O gerador de descritores de run deve operar em duas etapas desacopladas: (1) geração e validação da rota topológica completa no grid com retentativa rápida em caso de beco sem saída; (2) atribuição dos descritores e famílias aos nós validados, antes de instanciar ou carregar qualquer cena.
+
+---
+
+#### [P2-03] Ambiguidade na Representação da Semente Aleatória (`Seed 0`)
+* **Contexto/Justificativa:** O texto define que "Seed 0 randomiza uma vez a run". No Godot/GDScript, o valor inteiro `0` é uma semente determinística válida. Tratar `0` implicitamente como ativador de entropia impede que execuções que utilizem intencionalmente a semente `0` sejam reproduzidas de forma consistente.
+* **Correção Proposta:** Tratar o modo aleatório por meio de uma flag explícita (ou utilizar um valor sentinel inequívoco como `-1`), reservando inteiros não-negativos estritamente para reprodução determinística de runs.
+
+---
+
+#### [P2-04] Inicialização Segura e Fallback para Execuções Standalone de Cenas
+* **Contexto/Justificativa:** O plano exige que `Main` valide o novo contrato antes de ativar a sala e que cenas executadas de forma standalone mantenham o comportamento antigo sem receber descritores gerenciados por acidente. Se uma cena como `main.tscn` ou `second_room.tscn` for iniciada isoladamente pelo editor (F6), a ausência de um descritor de run pode causar falhas de asserção ou leituras nulas no validador de `Main`.
+* **Correção Proposta:** Estabelecer que `Main`, ao constatar ausência de descritor injetado pelo `run_controller`, construa internamente um descritor padrão canônico (horizontal, entrada LEFT e saída RIGHT), permitindo que o validador execute sua checagem de integridade de forma transparente sem quebrar o fluxo isolado.

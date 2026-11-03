@@ -1,0 +1,9 @@
+STATUS: done
+SUMMARY: Revisão estática somente leitura concluída com sucesso sobre o arquivo runtime-r1-input.txt. Contrato e fontes inspecionados integralmente (TrainingTarget, TrancaLataJump, TrancaLataPursuit, RivetWorker, cenas, SpriteFrames, ImageTexture nativos e script Lua). Nenhum bug P1 ou P2 identificado na lógica de perseguição, pulos, plataformas ou carregamento.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Detour conservador (P3/observação): em `_try_begin_pursuit_detour`, o nó `Floor` é explicitamente ignorado como candidato intermediário de desvio (`candidate.name == &"Floor"`). Isso é seguro e evita tentativas de salto de retorno que ultrapassariam `MAX_RISE` (144 px), mas significa que desvios no mesmo suporte dependem de plataformas elevadas transitáveis na sala.
+- Varredura de patrulha no Floor (P3/observação): em `_try_bind_landing`, caso o Tranca-Lata pouse no `Floor` e a varredura horizontal completa (`_make_body_sweep`) encontre projeções de plataformas ou outros corpos na sala, `can_patrol` é desativado de forma segura, mantendo a posição de pouso estacionária para patrulha ociosa, sem impedir a locomoção de perseguição via `_move_toward_pursuit_x`.
+- Dinâmica de colisão aérea contra Player (P3/observação): caso o jogador se mova exatamente para o ponto de pouso durante o voo, a física não acopla suporte e aciona o escape tangencial lateral (`_begin_player_top_escape`), garantindo que o Tranca-Lata deslize para fora do topo do jogador sem travamento vertical.
+NEXT_STEP: Estado estável e consistente para integração/consolidação pelo agente principal conforme o plano de perseguição do Tranca-Lata.

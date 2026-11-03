@@ -1,0 +1,60 @@
+diff --git a/docs/specs/2026-10-24-cospe-rebite-aviso/historico/base/scripts/enemy/rivet_worker.gd b/scripts/enemy/rivet_worker.gd
+index 23cc14f..ef654ef 100644
+--- a/docs/specs/2026-10-24-cospe-rebite-aviso/historico/base/scripts/enemy/rivet_worker.gd
++++ b/scripts/enemy/rivet_worker.gd
+@@ -1,6 +1,8 @@
+ class_name RivetWorker
+ extends CharacterBody2D
+ 
++const RIVET_WARNING_VISUAL_SCRIPT = preload("res://scripts/enemy/rivet_warning_visual.gd")
++
+ ## Inimigo terrestre que patrulha, se reposiciona, trava a mira e dispara.
+ signal defeated
+ 
+@@ -44,6 +46,7 @@ const POSITION_EPSILON: float = 3.0
+ @onready var _warning_mark: Node2D = $WarningMark
+ @onready var _warning_sound: AudioStreamPlayer2D = $WarningSound
+ 
++var _warning_visual: Node2D
+ var health: int
+ var _player: Node2D
+ var _state: AttackState = AttackState.APPROACH
+@@ -100,6 +103,7 @@ func _ready() -> void:
+ 	_rivet_query.collide_with_areas = false
+ 	_rivet_query.margin = 0.08
+ 	_prepare_warning_sound()
++	_setup_warning_visual()
+ 	_update_visuals()
+ 	_apply_facing_direction()
+ 	_set_warning_visible(false)
+@@ -485,6 +489,18 @@ func _set_warning_visible(value: bool) -> void:
+ 		_warning_line.visible = value
+ 	if is_instance_valid(_warning_mark):
+ 		_warning_mark.visible = value
++	if not value and is_instance_valid(_warning_visual):
++		_warning_visual.call("set_progress", 0.0)
++
++func _setup_warning_visual() -> void:
++	if not is_instance_valid(_warning_line) or not is_instance_valid(_warning_mark):
++		return
++	_warning_visual = RIVET_WARNING_VISUAL_SCRIPT.new() as Node2D
++	if _warning_visual == null:
++		return
++	_warning_visual.name = "WarningVisual"
++	_warning_line.add_child(_warning_visual)
++	_warning_visual.call("configure", _warning_line, _warning_mark)
+ 
+ func _update_warning_line() -> void:
+ 	if _state != AttackState.WINDUP or _warning_line == null:
+@@ -498,7 +514,10 @@ func _update_warning_line() -> void:
+ 	if fractions.size() >= 2 and fractions[0] < 1.0:
+ 		end = start + motion * fractions[0]
+ 	_warning_line.points = PackedVector2Array([to_local(start), to_local(end)])
+-	_warning_mark.modulate.a = 0.65 + 0.35 * (0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.025))
++	if is_instance_valid(_warning_visual):
++		var windup_total := maxf(windup_duration, 0.05)
++		var progress := 1.0 - clampf(_windup_remaining / windup_total, 0.0, 1.0)
++		_warning_visual.call("set_progress", progress, true)
+ 
+ func _is_clear_rivet_spawn(muzzle: Vector2, direction: Vector2) -> bool:
+ 	var space_state := get_world_2d().direct_space_state

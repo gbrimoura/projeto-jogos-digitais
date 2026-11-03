@@ -1,0 +1,16 @@
+UPGRADE_CARDS_GENERATION_ERROR: C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:401: preview glyph missing: >
+stack traceback:
+	[C]: in function 'assert'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:401: in upvalue 'draw_text'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:478: in local 'make_preview'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:518: in function <C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:1>
+	[C]: in function 'xpcall'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:530: in main chunk
+C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:533: C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:401: preview glyph missing: >
+stack traceback:
+	[C]: in function 'assert'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:401: in upvalue 'draw_text'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:478: in local 'make_preview'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:518: in function <C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:1>
+	[C]: in function 'xpcall'
+	C:\Users\danie\Documents\ChatGPT\TEC - Jogos\projeto-jogos-digitais\assets\ui\upgrade_cards_v1\source\generate_upgrade_cards.lua:530: in main chunk

@@ -1,0 +1,12 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A921663F683B17D219E7EFB9243A454A135B48DF753E4A3F763BAC764D5A3759",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\room_layout_generator.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "30769F09527F2F765DE03A2E9D693883CCAFB66D538128941916FFAD7E1EC364",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\hud\\run_hud_bridge.gd"
+  }
+]

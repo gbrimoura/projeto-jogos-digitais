@@ -1,0 +1,12 @@
+{
+  "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\upgrade_offer.gd",
+  "Length": 4344,
+  "Hash": "11AC3BBCE9E0E458A3BCC82BE681E947F2DD2062C57AD702A4CE0B5E76614EE2",
+  "Repository": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais",
+  "ActionAttemptedByAgent": "Remove-Item do único arquivo avulso",
+  "ReportedRejection": "exec_command failed: CreateProcess Rejected: blocked by policy",
+  "SpecificReasonProvided": false,
+  "Preserved": true,
+  "RetryOrMoveAttemptedByRoot": false,
+  "RuntimeProjectFile": false
+}

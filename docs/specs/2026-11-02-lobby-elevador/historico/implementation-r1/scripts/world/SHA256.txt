@@ -1,0 +1,2 @@
+lobby_visual R1 pre-correction SHA256: 4e59acbfece434a1ffcf5d4703c388066b1c97df8d7ba1741862d83e2d300a4a
+Saved: historico/implementation-r1/scripts/world/lobby_visual.gd

@@ -1,0 +1,10 @@
+{
+  "asset":"Tranca-Lata shockwave",
+  "canvas_px":[160,160],"atlas_px":[960,160],"frame_count":6,"display_scale":2,
+  "pivot":{"x":80,"y":80},"center_fixed":true,"center_transparent":true,
+  "max_radius_px":70,"alpha_values":[0,255],"animation":{"tag":"shockwave","loop":false,"speed":1.0,"duration_ms":140},
+  "palette":[{"hex":"#192031","opaque_pixels":3104},{"hex":"#373F4D","opaque_pixels":404},{"hex":"#70432C","opaque_pixels":1283},{"hex":"#925A36","opaque_pixels":4363},{"hex":"#B37949","opaque_pixels":2484},{"hex":"#CFC3B7","opaque_pixels":412},{"hex":"#F5A84F","opaque_pixels":1976},{"hex":"#F5E9D8","opaque_pixels":1360}],
+  "layers":["01 Navy contour","02 Copper pressure annulus","03 Dust lobes + fragments","04 Cream inner wake","05 Pressure rays"],
+  "frames":[{"index":0,"name":"compact","duration_ms":20,"bounds":[59,58,102,102],"max_radius_px":23.32,"opaque_pixels":845,"center_transparent":true},{"index":1,"name":"expansion_1","duration_ms":20,"bounds":[43,42,118,117],"max_radius_px":39.45,"opaque_pixels":1895,"center_transparent":true},{"index":2,"name":"expansion_2","duration_ms":20,"bounds":[25,24,136,135],"max_radius_px":57.43,"opaque_pixels":3422,"center_transparent":true},{"index":3,"name":"peak","duration_ms":20,"bounds":[12,11,149,147],"max_radius_px":69.89,"opaque_pixels":4595,"center_transparent":true},{"index":4,"name":"rupture","duration_ms":30,"bounds":[12,11,150,148],"max_radius_px":69.92,"opaque_pixels":3986,"center_transparent":true},{"index":5,"name":"fragments","duration_ms":30,"bounds":[21,14,143,144],"max_radius_px":69.07,"opaque_pixels":643,"center_transparent":true}],
+  "preview_pause_ms":700,"previews":{"contact":"contact-3x2-2x.png","normal":"shockwave-preview-real-2x.gif","slow":"shockwave-preview-slow-4x.gif"}
+}

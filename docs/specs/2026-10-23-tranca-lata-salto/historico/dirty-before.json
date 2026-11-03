@@ -1,0 +1,66 @@
+[
+  {
+    "path": "addons/godot-git-plugin/THIRDPARTY.md",
+    "hash": "D6F97DF007248867ABD7371DB54295FEDC6A77A496B8BFD7A9A86C4B7C1426F7"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target-atlas.png",
+    "hash": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+  },
+  {
+    "path": "assets/enemy/training_target/training_target.aseprite",
+    "hash": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8"
+  },
+  {
+    "path": "docs/README.md",
+    "hash": "786D7CD215F35A8FDB00A7BB7C9C04B6A1C84F1CEE7C4F11A97C571C50060797"
+  },
+  {
+    "path": "project.godot",
+    "hash": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD"
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "hash": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D"
+  },
+  {
+    "path": "scenes/exit_door.tscn",
+    "hash": "B3EFBA83E11E213B573ADD3422F8AB77722FCB61CE753DFE23CF6695A135F0D6"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "hash": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "hash": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D"
+  },
+  {
+    "path": "scenes/training_target.tscn",
+    "hash": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "hash": "0F7D8071764848FF18C57B21442D2668CFAF4EE1C68C3A14DFC94106262946AD"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "hash": "2D6587661C7559BD067AE24A3D49D2AB62DF2561607A7FB187A55EF8A96B1FD3"
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "hash": "E2274C171A5E55C6ACCE003A61EC4FC12D25EF7969F0AE72C2EA9A96160361A0"
+  },
+  {
+    "path": "scripts/world/main.gd",
+    "hash": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA"
+  },
+  {
+    "path": "scripts/world/run_controller.gd",
+    "hash": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A"
+  },
+  {
+    "path": "scripts/world/training_target.gd",
+    "hash": "A92466D96F0DEF3C20C70911E14F7E763A68F4ACC4E8EAEE7CAFA5B0C3D81E7C"
+  }
+]

@@ -1,0 +1,41 @@
+STATUS: done
+SUMMARY: Revisão final documental de V3 (plano.md e spec.md) concluída. Os cinco bloqueios identificados anteriormente (B1, B2, B3, A1 e M1) foram integralmente sanados na especificação técnica e no plano por etapas, sem deixar decisões em aberto para o usuário ou criar expansão indevida de escopo. Nenhuma nova contradição concreta, divergência geométrica ou ambiguidade arquitetural foi encontrada. O plano está consistente, delimitado e apto para implementação futura quando autorizada.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+1. *Alcançabilidade física de rotas (East → Upper)*: A margem de salto teórica (~71 unidades) depende de parâmetros balísticos nominais e aceleração contínua sem colisão de teto; a confirmação prática permanece pendente de verificação manual autorizada em Godot.
+2. *Diagnóstico visual inconclusivo*: Caso o isolamento estático e em runtime dos sprites de TrainingTarget e RivetWorker não aponte divergência nos estágios 1 a 6, o critério visual permanece suspenso/pendente para evitar alterações cegas de arte/shaders.
+3. *Ajuste visual de orientação do atlas*: A necessidade de espelhamento/flip nas células (0,1) e (2,1) para face interior no helper `factory_wall_visual.gd` só poderá ser validada visualmente na etapa de teste.
+NEXT_STEP: Aguardar autorização explícita do usuário para início da implementação (a ser executada conforme as regras do repositório por subagente `gpt-6-luna` com esforço `xhigh`, iniciando pela Etapa 1 ou Etapa 2 com congelamento de baseline SHA-256).
+
+---
+
+### Análise Detalhada dos Bloqueios Anteriores e Conformidade V3
+
+1. **B1 — Dono da Validação, Falha e Ciclo de Vida (Resolvido)**:
+   - `Main.prepare_authored_layout() -> bool` está estritamente delimitado como método idempotente baseado em dados locais e shapes declarados, sem chamadas a `@onready`, transform global dependente de viewport ativo ou consultas ao PhysicsServer/PhysicsDirectSpaceState2D.
+   - **Fluxo Managed**: `RunController` invoca a validação antes de `room_container.add_child`. Em caso de falha, descarta a instância via `Node.free()` (`free_room`), invoca `_fail_run`, não adiciona à árvore e impede `room_cleared` ou vitória indevida.
+   - **Fluxo Standalone**: `Main._enter_tree` executa a validação antes da chamada de `_ready` dos nós filhos. Em caso de falha, sinaliza estado inválido antes da ativação dos nós, bloqueia inicialização de combate, bloqueia input e mantém a saída trancada, expondo UI de erro/reinício após a árvore pronta sem spawnar entidades extras ou RNG.
+
+2. **B2 — Suporte e Fallback Determinístico do TrainingTarget (Resolvido)**:
+   - NodePaths relativos padronizados como `fixed_support_path` e `fallback_support_path` partindo do alvo (`../PlatformC` e `../PlatformA` em `main`; `../UpperPlatform` e `../WestPlatform` em `second_room`).
+   - Critérios objetivos de geometria: largura da plataforma $\ge 88$ (72 do collider + 8 de margem lateral em cada lado), contenção horizontal com margem de 8 unidades e contato vertical estrito (bottom do alvo = top da plataforma $\pm 0,5$ unidades).
+   - Contato com o suporte escolhido é explicitamente permitido e excluído da checagem de colisão; se o primário falhar, tenta exclusivamente o fallback fixo. Se ambos falharem, a sala é rejeitada sem uso de `randf_range`.
+
+3. **B3 — Spawns e Obstrução World AABB (Resolvido)**:
+   - Definida a regra matemática de não-interseção: rejeição apenas para área de sobreposição positiva $> 0,01\text{ un}^2$ contra corpos estáticos na World layer 1; toque tangencial de arestas não é considerado colisão impeditiva.
+   - Sensores e marcadores de patrulha (`Area2D`) são explicitamente desconsiderados como obstáculos estáticos.
+   - As cápsulas e AABBs de spawn do Player e do RivetWorker cabem folgadamente nas coordenadas delimitadas sem cruzar as novas paredes ($x=0..64$ e $x=1088..1152$).
+   - A configuração de `ShotOrigin` e a consulta de spawn da bola no `BallLauncher` são integralmente preservadas.
+
+4. **A1 — Alvo Sólido na Rota e Travessia Pós-Derrota (Resolvido)**:
+   - A especificação assume a solidez do TrainingTarget vivo (Layer 8 contra Player Mask 9).
+   - Em `UpperPlatform` (largura 190) com alvo centrado (largura 72), restam 59 unidades em cada extremidade. Subtraindo a cápsula do player (largura 28), resta um vão livre de 31 unidades de cada lado, viabilizando o combate em plataforma sem exigir dash ou atravessamento de collider.
+   - A liberação completa do trânsito entre plataformas é assegurada documentalmente após a emissão de `defeated` e o `queue_free()` do alvo.
+
+5. **M1 — Borda do Atlas, Row 55 e Edge 56 (Resolvido)**:
+   - O alinhamento vertical foi esclarecido na decomposição dos frames: a linha y=55 do atlas (indexada em 0) tem seu limite inferior na coordenada contínua y=56.
+   - Com frame 64×64, escala 2 e centralização:
+     - TrainingTarget em $y=392$: $392 + 2 \times (56 - 32) = 440$ (topo exato de Platform C).
+     - RivetWorker em root $y=560$, offset $-48$: $560 - 48 + 2 \times (56 - 32) = 560$ (topo exato do Floor).
+   - Eliminou-se a hipótese de gap de 2 unidades e estabeleceu-se a não alteração de assets antes da reprodução em runtime.

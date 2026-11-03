@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Delta R3 resolve no inline os 4 achados R2 verificáveis: ricochete_pressao com 10 cores distintas, oval_band sem largura negativa e com furo preservado, bolts/ticks/painéis em camada hardware por último, motor com steelLight esquerda/silver direita e manifest com ambos previews 432x352+864x704.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Sem auditoria pixel/paleta/engine; ordem de composição o/f/sh/hi/a e template Lua não verificáveis inline; oval_band sem guarda inner_ry=0 (não atingido nas chamadas atuais); carga mantém tampas assimétricas por decisão explícita; Grok R2 sem stdout.
+NEXT_STEP: Congelar estado R3-final pelos hashes listados e seguir para revisão leitora do próximo incremento, sem reabrir este delta.

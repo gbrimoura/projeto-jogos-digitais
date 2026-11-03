@@ -1,0 +1,38 @@
+[
+  {
+    "file": "scripts/world/main.gd",
+    "sha256": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66"
+  },
+  {
+    "file": "scripts/world/run_controller.gd",
+    "sha256": "E5B451693AEFDAFD09A6EE9293C33FEB6FB678559DF5496DB996D2849BD4C114"
+  },
+  {
+    "file": "project.godot",
+    "sha256": "42A90285FEACC10034CBD02D270B66A48A88E33AC33F570A6CFB67329D9C5FF1"
+  },
+  {
+    "file": "scenes/main.tscn",
+    "sha256": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905"
+  },
+  {
+    "file": "scenes/player.tscn",
+    "sha256": "D1D2707899A8CB3DEDFF8311A8FF46998C6D55E561580F421C935C30BAF6B46D"
+  },
+  {
+    "file": "assets/player/player-animations.png",
+    "sha256": "EBDEBF4898FF6E71E8CB4D1D3622C3564D7E7944E0697ABEEF86241EB89AE8DC"
+  },
+  {
+    "file": "assets/enemy/training_target/training_target-atlas.png",
+    "sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+  },
+  {
+    "file": "assets/enemy/rivet_worker/rivet_worker-atlas.png",
+    "sha256": "9028C991C29F072E4AA41C85FCFD7648F0650BB80AE4C41658BC056E26E75DD1"
+  },
+  {
+    "file": "assets/environment/factory_v1/background_floor1/modular/context-seed-000.png",
+    "sha256": "CA4251A9C9B1CFA33C5F011AB8DE7F496AEA677D3A5F86707202DE076D34C5EF"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "path": "scripts/world/room_transition.gd",
+    "sha256": "2A0EDA364FAEEEEE7BA06B349A8F1AEAF37407F3C29907543E52B8D075A08461"
+  },
+  {
+    "path": "scripts/world/side_door_visual.gd",
+    "sha256": "2C5E4369B9184C09ACDF55BC33248886FD6F652D029989F29CA9F92DFABE2389"
+  },
+  {
+    "path": "scripts/world/factory_wall_visual.gd",
+    "sha256": "1B67320689FDC71C76913F7A38C697B3914481D4226908076063F69320980F73"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D"
+  },
+  {
+    "path": "scripts/player/player.gd",
+    "sha256": "E294502C526A80601B27C620EAC1B9301FEFA5E4A523496454DE8F39B62E2520"
+  },
+  {
+    "path": "run_root.tscn",
+    "sha256": "B04067D9C02C3B3A2E80653C9FBB1187AEE82D27A41BF67E95DB9FF29318CD50"
+  },
+  {
+    "path": "scenes/player.tscn",
+    "sha256": "D1D2707899A8CB3DEDFF8311A8FF46998C6D55E561580F421C935C30BAF6B46D"
+  },
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "2D6587661C7559BD067AE24A3D49D2AB62DF2561607A7FB187A55EF8A96B1FD3"
+  },
+  {
+    "path": "scripts/world/training_target.gd",
+    "sha256": "2C88C39BF474EECBB4C852B5F46083040A11F44B589B9564A72EBF036C05F5BD"
+  },
+  {
+    "path": "addons/godot-git-plugin/THIRDPARTY.md",
+    "sha256": "D6F97DF007248867ABD7371DB54295FEDC6A77A496B8BFD7A9A86C4B7C1426F7"
+  }
+]

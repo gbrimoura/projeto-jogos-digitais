@@ -1,0 +1,13 @@
+Factory floor 1 — static hierarchy/contact preview, shared clear window bay
+Every cell is a fixed 1152x648 composition; sample platforms and character are static context props, not runtime captures.
+Bit order is base-left-right. Seed = base + 2*left + 4*right; this sheet enumerates the eight cosmetic combinations.
+
+Seed 0 / 000 — contact row 1, column 1: boiler wall / boiler circuit / service sign.
+Seed 1 / 100 — contact row 1, column 2: maintenance wall / boiler circuit / service sign.
+Seed 2 / 010 — contact row 1, column 3: boiler wall / service cabinets / service sign.
+Seed 3 / 110 — contact row 1, column 4: maintenance wall / service cabinets / service sign.
+Seed 4 / 001 — contact row 2, column 1: boiler wall / boiler circuit / press.
+Seed 5 / 101 — contact row 2, column 2: maintenance wall / boiler circuit / press.
+Seed 6 / 011 — contact row 2, column 3: boiler wall / service cabinets / press.
+Seed 7 / 111 — contact row 2, column 4: maintenance wall / service cabinets / press.
+All seeds keep the shared recessed window at native Rect2(344,56,38,78); modules stay complete and unmirrored.

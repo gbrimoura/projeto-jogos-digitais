@@ -1,0 +1,8 @@
+Delta R2 em modo somente leitura — conferindo se o plano fecha para implementação.
+Plano R2 localizado — lendo o spec para validar os invariantes.
+STATUS: done
+SUMMARY: Sim, concreto para implementação inicial revisável. Aritmética R2 confere: Carga lv1 1+2=3 não one-shota 4/6; máximo 4+6+6=16 primeiro acerto, 10 depois; velocidade +20%, dash mín 0,31, HP/dano/cadência/exemplos 6/8/12/18/24 e 4/5/8/12/16 conferem. Faltam apenas congelamentos pontuais abaixo.
+CHANGED_FILES: none
+TESTS: none
+RISKS: 1) IDs novos ainda “sugeridos”, sem strings exatas para counts/snapshot v1. 2) Campos tipo/velocidade/cd/cap 4x e “pode reutilizar health_recovered_per_rank” sem nome/tipo/assinatura exata do acquisition_heal. 3) Composição com 1 atributo capado (2 opções?) vs ambos capados (1 opção) não explicitada; risco de completar/duplicar. 4) Rejeição atômica fora-do-cap sem validador/unidade/erro localizados. 5) export_range “comportar16” sem teto exato; defaults 2 scripts/2 cenas, base Mola/Dínamo/cadência e clamp 0,31 vs subtração sem paths/unidades. 6) Predicado pós-build “nenhum elegível” ambíguo entre all-7-max vs oferta vazia transitória. 7) Idempotência restore/reapply (derivar de counts vs incremental) para velocidade/dash/HP não explicitada.
+NEXT_STEP: Congelar IDs, nomes de campos, regra 2-vs-1 opção, validador atômico, export_range/tetos e predicado all-max + derivação de counts, depois implementar.

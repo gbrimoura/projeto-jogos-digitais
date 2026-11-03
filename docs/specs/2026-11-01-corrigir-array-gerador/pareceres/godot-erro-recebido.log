@@ -1,0 +1,13 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 616.92 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060 Ti
+
+SCRIPT ERROR: Trying to assign an array of type "Array" to a variable of type "Array[int]".
+   at: _build_managed_entries (res://scripts/world/room_layout_generator.gd:93)
+   GDScript backtrace (most recent call first):
+       [0] _build_managed_entries (res://scripts/world/room_layout_generator.gd:93)
+       [1] generate_managed_layout (res://scripts/world/room_layout_generator.gd:38)
+       [2] prepare_authored_layout (res://scripts/world/main.gd:138)
+       [3] configure_run_managed (res://scripts/world/main.gd:1203)
+       [4] _prepare_room_candidate (res://scripts/world/run_controller.gd:207)
+       [5] _load_current_encounter (res://scripts/world/run_controller.gd:170)
+       [6] _ready (res://scripts/world/run_controller.gd:67)

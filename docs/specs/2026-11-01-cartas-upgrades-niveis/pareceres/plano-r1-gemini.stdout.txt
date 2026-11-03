@@ -1,0 +1,35 @@
+STATUS: done
+SUMMARY: Revisão estática inline do plano prospectivo de cartas, recompensas e níveis de inimigos concluída. A estrutura do plano é sólida e respeita as restrições do GDD (valores provisórios sem fechar economia/slots finais, teto técnico de 220, catálogo central em Resource, paleta fixa e desacoplamento do RNG). Foram identificados pontos de atenção contratuais em HP/snapshot, ciclo de vida de nós inimigos e transição de UI entre as fases A e B, com correções mínimas concretas detalhadas abaixo.
+
+FINDINGS:
+- [P1] Ciclo de vida e timing de configuração de nível dos inimigos (`EnemyLevel` vs `_ready`):
+  - Problema: O plano prevê configurar inimigos "fora da árvore ANTES dos _ready inimigos, nunca depois de health=max_health". Em cenas de sala onde inimigos já estão instanciados na hierarquia (ou execuções isoladas de teste de sala), os nós filhos executam `_ready` antes do pai (`Main`). Se `configure_level` for chamado estritamente após o nó entrar na árvore sem atualizar `health`, `current_health` permanecerá com o `max_health` base.
+  - Correção mínima: Implementar `configure_level(level: int, config: EnemyLevelConfigResource)` de forma idempotente em `rivet_worker.gd` e `training_target.gd`: armazenar `_base_max_health` imutável por instância e, ao aplicar a fórmula, se a entidade estiver com vida cheia ou ainda fora da árvore, sincronizar `current_health = maximum_health`.
+
+- [P1] Idempotência de HP e transição de sala (`Chassi Reforçado`):
+  - Problema: `PlayerHealth.restore_health_for_room_transition` já carrega e aplica `maximum_health` e `current_health` persistidos pelo `RunController`. Se `Player.apply_build(run_build)` for invocado a cada entrada de sala e calcular `maximum_health += rank`, há risco de cura indevida (+1 HP) a cada sala percorrida ou descompasso com o valor já restaurado.
+  - Correção mínima: Definir contratualmente que a cura delta (+1 HP atual e +1 HP máximo) ocorre exclusivamente no instante da aquisição da carta via `player_health.increase_max_health_and_heal(1)`. O método `apply_build` na entrada de novas salas apenas assegura que o teto `maximum_health` corresponda à soma base + ranks, sem modificar `current_health` (que é gerenciado estritamente pelos snapshots de transição).
+
+- [P1] Intertravamento de UI entre Fase A e Fase B:
+  - Problema: A Fase A remove o teto antigo `total_count == 0` em `RunController`/`Main` e dispara a oferta a cada sala, mas as novas cenas e scripts de UI (`UpgradeOffer`, `UpgradeCard`) só são criados na Fase B. Se a Fase A deixar a chamada de oferta desprovida de interface ou quebrar a cena existente, o estado intermediário fica inconsistente.
+  - Correção mínima: Delimitar que na Fase A o `Main` adapte o contêiner/bridge de recompensa existente para exibir os dados textuais/provisórios dos IDs do novo catálogo, ou mantenha uma chamada desacoplada via sinal/placeholder funcional até que a Fase B plugue a cena definitiva `scenes/upgrade_offer.tscn`.
+
+- [P2] Candidatos de oferta com pools assimétricos (Room 1 e Late Game):
+  - Problema: A regra "pelo menos 1 inédita e 1 evolução" pode quebrar se `owned_upgrades` for vazio (sala 1, zero evoluções) ou se todos os upgrades com cap estiverem maximizados (zero inéditas).
+  - Correção mínima: No método de seleção do `UpgradeCatalog`, separar explicitamente em `pool_ineditas` (rank == 0) e `pool_evolucoes` (0 < rank < cap). Garantir fallback seguro: se `pool_evolucoes.is_empty()`, preencher a oferta com inéditas; se `pool_ineditas.is_empty()`, preencher com evoluções/repetíveis; se o total elegível for menor que 3, a UI deve renderizar a quantidade real retornada sem exigir tamanho 3.
+
+- [P2] Reset do contador ambiental de `Ricochete de Pressão`:
+  - Problema: O contador de ricochetes ambientais (`_environmental_bounces`) incrementa em colisões não danificáveis. Em situações de rebatida/parry contínuo ou novo disparo da mesma bola, o acúmulo poderia persistir indevidamente.
+  - Correção mínima: Zerar explicitamente `_environmental_bounces = 0` no disparo inicial (`launch`) e a cada rebatida válida (`parry`/`swing`) no controlador da bola.
+
+- [P2] Compatibilidade estrita de snapshot em `RunBuild.replace_state`:
+  - Problema: O validador atual rejeita `count > 1` (`int(count) < 0 or int(count) > 1`) e exige contagem de chaves estrita.
+  - Correção mínima: Em `replace_state`, alterar a validação para `0 <= int(count) <= 220` (teto técnico da run), contabilizar `ids_from_counts` para qualquer `count > 0`, e aceitar dicionários legados preenchendo novos IDs ausentes com rank 0.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Complexidade de timing da UI na pausa pós-sala: garantir que `Main` bloqueie comandos de gameplay (dash, swing, tiro) enquanto a tela de cartas estiver aberta, liberando `EXIT_RELEASED` apenas após o clique confirmatório.
+- Sobrecarga visual no painel fixo de alvo: ao adicionar `NV.` junto ao nome do inimigo, verificar que a largura do rótulo com fonte bitmap 5×11 não corte o texto em resoluções 576×324.
+
+NEXT_STEP: Incorporar as correções mínimas no documento do plano e prosseguir para autorização da Fase A (implementação dos contratos de dados, catálogo, ranks, fluxo Main/RunController e escalonamento de nível de inimigos) pelo escritor Luna (`gpt-6-luna` `xhigh`).

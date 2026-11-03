@@ -1,0 +1,218 @@
+{
+  "protected": [
+    {
+      "path": "assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png",
+      "expected": "64D797D413875B0192886D42A89368A75118DCF2E7C06D8F78EE4C39F3CA823B",
+      "actual": "64D797D413875B0192886D42A89368A75118DCF2E7C06D8F78EE4C39F3CA823B",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/shockwave/tranca-lata-shockwave.aseprite",
+      "expected": "72651DC20F936B172CF725570D4EF8BA203DDBECA437D07238BFF0BB4CCB364A",
+      "actual": "72651DC20F936B172CF725570D4EF8BA203DDBECA437D07238BFF0BB4CCB364A",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/training_target-atlas.png",
+      "expected": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "actual": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/training_target-atlas.png.import",
+      "expected": "0232677B1AFF3817C28F0754DFD1A07FA07091BF94FF53508395A70B830D0DE2",
+      "actual": "0232677B1AFF3817C28F0754DFD1A07FA07091BF94FF53508395A70B830D0DE2",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/training_target.aseprite",
+      "expected": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "actual": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "unchanged": true
+    },
+    {
+      "path": "project.godot",
+      "expected": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+      "actual": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+      "unchanged": true
+    },
+    {
+      "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+      "expected": "E451F265002FD1B0D66D97712B16DDBD6AF37416CF7D303517022B67405D02D9",
+      "actual": "E451F265002FD1B0D66D97712B16DDBD6AF37416CF7D303517022B67405D02D9",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/main.tscn",
+      "expected": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7",
+      "actual": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/second_room.tscn",
+      "expected": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D",
+      "actual": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/solid_platform.tscn",
+      "expected": "660D0610CA1DF8494E1E884743D6FF5CF47E2BD6880ED62724384E6B38005260",
+      "actual": "660D0610CA1DF8494E1E884743D6FF5CF47E2BD6880ED62724384E6B38005260",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/training_target.tscn",
+      "expected": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE",
+      "actual": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/enemy/containment_attack_visual.gd.uid",
+      "expected": "35B67FDBEE0F09ADE98AB069D33760FB6F529DE689CF8EF57B3DFB56754144EB",
+      "actual": "35B67FDBEE0F09ADE98AB069D33760FB6F529DE689CF8EF57B3DFB56754144EB",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/main.gd",
+      "expected": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "actual": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/main.gd.uid",
+      "expected": "0FF56AF8C4D67372B2802F8AEBE5850A0B8D374093476C20AC23E99F0C49BCA1",
+      "actual": "0FF56AF8C4D67372B2802F8AEBE5850A0B8D374093476C20AC23E99F0C49BCA1",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/room_layout_generator.gd",
+      "expected": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D",
+      "actual": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/room_layout_generator.gd.uid",
+      "expected": "7A2D2E96810154D32F46295E7857B8ED396D5A86205C288C4537502CAD322D68",
+      "actual": "7A2D2E96810154D32F46295E7857B8ED396D5A86205C288C4537502CAD322D68",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/solid_platform.gd",
+      "expected": "2F6233E4B67C3598B4F4E4C044E53475FC55EB4289FBA709F2E8BFE34DADE115",
+      "actual": "2F6233E4B67C3598B4F4E4C044E53475FC55EB4289FBA709F2E8BFE34DADE115",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/solid_platform.gd.uid",
+      "expected": "237E4DC7C112279CB821C73BC7CD084DAC13FDF50A32336BD37310E8F66D0B5F",
+      "actual": "237E4DC7C112279CB821C73BC7CD084DAC13FDF50A32336BD37310E8F66D0B5F",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/training_target.gd.uid",
+      "expected": "C03CAE51F24B4E3B559AD5FFE59D133B1E096FBCEBCEFD52AFD2A795E4C2CB5D",
+      "actual": "C03CAE51F24B4E3B559AD5FFE59D133B1E096FBCEBCEFD52AFD2A795E4C2CB5D",
+      "unchanged": true
+    }
+  ],
+  "dirty_protected": [
+    {
+      "path": "addons/godot-git-plugin/THIRDPARTY.md",
+      "expected": "D6F97DF007248867ABD7371DB54295FEDC6A77A496B8BFD7A9A86C4B7C1426F7",
+      "actual": "D6F97DF007248867ABD7371DB54295FEDC6A77A496B8BFD7A9A86C4B7C1426F7",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/training_target-atlas.png",
+      "expected": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "actual": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/training_target.aseprite",
+      "expected": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "actual": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8",
+      "unchanged": true
+    },
+    {
+      "path": "project.godot",
+      "expected": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+      "actual": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/exit_door.tscn",
+      "expected": "B3EFBA83E11E213B573ADD3422F8AB77722FCB61CE753DFE23CF6695A135F0D6",
+      "actual": "B3EFBA83E11E213B573ADD3422F8AB77722FCB61CE753DFE23CF6695A135F0D6",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/main.tscn",
+      "expected": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7",
+      "actual": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/second_room.tscn",
+      "expected": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D",
+      "actual": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D",
+      "unchanged": true
+    },
+    {
+      "path": "scenes/training_target.tscn",
+      "expected": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE",
+      "actual": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/enemy/rivet_worker.gd",
+      "expected": "2D6587661C7559BD067AE24A3D49D2AB62DF2561607A7FB187A55EF8A96B1FD3",
+      "actual": "2D6587661C7559BD067AE24A3D49D2AB62DF2561607A7FB187A55EF8A96B1FD3",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/exit_door.gd",
+      "expected": "E2274C171A5E55C6ACCE003A61EC4FC12D25EF7969F0AE72C2EA9A96160361A0",
+      "actual": "E2274C171A5E55C6ACCE003A61EC4FC12D25EF7969F0AE72C2EA9A96160361A0",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/main.gd",
+      "expected": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "actual": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/world/run_controller.gd",
+      "expected": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A",
+      "actual": "DB8C3A7358D1954EF08E3FA17A3DB1E76395E170B5E2223E7A1B38DC47223C9A",
+      "unchanged": true
+    }
+  ],
+  "frozen_r2": [
+    {
+      "path": "scripts/world/training_target.gd",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/enemy/tranca_lata_jump.gd",
+      "unchanged": true
+    },
+    {
+      "path": "scripts/enemy/containment_attack_visual.gd",
+      "unchanged": true
+    },
+    {
+      "path": "resources/enemy/training_target_sprite_frames.tres",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png",
+      "unchanged": true
+    },
+    {
+      "path": "assets/enemy/training_target/jump/tranca-lata-jump-v1.aseprite",
+      "unchanged": true
+    }
+  ]
+}

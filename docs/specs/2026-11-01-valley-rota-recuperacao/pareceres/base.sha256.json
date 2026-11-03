@@ -1,0 +1,46 @@
+[
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\room_layout_generator.gd",
+    "Hash": "7B7DA02C9BEF71052BE4DB4286DB489837CA69FD5CC5E8162BB31C32CB97F53E"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\hud\\run_hud_bridge.gd",
+    "Hash": "D4A69DBE10E4E7C37D16EDEDD9E92BCCBE88EE185D01FD1EB34FD1E7483B4C94"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\main.gd",
+    "Hash": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\run_controller.gd",
+    "Hash": "E5B451693AEFDAFD09A6EE9293C33FEB6FB678559DF5496DB996D2849BD4C114"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\room_run_layout.gd",
+    "Hash": "89B2453C198AFC1A661C6E290401CE3D5369D37FFE120AD4D238BB7806673D9E"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\movement_controller.gd",
+    "Hash": "E0773813DAD5BB424F412F7A58050D5E5CFE5DDB94640AEF574F96533CC1EAF9"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\player_movement_config.tres",
+    "Hash": "72BFB502C5069FCFA3CB0681FFCECE9586EF7A807658720A88B85B99D6267202"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\hud\\hud_root.gd",
+    "Hash": "31A15768A459F43885F75D5B3B11BE03D5697DA6892DF3CEC541EBCDD3628CA6"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scenes\\ui\\hud\\hud_root.tscn",
+    "Hash": "EF8A3CD2488B2B867EFD0F7849881C3FAAE3BF656580E7BEFF5E2911C9866096"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\exit_door.gd",
+    "Hash": "F238B62F62A12D0499C410B96519E55CC79811CDCBB7FAAF1DF5A99152D7F140"
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\project.godot",
+    "Hash": "42A90285FEACC10034CBD02D270B66A48A88E33AC33F570A6CFB67329D9C5FF1"
+  }
+]

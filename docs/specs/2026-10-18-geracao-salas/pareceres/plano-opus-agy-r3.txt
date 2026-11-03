@@ -1,0 +1,36 @@
+STATUS: done
+
+SUMMARY: Revisei somente leitura o delta R3 e as clarificações, usando apenas o que veio inline. Não usei ferramentas, não abri arquivos e não criei artefato de plano, como você pediu. O delta passa sem bloqueios. As contas abaixo foram refeitas por mim:
+
+- **Correção do grid 8**:
+  - Os bordos antigos 220 e 498 estavam fora do grid 8 (220/8 = 27,5; 498/8 = 62,25). A correção era mesmo necessária.
+  - Novos centros 324/596/860 com larguras 200/184/184 dão os segmentos 224..424, 504..688 e 768..952.
+  - Todos os bordos são múltiplos de 8 (28, 53, 63, 86, 96, 119). As larguras também (25, 23 e 23 vezes 8).
+  - Vãos: 504−424 = 80 e 768−688 = 80. Confere.
+  - Os centros ficam fora do grid (40,5 / 74,5 / 107,5). Isso é inevitável com meia-largura 100 ou 92 e não é defeito, desde que a regra valha para os bordos.
+- **Vertical**:
+  - Topos 440/400/376 estão no grid 8 (55/50/47 vezes 8). Com espessura 24, as bases ficam em 464/424/400. Confere.
+  - Folga até o piso 560: 96, 136 e 160. O mínimo de 96 confere.
+  - Subida entre plataformas: 40 + 24 = 64. Fica exatamente no limite do acumulado, sem sobra.
+  - Teto em y 0..64 contra o topo mais alto 376: sobram 312 px. Não há conflito.
+- **Limites da faixa**:
+  - O primeiro bordo esquerdo, 224, está dentro de 208..256.
+  - O último bordo direito, 952, está abaixo de 980 (sobram 28).
+  - As larguras ficam dentro de 104..216.
+  - Primeiro spawn: 160 + 14 + 24 = 198, que é ≤ 224. A distância livre real é 224 − 174 = 50.
+  - Segundo spawn: 166, que é ≤ 224. Confere.
+- **Clarificações**: coordenadas locais ao Main sem PhysicsServer, setter de size chamando `_sync_geometry` fora da árvore, flags de randomize em false, shapes locais por instância, as duas fixtures em main.gd, ExitDoor por path exato sem grupos, free do nó gerenciado antes do add seguido de `_fail_run` e restart do HUD, subida acumulada de 64, e 18 tiles de 32 px ampliados 2x. Todas estão coerentes entre si e com o que a R2 pediu.
+
+CHANGED_FILES: none
+
+TESTS: none. Só conferi as contas no papel. Não executei engine, Godot nem o jogo, e não afirmo que nada disso foi testado.
+
+RISKS:
+1. **Piso até a primeira plataforma**: são 120 px (560 → 440). Isso não entra na subida acumulada de 64 entre plataformas. A SPEC precisa deixar claro que 64 vale só entre plataformas, e a altura do pulo tem que alcançar 120. Não dá para verificar isso inline.
+2. **Alcance horizontal**: os vãos de 80 combinados com subida de 40 ou 24 dependem dos parâmetros de pulo, que não vieram inline.
+3. **Tiles de 64 px na tela**: 32 px × 2 = 64. As larguras 200/184 e os bordos 224/504/768 não são múltiplos de 64. Se a arte for repetida tile a tile, aparecem tiles parciais ou cortados. Convém deixar explícito que o grid 8 vale para colisão e geometria e que a arte aceita corte, ou fatia em 9 partes.
+4. **Setter fora da árvore**: `_sync_geometry` não pode depender de `get_tree()` nem de `is_inside_tree()`. Também precisa rodar de novo em `_ready`, para o caso de o size ter sido definido antes de o nó entrar na árvore.
+5. **Free antes do add**: na implementação, conferir que o nó nunca entrou na árvore e que não há dupla chamada de `_fail_run` nem reinício duplicado do HUD.
+6. **ExitDoor por path exato**: funciona, mas quebra se o nó for renomeado. É uma escolha deliberada; só registro.
+
+NEXT_STEP: Deixar explícito na SPEC que o limite de 64 vale só entre plataformas e que o pulo precisa cobrir 120 do piso à primeira. Registrar também a política de arte para larguras que não são múltiplas de 64. Depois disso, congelar o plano R3. Os riscos 4 e 5 ficam para os revisores da implementação, que vão analisar o código separadamente.

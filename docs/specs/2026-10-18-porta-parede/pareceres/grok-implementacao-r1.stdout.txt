@@ -1,0 +1,64 @@
+STATUS: done  
+SUMMARY: Packed door scene, GDScript presentation, and both room instance overrides match the requested horizontal back-wall art, 2-frame sheet, scale 2, z=-2, preserved 96x108 sensor, and E transition. Lua source matches 320x80 / 160x80 / internal 128x64 / 48px clearance / 20 opaque colors. Room-root transforms, wall ranges, sibling z, and the on-disk PNG are not in the provided hunks, so they are unverified. Lua export path and `sheet:drawImage` compositing are the only concrete production defects.
+
+CHANGED_FILES: none  
+TESTS: none
+
+## Syntax (concrete)
+
+`scenes/exit_door.tscn` is valid Godot 4: `load_steps=4` (2 ext + 1 sub + packed), `RectangleShape2D` 96x108, `Sprite2D` `hframes=2`, `scale=(2,2)`, `z_index=-2`, `texture_filter=1` (nearest), default `centered=true`. Child order is `SensorShape` (0), `DoorArt` (1), `DoorLabel` (2), which matches the `index=` overrides in the room diffs.
+
+`scripts/world/exit_door.gd` is valid GDScript. `$DoorArt` / `$DoorLabel` exist. Frame domain is `{0,1}` only. Typed `transition_requested(player: Player)`, `_unhandled_input` + `"interact"`, and `is_player_in_range()` overlap check are intact. CRLF in the paste is not a parse error.
+
+Lua is valid Aseprite script structure. Door pixels go through `C.*` only (`PALETTE_HEX` length 20, alpha 255). `rgba("15110E")` is montage-only, not on the door sheet.
+
+## Scene integration (against stated numbers)
+
+Packed defaults implement the right-hand exit: `DoorArt` at `(-80,-26)`, scale 2, z=-2. Entrance overrides match the spec: `DoorArt` `(80,-26)`, `flip_h=true`, label reflow to the in-room side.
+
+With default centered sprites those offsets are geometrically consistent with walls at x `0..64` and `1088..1152`:
+
+- Exit root `(1040,522)` → art AABB `800..1120` × `416..576`. Internal 128px frame lands at world `832..1088` (flush with the inner right wall). The outer 16 native px tuck behind the sidewall at z=-1.
+- Entrance root `(112,522)` → art AABB `32..352` × `416..576`. Internal frame lands at world `64..320` (flush with the inner left wall).
+
+No door body/collision was added. Area2D stays `collision_layer=0`, `mask=2`, sensor only. That is the requested back-wall art with no physical passage. E still emits `transition_requested` after the same guards (`door_role`, `interaction_enabled`, `_terminal_complete`, `_room_is_cleared`, `_transition_busy`, live player in overlap).
+
+Entrance remains frame 0 and non-interactive (`interaction_enabled=false`, `SensorShape.disabled=true` unchanged vs baseline).
+
+## Baseline regressions
+
+Removed `DoorPanel` / `PortalGlow` / `DoorRim` / `DoorSeal` and their color/seal presentation. Replacement mapping is consistent with the old `is_open := _room_is_cleared and not _transition_busy` (open = frame 1; busy/blocked/entrance = frame 0; terminal-complete still looks open). Label copy and `[E] ENTRAR` are preserved. Child `index` updates in `main.tscn` and `second_room.tscn` match the new packed tree.
+
+Not a logic regression: during `"ABRINDO SAÍDA..."` the sprite is closed (frame 0), same as old `is_open==false`.
+
+Not visible in the hunks, therefore not confirmed: Exit/Entrance **root** positions, wall node x-ranges, backdrop z=-10, sidewall z=-1, actor z=1, `second_room` width, or any third `ExitDoor` instance still overriding deleted node names.
+
+## Production Lua
+
+Specified sheet is authored correctly: `drawWallBase` at ox `0` and `160`; closed leaf only on frame 0; open pocket only on frame 1; canvas `Sprite(320,80)`; `saveCopyAs` PNG is the Godot path’s intended flatten (layers composite). Internal recess is `rect(..., 16, 8, 128, 64)`. Open throat is `y=16, h=48` (y 16..63). Full 160x80 fill is opaque wall before detail.
+
+Two production defects, in priority order:
+
+1. Default `out` is relative (`assets/environment/...`) while `root` is absolute. Atlas/player reads use `root`; PNG/aseprite writes do not. Godot loads `res://assets/environment/factory_v1/door/porta-fabrica-horizontal-v2.png`. A non-project CWD will write the runtime file to the wrong place.
+2. Runtime PNG comes from layered `sprite:saveCopyAs`. Montage and `-preview-4x.png` come from `sheet:drawImage(closed/open)`. If `Image:drawImage` copies zero-alpha instead of compositing, `sheet` wipes the wall/leaf and the previews diverge from the PNG Godot uses.
+
+Montage placement (`left` x=32, `right` x=800, door top `y0+40` → world y=416, walls at 0/1088, floor line 560) agrees with the Godot math. Second row shows both ends open; that is preview copy, not runtime (entrance stays frame 0). Do not treat that row as a game-state bug.
+
+PNG binary size/palette/opacity cannot be checked from this source pack.
+
+## RISKS
+
+- Room transforms and sibling z/wall x are required by spec but absent from the supplied diffs; packed art offsets are correct only if roots really are `(1040,522)` and `(112,522)`.
+- Lua default `out` can miss the resource Godot references.
+- `sheet:drawImage` may corrupt preview/montage vs layered PNG.
+- On-disk `porta-fabrica-horizontal-v2.png` is unverified (must be 320x80, two opaque 160x80 frames, 20 colors).
+- Any other `ExitDoor` instance still pointing at `DoorPanel`/`PortalGlow`/`DoorRim`/`DoorSeal` will break.
+- Door AABB bottom is world y=576, 16px below floor 560; that is implied by the specified offsets, not a transform typo.
+
+## NEXT_STEP
+
+1. Confirm in `scenes/main.tscn` and `scenes/second_room.tscn` (no design change): EntranceDoor `(112, 522)`, ExitDoor `(1040, 522)`, walls x `0..64` and `1088..1152`, z backdrop -10 / walls -1 / actors 1. Packed `DoorArt` already has the specified local offsets and z=-2.
+2. Point Lua `out` at `root .. "/assets/environment/factory_v1/door/porta-fabrica-horizontal-v2"` and re-export so Godot’s ExtResource path is the file actually written.
+3. Composite `sheet` with visible-pixel blit (or flatten the sprite) so `-preview-4x.png` / montage match `saveCopyAs` PNG; then confirm PNG is 320x80, opaque, 20 colors, `hframes=2`.
+4. Grep remaining packed/instance overrides for deleted door node names; fix only those stale paths.
+5. Do not change sensor 96x108, E/`transition_requested`, collision, roles, or the specified positions/z/scale.

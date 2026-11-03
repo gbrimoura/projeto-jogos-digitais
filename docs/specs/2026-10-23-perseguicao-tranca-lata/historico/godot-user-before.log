@@ -1,0 +1,69 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 616.92 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060 Ti
+
+SCRIPT ERROR: Parse Error: Could not find type "TrancaLataJump" in the current scope.
+   at: GDScript::reload (res://scripts/world/training_target.gd:80)
+SCRIPT ERROR: Parse Error: Identifier "TrancaLataJump" not declared in the current scope.
+   at: GDScript::reload (res://scripts/world/training_target.gd:107)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "plan" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/world/training_target.gd:252)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "refreshed" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/world/training_target.gd:282)
+SCRIPT ERROR: Parse Error: Identifier "TrancaLataJump" not declared in the current scope.
+   at: GDScript::reload (res://scripts/world/training_target.gd:336)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "clearance" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/world/training_target.gd:336)
+SCRIPT ERROR: Parse Error: Cannot infer the type of "discriminant" variable because the value doesn't have a set type.
+   at: GDScript::reload (res://scripts/world/training_target.gd:337)
+SCRIPT ERROR: Parse Error: Identifier "TrancaLataJump" not declared in the current scope.
+   at: GDScript::reload (res://scripts/world/training_target.gd:424)
+SCRIPT ERROR: Parse Error: Identifier "TrancaLataJump" not declared in the current scope.
+   at: GDScript::reload (res://scripts/world/training_target.gd:516)
+SCRIPT ERROR: Compile Error: Failed to compile depended scripts.
+   at: GDScript::reload (res://scripts/world/main.gd:0)
+ERROR: Failed to load script "res://scripts/world/main.gd" with error "Compilation failed".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+ERROR: No loader found for resource: res://assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png (expected type: Texture2D)
+   at: _load (core/io/resource_loader.cpp:332)
+ERROR: res://resources/enemy/training_target_sprite_frames.tres:67 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://resources/enemy/training_target_sprite_frames.tres:67 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/enemy/training_target/jump/tranca-lata-jump-atlas-v1.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Failed loading resource: res://resources/enemy/training_target_sprite_frames.tres.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: No loader found for resource: res://assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png (expected type: Texture2D)
+   at: _load (core/io/resource_loader.cpp:332)
+ERROR: res://resources/enemy/tranca_lata_shockwave_sprite_frames.tres:6 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://resources/enemy/tranca_lata_shockwave_sprite_frames.tres:6 - Parse Error: [ext_resource] referenced non-existent resource at: res://assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: Failed loading resource: res://resources/enemy/tranca_lata_shockwave_sprite_frames.tres.
+   at: _load (core/io/resource_loader.cpp:317)
+ERROR: res://scenes/training_target.tscn:35 - Parse Error: [ext_resource] referenced non-existent resource at: res://resources/enemy/training_target_sprite_frames.tres.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: res://scenes/training_target.tscn:104 - Parse Error: [ext_resource] referenced non-existent resource at: res://resources/enemy/tranca_lata_shockwave_sprite_frames.tres.
+   at: _printerr (scene/resources/resource_format_text.cpp:41)
+ERROR: There is no animation with name 'idle'.
+   at: set_animation (scene/2d/animated_sprite_2d.cpp:585)
+   GDScript backtrace (most recent call first):
+       [0] _load_current_encounter (res://scripts/world/run_controller.gd:65)
+       [1] _ready (res://scripts/world/run_controller.gd:46)
+ERROR: There is no animation with name 'impact'.
+   at: set_animation (scene/2d/animated_sprite_2d.cpp:585)
+   GDScript backtrace (most recent call first):
+       [0] _load_current_encounter (res://scripts/world/run_controller.gd:65)
+       [1] _ready (res://scripts/world/run_controller.gd:46)
+ERROR: Main: layout autoral inválido — TrainingTarget não está no modo de suporte autoral
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _fail_authored_layout (res://scripts/world/main.gd:211)
+       [1] prepare_authored_layout (res://scripts/world/main.gd:139)
+       [2] configure_run_managed (res://scripts/world/main.gd:652)
+       [3] _load_current_encounter (res://scripts/world/run_controller.gd:77)
+       [4] _ready (res://scripts/world/run_controller.gd:46)
+ERROR: RunController: ERRO: não foi possível configurar a sala para esta run. Layout: TrainingTarget não está no modo de suporte autoral
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _fail_run (res://scripts/world/run_controller.gd:485)
+       [1] _load_current_encounter (res://scripts/world/run_controller.gd:85)
+       [2] _ready (res://scripts/world/run_controller.gd:46)

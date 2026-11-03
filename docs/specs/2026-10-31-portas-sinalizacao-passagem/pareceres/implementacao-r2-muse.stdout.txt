@@ -1,0 +1,9 @@
+STATUS: done
+SUMMARY: Revisão Godot 4.7 somente-leitura da sinalização de portas: labels removidos, seta cardinal pós-clear, vão real via recorte + VOID z=-1 atrás do Player. Sem P1 concreto no texto autorizado.
+FINDINGS:
+- P1: none. Física por centro da cápsula/gate/latch/set_deferred intacta; `configure_managed_orientation` + `_line_point_in_room`/`_signed_distance`/`_point_is_inside_exit_opening` preservam contrato DOWN 604/pés 642; `set_room_cleared/busy/terminal/retry` + `indicator_visible=exit+clear+!busy+!terminal` corretos; `_indicator_offset` R2 dentro do vão; `DoorLabel` preservado index2 invisível/vazio; standalone failure via optional path+warning sem apagar outros owners.
+- P2: `scripts/world/side_door_visual.gd::_draw()` ignora `flip_h` — trigger: `scripts/world/exit_door.gd::_configure_visual_orientation` seta `flip_h=true` para `direction==Vector2i(-1,0)`, `door_foreground_visual.gd` espelha via `draw_set_transform`, mas `side_door_visual` desenha `SHADOW` esquerda/`COPPER` direita fixos. Efeito cosmético em porta LEFT aberta.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Fechado depende de parede/piso cheios atrás das grades (`_set_visual_open opening_enabled=false` => `_draw_interval` full); incidente arquivo residual vazio fora do repo fora do Godot não é asset e não impede visual — não repetir delete/move; reconfirmação Opus AGY quota 429 não conta como parecer.
+NEXT_STEP: Solicitar Opus Cursor exato `claude-opus-5-5-high`; decidir se corrige P2 espelhamento do back LEFT em incremento futuro.

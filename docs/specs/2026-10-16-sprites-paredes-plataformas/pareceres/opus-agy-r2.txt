@@ -1,0 +1,98 @@
+STATUS: blocked
+
+SUMMARY: Revisei o plano/spec V2 só pelo texto inline. Não usei ferramentas, não li arquivos e não criei artefatos. Não conferi as referências de linha e tratei os fatos citados como dados. Os pontos de R1 foram resolvidos no texto: parede direita sólida, ExitDoor em x=1040, WallVisuals e fórmula de spawn sem RNG. Restam 3 problemas que impedem executar o plano como está escrito (B1–B3) e 1 contradição de rota que pede decisão (A1). Todos são correções documentais pontuais e não exigem redesenho. Fiz as contas destes itens e todas fecham:
+- paredes 0..64 e 1088..1152;
+- centro seguro do jogador em 78..1074;
+- sensor da porta em 992..1088 e painel em 1016..1064, alcançável pelo piso;
+- bounds, topos e vãos das plataformas;
+- retorno East→Upper com 0,676 s, alcance ~176 e margem ~71;
+- spawns do alvo em (915,392), (615,325), (290,420) e (340,420);
+- bounds do worker dentro de 64..1088.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+
+**Bloqueantes**
+
+- **[B1] Plano Decisão 5 / spec §6 — o último fallback não tem dono.**
+  - "Restaurar e validar a tabela autoral antes de criar inimigos" e "rejeitar o carregamento da sala" exigem código que:
+    - guarde a tabela de plataformas em runtime;
+    - mova as plataformas irmãs;
+    - controle o início do combate e o RunRoot.
+  - Nenhum arquivo listado cobre isso: `main.gd` não está na lista, `solid_platform.gd` está vetado, e `training_target.gd` mexendo nas plataformas irmãs sairia do escopo.
+  - A ordem também não fecha: quem valida é o próprio TrainingTarget, que já é um inimigo criado.
+  - Com randomize desligado e posições gravadas na cena, "restaurar" fica redundante.
+  - É preciso escolher uma de duas saídas:
+    - **(a) Falha local:** `push_error`, alvo sem colisão, sem ataque e sem render. Nesse caso, definir se a sala conta como liberada, porque isso abriria a ExitDoor em standalone.
+    - **(b) Contrato no RunRoot:** incluir `main.gd` na lista e definir o contrato também para o modo managed.
+
+- **[B2] Spec §6 — a validação "sem interseção com outra geometria" falha por construção.**
+  - O corpo termina exatamente no topo do suporte, então sempre há contato com ele.
+  - Sem regra explícita, primário e fallback podem falhar sempre e cair em B1.
+  - Falta definir:
+    - que a consulta usa só a layer World;
+    - que o próprio suporte fica excluído;
+    - a tolerância (por exemplo, encolher o rect em 1 unidade);
+    - se jogador e worker contam como obstáculo.
+
+- **[B3] Spec §3/§5 — falta inventariar o que fica fora do novo interior.**
+  - As faces internas passam de 0/1152 para 64/1088.
+  - PlatformA e WestPlatform ficam com folga de 68, menor que a cápsula de 76.
+  - A spec só confere worker e porta. Ficam de fora:
+    - spawn e marcadores de entrada do Player, em standalone e managed;
+    - spawn da bola;
+    - pickups;
+    - posição inicial da câmera.
+  - Todo centro de jogador fora de x=78..1074 nasce dentro da parede.
+  - No piso, um jogador entre x=166..414 (main, sob A) ou x=206..474 (second_room, sob West) nasce dentro da plataforma.
+  - É preciso uma tabela dos spawns atuais com essa checagem antes da Etapa 2.
+
+**Alto**
+
+- **[A1] Spec §5/§6 — o alvo fica sobre plataformas que fazem parte da rota.**
+  - UpperPlatform, o suporte primário de second_room, é o meio da rota West→Upper→East. Os fallbacks PlatformA e WestPlatform também estão em rotas.
+  - Na Upper, o corpo de 72×96 deixa só 59 unidades livres de cada lado.
+  - A spec não diz se o collider do alvo bloqueia jogador ou bola (layer/mask), nem se continua lá depois da derrota.
+  - Se bloquear:
+    - atravessar exige pular um obstáculo de 96 com ápice de 128;
+    - a janela acima de 96 dura ~0,4 s, ou seja, ~104 unidades a 260/s, contra 72+28=100 necessárias: margem ~4;
+    - o pouso East→Upper fica limitado a 59 unidades.
+  - Nesse caso, o critério "rotas avaliadas nos dois sentidos" contradiz a posição do alvo.
+  - É preciso declarar a layer do alvo e decidir: trocar o suporte primário ou avaliar a rota só após a derrota.
+
+**Médios**
+
+- **[M1] Spec §3 — orientação dos tiles e detalhes do helper.**
+  - O tile (0,1), "lateral esquerda", tem o acabamento voltado para fora à esquerda. A parede esquerda da sala mostra a face direita, voltada para o interior, então o mapeamento pode estar invertido.
+  - Declarar o critério: face acabada voltada para o interior.
+  - Também faltam:
+    - posição dos nós (LeftWallVisual em x=0, RightWallVisual em x=1088);
+    - de onde o helper pega a textura: TileSet source 0 ou o PNG direto.
+
+- **[M2] Etapas / aceite — o que fica de pé só com autorização de implementação.**
+  - A Etapa 1 não gera nenhuma correção sem observar o render. Os aceites de sprite, bounds reais, LOS e rotas não podem ser verificados, e o rollback "se os critérios falharem" fica sem gatilho.
+  - Declarar que, nesse cenário:
+    - a Etapa 1 fica bloqueada;
+    - o aceite fica "pendente de verificação";
+    - a queixa principal (sprites invisíveis) não será resolvida.
+  - Opcional: liberar os passos 1–2 do isolamento (alfa do PNG, UID/regiões), que são leitura estática.
+
+**Baixos**
+
+- **[L1] Spec §5:** "vão20" (Floor→A) e "vão92" (Floor→West) não têm definição, já que o Floor fica embaixo da plataforma. Definir ou remover.
+- **[L2] Spec §5:** a folga de 80 sob B deixa a cápsula de 76 passar fisicamente. Escrever "passável, não garantida" em vez de "não considerar passagem".
+- **[L3] Spec §5/§6:**
+  - "Manter tamanho" ao lado de uma tabela com larguras diferentes: confirmar que são as larguras atuais e que cada instância tem seu próprio RectangleShape2D (não compartilhado).
+  - "Centro global" deve ser o do rect de colisão, não a origem do nó, caso haja offset.
+- **[L4] Spec §3:** o recorte y=640..648 fica todo atrás do Floor (560..648). Não causa problema e é opcional.
+- **[L5] Spec §6:** caminhos como `../PlatformC` supõem que o alvo é irmão das plataformas. Ajustar à hierarquia real de cada cena.
+
+NEXT_STEP: Fazer uma V3 documental que resolva B1–B3 e M1, com decisões do usuário sobre:
+- a política de falha terminal em B1 e seu efeito na liberação da sala e da porta;
+- se o alvo bloqueia o jogador e onde fica o suporte primário (A1);
+- se a Etapa 1 continua bloqueada sem autorização de testes (M2).
+
+Depois, reenviar aos revisores só as seções alteradas (§3, §5, §6 e Etapas).

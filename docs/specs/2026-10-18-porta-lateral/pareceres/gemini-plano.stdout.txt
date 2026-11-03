@@ -1,0 +1,10 @@
+STATUS: done
+SUMMARY: Plano e especificação revisados em modo somente leitura. A abordagem corrige o problema central ao mover a porta para um recorte lateral de 64×128 px (y=432..560) nas faixas x=0..64 e x=1088..1152, eliminando o painel na parede de fundo e preservando intactos a física (64×648), o sensor (96×108 em x=992..1088), a tecla E e as transições de sala. A matemática de posicionamento (offset local `+80,-26` na saída e `-80,-26` na entrada) está consistente.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+1. **Fase de textura no recorte vertical (`factory_wall_visual.gd`)**: ao omitir a faixa y=432..560, o helper precisa calcular a amostragem UV/posição dos tiles baseando-se na coordenada Y global/absoluta da parede, e não no índice incremental do loop de desenho, evitando descompasso visual nos tiles abaixo de y=560.
+2. **Parametrização de lado/orientação em `exit_door.gd`**: a saída utiliza offset local `(+80, -26)` e a entrada `(-80, -26)` com acabamento invertido. É indispensável prever um parâmetro exportado explícito (ex.: `door_side` ou espelhamento horizontal) para configurar as instâncias de `Main` e `SecondRoom` sem quebrar o alinhamento.
+3. **Oclusão de fundo no vão lateral**: com `WallVisuals` omitindo a área em `z=-1`, `SideDoorVisual` deve renderizar preenchimento escuro opaco em toda a área de 64×128 px para evitar vazamento da cor de fundo (ClearColor) ou de camadas subjacentes através da parede externa.
+4. **Snapshot de baseline**: assegurar que a etapa 1 (registro de cópias locais e SHA-256 em `historico/baseline-local/`) ocorra estritamente antes de qualquer modificação nos helpers e cenas autorizadas.
+NEXT_STEP: Encaminhar o parecer para a coordenação do agente principal e prosseguir com a implementação pelo subagente delegado (`gpt-6-luna` `xhigh`), aplicando os ajustes de parametrização e alinhamento de fase identificados.

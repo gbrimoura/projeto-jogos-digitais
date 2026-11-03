@@ -1,0 +1,59 @@
+STATUS: done
+
+SUMMARY: O R2 resolve a maioria dos riscos do R1: ciclo de vida da bridge, token, cache de alvos sem busca global, fórmulas de preenchimento, fallback da fonte, ocultação nominal com restauração e risco de camadas iguais. Ainda há um P1. O plano promete escala inteira, mas o cálculo pedido não entrega isso em 1920x1080 com `canvas_items`. Também há alguns P2 de ambiguidade que podem gerar regra inventada ou falha silenciosa. Fiz só leitura do pacote enviado: não li arquivos nem executei comandos.
+
+FINDINGS:
+
+- **P1 — A escala inteira não funciona em 1920x1080.** Com `stretch=canvas_items` e sem `viewport_width/height`, o Godot usa a base padrão de 1152x648. Nesse caso, `get_visible_rect().size` devolve cerca de 1152x648, não 1920x1080.
+  - O cálculo resulta em `floor(min(1152/576, 648/324)) = 2`.
+  - O stretch do projeto ainda multiplica por 1080/648 ≈ 1,667. A escala final na tela fica ≈ 3,33, e não 3 como o plano afirma.
+  - Mesmo com nearest, isso gera pixels de tamanhos desiguais. Contraria "coords inteiras" e "clip em vez de blur".
+  - Como o plano proíbe mexer em ProjectSettings e usar o tamanho físico, a meta não se cumpre como está escrita.
+  - **O usuário precisa escolher uma de três saídas:**
+    - (a) aceitar escala final não inteira e documentar;
+    - (b) compensar no `CanvasLayer.transform` usando `get_viewport().get_final_transform()`, que é API do engine e não `OS.window_size`, para chegar a uma escala física inteira;
+    - (c) autorizar a mudança de viewport no `project.godot`, hoje fora do escopo.
+
+- **P2 — `preload` desfaz o fallback da fonte.** A frase "load/preload" permite `preload`. Se `font.json` ou o atlas faltar, o script quebra no parse em vez de cair no "ausência detectável ⇒ conserva HUD legado".
+  - Exigir `ResourceLoader.exists()` + `load()` para fonte e atlas.
+  - Com isso, o caminho de invalidez fica realmente testável.
+  - Texturas 9-slice e de barra via `ext_resource` nas cenas dos módulos ficam fora desse fallback. Registrar isso como risco aceito, já que o kit está congelado.
+
+- **P2 — Ordem dos estados do dash e premissa sobre o ar.**
+  - Pela ordem implícita, um player morto com recarga > 0 aparece como RECARREGANDO. Definir a precedência explicitamente: morto ⇒ UNAVAILABLE antes de COOLDOWN, ou o contrário, mas escrito.
+  - "ar ⇒ UNAVAILABLE" é afirmado a priori. Só que `get_status()` expõe `air_dashes_remaining`, ou seja, o motor pode permitir dash no ar. A regra deve ser derivada só de `can_dash`/`is_dashing`/`restante`, sem decidir sobre o ar.
+
+- **P2 — O relógio tem 17 índices.** `floor(x*16+.5)` com x em [0,1] produz de 0 a 16, ou seja, 17 quadros.
+  - Confirmar que o kit tem 17 quadros.
+  - Se não tiver, limitar a `frame_count-1` ou trocar a fórmula.
+
+- **P2 — `set_progress` pode inventar regra.** `is_boss`, `room_total` e a base dos índices (0 ou 1) não têm derivação definida. Exemplos de dúvida: se a sala do chefe é `current_room > common_rooms_per_floor` e se o total inclui o chefe.
+  - Exigir a mesma derivação que o `RunController` já usa para montar o `ProgressLabel`.
+  - Se não houver equivalente público, exibir apenas o que existe, sem deduzir o chefe.
+
+- **P2 — Status some durante pausa ou overlay.** Na pausa, os dois `StatusLabel` legados continuam ocultos pela bridge, e a HUD nova também é escondida. Se o `RunController` ou a `CombatRoom` mostram mensagens úteis justamente durante reward ou game over, o jogador fica sem elas.
+  - Confirmar na fonte se esses labels são usados nesse momento.
+  - Se forem, definir uma exceção: manter apenas o módulo de status visível, ou restaurar temporariamente só esses labels.
+
+- **P2 — Detecção de overlay não está definida.** "Presença de GameOverOverlay/VictoryOverlay/reward" não diz caminho, critério (existência ou `visible`) nem se esses overlays sempre pausam a árvore.
+  - O ordenamento entre `CanvasLayer` de mesmo layer usa índice entre irmãos, não a ordem global da árvore. Por isso, "adicionada depois da sala" não garante nada.
+  - Um overlay que não pausa e não é detectado fica coberto pela HUD.
+  - Especificar caminhos exatos já lidos (somente leitura) e o critério `visible`/`is_inside_tree`. Também esclarecer se "reward" é o overlay de upgrade, layer 20, ou outro nó no layer 1.
+
+- **P2 — Filtro do cache de alvos e retrato.**
+  - A elegibilidade lista Node2D e HP, mas omite o filtro de grupo `combat_enemy`. Tornar esse filtro explícito e checar as propriedades com `in` antes de ler.
+  - `set_target(... portrait)` não tem origem definida. Declarar `null` permitido e proibir mapear retratos por classe que não existam no kit.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- Esconder a HUD na pausa é exigido sem desativar a bridge. Se isso for feito via `root.visible`, cai no próprio sinal de desativação e o legado é restaurado. Usar um nó interno ou uma flag separada.
+- Os décimos arredondados para cima sofrem com erro de ponto flutuante: `0.3*10` pode virar `ceil` = 4. Usar um epsilon.
+- `SceneTree.node_added` é global. O custo é aceitável com filtro de descendência, mas deve ser desconectado no unbind.
+- O identificador do revisor Cursor diverge: Grok 4.6 no AGENTS global colado contra 4.7 no repo. A precedência alegada é plausível pelas regras, mas não verifiquei.
+- Opus via Cursor pode ficar indisponível por quota. Registrar como limitação, nunca como parecer.
+- Nada foi validado em execução.
+
+NEXT_STEP: Root decide o P1 com o usuário: aceitar escala não inteira, compensar via `get_final_transform()` ou autorizar a viewport no projeto. Depois disso, fecha os P2 com uma linha de contrato cada (ordem do dash, quadros do relógio, derivação do progresso, status na pausa, detecção de overlay, filtro e retrato), sem detalhar a implementação. Em seguida, congela o R3 para a rodada de revisores.

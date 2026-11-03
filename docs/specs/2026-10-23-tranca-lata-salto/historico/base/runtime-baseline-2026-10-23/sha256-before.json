@@ -1,0 +1,138 @@
+{
+  "captured_at_local": "2026-10-23T11:18:32-03:00",
+  "baseline_kind": "working-tree snapshot before Tranca-Lata jump implementation; includes pre-existing local changes",
+  "files": [
+    {
+      "source": "assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/assets/enemy/training_target/shockwave/tranca-lata-shockwave-atlas.png",
+      "bytes": 14919,
+      "sha256": "64D797D413875B0192886D42A89368A75118DCF2E7C06D8F78EE4C39F3CA823B"
+    },
+    {
+      "source": "assets/enemy/training_target/shockwave/tranca-lata-shockwave.aseprite",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/assets/enemy/training_target/shockwave/tranca-lata-shockwave.aseprite",
+      "bytes": 19437,
+      "sha256": "72651DC20F936B172CF725570D4EF8BA203DDBECA437D07238BFF0BB4CCB364A"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target-atlas.png",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/assets/enemy/training_target/training_target-atlas.png",
+      "bytes": 6739,
+      "sha256": "1E0D612975A251E117005472BD431CB68998B430200C5AF38CE61B0A484289A0"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target-atlas.png.import",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/assets/enemy/training_target/training_target-atlas.png.import",
+      "bytes": 995,
+      "sha256": "0232677B1AFF3817C28F0754DFD1A07FA07091BF94FF53508395A70B830D0DE2"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target.aseprite",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/assets/enemy/training_target/training_target.aseprite",
+      "bytes": 12140,
+      "sha256": "1274EAB69593B16350C1B94747DFCDBD085AA8DF3E192483667491AA83072BE8"
+    },
+    {
+      "source": "project.godot",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/project.godot",
+      "bytes": 4830,
+      "sha256": "C580893946F6D8CE92C6E38E342FD7395A3E168CD837B01954F0A00734180DAD"
+    },
+    {
+      "source": "resources/enemy/training_target_sprite_frames.tres",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/resources/enemy/training_target_sprite_frames.tres",
+      "bytes": 3575,
+      "sha256": "7FC789F094FEAB047BF969DD19C296176EA4A8A5A26D21D300F9377318DF6C3D"
+    },
+    {
+      "source": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/resources/enemy/tranca_lata_shockwave_sprite_frames.tres",
+      "bytes": 1445,
+      "sha256": "E451F265002FD1B0D66D97712B16DDBD6AF37416CF7D303517022B67405D02D9"
+    },
+    {
+      "source": "scenes/main.tscn",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scenes/main.tscn",
+      "bytes": 17684,
+      "sha256": "9E2AC76F5FC86084774266F4B9F0EB7C2D17734310A714F5725F665C28E7CCE7"
+    },
+    {
+      "source": "scenes/second_room.tscn",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scenes/second_room.tscn",
+      "bytes": 11693,
+      "sha256": "A70957B7FAE7130CEB9AA40743E6B3DBC67587E23E533E41124D13076580C78D"
+    },
+    {
+      "source": "scenes/solid_platform.tscn",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scenes/solid_platform.tscn",
+      "bytes": 1225,
+      "sha256": "660D0610CA1DF8494E1E884743D6FF5CF47E2BD6880ED62724384E6B38005260"
+    },
+    {
+      "source": "scenes/training_target.tscn",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scenes/training_target.tscn",
+      "bytes": 4237,
+      "sha256": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE"
+    },
+    {
+      "source": "scripts/enemy/containment_attack_visual.gd",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/enemy/containment_attack_visual.gd",
+      "bytes": 2854,
+      "sha256": "0F7D8071764848FF18C57B21442D2668CFAF4EE1C68C3A14DFC94106262946AD"
+    },
+    {
+      "source": "scripts/enemy/containment_attack_visual.gd.uid",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/enemy/containment_attack_visual.gd.uid",
+      "bytes": 20,
+      "sha256": "35B67FDBEE0F09ADE98AB069D33760FB6F529DE689CF8EF57B3DFB56754144EB"
+    },
+    {
+      "source": "scripts/world/main.gd",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/main.gd",
+      "bytes": 52340,
+      "sha256": "77201F876EC305AD03ECADA8F1A78A2D9D513858CD7FF8BF02155E3C8C5A44CA"
+    },
+    {
+      "source": "scripts/world/main.gd.uid",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/main.gd.uid",
+      "bytes": 19,
+      "sha256": "0FF56AF8C4D67372B2802F8AEBE5850A0B8D374093476C20AC23E99F0C49BCA1"
+    },
+    {
+      "source": "scripts/world/room_layout_generator.gd",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/room_layout_generator.gd",
+      "bytes": 5511,
+      "sha256": "547ABC1147AA66115F01E88E08FB3693EF17D5407D236F6D650CB58D1FF7AA9D"
+    },
+    {
+      "source": "scripts/world/room_layout_generator.gd.uid",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/room_layout_generator.gd.uid",
+      "bytes": 20,
+      "sha256": "7A2D2E96810154D32F46295E7857B8ED396D5A86205C288C4537502CAD322D68"
+    },
+    {
+      "source": "scripts/world/solid_platform.gd",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/solid_platform.gd",
+      "bytes": 8418,
+      "sha256": "2F6233E4B67C3598B4F4E4C044E53475FC55EB4289FBA709F2E8BFE34DADE115"
+    },
+    {
+      "source": "scripts/world/solid_platform.gd.uid",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/solid_platform.gd.uid",
+      "bytes": 20,
+      "sha256": "237E4DC7C112279CB821C73BC7CD084DAC13FDF50A32336BD37310E8F66D0B5F"
+    },
+    {
+      "source": "scripts/world/training_target.gd",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/training_target.gd",
+      "bytes": 26821,
+      "sha256": "A92466D96F0DEF3C20C70911E14F7E763A68F4ACC4E8EAEE7CAFA5B0C3D81E7C"
+    },
+    {
+      "source": "scripts/world/training_target.gd.uid",
+      "snapshot": "historico/base/runtime-baseline-2026-10-23/scripts/world/training_target.gd.uid",
+      "bytes": 19,
+      "sha256": "C03CAE51F24B4E3B559AD5FFE59D133B1E096FBCEBCEFD52AFD2A795E4C2CB5D"
+    }
+  ]
+}

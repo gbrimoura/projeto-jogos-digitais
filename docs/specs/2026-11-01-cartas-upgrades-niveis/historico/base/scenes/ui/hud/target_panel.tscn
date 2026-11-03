@@ -1,0 +1,67 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud/target_panel.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud_caldeira_v1/export/panel-9slice-24.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud_caldeira_v1/export/portrait-tranca-lata-32x28.png" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/health_bar.tscn" id="5"]
+[ext_resource type="Texture2D" path="res://assets/ui/hud_caldeira_v1/export/bar-fill-target-90x8.png" id="6"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="7"]
+
+[node name="Target" type="Control"]
+custom_minimum_size = Vector2(144, 40)
+layout_mode = 3
+anchors_preset = 0
+visible = false
+offset_right = 144.0
+offset_bottom = 40.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("1")
+
+[node name="Frame" type="NinePatchRect" parent="."]
+mouse_filter = 2
+layout_mode = 0
+offset_right = 144.0
+offset_bottom = 40.0
+texture = ExtResource("2")
+patch_margin_left = 6
+patch_margin_top = 6
+patch_margin_right = 6
+patch_margin_bottom = 6
+
+[node name="Portrait" type="TextureRect" parent="."]
+mouse_filter = 2
+offset_left = 6.0
+offset_top = 6.0
+offset_right = 38.0
+offset_bottom = 34.0
+texture = ExtResource("4")
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="NameText" type="Control" parent="."]
+offset_left = 42.0
+offset_top = 6.0
+offset_right = 96.0
+offset_bottom = 18.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+
+[node name="ValueText" type="Control" parent="."]
+offset_left = 96.0
+offset_top = 6.0
+offset_right = 138.0
+offset_bottom = 18.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+right_align = true
+
+[node name="HealthBar" parent="." instance=ExtResource("5")]
+offset_left = 42.0
+offset_top = 22.0
+offset_right = 138.0
+offset_bottom = 36.0
+fill_texture = ExtResource("6")

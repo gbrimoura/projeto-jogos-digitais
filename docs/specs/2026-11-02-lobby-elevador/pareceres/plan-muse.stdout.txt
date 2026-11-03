@@ -1,0 +1,14 @@
+STATUS: REVIEWED-NO-GO — plan coherent, pending contract tightening only
+
+SUMMARY: Lobby safe exterior + auto-elevator to RunRoot(1x10+boss) + victory/death summary→lobby authorized. 5 files max: `project.godot`, `scenes/lobby.tscn`, `scripts/world/lobby.gd`, `scripts/world/lobby_visual.gd[new]`, `scripts/world/run_controller.gd`. Refinements OVERRIDE earlier prose: no `lobby._ready` global unpause; no instant retry-while-inside.
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+- Pause: earlier `lobby._ready unpauses` VOID. Contract must be: `run_controller` unpauses own result-pause immediately before `change_scene`, restores exact `paused+panel+fade` on sync fail. Lobby must not clear arbitrary pause.
+- Rearm: earlier `clear latch+retry` VOID for loop case. Contract must be: `idle->traveling(latched pre-await)->failed_requires_exit`; rearm ONLY after Player AABB exits inner rect, no auto-loop, restore `Player/BallContainer` process modes+open door+visible error, no seed/progression.
+- Framing: `1152x648` is scenario ref only. Keep global resolution/stretch untouched; Camera fixed `(576,324)` no-follow, integer/nearest, prove spawn/door/collisions in real fullscreen viewport statically.
+- Containment/double-fire: define inner rect integers + `_physics_process` full `28x76` containment + `alive+is_on_floor`, Player instance only, latch before any `await`, disable return button against double-click/R-repeat; `R` returns only on real-end panel, never on technical panel; `fail_managed_room_transition` + `_restart_run` ownership untouched.
+- Freeze: byte-copies `project.godot`+`run_controller.gd` + `historico/base-sha256.txt` + absence of 2 new files, freeze before read-only reviewers, preserve local dirty changes, no 6th file/`.uid/.import` drift without auth.
+
+NEXT_STEP: Patch plan with atomic order `clear RoomTransition->unpause->change`, exit-predicate, rect numbers, error-label paths, no Build/seed/snapshot/economy in lobby, then GO.

@@ -1,0 +1,14 @@
+[
+  {
+    "path": "scripts/enemy/rivet_worker.gd",
+    "sha256": "56A72953CCEAEAFB811AE30D81435E5FD79AC8600FB16C27207229D0A4138D0C"
+  },
+  {
+    "path": "scenes/rivet_worker.tscn",
+    "sha256": "D6E598DB796FF38B1350AC5D8FE7036502655ABEB34843635091DB81018B0479"
+  },
+  {
+    "path": "scripts/enemy/rivet_warning_visual.gd",
+    "sha256": "1BC816F411F208DB518CF3BC0A4CFF65ED9C191472052FC305D535F9B3AA1209"
+  }
+]

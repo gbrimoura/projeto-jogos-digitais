@@ -1,0 +1,182 @@
+READ ONLY stable two-line configuration implementation review. Timeout3min. No tools, file edits, Godot or tests. User wants at least10rooms/floor, events+variedenemycounts later. Chosen default10COMMON+1existingboss=11/floor. Only changes run_root.tscn common_rooms_per_floor3->10 and RunController default3->10; keep export1..10 and floorsrun1 scene/8 script. These sources were already dirty; preserveallotherexistingchanges. Existing MAX_RUN_ACQUISITIONS220 =max20floors*(10common+1boss). Events/AI/spawn/layout/balance/HUD untouched. Check concrete bugs/regressions from two config edits only. Return STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP; no hypothetical unrelated hardening.
+SCENE_HEAD
+[gd_scene format=3 uid="uid://bgflx5722meon"]
+
+[ext_resource type="Script" uid="uid://c0iyae0gy1p7m" path="res://scripts/world/run_controller.gd" id="1_15b2t"]
+[ext_resource type="PackedScene" uid="uid://dlgvrryxeujdh" path="res://scenes/main.tscn" id="2_aqf68"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/run_hud_bridge.tscn" id="3_hud"]
+
+[node name="RunRoot" type="Node2D" unique_id=367920003]
+script = ExtResource("1_15b2t")
+floors_per_run = 1
+common_rooms_per_floor = 10
+common_room_scene = ExtResource("2_aqf68")
+boss_room_scene = ExtResource("2_aqf68")
+
+[node name="RoomContainer" type="Node2D" parent="." unique_id=1516175426]
+
+CONTROLLER_HEAD
+extends Node2D
+
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RoomRunLayout = preload("res://scripts/world/room_run_layout.gd")
+const DEFAULT_ENEMY_LEVEL_CONFIG: EnemyLevelConfigResource = preload("res://resources/progression/enemy_levels.tres")
+
+@export_range(1, 20) var floors_per_run: int = 8
+@export_range(1, 10) var common_rooms_per_floor: int = 10
+@export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0
+@export var common_room_scene: PackedScene
+@export var boss_room_scene: PackedScene
+@export var run_seed: int = 0
+@export var randomize_run_seed: bool = true
+@export var enemy_level_config: EnemyLevelConfigResource = DEFAULT_ENEMY_LEVEL_CONFIG
+
+@onready var room_container: Node2D = $RoomContainer
+CONTROLLER_PROGRESS
+		_present_technical_error(_initial_floor_plan_error, {}, null, &"floor_plan", true)
+		return
+	_load_current_encounter()
+
+func get_resolved_run_seed() -> int:
+	return _resolved_run_seed
+
+func _prepare_current_floor_plan() -> bool:
+	var result: Dictionary = RoomRunLayout.build_floor(
+		_resolved_run_seed,
+		current_floor,
+		common_rooms_per_floor + 1,
+		_last_room_family
+	)
+	if not bool(result.get("valid", false)):
+		_initial_floor_plan_error = "ERRO: não foi possível planejar a sequência de salas: %s" % String(result.get("error", "topologia inválida"))
+		return false
+BOSS_PREDICATES
+		_floor_room_descriptors.append(descriptor.duplicate(true))
+	_last_room_family = StringName(proposal.get("last_family", _last_room_family))
+
+func _is_boss_room() -> bool:
+	return current_room > common_rooms_per_floor
+
+
+func _is_final_boss() -> bool:
+	return current_floor == floors_per_run and _is_boss_room()
+
+func is_active_room_instance(room: Node) -> bool:
+	return not _run_ended and is_instance_valid(current_room_instance) and room == current_room_instance
+
+
+ROOM_ORDINAL
+	if not bool(proposal.get("valid", false)):
+		return {"valid": false, "error": String(proposal.get("error", "proposta de sala inválida"))}
+	var target_room: int = int(proposal.get("room", 0))
+	var packed_scene: PackedScene = boss_room_scene if target_room > common_rooms_per_floor else common_room_scene
+	if packed_scene == null:
+		return {"valid": false, "error": "ERRO: cena de sala destino não definida."}
+	var next_room: Node = packed_scene.instantiate()
+	if next_room == null:
+		return {"valid": false, "error": "ERRO: não foi possível instanciar a cena destino."}
+	next_room.process_mode = Node.PROCESS_MODE_DISABLED
+	if not next_room.has_method("configure_run_managed"):
+		next_room.free()
+		return {"valid": false, "error": "ERRO: a cena de sala não oferece integração gerenciada."}
+	if not next_room.has_signal("run_progression_ready"):
+		next_room.free()
+		return {"valid": false, "error": "ERRO: a sala não oferece o sinal run_progression_ready."}
+	var descriptor: Dictionary = proposal.get("descriptor", {}).duplicate(true)
+	var floor_index: int = int(proposal.get("floor", current_floor))
+	var room_index: int = int(proposal.get("room", current_room))
+	var room_ordinal: int = 1 + (floor_index - 1) * (common_rooms_per_floor + 1) + (room_index - 1)
+	descriptor["enemy_level"] = maxi(room_ordinal, 1)
+	var requested_seed: int = int(descriptor.get("room_seed", 0))
+	if not bool(next_room.call("configure_run_managed", _run_build, true, requested_seed, descriptor, enemy_level_config)):
+		var layout_error := ""
+		if next_room.has_method("get_authored_layout_error"):
+			layout_error = String(next_room.call("get_authored_layout_error"))
+ROUTE_GENERATION
+static func build_floor(run_seed: int, floor_index: int, room_count: int, previous_family: StringName) -> Dictionary:
+	if room_count < 1:
+		return {"valid": false, "error": "run precisa de ao menos uma sala por andar", "rooms": []}
+	var topology_rng := RandomNumberGenerator.new()
+	topology_rng.seed = _derived_seed([run_seed, floor_index, 0x544F504F])
+	var horizontal := RIGHT if topology_rng.randi_range(0, 1) == 0 else LEFT
+	var link_count := room_count - 1
+	var reserved_vertical := -1
+	if link_count >= 2:
+		var first_candidate := 1 if horizontal == LEFT else 0
+		reserved_vertical = topology_rng.randi_range(first_candidate, link_count - 1)
+	var coords: Array[Vector2i] = [Vector2i.ZERO]
+	var exits: Array[Vector2i] = []
+	var exit_offsets: Array[float] = []
+	var vertical_sign_by_column: Dictionary = {}
+	var vertical_used_by_column: Dictionary = {}
+	var current := Vector2i.ZERO
+	for link_index in link_count:
+		var incoming := LEFT
+		if not exits.is_empty():
+			var last_move: Vector2i = exits.back()
+			incoming = Vector2i(-last_move.x, -last_move.y)
+		var must_vertical := (link_index == reserved_vertical or (link_index == 0 and horizontal == LEFT)) and not bool(vertical_used_by_column.get(str(current.x), false))
+		var candidates: Array[Vector2i] = []
+		var column_key := str(current.x)
+		var fixed_sign := int(vertical_sign_by_column.get(column_key, 0))
+		if must_vertical:
+			if fixed_sign != 0:
+				candidates.append(UP if fixed_sign < 0 else DOWN)
+			else:
+				candidates.append(UP)
+				candidates.append(DOWN)
+		else:
+			candidates.append(horizontal)
+			if not bool(vertical_used_by_column.get(column_key, false)):
+				if fixed_sign == 0:
+					candidates.append(UP)
+					candidates.append(DOWN)
+				else:
+					candidates.append(UP if fixed_sign < 0 else DOWN)
+		var legal: Array[Vector2i] = []
+		for direction in candidates:
+			if direction == incoming:
+				continue
+			if direction.x == 0:
+				var old_sign := int(vertical_sign_by_column.get(column_key, 0))
+				if old_sign != 0 and signi(direction.y) != old_sign:
+					continue
+			legal.append(direction)
+		if legal.is_empty():
+			return {"valid": false, "error": "não foi possível escolher ligação sem retorno na coordenada %s" % str(current), "rooms": []}
+		var chosen: Vector2i = legal[topology_rng.randi_range(0, legal.size() - 1)]
+		if chosen.x == 0:
+			vertical_sign_by_column[column_key] = signi(chosen.y)
+			vertical_used_by_column[column_key] = true
+		var offset := 496.0 if chosen.x != 0 else (248.0 if topology_rng.randi_range(0, 1) == 0 else 904.0)
+		exits.append(chosen)
+		exit_offsets.append(offset)
+		current += chosen
+		coords.append(current)
+
+	var rooms: Array[Dictionary] = []
+	var prior := previous_family
+	for room_index in room_count:
+		var entry: Vector2i = LEFT if room_index == 0 else Vector2i(-exits[room_index - 1].x, -exits[room_index - 1].y)
+		var exit_dir: Vector2i
+		var exit_offset: float
+		if room_index < link_count:
+			exit_dir = exits[room_index]
+			exit_offset = exit_offsets[room_index]
+		else:
+			var terminal_candidates: Array[Vector2i] = [horizontal, UP, DOWN]
+			for candidate in terminal_candidates:
+				if candidate != entry:
+					exit_dir = candidate
+UPGRADE_BUDGET
+class_name UpgradeCatalog
+extends RefCounted
+
+## Single source for run upgrade definitions, caps, derived effects and card copy.
+## This file intentionally does not preload or reference RunBuild.
+
+const MAX_RUN_ACQUISITIONS: int = 220
+const BASE_PROJECTILE_CONFIG: ProjectileConfig = preload("res://resources/projectile_config.tres")
+const BASE_MOVEMENT_CONFIG: MovementConfig = preload("res://resources/player_movement_config.tres")
+

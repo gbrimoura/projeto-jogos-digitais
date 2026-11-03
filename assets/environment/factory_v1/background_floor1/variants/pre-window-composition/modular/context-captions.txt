@@ -1,0 +1,9 @@
+Factory floor 1 — static hierarchy/contact preview
+Sample platforms and character are static context props, not a gameplay capture or a particular generated room layout.
+
+Top left: bits 000 — boiler-wall base / left boiler circuit / right service sign (illustrative seed 0).
+Top right: bits 011 — boiler-wall base / left cabinet bank / right press (illustrative seed 6).
+Bottom left: bits 101 — maintenance-wall base / left boiler circuit / right press (illustrative seed 5).
+Bottom right: bits 110 — maintenance-wall base / left cabinet bank / right service sign (illustrative seed 3).
+
+Runtime selection uses seed bit 0 for base, bit 1 for left module, and bit 2 for right module.

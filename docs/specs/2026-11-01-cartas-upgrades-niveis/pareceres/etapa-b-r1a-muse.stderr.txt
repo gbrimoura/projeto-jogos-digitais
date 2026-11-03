@@ -1,0 +1,4 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/specs/2026-11-01-cartas-upgrades-niveis/pareceres/etapa-b-r1a-input.txt [offset=974]

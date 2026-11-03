@@ -1,0 +1,9 @@
+Revisão SOMENTELEITURA deltaR2 dos2achados. Não ferramentas/engine/testes/escrita. RootpreservouR1source, não mudouimagens. UpgradeCard.configure antes append_array(_wrap_topic(...)) agora:
+for topic_variant: Variant in topics_variant:
+	var wrapped_topic := _wrap_topic(String(topic_variant))
+	if wrapped_topic.is_empty():
+		return false
+	topic_lines.append_array(wrapped_topic)
+_wrap_topic temreturntypeArray[Dictionary] semmudanças; logo inferência estável, emptyno silentlydrop. Lua topic_colors antesprefixUTF8sub1,4 agora:
+if topic:sub(1, #"ATÉ ") == "ATÉ " or topic:sub(1, #"UMA VEZ") == "UMA VEZ" then return colors end
+GDScript já usa begins_with('Até ')/begins_with('Uma vez'). Demaisalgoritmos/arte/cenas/layoutinalterados. Avaliefixes e reporteSTATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP. Semnovopedidoestético. Limite3min.

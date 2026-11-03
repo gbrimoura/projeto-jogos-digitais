@@ -1,0 +1,13 @@
+STATUS: done  
+SUMMARY: R2 delta applies the accepted preview nits and the room instance alignment; no concrete regression versus R1/baseline in the provided hunks. Preview isolates all compositing in a 1152×224 row, clips overflow, skips alpha 0, and moves the door bottom shadow 122→124 (symmetric with the y=2 top bar). Rooms add `opening_top=432` / `opening_height=128` on both wall visuals and mirror Entrance `SideDoorVisual` to `(-80,-26)` with existing `flip_h`, which matches confirmed roots (Entrance 112,522 / Exit 1040,522) for a centered 64×128 door covering x 0–64 and y 432–560. Packed ExitDoor, ExitDoor.gd, and R1 helpers are out of this delta. “Both ends open” is preview SAMPLE only; in-game entry stays closed. Main `load_steps` absence is not a defect.
+
+CHANGED_FILES: none  
+
+TESTS: none  
+
+RISKS:
+- `blitClipped` skip-alpha-0 is the accepted nit. It only keeps a painted through-hole if `makeDoor(open)` fills the opening with non-zero alpha. If the open interior is true `C.void` (alpha 0), the wall would show through instead of a cut. Not confirmed from this hunk; not a nit-revert.
+- Provided room hunks do not show `ext_resource12` removal or `second_room` `load_steps` 21→20. Not a regression in this delta; cannot certify those nits from these hunks.
+- Geometry assumes the packed door sprite stays centered (or equivalent offset). Packed scene hash unchanged from R1, so this is pre-existing, not introduced here.
+
+NEXT_STEP: Accept this R2 preview + room-instance delta. If header nits (`ext_resource12`, `second_room` load_steps) are still in-scope, confirm them in the unshown file headers only; do not reopen compositing, opening Y, or Entrance mirror.

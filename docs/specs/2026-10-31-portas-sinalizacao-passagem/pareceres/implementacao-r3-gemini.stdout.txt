@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Revisão estática delta-R3 em `scripts/world/side_door_visual.gd` aprovada sem ressalvas. O delta introduz o setter reativo com `queue_redraw()` para `flip_h` e aplica reflexão horizontal exata `(-1.0, 1.0)` via `draw_set_transform` centrada na abertura em `_draw()`, com restauração limpa ao transform unitário (`Vector2.ONE`).
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: none (o desenho é simétrico e centrado em torno da origem com `half := aperture_size * 0.5`, garantindo que a escala `-1.0` no eixo X inverta perfeitamente as faixas assimétricas de `SHADOW` e `COPPER` sem deslocar o retângulo de fundo; a alteração do transform afeta apenas a lista de desenho local deste `CanvasItem`).
+NEXT_STEP: Concluir a incorporação do delta R3 na branch/artefatos de histórico da especificação e prosseguir com o fluxo de encerramento da entrega.

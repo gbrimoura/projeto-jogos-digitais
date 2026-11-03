@@ -1,0 +1,49 @@
+{
+  "captured_local_state": "2026-10-19",
+  "note": "SHA-256 calculado sobre os bytes integrais de cada fonte congelada, incluindo EOF. O baseline é a cópia local pré-runtime; fontes não comparadas com HEAD.",
+  "baseline_manifest": "historico/baseline-local/sha256.json",
+  "files": [
+    {
+      "path": "scripts/world/exit_door.gd",
+      "bytes": 6667,
+      "sha256": "aab8e700f1c51349f95faae003a86dff467531b940004fde5710900e511e94dc",
+      "baseline_sha256": "f99819ffe052b0fb7973b457c00c1c9aafc1d6cfd5c2ebfe80340ae94a1d4c5a"
+    },
+    {
+      "path": "scenes/exit_door.tscn",
+      "bytes": 1094,
+      "sha256": "b3efba83e11e213b573add3422f8ab77722fcb61ce753dfe23cf6695a135f0d6",
+      "baseline_sha256": "5cd9bcae6286e2e1d3c1dc50a39a958c6b536fc0b321060fdc2371dcfb88246b"
+    },
+    {
+      "path": "scripts/world/main.gd",
+      "bytes": 48055,
+      "sha256": "46d8eb0d0db7e1c11791fee64da34e8b364b4cede86ab226653d95b5b77cb127",
+      "baseline_sha256": "e818cfed456b7700530c382c3326387c7b5317190e97cbb908f36c752e172f13"
+    },
+    {
+      "path": "scripts/world/run_controller.gd",
+      "bytes": 15881,
+      "sha256": "f94a096dc0893ecc1a5ff386a813c3db32db4d7f98301846a4f7516616dced5e",
+      "baseline_sha256": "7a3648986f07e3a72fc0e6b56a8fc703ad298ab79b56b6f3c6539f01c1977b82"
+    },
+    {
+      "path": "scripts/world/room_transition_overlay.gd",
+      "bytes": 4696,
+      "sha256": "9bf7625e2a36f1caa72d02079d3f00e0501f7a4253e7406dad4e2fa7c97edbfc",
+      "baseline_sha256": null
+    },
+    {
+      "path": "scenes/main.tscn",
+      "bytes": 17684,
+      "sha256": "9e2ac76f5fc86084774266f4b9f0eb7c2d17734310a714f5725f665c28e7cce7",
+      "baseline_sha256": "67fff6889cae9369b089348a64b662183d01e3e2c20d0ce55f280bdc472d2986"
+    },
+    {
+      "path": "scenes/second_room.tscn",
+      "bytes": 11693,
+      "sha256": "a70957b7fae7130ceb9aa40743e6b3dbc67587e23e533e41124d13076580c78d",
+      "baseline_sha256": "062d590ce48877ddc954dca5037ac36c7a6b2e24ba73eb6a716381dfb9c25f7f"
+    }
+  ]
+}

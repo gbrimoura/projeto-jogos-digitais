@@ -1,0 +1,16 @@
+# Registro — pressão melee do Tranca-Lata
+
+Pedido: perseguir mais o Player para tentar golpe corpo a corpo. Diagnóstico e implementação delegados a gpt-6-luna xhigh, escritor único; Fast/priority não confirmável. Root definiu contrato antes das edições, preservou baseline com mudanças locais e avaliou diffs/revisões. Ajuste local provisório de comportamento, sem nova arte, sistema de navegação ou regra final de GDD.
+
+A perseguição usa120px/s, separada dePATROL48. A preferência de engajamento é96px entre centro do ataque e centro real do collider doPlayer, limitada ao raio real. A aproximação horizontal projeta essa distância pela diferença vertical e usa margem interna8px para evitar parada exatamentefora do limiar por arredondamento. A decisão considera distância2D, inclusive alvoalinhado emX mas fora da preferência emY, permitindo stuck/route/fallback seguros emvezderesetar o contador.
+
+Helpercentral sincronizaIDLE e2checagensPREPARE: a query real de área e LOS continua obrigatória; fora da preferência, continua perseguindo. Emtravamento físico, apósstucktimeout0.65 e guardadereplan, pode iniciar o golpe original com Player noalcancereal140 eLOS livre. Detour não descarta esse golpeválido; fallback semrota ainda acumula stuck. _begin_windup consome/zera ocontador, impedindo quepermissão temporária dealcance140 vaze para o próximo ciclo. Durante windup/ativo/recuperação não persegue ou corrige centrotravado.
+
+Preservados raio140/dano1/windup650ms/ativo140ms/recuperação1400ms/onda175ms, solver/casts/collisionmasks, corpo72x96, voos/limites/cooldowns/escape, subida com retry recém-integrada, área de dano/LOS, Player, gerador/salas/Main/Run, Cospe-Rebite e arte. Maiorvelocidade aplica-se somente ao movimento horizontal de perseguição, com min(dx,speed*delta), bounds e move_and_collide:test_only existentes. Patrulha semPlayer continua48.
+
+Somente scripts/world/training_target.gd foi alterado. Baseline12arquivos e11protegidos; R1 e R2 preservados com SHA/diffs. O principal restituiu a margem8antesdarevisão para evitar ficar em96.00001 com deslocamentoabaixo doepsilon. EmR1 o Muse apontou centrostale dofallback apósmovimento; Luna corrigiu somente oargumento para posiçãoatual. O drift anterior efetivo seria<0.1px, mas a consulta agora coincide exatamente com centro travado em_begin_windup. Gemini/Muse confirmaram correção na revisão delta, semexecutar engine.
+
+Valor120/96 é tuningprovisório; sensação de perseguição e frequência de golpes requerem avaliação humana emjogo. Nenhum Godot/importação/teste/simulação/parser/linter/QA foi executado conformeAGENTS. Revisões são estáticas, semalegaçãoderenderougameplayconfirmados. Resultados/saídas/decisões em [pareceres](pareceres/README.md). Opus indisponívelporquota nesta tarefa, semsubstituição. Semcommit/push/troca debranch; trabalho localpreservado.
+
+## Fechamento R2
+Gemini/Muse confirmaram a correção deprecisão dofallback semnovo defeito. Grok semparecerútil emR1/R2; Opus bloqueado porquota demonstradana tarefa, semsubstituição/repetição. Saídasoriginais e decisões em pareceres. Estadofinal12/12 estável e11/11 protegidos intactos; somenteruntime training_target.gd mudou. Sem Godot/testes/commit/push. A frequência de golpes e sensação de pressão permanecem semavaliação emjogo.

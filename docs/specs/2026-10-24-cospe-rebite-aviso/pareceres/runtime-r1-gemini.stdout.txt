@@ -1,0 +1,22 @@
+STATUS: done
+SUMMARY: Revisão estática read-only concluída sobre a entrada estável `runtime-r1-input.txt` (SHA256: `F256453BE9B80E082C6E425F77EA2FEBC4BF03DECC1150869CA193168B410264`). A implementação do aviso visual pré-disparo do Cospe-Rebite cumpre integralmente os contratos de `plano.md` e `spec.md`:
+1. **Preservação mecânica e física**: `locked_direction`, `locked_muzzle_position`, query `CircleShape2D` (raio 6.0, margem 0.08), `cast_motion` contra `WORLD_MASK`, cálculo de alcance/clip contra obstáculos, tempos de windup (0.65s), recuperação (0.8s), cooldown (2.6s), recuo, spawn offset (26.0), projétil, áudio e parry permanecem absolutamente idênticos à base original.
+2. **Helper code-native**: `scripts/enemy/rivet_warning_visual.gd` foi implementado como `Node2D` anônimo (sem `class_name`), instanciado via `preload` em `_ready()` e acoplado como filho de `WarningLine`. Não introduz `_process`, `_physics_process`, `Tween`, timers autônomos ou chamadas de relógio global (`Time.get_ticks_msec()`), sendo seguro sob pausa.
+3. **Traçado segmentado e visibilidade**: `WarningLine` permanece com largura 12.0 em tom navy (`#192031` com alfa 0.44) atuando como base física discreta. O helper sobrepõe o núcleo segmentado âmbar (`#F5A84F`, largura 3.0, traço 8.0, intervalo 5.0) com corte estrito no comprimento do segmento (`minf(distance + DASH_LENGTH, segment_length)`), impedindo projeção além do endpoint real.
+4. **Medidor de carga e iminência**: Adiciona 3 slots sob a exclamação com thresholds monotônicos `[0.20, 0.48, 0.72]`, desenhados com contorno navy e miolo de carga entre `y = -88` e `-84` (acima do topo do frame de HP em `y = -81`). A partir de 70% do windup, ativa transição suave (`smoothstep`) de âmbar para vermelho (`#F0524E`), sincronizada entre traçado, slots preenchidos e exclamação (`WarningStem`/`WarningDot`).
+5. **Ciclo de vida e resets**: `_set_warning_visible(false)` oculta a linha (e consequentemente o helper) e reseta o progresso para `0.0`, restaurando a cor âmbar sem retenção de estado entre disparos, morte ou cancelamentos.
+6. **Integridade de arquivos protegidos**: Todos os hashes congelados e arquivos protegidos (`hostile_rivet.gd`, `hostile_rivet.tscn`, `project.godot` e atlas PNGs) mantiveram integridade estrita conforme `protected-r1.json`.
+
+### Defeitos Concretos
+- **P1**: Nenhum defeito impeditivo ou crítico encontrado.
+- **P2**: Nenhum defeito funcional ou quebra de contrato detectado.
+
+### Sugestões / Débitos Técnicos Menores (Não Impeditivos)
+- **Indentação do novo script**: `scripts/enemy/rivet_warning_visual.gd` utiliza indentação por 4 espaços, enquanto `scripts/enemy/rivet_worker.gd` utiliza tabs (`\t`). Embora o GDScript suporte arquivos individuais com estilos distintos sem conflito sintático, sugere-se uniformizar para tabs em alinhamento com a convenção do repositório em oportunidade futura.
+- **Atribuição redundante de cor no marcador**: Em `set_progress()`, `_set_marker_color()` é invocado a cada tick de física mesmo enquanto o progresso está abaixo de 0.70 (onde a cor resultante permanece invariavelmente `COLOR_AMBER`). Uma guarda para atualizar os polígonos apenas quando a cor efetiva mudar é uma otimização cosmética válida.
+- **Cálculo de coordenadas da marca**: Em `_draw_charge_meter()`, a chamada `to_local(_warning_mark.to_global(Vector2.ZERO))` é avaliada a cada redraw. Como a posição relativa da marca é constante em relação ao corpo, armazenar esse offset em `configure()` evitaria a multiplicação de matrizes globais durante o windup.
+
+CHANGED_FILES: none
+TESTS: static review only
+RISKS: Nenhum risco funcional identificado na revisão estática; sem execução de runtime/engine conforme regras de isolamento.
+NEXT_STEP: Prosseguir com a consolidação dos pareceres dos demais revisores (Grok 4.7 XHigh Fast e Muse Spark 1.3 xhigh) no relatório de rodada ativa em `docs/specs/2026-10-24-cospe-rebite-aviso/pareceres/`.

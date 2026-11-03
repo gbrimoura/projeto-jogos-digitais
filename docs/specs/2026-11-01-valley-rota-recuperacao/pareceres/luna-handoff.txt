@@ -1,0 +1,14 @@
+STATUS: done
+
+SUMMARY: Apliquei as duas correções autorizadas e congelei a escrita.
+
+CHANGED_FILES:
+
+- `scripts/world/room_layout_generator.gd`: gaps de valley em 80/88/96 px; tops internos fixados em 448 após consumir o jitter existente; canônico ajustado para centros `[216,456,696,936]`. Mantidos `allowed_steps.assign`, primary/fallback, outras famílias e validadores.
+- `scripts/ui/hud/run_hud_bridge.gd`: caches verificam a validade e o tipo da chave Variant antes do cast em `_unbind_room`, `_update_target`, `_ensure_legacy_hidden` e nas duas rotinas de restauração. Entradas inválidas são removidas ou ignoradas.
+
+TESTS: nenhum; execução de Godot, parser e demais validações estáticas automatizadas proibida nesta tarefa. Conferi os trechos alterados somente por leitura.
+
+RISKS: A seed de referência não foi executada; a correção geométrica segue a análise manual e mantém a validação existente.
+
+NEXT_STEP: Revisão externa do estado congelado. Fast/priority não pôde ser confirmado pela interface.

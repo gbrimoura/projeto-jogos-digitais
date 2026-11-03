@@ -1,0 +1,68 @@
+[
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\room_layout_generator.gd",
+    "Before": "7B7DA02C9BEF71052BE4DB4286DB489837CA69FD5CC5E8162BB31C32CB97F53E",
+    "After": "A921663F683B17D219E7EFB9243A454A135B48DF753E4A3F763BAC764D5A3759",
+    "Changed": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\hud\\run_hud_bridge.gd",
+    "Before": "D4A69DBE10E4E7C37D16EDEDD9E92BCCBE88EE185D01FD1EB34FD1E7483B4C94",
+    "After": "30769F09527F2F765DE03A2E9D693883CCAFB66D538128941916FFAD7E1EC364",
+    "Changed": true
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\main.gd",
+    "Before": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66",
+    "After": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\run_controller.gd",
+    "Before": "E5B451693AEFDAFD09A6EE9293C33FEB6FB678559DF5496DB996D2849BD4C114",
+    "After": "E5B451693AEFDAFD09A6EE9293C33FEB6FB678559DF5496DB996D2849BD4C114",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\room_run_layout.gd",
+    "Before": "89B2453C198AFC1A661C6E290401CE3D5369D37FFE120AD4D238BB7806673D9E",
+    "After": "89B2453C198AFC1A661C6E290401CE3D5369D37FFE120AD4D238BB7806673D9E",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\movement_controller.gd",
+    "Before": "E0773813DAD5BB424F412F7A58050D5E5CFE5DDB94640AEF574F96533CC1EAF9",
+    "After": "E0773813DAD5BB424F412F7A58050D5E5CFE5DDB94640AEF574F96533CC1EAF9",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\player_movement_config.tres",
+    "Before": "72BFB502C5069FCFA3CB0681FFCECE9586EF7A807658720A88B85B99D6267202",
+    "After": "72BFB502C5069FCFA3CB0681FFCECE9586EF7A807658720A88B85B99D6267202",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\hud\\hud_root.gd",
+    "Before": "31A15768A459F43885F75D5B3B11BE03D5697DA6892DF3CEC541EBCDD3628CA6",
+    "After": "31A15768A459F43885F75D5B3B11BE03D5697DA6892DF3CEC541EBCDD3628CA6",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scenes\\ui\\hud\\hud_root.tscn",
+    "Before": "EF8A3CD2488B2B867EFD0F7849881C3FAAE3BF656580E7BEFF5E2911C9866096",
+    "After": "EF8A3CD2488B2B867EFD0F7849881C3FAAE3BF656580E7BEFF5E2911C9866096",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\exit_door.gd",
+    "Before": "F238B62F62A12D0499C410B96519E55CC79811CDCBB7FAAF1DF5A99152D7F140",
+    "After": "F238B62F62A12D0499C410B96519E55CC79811CDCBB7FAAF1DF5A99152D7F140",
+    "Changed": false
+  },
+  {
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\project.godot",
+    "Before": "42A90285FEACC10034CBD02D270B66A48A88E33AC33F570A6CFB67329D9C5FF1",
+    "After": "42A90285FEACC10034CBD02D270B66A48A88E33AC33F570A6CFB67329D9C5FF1",
+    "Changed": false
+  }
+]

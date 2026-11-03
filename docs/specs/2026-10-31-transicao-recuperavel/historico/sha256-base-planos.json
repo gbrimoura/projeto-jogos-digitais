@@ -1,0 +1,22 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "0291BFB4BD5982BAB7298C50292F18915BF894B43EE33020C2FCD8CC4A2CF25B",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\pareceres\\plano-input.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "41ED2149440A248862AF4C0A7A852AC42C2538E980064A361DD5AC96B44C25D0",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\pareceres\\plano-r2-input.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "845122E920FBBB8FEF3D5DC4A5488687CF233505604FB4A1B67C50FDEE4409FD",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\historico\\main-base.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "0FC31ABBBC279DE3C9B9CB101DFDDC132DCB81DCC4C2BF4BCC169706A976F634",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\historico\\run-controller-base.gd"
+  }
+]

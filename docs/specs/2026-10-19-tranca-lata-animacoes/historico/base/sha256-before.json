@@ -1,0 +1,37 @@
+{
+  "captured_at": "2026-10-19",
+  "description": "Byte-identical baseline of six runtime sources before the Tranca-Lata animation and patrol implementation.",
+  "source_state": "Captured from the current worktree, including pre-existing local changes in scripts/world/main.gd and scripts/world/training_target.gd.",
+  "files": [
+    {
+      "source": "scripts/world/training_target.gd",
+      "snapshot": "scripts/world/training_target.gd",
+      "sha256": "2C88C39BF474EECBB4C852B5F46083040A11F44B589B9564A72EBF036C05F5BD"
+    },
+    {
+      "source": "scripts/world/main.gd",
+      "snapshot": "scripts/world/main.gd",
+      "sha256": "768D548C89ECC8AC745EBB6AEBE73C7CF76B8F9383E7D0EAAF6A53D25B30EDE4"
+    },
+    {
+      "source": "scenes/training_target.tscn",
+      "snapshot": "scenes/training_target.tscn",
+      "sha256": "95A0028C50A4BE3ED201BF985A842C082558F02DB499042D73FAE35D1E2CB532"
+    },
+    {
+      "source": "resources/enemy/training_target_sprite_frames.tres",
+      "snapshot": "resources/enemy/training_target_sprite_frames.tres",
+      "sha256": "6DA3CF801747E473525D27A0D02527A79AEC8C20F87B7A870C4D2BD589110185"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target-atlas.png",
+      "snapshot": "assets/enemy/training_target/training_target-atlas.png",
+      "sha256": "B81CC88B02B37F740845DED39A146D9480D8EBD57F6B493F4B8491CE986E99D6"
+    },
+    {
+      "source": "assets/enemy/training_target/training_target.aseprite",
+      "snapshot": "assets/enemy/training_target/training_target.aseprite",
+      "sha256": "78DC598E6BF20E4DA56A5FD975597245871F14365010E9D5C85B17A827807C88"
+    }
+  ]
+}

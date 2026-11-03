@@ -1,0 +1,23 @@
+Branch: corrigir-sprites-salas-plataformas HEAD: 90b2e592bd70e1b2ff3e5828af8a9029031e1c66 Captured: 2026-10-18T22:43:01-03:00 git status --short:
+ M addons/godot-git-plugin/THIRDPARTY.md
+ M docs/README.md
+ M scenes/main.tscn
+ M scenes/second_room.tscn
+ M scripts/enemy/rivet_worker.gd
+ M scripts/world/exit_door.gd
+ M scripts/world/main.gd
+ M scripts/world/run_controller.gd
+ M scripts/world/training_target.gd
+?? Godot/
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF3b7df52.TMP
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF565732f.TMP
+?? docs/specs/2026-10-16-sprites-paredes-plataformas/
+?? docs/specs/2026-10-18-geracao-salas/
+?? docs/specs/2026-10-18-porta-parede/
+?? scripts/world/factory_ceiling_visual.gd
+?? scripts/world/factory_ceiling_visual.gd.uid
+?? scripts/world/factory_wall_visual.gd
+?? scripts/world/factory_wall_visual.gd.uid
+?? scripts/world/room_layout_generator.gd
+?? scripts/world/room_layout_generator.gd.uid

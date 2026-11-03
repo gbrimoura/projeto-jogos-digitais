@@ -1,0 +1,692 @@
+REVIEW R1 FINAL: integração copy sete cartas. Escopo apresentação; stats/arte/IDs intactos. Não Godot/testes/audits/ferramentas de escrita. Root viu PNG final. Revisar fidelidade mecânica, bounds bitmap24chars2linhas descrição/3linhastópicos, glyphs, tipos GDScript4.7, .tres campos separados, preview_only sem reexportar arte. Heading runtime ESCOLHA UMA MELHORIA / UMA ESCOLHA POR SALA. Cards já usam os7iconpaths existentes. Fontebitmap5x11 advance6 uppercase suporta A-Z0-9 espaço /,:.-% s + > e acentosPT-BR. NOVO vs EVOLUIR:NÍVELn. Rankmaximpact/carga220,motor/pressão/mola/dínamo3,chassi95base5. Estatísticasderivadas, não balancear.
+# Plano prospectivo — integração de textos das cartas
+
+## Objetivo
+Aprimorar a leitura das sete cartas de melhoria já integradas. Cada carta deve explicar a condição em uma frase curta e mostrar estatísticas com nomes e números derivados das definições reais. Para EVOLUIR, comparar o valor atual com o próximo quando isso esclarecer a mudança; para NOVO, destacar o ganho nominal.
+
+## Escopo permitido
+- scripts/progression/upgrade_catalog.gd: somente card_preview, card_topics, effect_summary e helpers de apresentação necessários.
+- resources/upgrades/*.tres: somente title, description, effect_summary, effect_topics.
+- scripts/ui/upgrade_offer.gd: somente textos de título e instrução.
+- assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua: somente copy e montagem/apresentação da prévia, incluindo modo preview_only que lê os ícones existentes sem reexportar arte.
+- As duas prévias de cartas existentes, com texto atualizado. Nenhum outro PNG, ASE, fonte, moldura, geometria ou integração de ícones.
+
+## Restrições
+Preservar IDs, caminhos dos ícones, campos numéricos e mecânicas. Manter 24 glifos por linha, descrição de até duas linhas, no máximo três linhas de estatísticas e badge com até 22 glifos; usar somente glifos já existentes. Explicitar que a carga afeta o próximo acerto após rebater a própria bola; que o dínamo reduz a recarga restante do dash uma vez por rebatida; e que a cura do chassi ocorre na escolha. Não chamar Godot, imports, testes, parser, linter, auditoria ou simulação. A produção de prévias é permitida somente no Aseprite, em modo que não toque na arte.
+
+## Estado de revisão
+Baseline dos alvos será arquivada antes da implementação. Após congelar os arquivos, o agente principal executará o preflight único e solicitará a revisão obrigatória somente leitura.
+# Especificação — textos da integração de cartas
+
+## Apresentação
+Cada carta mostra título, condição/efeito em até duas linhas de 24 glifos e tópicos com estatísticas nomeadas. Até três linhas são permitidas para os tópicos depois da quebra automática. O badge NOVO ou EVOLUIR: NÍVEL n deve caber em 22 glifos.
+
+## Semântica
+- Impacto: aumenta o dano da bola.
+- Motor: reduz a recarga do dash, mostrando os segundos derivados do helper real.
+- Carga: rebater a própria bola carrega o próximo acerto; exibir o dano adicional e que vale para o próximo acerto.
+- Pressão: cada parede aumenta o dano, com limite de paredes por bola mostrado.
+- Mola: aumenta rebotes e duração total da bola.
+- Dínamo: reduz o tempo restante de recarga do dash uma vez por rebatida; não implica efeito passivo.
+- Chassi: aumenta vida máxima e recupera vida somente ao escolher.
+
+Em NOVO, apresentar ganho nominal. Em EVOLUIR, usar valor atual > próximo para o mesmo atributo quando isso couber na área disponível. Todos os números são derivados dos helpers e recursos existentes, sem alteração de mecânica.
+
+## Validação documental
+Confirmar estaticamente o fluxo dos sete paths de ícone pelos recursos, UpgradeCatalog, UpgradeOffer e UpgradeCard. Conferir manualmente limites de copy e preservação por hashes. Nenhuma execução de engine, teste, parser, linter, auditoria, benchmark ou simulação.
+CATALOG PRESENTATION FINAL
+static func card_preview(
+	upgrade_id: Variant,
+	current_rank: int,
+	base_maximum_health: int = 5
+) -> Dictionary:
+	var definition := definition_for(upgrade_id)
+	if definition == null or not can_acquire(upgrade_id, current_rank, base_maximum_health):
+		return {}
+	var next_rank: int = current_rank + 1
+	var rank_label := "NOVO" if current_rank == 0 else "EVOLUIR: NÍVEL %d" % next_rank
+	return {
+		"upgrade_id": definition.upgrade_id,
+		"definition": definition,
+		"title": definition.title,
+		"description": definition.description,
+		"rank_before": current_rank,
+		"rank_after": next_rank,
+		"rank_label": rank_label,
+		"effect_summary": effect_summary(upgrade_id, current_rank, next_rank, base_maximum_health),
+		"topics": card_topics(upgrade_id, current_rank, next_rank, base_maximum_health),
+		"icon": definition.icon,
+	}
+
+
+static func card_topics(
+	upgrade_id: Variant,
+	current_rank: int,
+	next_rank: int,
+	base_maximum_health: int = 5
+) -> PackedStringArray:
+	var definition := definition_for(upgrade_id)
+	if definition == null:
+		return PackedStringArray()
+	var rank_gain: int = maxi(next_rank - current_rank, 0)
+	match definition.upgrade_id:
+		&"impacto_reforcado":
+			var base_damage: int = maxi(BASE_PROJECTILE_CONFIG.damage, 1)
+			var current_damage: int = base_damage + maxi(current_rank, 0) * definition.projectile_damage_per_rank
+			var next_damage: int = base_damage + maxi(next_rank, 0) * definition.projectile_damage_per_rank
+			if current_rank == 0:
+				return PackedStringArray(["Dano da bola: +%d" % (next_damage - current_damage)])
+			return PackedStringArray(["Dano da bola: %d > %d" % [current_damage, next_damage]])
+		&"motor_acelerado":
+			var current_cooldown := dash_cooldown_for_rank(current_rank)
+			var next_cooldown := dash_cooldown_for_rank(next_rank)
+			return PackedStringArray([
+				"Recarga: %ss > %ss" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)]
+			])
+		&"carga_reativa":
+			var charge_enabled: int = 1 if definition.reactive_charge_enabled else 0
+			var current_charge: int = maxi(current_rank, 0) * definition.charged_damage_bonus_per_rank * charge_enabled
+			var next_charge: int = maxi(next_rank, 0) * definition.charged_damage_bonus_per_rank * charge_enabled
+			var charge_topic: String
+			if current_rank == 0:
+				charge_topic = "Dano extra: +%d" % (next_charge - current_charge)
+			else:
+				charge_topic = "Dano extra: +%d > +%d" % [current_charge, next_charge]
+			return PackedStringArray([charge_topic, "No próximo acerto"])
+		&"ricochete_pressao":
+			var current_wall_bonus: int = maxi(current_rank, 0) * definition.environmental_bounce_damage_per_rank
+			var next_wall_bonus: int = maxi(next_rank, 0) * definition.environmental_bounce_damage_per_rank
+			var pressure_topic: String
+			if current_rank == 0:
+				pressure_topic = "Dano por parede: +%d" % (next_wall_bonus - current_wall_bonus)
+			else:
+				pressure_topic = "Dano por parede: %d > %d" % [current_wall_bonus, next_wall_bonus]
+			return PackedStringArray([
+				pressure_topic,
+				"Até %d paredes por bola" % definition.environmental_bounce_damage_count_cap,
+			])
+		&"mola_retorno":
+			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(current_rank)
+			var next_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(next_rank)
+			var current_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + projectile_lifetime_bonus(current_rank)
+			var next_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + projectile_lifetime_bonus(next_rank)
+			if current_rank == 0:
+				var bounce_gain: int = rank_gain * definition.max_bounces_per_rank
+				var bounce_label: String = "rebote" if bounce_gain == 1 else "rebotes"
+				var duration_gain: float = rank_gain * definition.lifetime_per_rank
+				return PackedStringArray([
+					"+%d %s da bola" % [bounce_gain, bounce_label],
+					"+%ss de duração" % _format_decimal(duration_gain),
+				])
+			return PackedStringArray([
+				"Rebotes: %d > %d" % [current_bounces, next_bounces],
+				"Duração: %ss > %ss" % [_format_decimal(current_lifetime), _format_decimal(next_lifetime)],
+			])
+		&"dinamo_defesa":
+			var current_refund: float = dash_refund_seconds(current_rank)
+			var next_refund: float = dash_refund_seconds(next_rank)
+			var refund_topic: String
+			if current_rank == 0:
+				refund_topic = "Recarga do dash: -%ss" % _format_decimal(next_refund - current_refund)
+			else:
+				refund_topic = "Redução: %ss > %ss" % [
+					_format_decimal(current_refund),
+					_format_decimal(next_refund),
+				]
+			return PackedStringArray([refund_topic, "Uma vez por rebatida"])
+		&"chassi_reforcado":
+			var base_health: int = maxi(base_maximum_health, 1)
+			var current_health: int = mini(base_health + maxi(current_rank, 0) * definition.maximum_health_per_rank, 100)
+			var next_health: int = mini(base_health + maxi(next_rank, 0) * definition.maximum_health_per_rank, 100)
+			var health_gain: int = maxi(next_health - current_health, 0)
+			var recovered: int = acquisition_heal(upgrade_id, current_rank, next_rank)
+			var health_topic: String
+			if current_rank == 0:
+				health_topic = "Vida máxima: +%d" % health_gain
+			else:
+				health_topic = "Vida máxima: %d > %d" % [current_health, next_health]
+			return PackedStringArray([
+				health_topic,
+				"Cura na escolha: +%d vida" % recovered,
+			])
+	return definition.effect_topics.duplicate()
+
+
+static func effect_summary(
+	upgrade_id: Variant,
+	current_rank: int,
+	next_rank: int,
+	base_maximum_health: int = 5
+) -> String:
+	var topics := card_topics(upgrade_id, current_rank, next_rank, base_maximum_health)
+	if topics.is_empty():
+		var definition := definition_for(upgrade_id)
+		return definition.effect_summary if definition != null else ""
+	return " / ".join(topics)
+
+
+carga_reativa.tres
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/carga_reativa_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"carga_reativa"
+title = "Carga Reativa"
+description = "Rebata sua bola para carregá-la."
+effect_summary = "Carrega o próximo acerto"
+effect_topics = PackedStringArray("Dano extra: +2", "No próximo acerto")
+reactive_charge_enabled = true
+charged_damage_bonus = 2
+rank_cap = 220
+charged_damage_bonus_per_rank = 2
+
+chassi_reforcado.tres
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/chassi_reforcado_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"chassi_reforcado"
+title = "Chassi Reforçado"
+description = "Aumenta a vida máxima e cura ao escolher."
+effect_summary = "Mais vida máxima e cura na escolha"
+effect_topics = PackedStringArray("Vida máxima: +1", "Cura na escolha: +1 vida")
+rank_cap = 95
+maximum_health_per_rank = 1
+health_recovered_per_rank = 1
+
+dinamo_defesa.tres
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/dinamo_defesa_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"dinamo_defesa"
+title = "Dínamo de Defesa"
+description = "Rebater reduz a recarga do dash."
+effect_summary = "Recarga menor uma vez por rebatida"
+effect_topics = PackedStringArray("Recarga do dash: -0,15s", "Uma vez por rebatida")
+rank_cap = 3
+dash_cooldown_refund_per_rank = 0.15
+
+impacto_reforcado.tres
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/impacto_reforcado_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"impacto_reforcado"
+title = "Impacto Reforçado"
+description = "A bola causa mais dano."
+effect_summary = "Dano extra para a bola"
+effect_topics = PackedStringArray("Dano da bola: +1")
+projectile_damage_override = 2
+rank_cap = 220
+projectile_damage_per_rank = 1
+
+mola_retorno.tres
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/mola_retorno_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"mola_retorno"
+title = "Mola de Retorno"
+description = "A bola dura mais e rebate mais vezes."
+effect_summary = "Mais duração e rebotes para a bola"
+effect_topics = PackedStringArray("+1 rebote da bola", "+0,35s de duração")
+rank_cap = 3
+max_bounces_per_rank = 1
+lifetime_per_rank = 0.35
+
+motor_acelerado.tres
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/motor_acelerado_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"motor_acelerado"
+title = "Motor Acelerado"
+description = "Use o dash com mais frequência."
+effect_summary = "Recarga do dash em menos tempo"
+effect_topics = PackedStringArray("Recarga: 0,55s > 0,4s")
+dash_cooldown_override = 0.4
+rank_cap = 3
+dash_cooldown_by_rank = PackedFloat32Array(0.4, 0.32, 0.26)
+
+ricochete_pressao.tres
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/ricochete_pressao_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"ricochete_pressao"
+title = "Ricochete de Pressão"
+description = "A bola ganha dano ao bater nas paredes."
+effect_summary = "Dano cresce a cada parede"
+effect_topics = PackedStringArray("Dano por parede: +1", "Até 3 paredes por bola")
+rank_cap = 3
+environmental_bounce_damage_per_rank = 1
+environmental_bounce_damage_count_cap = 3
+
+DIFF BASELINE TO FINAL scripts/progression/upgrade_catalog.gd
+diff --git a/docs/specs/2026-11-02-cartas-integracao-textos/historico/r0-baseline/scripts/progression/upgrade_catalog.gd b/scripts/progression/upgrade_catalog.gd
+index 37ba740..84420d1 100644
+--- a/docs/specs/2026-11-02-cartas-integracao-textos/historico/r0-baseline/scripts/progression/upgrade_catalog.gd
++++ b/scripts/progression/upgrade_catalog.gd
+@@ -152,93 +152,102 @@ static func card_topics(
+ 	if definition == null:
+ 		return PackedStringArray()
+ 	var rank_gain: int = maxi(next_rank - current_rank, 0)
+ 	match definition.upgrade_id:
+ 		&"impacto_reforcado":
+-			var damage_gain: int = rank_gain * definition.projectile_damage_per_rank
+-			return PackedStringArray(["+%d de dano na bola" % damage_gain])
++			var base_damage: int = maxi(BASE_PROJECTILE_CONFIG.damage, 1)
++			var current_damage: int = base_damage + maxi(current_rank, 0) * definition.projectile_damage_per_rank
++			var next_damage: int = base_damage + maxi(next_rank, 0) * definition.projectile_damage_per_rank
++			if current_rank == 0:
++				return PackedStringArray(["Dano da bola: +%d" % (next_damage - current_damage)])
++			return PackedStringArray(["Dano da bola: %d > %d" % [current_damage, next_damage]])
+ 		&"motor_acelerado":
++			var current_cooldown := dash_cooldown_for_rank(current_rank)
++			var next_cooldown := dash_cooldown_for_rank(next_rank)
+ 			return PackedStringArray([
+-				"Dash pronto em %ss" % _format_decimal(dash_cooldown_for_rank(next_rank))
++				"Recarga: %ss > %ss" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)]
+ 			])
+ 		&"carga_reativa":
+-			var charge_bonus: int = maxi(next_rank, 0) * definition.charged_damage_bonus_per_rank
+-			return PackedStringArray([
+-				"Dano extra: +%d" % charge_bonus,
+-				"Vale para 1 acerto",
+-			])
++			var charge_enabled: int = 1 if definition.reactive_charge_enabled else 0
++			var current_charge: int = maxi(current_rank, 0) * definition.charged_damage_bonus_per_rank * charge_enabled
++			var next_charge: int = maxi(next_rank, 0) * definition.charged_damage_bonus_per_rank * charge_enabled
++			var charge_topic: String
++			if current_rank == 0:
++				charge_topic = "Dano extra: +%d" % (next_charge - current_charge)
++			else:
++				charge_topic = "Dano extra: +%d > +%d" % [current_charge, next_charge]
++			return PackedStringArray([charge_topic, "No próximo acerto"])
+ 		&"ricochete_pressao":
+-			var wall_bonus: int = maxi(next_rank, 0) * definition.environmental_bounce_damage_per_rank
++			var current_wall_bonus: int = maxi(current_rank, 0) * definition.environmental_bounce_damage_per_rank
++			var next_wall_bonus: int = maxi(next_rank, 0) * definition.environmental_bounce_damage_per_rank
++			var pressure_topic: String
++			if current_rank == 0:
++				pressure_topic = "Dano por parede: +%d" % (next_wall_bonus - current_wall_bonus)
++			else:
++				pressure_topic = "Dano por parede: %d > %d" % [current_wall_bonus, next_wall_bonus]
+ 			return PackedStringArray([
+-				"Cada parede: +%d dano" % wall_bonus,
++				pressure_topic,
+ 				"Até %d paredes por bola" % definition.environmental_bounce_damage_count_cap,
+ 			])
+ 		&"mola_retorno":
+-			var bounce_gain: int = rank_gain * definition.max_bounces_per_rank
+-			var bounce_label: String = "rebote" if bounce_gain == 1 else "rebotes"
+-			var duration_gain: float = rank_gain * definition.lifetime_per_rank
++			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(current_rank)
++			var next_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(next_rank)
++			var current_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + projectile_lifetime_bonus(current_rank)
++			var next_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + projectile_lifetime_bonus(next_rank)
++			if current_rank == 0:
++				var bounce_gain: int = rank_gain * definition.max_bounces_per_rank
++				var bounce_label: String = "rebote" if bounce_gain == 1 else "rebotes"
++				var duration_gain: float = rank_gain * definition.lifetime_per_rank
++				return PackedStringArray([
++					"+%d %s da bola" % [bounce_gain, bounce_label],
++					"+%ss de duração" % _format_decimal(duration_gain),
++				])
+ 			return PackedStringArray([
+-				"+%d %s da bola" % [bounce_gain, bounce_label],
+-				"+%ss de duração" % _format_decimal(duration_gain),
++				"Rebotes: %d > %d" % [current_bounces, next_bounces],
++				"Duração: %ss > %ss" % [_format_decimal(current_lifetime), _format_decimal(next_lifetime)],
+ 			])
+ 		&"dinamo_defesa":
+-			var refund_total: float = maxi(next_rank, 0) * definition.dash_cooldown_refund_per_rank
+-			return PackedStringArray([
+-				"Recarga: -%ss" % _format_decimal(refund_total),
+-				"Uma vez por rebatida",
+-			])
++			var current_refund: float = dash_refund_seconds(current_rank)
++			var next_refund: float = dash_refund_seconds(next_rank)
++			var refund_topic: String
++			if current_rank == 0:
++				refund_topic = "Recarga do dash: -%ss" % _format_decimal(next_refund - current_refund)
++			else:
++				refund_topic = "Redução: %ss > %ss" % [
++					_format_decimal(current_refund),
++					_format_decimal(next_refund),
++				]
++			return PackedStringArray([refund_topic, "Uma vez por rebatida"])
+ 		&"chassi_reforcado":
+ 			var base_health: int = maxi(base_maximum_health, 1)
+-			var current_health: int = mini(base_health + current_rank * definition.maximum_health_per_rank, 100)
+-			var next_health: int = mini(base_health + next_rank * definition.maximum_health_per_rank, 100)
++			var current_health: int = mini(base_health + maxi(current_rank, 0) * definition.maximum_health_per_rank, 100)
++			var next_health: int = mini(base_health + maxi(next_rank, 0) * definition.maximum_health_per_rank, 100)
+ 			var health_gain: int = maxi(next_health - current_health, 0)
+ 			var recovered: int = acquisition_heal(upgrade_id, current_rank, next_rank)
++			var health_topic: String
++			if current_rank == 0:
++				health_topic = "Vida máxima: +%d" % health_gain
++			else:
++				health_topic = "Vida máxima: %d > %d" % [current_health, next_health]
+ 			return PackedStringArray([
+-				"+%d de vida máxima" % health_gain,
+-				"Recupera %d de vida" % recovered,
++				health_topic,
++				"Cura na escolha: +%d vida" % recovered,
+ 			])
+ 	return definition.effect_topics.duplicate()
+ 
++
+ static func effect_summary(
+ 	upgrade_id: Variant,
+ 	current_rank: int,
+ 	next_rank: int,
+ 	base_maximum_health: int = 5
+ ) -> String:
+-	var definition := definition_for(upgrade_id)
+-	if definition == null:
+-		return ""
+-	match definition.upgrade_id:
+-		&"impacto_reforcado":
+-			var base_damage: int = maxi(BASE_PROJECTILE_CONFIG.damage, 1)
+-			return "%d > %d dano" % [base_damage + current_rank * definition.projectile_damage_per_rank, base_damage + next_rank * definition.projectile_damage_per_rank]
+-		&"motor_acelerado":
+-			var current_cooldown := dash_cooldown_for_rank(current_rank)
+-			var next_cooldown := dash_cooldown_for_rank(next_rank)
+-			return "%s > %s s" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)]
+-		&"carga_reativa":
+-			return "+%d > +%d dano" % [current_rank * definition.charged_damage_bonus_per_rank, next_rank * definition.charged_damage_bonus_per_rank]
+-		&"ricochete_pressao":
+-			return "+%d > +%d/parede" % [current_rank * definition.environmental_bounce_damage_per_rank, next_rank * definition.environmental_bounce_damage_per_rank]
+-		&"mola_retorno":
+-			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + current_rank * definition.max_bounces_per_rank
+-			var next_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + next_rank * definition.max_bounces_per_rank
+-			var current_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + current_rank * definition.lifetime_per_rank
+-			var next_lifetime: float = BASE_PROJECTILE_CONFIG.lifetime + next_rank * definition.lifetime_per_rank
+-			return "%d > %d ric.; %s > %s s" % [current_bounces, next_bounces, _format_decimal(current_lifetime), _format_decimal(next_lifetime)]
+-		&"dinamo_defesa":
+-			return "%s > %s s por parry" % [
+-				_format_decimal(current_rank * definition.dash_cooldown_refund_per_rank),
+-				_format_decimal(next_rank * definition.dash_cooldown_refund_per_rank),
+-			]
+-		&"chassi_reforcado":
+-			var base_health: int = maxi(base_maximum_health, 1)
+-			var current_health: int = mini(base_health + current_rank * definition.maximum_health_per_rank, 100)
+-			var next_health: int = mini(base_health + next_rank * definition.maximum_health_per_rank, 100)
+-			return "%d > %d HP max; cura +%d" % [current_health, next_health, definition.health_recovered_per_rank]
+-	return definition.effect_summary
+-
++	var topics := card_topics(upgrade_id, current_rank, next_rank, base_maximum_health)
++	if topics.is_empty():
++		var definition := definition_for(upgrade_id)
++		return definition.effect_summary if definition != null else ""
++	return " / ".join(topics)
+ 
+ static func projectile_damage(
+ 	base_damage: int,
+ 	impact_rank: int,
+ 	charge_rank: int,
+DIFF BASELINE TO FINAL scripts/ui/upgrade_offer.gd
+diff --git a/docs/specs/2026-11-02-cartas-integracao-textos/historico/r0-baseline/scripts/ui/upgrade_offer.gd b/scripts/ui/upgrade_offer.gd
+index 8c27d73..675cf02 100644
+--- a/docs/specs/2026-11-02-cartas-integracao-textos/historico/r0-baseline/scripts/ui/upgrade_offer.gd
++++ b/scripts/ui/upgrade_offer.gd
+@@ -22,12 +22,12 @@ func _ready() -> void:
+ 	set_process_unhandled_key_input(false)
+ 	_font_bundle = UpgradeCard.load_card_font_bundle()
+ 	if bool(_font_bundle.get("valid", false)):
+ 		_heading.configure_font(_font_bundle)
+ 		_hint.configure_font(_font_bundle)
+-	_heading.set_text("SALA LIMPA - ESCOLHA UMA MELHORIA")
+-	_hint.set_text("SELECIONE UMA CARTA")
++	_heading.set_text("ESCOLHA UMA MELHORIA")
++	_hint.set_text("UMA ESCOLHA POR SALA")
+ 	var viewport: Viewport = get_viewport()
+ 	if viewport != null and not viewport.size_changed.is_connected(_layout_stage):
+ 		viewport.size_changed.connect(_layout_stage)
+ 	_layout_stage()
+ 	hide()
+DIFF BASELINE TO FINAL assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
+diff --git a/docs/specs/2026-11-02-cartas-integracao-textos/historico/r0-baseline/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua b/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
+index 45ca14b..243011d 100644
+--- a/docs/specs/2026-11-02-cartas-integracao-textos/historico/r0-baseline/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
++++ b/assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua
+@@ -1,7 +1,8 @@
+ local function main()
+   local P = app.params or {}
++  local PREVIEW_ONLY = string.lower(tostring(P.preview_only or "")) == "true"
+   local ROOT = assert(P.root, "missing root parameter")
+   local KIT = ROOT .. "/assets/ui/upgrade_cards_v1"
+   local SRC, OUT, PRE = KIT .. "/source", KIT .. "/export", KIT .. "/preview"
+   local PAL = ROOT .. "/assets/ui/hud_caldeira_v1/export/palette.json"
+   local FONTJSON = ROOT .. "/assets/ui/hud_caldeira_v1/export/font.json"
+@@ -224,10 +225,11 @@ local function main()
+     disk(a, cx, cy, radius, K.copper)
+     pixel(a, cx + 1, cy - 1, K.amber)
+     pixel(a, cx, cy - 1, K.cream)
+   end
+ 
++  if not PREVIEW_ONLY then
+   make_art("impacto_reforcado", function(o, f, sh, hi, a, K)
+     oval_fill(o, 32, 20, 15, 15, K.ink)
+     oval_fill(f, 32, 20, 14, 14, K.steel)
+     poly(sh, {{x=19,y=23},{x=23,y=31},{x=29,y=34},{x=36,y=34},{x=33,y=27},{x=28,y=22}}, K.iron, nil)
+     poly(hi, {{x=25,y=8},{x=31,y=6},{x=37,y=7},{x=42,y=11},{x=44,y=15},{x=38,y=15},{x=34,y=12},{x=29,y=11}}, K.silver, nil)
+@@ -350,10 +352,21 @@ local function main()
+     bolt(a, K, 17, 13, 2)
+     bolt(a, K, 47, 13, 2)
+     bolt(a, K, 17, 27, 2)
+     bolt(a, K, 47, 27, 2)
+   end)
++  else
++    local ids = {
++      "impacto_reforcado", "motor_acelerado", "carga_reativa",
++      "ricochete_pressao", "mola_retorno", "dinamo_defesa", "chassi_reforcado"
++    }
++    for _, id in ipairs(ids) do
++      local existing = Image { fromFile = OUT .. "/" .. id .. "_128x80.png" }
++      assert(existing.width == 128 and existing.height == 80, "preview icon dimensions changed: " .. id)
++      arts[id] = existing
++    end
++  end
+   local function load_font()
+     lock_palette()
+     local raw = read(FONTJSON)
+     assert(raw:find('"cell":{"w":5,"h":11}', 1, true), "font cell changed")
+     assert(raw:find('"advance":6', 1, true), "font advance changed")
+@@ -362,10 +375,15 @@ local function main()
+     local glyphs = {}
+     local pattern = '"character":"([^"]*)","codepoint":(%d+),"rect":{"x":(%d+),"y":(%d+),"w":(%d+),"h":(%d+)},"advance":(%d+)'
+     for ch, _, x, y, w, h, advance in raw:gmatch(pattern) do
+       glyphs[ch] = { x = tonumber(x), y = tonumber(y), w = tonumber(w), h = tonumber(h), advance = tonumber(advance) }
+     end
++    local additions_raw = read(OUT .. "/card-font-additions.json")
++    local addition_pattern = '"character":%s*"([^"]*)"%s*,%s*"codepoint":%s*(%d+)%s*,%s*"rect":%s*{%s*"x":%s*(%d+)%s*,%s*"y":%s*(%d+)%s*,%s*"w":%s*(%d+)%s*,%s*"h":%s*(%d+)%s*}%s*,%s*"advance":%s*(%d+)'
++    for ch, _, x, y, w, h, advance in additions_raw:gmatch(addition_pattern) do
++      glyphs[ch] = { x = tonumber(x), y = tonumber(y), w = tonumber(w), h = tonumber(h), advance = tonumber(advance) }
++    end
+     assert(glyphs.A and glyphs["-"] and glyphs[" "], "font glyphs missing")
+     return atlas, glyphs
+   end
+   local function chars(value)
+     local out, i = {}, 1
+@@ -423,27 +441,30 @@ local function main()
+     rect(canvas, 0, 0, 576, 36, K.blue)
+     rect(canvas, 0, 0, 576, 2, K.copper)
+     rect(canvas, 0, 34, 576, 2, K.ink)
+     rect(canvas, 18, 17, 42, 1, K.steel)
+     rect(canvas, 516, 17, 42, 1, K.steel)
+-    center_text(canvas, 288, 10, "OFICINA - UPGRADES", K.ivory, atlas, glyphs)
+-    center_text(canvas, 288, 39, "3 CARTAS - ESTUDO DE APRESENTAÇÃO", K.cream, atlas, glyphs)
++    center_text(canvas, 288, 10, "ESCOLHA UMA MELHORIA", K.ivory, atlas, glyphs)
++    center_text(canvas, 288, 39, "UMA ESCOLHA POR SALA", K.cream, atlas, glyphs)
+     local cards = {
+       {
+         id = "carga_reativa", title = "CARGA REATIVA",
+-        desc = { "REBATA SUA BOLA PARA", "CAUSAR MAIS DANO." },
+-        topics = { "DANO EXTRA: +2", "VALE PARA 1 ACERTO" }, state = "normal"
++        desc = { "REBATA SUA BOLA PARA", "CARREGÁ-LA." },
++        topics = { "DANO EXTRA: +2", "NO PRÓXIMO ACERTO" },
++        badge = "NOVO", state = "normal"
+       },
+       {
+         id = "mola_retorno", title = "MOLA DE RETORNO",
+-        desc = { "A BOLA DURA MAIS TEMPO", "E REBATE MAIS VEZES." },
+-        topics = { "+1 REBOTE DA BOLA", "+0,35S DE DURAÇÃO" }, state = "focus"
++        desc = { "A BOLA DURA MAIS E", "REBATE MAIS VEZES." },
++        topics = { "REBOTES: 4 > 5", "DURAÇÃO: 2,55S > 2,9S" },
++        badge = "EVOLUIR: NÍVEL 2", state = "focus"
+       },
+       {
+         id = "dinamo_defesa", title = "DÍNAMO DE DEFESA",
+-        desc = { "REBATER ADIANTA A", "RECARGA DO DASH." },
+-        topics = { "RECARGA: -0,15S", "UMA VEZ POR REBATIDA" }, state = "normal"
++        desc = { "REBATER REDUZ A", "RECARGA DO DASH." },
++        topics = { "REDUÇÃO: 0,15S > 0,3S", "UMA VEZ POR REBATIDA" },
++        badge = "EVOLUIR: NÍVEL 2", state = "normal"
+       }
+     }
+     local origins = { 36, 208, 380 }
+     local frames = {}
+     for _, state in ipairs({ "normal", "focus", "pressed" }) do
+@@ -453,17 +474,17 @@ local function main()
+       local x, y = origins[index], 60
+       paste(canvas, frames[card.state], x, y)
+       paste(canvas, arts[card.id], x + 16, y + 34)
+       rect(canvas, x + 8, y + 118, 144, 24, K.navy)
+       center_text(canvas, x + 80, y + 9, card.title, K.ivory, atlas, glyphs)
+-      draw_text(canvas, x + 12, y + 118, card.desc[1], K.cream, atlas, glyphs)
+-      draw_text(canvas, x + 12, y + 130, card.desc[2], K.cream, atlas, glyphs)
++      center_text(canvas, x + 80, y + 118, card.desc[1], K.cyan, atlas, glyphs)
++      center_text(canvas, x + 80, y + 130, card.desc[2], K.cyan, atlas, glyphs)
+       for topic_index, topic in ipairs(card.topics) do
+         assert(#chars(topic) <= 24, "card line exceeds 24 glyphs")
+-        draw_text(canvas, x + 20, y + 144 + (topic_index - 1) * 14, topic, K.silver, atlas, glyphs)
++        draw_text(canvas, x + 8, y + 146 + (topic_index - 1) * 14, topic, K.silver, atlas, glyphs)
+       end
+-      center_text(canvas, x + 80, y + 210, "NOVO", K.cyan, atlas, glyphs)
++      center_text(canvas, x + 80, y + 210, card.badge, K.cyan, atlas, glyphs)
+     end
+     center_text(canvas, 288, 307, "ESTUDO VISUAL - NÃO É SCREENSHOT GODOT", K.silver, atlas, glyphs)
+     assert(canvas:saveAs(PRE .. "/upgrade-cards-study-576x324.png"), "study preview export failed")
+     save_integer_scale(canvas, PRE .. "/upgrade-cards-study-1728x972.png", 3)
+     print("PREVIEW_OK 3 cards, descriptions and 2 labeled topics")
+@@ -498,15 +519,19 @@ local function main()
+     save_integer_scale(canvas, PRE .. "/upgrade-illustrations-contact-864x704.png", 2)
+     print("ART_CONTACT_OK 7 mechanical illustrations")
+   end
+ 
+   make_preview()
+-  make_contact()
++  if not PREVIEW_ONLY then
++    make_contact()
+   write(OUT .. "/manifest.json", [[
+ {"asset_set":"upgrade_cards_v1","card":{"w":160,"h":240},"illustration":{"w":128,"h":80,"source_canvas":{"w":64,"h":40},"scale":2,"max_colors_per_icon":10,"style":"cartoon mechanical objects, rounded volume, bold silhouettes, 2-3 tones per material, 1px outline"},"palette":"assets/ui/hud_caldeira_v1/export/palette.json","palette_colors":19,"alpha":[0,255],"font":"assets/ui/upgrade_cards_v1/export/card-font-atlas.png","card_font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","replacement_atlas":"card-font-atlas.png","additions":"card-font-additions.json","canvas":{"w":84,"h":105},"glyphs":[{"character":"+","codepoint":43},{"character":">","codepoint":62}]},"illustrations":["impacto_reforcado_128x80.png","motor_acelerado_128x80.png","carga_reativa_128x80.png","ricochete_pressao_128x80.png","mola_retorno_128x80.png","dinamo_defesa_128x80.png","chassi_reforcado_128x80.png"],"frames":["frame_normal_160x240.png","frame_focus_160x240.png","frame_pressed_160x240.png"],"previews":["preview/upgrade-cards-study-576x324.png","preview/upgrade-cards-study-1728x972.png","preview/upgrade-illustrations-contact-432x352.png","preview/upgrade-illustrations-contact-864x704.png"],"notes":["illustrations regenerated from the 64x40 source grid at integer scale 2","frame and font assets are reused unchanged","preview is a visual study, not a Godot screenshot","no engine or tests run"]}
+ ]])
+   print("UPGRADE_CARDS_ART_ONLY_OK " .. KIT)
++  else
++    print("UPGRADE_CARDS_PREVIEW_ONLY_OK " .. KIT)
++  end
+ end
+ 
+ local ok, err = xpcall(main, debug.traceback)
+ if not ok then
+   print("UPGRADE_CARDS_GENERATION_ERROR: " .. tostring(err))
+CARD FINAL UNCHANGED configure+wrap
+func configure(row: Dictionary, font_bundle: Dictionary) -> bool:
+	if not bool(font_bundle.get("valid", false)):
+		return false
+	var definition: UpgradeDefinitionResource = row.get("definition") as UpgradeDefinitionResource
+	if definition == null:
+		return false
+	var illustration: Texture2D = row.get("icon", definition.icon) as Texture2D
+	if illustration == null:
+		return false
+	if not _configure_text(_title, String(row.get("title", definition.title)), font_bundle, 1):
+		return false
+	var summary_text := String(row.get("description", definition.description))
+	if summary_text.is_empty():
+		summary_text = definition.description
+	var summary_lines := _wrap_text(summary_text, 24, 2)
+	if summary_lines.size() != 1 and summary_lines.size() != 2:
+		return false
+	if not _configure_text(_summary, "\n".join(PackedStringArray(summary_lines)), font_bundle, 2):
+		return false
+	var topic_lines: Array[String] = []
+	var topics_variant: Variant = row.get("topics", definition.effect_topics)
+	if typeof(topics_variant) == TYPE_PACKED_STRING_ARRAY or typeof(topics_variant) == TYPE_ARRAY:
+		for topic_variant: Variant in topics_variant:
+			var wrapped_topic := _wrap_text(String(topic_variant), 24, 3)
+			for line: String in wrapped_topic:
+				topic_lines.append(line)
+	if topic_lines.is_empty() or topic_lines.size() > _topic_lines.size():
+		return false
+	for index in range(_topic_lines.size()):
+		var line := topic_lines[index] if index < topic_lines.size() else ""
+		if not _configure_text(_topic_lines[index], line, font_bundle, 1):
+			return false
+	if not _configure_text(_badge, String(row.get("rank_label", "")), font_bundle, 1):
+		return false
+	_illustration.texture = illustration
+	_illustration.show()
+	return true
+
+func _configure_text(control: HudBitmapText, value: String, font_bundle: Dictionary, lines: int) -> bool:
+	if control == null or not control.configure_font(font_bundle):
+		return false
+	control.max_lines = lines
+	control.set_text(value)
+	return true
+
+func _wrap_text(value: String, maximum_characters: int, maximum_lines: int) -> Array[String]:
+	var result: Array[String] = []
+	var current := ""
+	for word: String in value.replace("\n", " ").split(" ", false):
+		if word.length() > maximum_characters:
+			return []
+		var candidate := word if current.is_empty() else current + " " + word
+		if candidate.length() <= maximum_characters:
+			current = candidate
+			continue
+		result.append(current)
+		current = word
+		if result.size() >= maximum_lines:
+			return []
+	if not current.is_empty():
+		result.append(current)
+	if result.size() > maximum_lines:
+		return []
+	return result
+
+
+EFFECT RULES UNCHANGED: projectile damage base+impactrank*1+charged?chargerank*2+pressurerank*min(environmentbounces,3). Dashcooldown .55/.4/.32/.26; mola maxbounces3+rank and active lifetime2.2+.35rank; dínamo .15rank remainingcooldownrefund once acceptedparryperswing, noairdashrecharge; HP base5+rank up to100, acquisitionhealrankdelta. GDScripthelpersused unchanged. Preview novoCarga/rank2Mola/rank2Dínamo matchesmanual values.

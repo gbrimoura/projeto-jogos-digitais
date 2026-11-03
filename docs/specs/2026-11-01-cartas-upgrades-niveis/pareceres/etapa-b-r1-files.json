@@ -1,0 +1,15 @@
+[
+  "scripts/ui/upgrade_offer.gd",
+  "scripts/ui/upgrade_card.gd",
+  "scenes/upgrade_offer.tscn",
+  "scenes/ui/upgrade_card.tscn",
+  "scripts/world/main.gd",
+  "scripts/progression/enemy_level_config_resource.gd",
+  "resources/upgrades/carga_reativa.tres",
+  "resources/upgrades/chassi_reforcado.tres",
+  "resources/upgrades/dinamo_defesa.tres",
+  "resources/upgrades/impacto_reforcado.tres",
+  "resources/upgrades/mola_retorno.tres",
+  "resources/upgrades/motor_acelerado.tres",
+  "resources/upgrades/ricochete_pressao.tres"
+]

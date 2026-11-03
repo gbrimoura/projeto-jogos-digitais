@@ -1,0 +1,70 @@
+Fiz a análise só com o texto enviado: não usei ferramentas, não li arquivos e não criei artefato, como você pediu.
+
+```text
+STATUS: done
+SUMMARY: O plano é coerente na arquitetura (Run→Main→gerador/limites/porta, sequência linear, descritor antes do prepare_authored_layout). A geometria vertical numérica da spec, porém, tem conflitos físicos objetivos: teto limitando o salto, choque contra o apoio de dois níveis acima, margem mínima no primeiro degrau, e o validador não define limites numéricos de salto "conservador". Também faltam regras de rollback na saída DOWN e de prioridade entre "família não repete" e "rota vertical obrigatória". Seis achados P1 e oito P2.
+CHANGED_FILES: none
+TESTS: none
+RISKS: abaixo
+NEXT_STEP: corrigir os P1 no spec (números e contrato do validador) antes de liberar o Luna; rodada delta só nas seções alteradas.
+```
+
+## Achados P1
+
+**P1-1 — O salto 248→152 bate no teto (a escada proposta não é conservadora).**
+Parado no apoio 248, a cabeça fica em 172. O ápice teórico levaria a cabeça a 44, mas o teto sólido termina em 64. Então o salto é cortado quando os pés estão em 140, só 12 px acima do topo 152.
+- A janela com os pés acima do apoio cai de cerca de 0,4 s (104 px de corrida a 260) para cerca de 0,16 s (43 px).
+- **Correção, uma das duas:**
+  - (a) Degraus iguais de 96: 560→464→368→272→176. A cabeça no ápice saindo de 272 fica em 68, abaixo de 64 só por 4 px. A travessia final de 176 (centro 138→32) tem 22 px de margem.
+  - (b) Manter o topo em 152, mas exigir que a aproximação 248→152 aconteça sob a coluna do hatch. Saindo de 248, o centro chega a 82 e não cruza 32, então não há saída acidental.
+- Em qualquer caso, o validador precisa checar a folga da cabeça contra sólidos (teto e apoios) ao longo do arco, não só a diferença de altura.
+
+**P1-2 — No ziguezague, a cabeça bate no apoio de dois níveis acima.**
+Com degrau de 96 e ápice de 128, a cabeça sobe 204 px acima do apoio de partida. Exemplo: saindo de 440, a cabeça chega a 236, acima da face inferior do apoio 248 (248 + espessura).
+- No ziguezague clássico (níveis n e n+2 do mesmo lado), o ponto de decolagem fica sob o nível n+2. O mesmo vale para piso 560→440 contra o apoio 344, se a espessura for 12 px ou mais.
+- **Correção:** regra explícita de que a faixa de decolagem e o arco do nível n não podem se sobrepor horizontalmente aos níveis n+1 (na decolagem) e n+2 (no arco). A alternativa é espaçamento na mesma coluna de pelo menos 204 + espessura + margem.
+- Também é preciso proibir ficar em pé sob o nível n+1, salvo com folga de pelo menos 76 + margem. Com 96 de espaçamento e espessura de 20 ou mais, isso é impossível.
+
+**P1-3 — O primeiro degrau de 120 não é conservador.**
+Sobram 8 px para o ápice. Os pés ficam acima de +120 por apenas 0,2 s (cerca de 52 px de corrida), e a base arredondada da cápsula (raio 14) ainda consome parte disso na quina de um apoio sólido.
+- **Correção:** limitar todo degrau a 128 − 24 = 104 ou menos (sugestão: 96), ou justificar numericamente que 120 é aceitável.
+- A P1-1(a) já resolve isso.
+
+**P1-4 — "Saltos conservadores" não tem números no contrato do Main.**
+Sem limites explícitos, o validador estático e os revisores não conseguem verificar nada. **Correção:** fixar no spec, como parâmetros técnicos provisórios:
+- Δy máximo para subir: 104 ou menos.
+- Vão horizontal máximo borda a borda para cada Δy (por exemplo, 64 ou menos para Δy de 96; o máximo teórico é cerca de 156).
+- Largura mínima de pouso: 28 + 2×12.
+- Folga de cabeça de 8 ou mais contra qualquer sólido no arco.
+- Folga de pé em pé de 76 + 8 sob sólidos.
+- Margem final de 16 ou mais para o centro cruzar o sensor do hatch.
+
+Sem isso, "validar apoios" vira só checar presença.
+
+**P1-5 — O rollback da saída DOWN não está definido.**
+Para o centro cruzar o sensor sob o piso antes da contenção, o jogador fica parado com o centro já além da linha (poço de cerca de 100–120 px, hatch de 128). Se a validação deferred recusar:
+- o latch está "cruzado" com o jogador parado;
+- sair do poço exige um salto de cerca de 120 (margem de 8);
+- o "retry" fica, na prática, impossível ou ambíguo.
+
+**Correção:** em caso de recusa, reposicionar o jogador num ponto seguro validado ao lado do hatch e resetar o latch pela mesma projeção. Alternativa: poço raso, com a linha do sensor ao menos 38 + margem acima do piso de contenção e reset automático. No UP o retry é natural (a queda volta pela abertura até o apoio), mas convém declarar isso.
+
+**P1-6 — Conflito entre "família não repete" e "rota UP obrigatória"; famílias de piso variável contra inimigos intocáveis.**
+- (a) Se só a escada/ziguezague oferece rota até o hatch, links UP seguidos (ou DOWN→UP) forçam a mesma família duas vezes. **Correção:** toda família precisa ter variante com rota vertical (camada de escada sobre patamares/vale/crista), ou o spec define a prioridade "topologia > não repetição" com fallback determinístico registrado.
+- (b) "Vale/crista" sugere perfil de piso variável, mas inimigos e combate estão proibidos de mudar, e a patrulha exige piso contínuo. **Correção:** declarar que o piso de combate fica plano em 560 e que as famílias variam só apoios acima dele. Senão, a compatibilidade com Cospe-Rebite e Tranca-Lata não fica garantida.
+
+## Achados P2
+
+- **P2-1 — Contenção acima do hatch UP.** A faixa de colisão extra de −32 a 0 também precisa ser recortada (o texto cita só Ceiling/CeilingBand). Quando o centro está em 32, a cabeça está em −6, dentro dessa faixa. A contenção acima do hatch deve ficar acima de cerca de −6 menos a margem.
+- **P2-2 — Linha do sensor UP.** Para ganhar margem final, avaliar baixar a linha de 32 para algo entre 48 e 64, ainda dentro da banda do teto. É um parâmetro técnico, não do GDD.
+- **P2-3 — Caminho no grid.** Um caminho que não repete coordenadas pode se encurralar a partir de cerca de 7 passos. Fallback construtivo sem backtracking: permitir só um sentido horizontal por run (por exemplo, RIGHT/UP/DOWN, sorteando o espelho), sem UP logo após DOWN. Isso garante as duas propriedades por construção. Definir também se o grid reinicia por andar e como tratar a primeira sala (sem link anterior: entrada padrão?) e a do chefe (saída para próximo andar ou fim da run).
+- **P2-4 — Seeds por sala.** Derivar por hash (seed da run, andar, índice), não por consumo sequencial de um único RNG. Assim, mudar um gerador não desloca as salas seguintes. Guardar e expor a seed resolvida quando a seed for 0.
+- **P2-5 — Recompensa e hatch.** Garantir que pickups não nasçam sobre o recorte do piso (ou o recorte do teto alcançável) e que o gate DOWN só abra depois de a recompensa ser coletada ou resolvida, para ela não cair no vão.
+- **P2-6 — Sala do chefe.** Dizer se ela entra na variação de família/link ou mantém a arena fixa. O texto cita fallback de apoio do Tranca-Lata, mas não diz se a arena pode ter saída vertical.
+- **P2-7 — Escopo do Luna.** Gerador, limites, porta, visuais e validação em 30 min é arriscado. Sugiro incrementos (A: descritor + porta orientada; B: limites/recortes/validador; C: famílias), cada um congelado e revisado, como pedem as regras de incremento.
+- **P2-8 — Governança.** O plano usa `cursor-grok-4.6-xhigh-fast` e diz que "Grok 4.6 global prevalece sobre 4.7 local", sem citar a fonte da regra global. Registre essa fonte e a divergência no histórico. Registre também a variante `xhigh` e o agente `plan` do Muse, e deixe explícito que a implementação exige os quatro revisores (Opus via Cursor com o identificador exato), não só o Opus.
+
+## RISKS
+
+- Os números acima saem da cinemática ideal (v = 640, g = 1600, corrida a 260). Coyote time, salto variável e o atrito de deslizamento da cápsula não aparecem no texto e podem mudar as margens.
+- A revisão estática não confirma a sensação no engine. Fica registrado que, por regra local, não houve execução.

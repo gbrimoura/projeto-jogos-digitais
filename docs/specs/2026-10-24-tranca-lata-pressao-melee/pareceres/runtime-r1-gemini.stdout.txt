@@ -1,0 +1,10 @@
+STATUS: done
+SUMMARY: Revisão estática read-only concluída sobre a entrada congelada `runtime-r1-input.txt`. A implementação em `scripts/world/training_target.gd` atende com precisão ao contrato da pressão melee do Tranca-Lata: velocidade de perseguição própria desacoplada a 120 px/s (preservando patrulha a 48 px/s e física de salto intacta), engajamento preferido a 96 px limitado pelo raio real de 140 px com verificação de LOS, padding interno de 8 px (`PURSUIT_STOP_PADDING`) que previne oscilação fora do gate, sincronização estrita dos três gatilhos de ataque (`IDLE` e as duas checagens em `PREPARE`), e fallback de travamento físico (`_pursuit_stuck_remaining >= 0.65s`) que exige sobreposição real e LOS antes do windup, consumindo e resetando o contador em `_begin_windup`. Todos os 11 arquivos de baseline permanecem íntegros e nenhum bug concreto P1/P2 foi detectado.
+CHANGED_FILES: none
+TESTS: static review only (sem execução de engine, Godot, comandos, simulações ou QA)
+RISKS:
+- Riscos concretos P1/P2: Nenhum identificado em gates, fallback, resets, locks de combate ou cinemática.
+- Observações de tuning / design (P3, opcionais):
+  1. *Acúmulo de stuck em fallback*: Quando travado na borda/obstáculo com o Player além de 140 px ou sem LOS, `_pursuit_stuck_remaining` permanece acima de 0,65 s e é ritmado a cada 0,45 s por `PURSUIT_REPLAN_INTERVAL`. A consulta subsequente dispara imediatamente assim que o Player entra no raio de 140 px com linha de visada desimpedida. O comportamento é seguro e não causa vazamento de dano.
+  2. *Equilíbrio de agressividade*: `PURSUIT_SPEED = 120.0` e `PREFERRED_MELEE_DISTANCE = 96.0` constituem calibração provisória local, sujeita à validação de gamefeel pelo usuário.
+NEXT_STEP: Integrar este parecer aos registros da rodada e consolidar com as análises dos demais revisores (Grok 4.7, Muse Spark 1.3) para encerramento do incremento.

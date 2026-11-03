@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Revisão estática dos dois diffs: alinhamento Y das setas LEFT/RIGHT para Y real do SideDoorVisual com X 48 para dentro, e blink binário 0.8s ON/0.4s OFF só em runtime via _draw apagado. Sem mudança em UP/DOWN, physics/crossing/sinais/gates/labels.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: none em fluxo concreto no escopo apresentado
+NEXT_STEP: manter estado congelado para validação do plano

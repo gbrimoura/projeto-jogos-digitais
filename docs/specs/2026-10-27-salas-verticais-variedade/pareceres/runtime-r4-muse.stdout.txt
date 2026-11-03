@@ -1,0 +1,18 @@
+STATUS: done
+SUMMARY: Revisão final R4 somente leitura concluída. Delta R3→R4 contém só 2 renomes anti-colisão em Main, sem mudança funcional. Contextos canônicos fecham as 2 pendências Muse-R3.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum P1/P2 restante no escopo. Opus/Cursor/AGY indisponíveis por quota não contam como aprovação; Grok R1/R2/R3 vazio.
+NEXT_STEP: Congelar R4 como estável; sem nova rodada por este delta.
+
+P1: none. P2: none.
+
+Fecha pendências Muse-R3: SIM.
+1. Retângulos/testemunha: [846,962] e [874,934] eram faixa segura com inset22, não bounds. REAL roof4 Rect2(824,160,160,16) bounds 824..984 safe 846..962 source(608,256,160,16) launch744 vx260 landing~908 dentro do safe; roof5 Rect2(852,160,104,16) bounds 852..956 safe 874..934 source(708,232,104,16) launch752 vx100 landing~924 dentro do safe. Rise 96/72 ≤128, cinemática jump640/gravity1600 consistente. Não aplicar 22 segunda vez.
+2. Chamador invalid: contexto mostra `if not valid: return _fail` do fallback ANTES de aplicar geometrias + revalida rota física do fallback; sem bypass.
+
+Deltas:
+1. `fallback_index`→`canonical_fallback_index` no bloco-filho de fallback: elimina sombra sobre `fallback_index` do pai. Usos (bounds-check + NodePath) consistentes. `primary/fallback_index` externos não reusados após `generation=fallback_generation`; alvo/rects atualizados — sem troca de comportamento.
+2. Remoção de `var player_body` interna em `_validate_authored_target`: outer já valida null/mask9 com fail, logo reuso é mesmo nó, sem nulidade. Ternário residual inofensivo.
+
+Referência parser avaliada documentalmente (parse_suite/get_local/parent_block), sem afirmar compilação executada. Sem revisita RIGHT/DOWN/LEFT/UP, sem exigir inputs exaustivos, sem redesenho de algoritmo.

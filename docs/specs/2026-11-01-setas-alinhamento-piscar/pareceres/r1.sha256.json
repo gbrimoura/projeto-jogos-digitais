@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "AB6739B17BADF40FFD45680942C880F16DCE1ED3AB232935C21C6C1E6A474696",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-11-01-setas-alinhamento-piscar\\pareceres\\codigo-r1-input.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "120A5CC9B1A9B3F36F28D349CD8306F29AF3C5C1AB0EAC93D8DE177F7D828AF7",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-11-01-setas-alinhamento-piscar\\historico\\r1\\scripts\\world\\exit_door.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "FA1C52B548B19671854AEF363B20E14734819CCE021B452ECF16D8C8104AE701",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-11-01-setas-alinhamento-piscar\\historico\\r1\\scripts\\world\\exit_direction_indicator.gd"
+  }
+]

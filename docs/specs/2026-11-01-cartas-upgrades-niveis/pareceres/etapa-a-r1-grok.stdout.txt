@@ -1,0 +1,1720 @@
+thinkingThe user wants me to continue the review. I already read the entire file. Now I need to complete the analysis and return the review in the specified format. Let me also check if the file was truncated - it ended at line 1893. Let me see if I need to read more of the file.
+
+The file ended at:
+```
+func _disconnect_room_player_signals(room: Node) -> void:
+	if room == null or not is_instance_valid(room):
+		return
+```
+
+This might be the end of the package. Let me analyze everything I have thoroughly.
+
+This is a read-only implementation review of Etapa A R1 for the cards/upgrades/levels feature. I need to evaluate against the critical contracts in the briefing.
+
+Let me systematically go through all contracts:
+
+- No second modal / hidden boss reward
+- Rollback preserves choice and HP/build
+- Death/victory/cleanup/flush/input guard maintained
+- HP Chassi +1 max/current only on acquisition, base+rank derived, no heal on apply/retry/enter
+- No reset invuln
+- Movement update_config without configure/reset refill
+- Dínamo only remaining cooldown once per swing, no air dash refund
+- Carga bonus ADITIVE 2*rank
+- Ricochete environmental counter separate, only wall non-damageable, launch zeros, parry PRESERVES history/lifetime
+- Mola +1 bounce +0.35s/rank cap 3
+- Motor .40/.32/.26 cap 3
+- Impacto +1 rank repeatable
+- Carga repeatable
+- Pressão rank*min(env,3) cap rank 3
+- Chassi HP cap 100 and offer removes zero-gain
+
+- Level = 1+(floor-1)*(common+1)+(room-1) stamped on descriptor copy before configure outside tree
+- Enemy bases idempotent
+- ready health = max scaled
+- never heal inside combat
+- HP ceil(base*(1+.12*(lv-1)))
+- damage base+min(floor((lv-1)/10),2)
+- cadence mult max(.65,1-.015*(lv-1))
+- preserve AI/movement/jump/windup/actives/projectile speed/solver
+- NV prefix on fixed panel, fits before name, don't increase HUD
+
+- Always keep non-empty options
+- When both pools exist: 1 new + 1 evolution
+- Separate RNG / cache offer per instance
+
+- 7 IDs catalog
+- Legacy snapshots rank 1 and new atomic ranks
+- Icons null are deliberate until B
+- Technical ceiling 220 = 20×11 exports, not slots
+- Current RunRoot 1 floor 4 rooms, script defaults 8×4
+- Provisional numbers
+- No alleged runtime
+
+- Adapter UI 1..3
+- Unique source ID
+- Ordinals
+- No reset dash
+- Don't require reset counter on parry
+- Don't require enemy heal inside tree
+- Tranca-Lata is TrainingTarget
+- User Grok 4.6 prevails over 4.7 local
+
+Let me go through each file carefully for P1/P2 issues.
+
+### upgrade_catalog.gd - new file
+
+`MAX_RUN_ACQUISITIONS: 220` - matches technical ceiling.
+
+7 IDs: impacto, motor, carga, ricochete, mola, dinamo, chassi - good.
+
+`max_rank_for` for chassi: `clampi(100 - maxi(base_maximum_health, 1), 0, cap)`
+- If base HP is 5, max rank = 95, which matches chassi rank_cap = 95
+- If someone has base 5 and rank 95, max HP = 5+95 = 100
+- Offer removes zero-gain: `can_acquire` requires `current_rank < max_rank_for`. At rank 95, max is 95, so cannot acquire. Good.
+
+`can_acquire` doesn't check total run acquisitions - that's checked separately in RunBuild.add_upgrade and build_offer.
+
+`build_offer`:
+- Returns empty if total ranks >= 220
+- When both pools exist: 1 new + 1 evolution, then fill remaining to 3
+- When only one pool: fills from remaining (which includes leftover of that pool)
+- When neither: empty result
+
+**Potential P1: empty offer when all upgrades at cap or total >= 220**
+
+Contract: "Sempre manter opções não-vazias"
+
+If total_rank_count >= MAX_RUN_ACQUISITIONS, returns empty array.
+If no candidates can_acquire, selected_definitions is empty, result is empty.
+
+Then in main.gd `_open_upgrade_offer`:
+```
+if not _upgrade_offer.present_options(offer_rows, ranks_by_id, base_maximum_health):
+    _offered_upgrade_ids.clear()
+    _upgrade_flow_state = UpgradeFlowState.CANCELLED
+    push_error(...)
+    if _run_controller_managed:
+        _release_exit_or_complete()
+```
+
+And `present_options` returns false if `options.is_empty()`.
+
+So when the offer is empty (teto 220 or all capped), the flow cancels and releases the exit. That's a technical fail path, not "non-empty options".
+
+But at current RunRoot 1 floor 4 rooms, you get at most 4 acquisitions. With 7 upgrades and various caps, empty offer is only reachable at the 220 ceiling or theoretically if all unique caps are hit... Chassi cap 95, Motor 3, Mola 3, Pressão 3, Dinamo 3, Impacto 220, Carga 220. You can always acquire Impacto or Carga until 220 total. So empty offer only at 220.
+
+At 220, `build_offer` returns empty, `present_options` fails, flow CANCELLED, and if managed, `_release_exit_or_complete()`. For non-final rooms that's OK (skip offer). For final boss... wait, final boss still offers before `_advance_after_room` which then shows victory.
+
+`_resolve_after_physics_flush`:
+```
+if reward_enabled:
+    _open_upgrade_offer()
+```
+And `configure_run_managed` is now always called with `true` for offer:
+```
+next_room.call("configure_run_managed", _run_build, true, ...)
+```
+
+So every room including final boss offers. If at 220, offer fails and releases exit. Then `_advance_after_room` would still check `_is_final_boss()` and show victory. Not a P1 for current 4-room run.
+
+"Sempre manter opções não-vazias" - the implementation tries to always fill 1-3 cards from available candidates. Empty only at hard cap. I'll note as P2 residual at teto, not P1 for current run.
+
+**RNG**: `_offer_seed(room_seed, room_ordinal)` - separate RNG from room layout. Cached by seed+ordinal. Good.
+
+**room_ordinal in main.gd**:
+```
+room_ordinal = int(_managed_room_descriptor.get("enemy_level", 1))
+```
+And enemy_level is stamped as `1 + (floor-1)*(common+1)+(room-1)` which IS the room ordinal. Using enemy_level as offer ordinal is consistent if enemy_level == room ordinal. They are the same value. OK.
+
+**card_preview effect_topics**: stored in card but UI adapter concatenates rank_label + effect_summary, not topics. That's OK - "arte+UI B virão depois". Adapter uses old 1-3 cards.
+
+**Carga effect_summary for rank 0**: `"+0 > +2 dano"` - a bit ugly for NOVO but functional.
+
+**Chassi effect_summary**: `"%d > %d HP max; cura +%d"` always shows heal. That's correct for acquisition.
+
+**projectile_damage**: 
+- Impact: additive rank * 1
+- Charge: additive when charged: rank * 2
+- Pressure: rank * min(env, cap=3) * 1
+
+Contract: "Carga bônus ADITIVO 2*rank" - yes.
+"Pressãorank*min(env,3)caprank3" - yes, rank * min(env, 3).
+
+**Ball launcher also sets charged_damage_bonus = charge_rank * charged_damage_bonus_per_rank**. Then ricochet_ball uses UpgradeCatalogScript.projectile_damage which ALSO adds charge_rank * bonus when charged. It does NOT use `_config.charged_damage_bonus` in the damage calculation. Good - no double apply of the bonus from config field. The config field is set but projectile_damage uses ranks. The old path used `_config.charged_damage_bonus` but new path uses catalog. OK.
+
+Wait, look at ricochet:
+```
+var damage_amount := UpgradeCatalogScript.projectile_damage(
+    _config.damage,  // this is already multiplied by run damage multiplier in get_projectile_config_snapshot
+    _config.impact_rank,
+    _config.charge_rank,
+    was_charged and _config.reactive_charge_enabled,
+    _config.pressure_rank,
+    _environmental_bounce_count
+)
+```
+
+And projectile_damage does: `damage += impact_rank * projectile_damage_per_rank`
+
+AND `_config.damage` is the BASE damage after run multiplier, NOT including impact rank (ball_launcher no longer overrides damage with impacto). Good.
+
+Old code: if has impacto, damage = 2 (override). New: damage = base + rank. Impacto rank 1 = 1+1=2. Matches.
+
+**dash_cooldown_for_rank(0)** returns base cooldown. Good for motor card preview "0,55 > 0,40".
+
+**Motor values**: 0.4, 0.32, 0.26 cap 3. Matches.
+
+**Mola**: +1 bounce +0.35s per rank cap 3. Matches.
+
+**Dinamo**: 0.15 * rank refund. Briefing says "Dínamo só remaining cooldown uma vez per swing, sem air dash refund." Implementation only reduces `_dash_cooldown_timer` when in COOLDOWN state. No air dash refund. Once per swing via `_last_rewarded_swing_id`. Good.
+
+### run_build.gd
+
+`add_upgrade` uses `can_acquire(upgrade_id, current_rank)` WITHOUT `base_maximum_health`!
+
+```
+func add_upgrade(upgrade_id: StringName) -> bool:
+	var current_rank := count_for(upgrade_id)
+	if total_count() >= MAX_UPGRADES or not UpgradeCatalogScript.can_acquire(upgrade_id, current_rank):
+		return false
+```
+
+`can_acquire` defaults `base_maximum_health = 5`. So for Chassi, max_rank = 100-5 = 95. If actual base is 5, OK. If base were different, mismatch.
+
+Main's `_on_upgrade_selected` checks `can_acquire(upgrade_id, previous_rank, base_maximum_health)` THEN `add_upgrade` which checks again without the actual base. If base is 5, consistent.
+
+If player base HP is not 5 (export default is 5), add_upgrade could allow rank that health catalog would cap... max_rank_for uses 5 by default = 95, and resource rank_cap is 95. If base is 6, max_rank should be 94, but add_upgrade would allow 95 using default 5. Edge case. P2 if base is always 5.
+
+`replace_state` now accepts ranks 0..cap (cap from max_rank_for without health context, so chassi 95). Validates ids match counts. Total ranks <= 220.
+
+**Legacy snapshots**: old snapshots had counts 0 or 1, upgrade_ids list of owned. New code accepts count > 0 as owned, ranks up to cap. Legacy rank 1 still works. Good.
+
+**MAX_UPGRADES check removed from id list length** - now only total rank count. A snapshot can have 7 IDs with various ranks. Good.
+
+**replace_state duplicate keys in counts**: now rejects duplicate String vs StringName? 
+```
+if not is_known_upgrade_id(upgrade_id) or seen_count_ids.has(upgrade_id):
+    return false
+```
+If snapshot has both "impacto_reforcado" and &"impacto_reforcado" as keys... in GDScript Dictionary, String and StringName might be different keys! Then seen_count_ids uses StringName so second would be rejected. Good.
+
+But wait: first key String "impacto" -> StringName, stored. Second StringName same id -> rejected. Good.
+
+If only String keys, fine.
+
+### player_health.gd
+
+```
+func apply_run_build(build, acquired_upgrade_id = "", previous_rank = 0):
+	chassis_rank := build.count_for(&"chassi_reforcado")
+	maximum_health = UpgradeCatalogScript.maximum_health(_base_maximum_health, chassis_rank)
+	current_health = clampi(current_health, 0, maximum_health)
+	if not acquired_upgrade_id.is_empty() and current_health > 0:
+		recovered := acquisition_heal(...)
+		current_health = mini(current_health + recovered, maximum_health)
+	health_changed.emit(...)
+```
+
+- Max HP is derived from base + rank. Good.
+- Heal only when acquired_upgrade_id is set and current_health > 0.
+- `player.apply_run_build(run_build)` on room enter (no acquired id) → no heal. Good.
+- Acquisition path: `player.apply_run_build(run_build, upgrade_id, previous_rank)` → heal only if chassi (acquisition_heal returns 0 unless maximum_health_per_rank > 0). Good.
+
+**Order on standalone snapshot restore**:
+```
+player.apply_run_build(run_build)  # derives max from chassi rank, clamps current, NO heal
+player.health.restore_health_for_room_transition(hp_current, hp_max)  # overwrites with snapshot
+```
+Good - snapshot HP wins after derive. 
+
+**restore_health_for_room_transition sets `_invulnerability_remaining = 0.0`**. Briefing: "semresetinvuln". 
+
+Is this a reset of invuln? It was ALREADY in the base file:
+```
+func restore_health_for_room_transition(...):
+	...
+	_invulnerability_remaining = 0.0
+```
+
+Looking at the diff - this line was NOT changed. The briefing says "semresetinvuln" as a contract for the new apply_run_build path. apply_run_build does NOT touch invuln. Good.
+
+Don't flag pre-existing restore behavior unless the new apply path resets it. It doesn't.
+
+**Order issue on managed run enter**:
+
+From RUNCONTROLLER context:
+`_commit_room_candidate` calls `_apply_run_upgrades(candidate)` AFTER `_validate_attached_candidate` which already called `restore_health_for_room_transition`.
+
+I don't have `_apply_run_upgrades` in the package! This is important.
+
+If `_apply_run_upgrades` calls `player.apply_run_build(run_build)` without acquired id:
+- Sets maximum_health from base+rank
+- Clamps current_health
+- No heal
+- Emits health_changed
+
+This would happen AFTER restore. If snapshot HP is valid and max matches derived max, clamp is fine. If `_apply_run_upgrades` is called after restore, current HP is preserved (clamped to new max). No heal. Good.
+
+**Potential issue**: `_base_maximum_health` is set in `_ready()`:
+```
+_base_maximum_health = maxi(maximum_health, 1)
+```
+
+Configure_run_managed happens OUTSIDE the tree, before _ready. Player health `_ready` runs when entering tree, capturing current maximum_health as base.
+
+If something set maximum_health before _ready... configure_level is for enemies, not player.
+
+When is apply_run_build first called? In Main._ready, after children _ready. So _base_maximum_health is already captured from exported maximum_health (5). Then apply_run_build derives max from base+rank. Then maybe restore snapshot.
+
+On managed: Main.configure_run_managed is called outside tree (before _ready). Then room enters tree. Children _ready first (health captures base 5). Main._ready applies build. Then RunController `_validate_attached_candidate` restores HP. Then `_apply_run_upgrades`.
+
+If `_apply_run_upgrades` applies build after restore: max derived, current clamped, no heal. Snapshot current preserved if <= max. Good.
+
+**Chassi acquisition +1 current**:
+- apply_run_build first sets max = base+new_rank
+- clamps current to new max (doesn't increase current yet)
+- then adds acquisition_heal = 1
+- If player was at full HP (5/5), after rank 1: max=6, clamp keeps 5, then +1 = 6. Correct +1 max and +1 current.
+- If player was at 3/5: max=6, clamp 3, +1 = 4. Contract: "+1 max/current só aquisição". Yes, +1 current even if not full. Matches "HPChassi +1max/current sóaquisição".
+
+**Dead player**: `if not acquired_upgrade_id.is_empty() and current_health > 0` - no heal if dead. Selection also blocked if `player.is_dead`. Good.
+
+Does apply_run_build reset invuln? No.
+
+### player.gd apply_run_build
+
+Uses `update_config_preserving_state` instead of configure+reset. No dash refill. Good.
+
+`dash_cooldown = UpgradeCatalogScript.dash_cooldown_for_rank(...)` even when motor rank 0 returns base. Always writes cooldown. Fine.
+
+### movement_controller.gd
+
+`update_config_preserving_state` only replaces `_config`. Does not reset air dashes or dash state.
+
+`reduce_dash_cooldown_remaining` only works in COOLDOWN state, not during dash itself, not air dash count. Good.
+
+If dash is READY, refund is no-op (returns timer). Contract: only remaining cooldown. Good.
+
+### racket_controller.gd
+
+Once per swing_id. Calls reduce_dash_cooldown_remaining. Does not reset environmental bounce (that's on the ball). Good.
+
+`cancel()` does not reset `_last_rewarded_swing_id`. Fine.
+
+### ricochet_ball.gd
+
+- `_environmental_bounce_count` incremented only when `not _is_damageable_collider(collider)`
+- Launch zeros both bounce_count and environmental_bounce_count
+- Parry: briefing says parry PRESERVES history/lifetime. The launch comment in original: "O parry redireciona o voo atual, preservando velocidade, ricochetes já usados e tempo de vida restante."
+
+I need to check if parry resets environmental count. The diff only shows launch zeroing it. No parry handler change. So parry should preserve `_environmental_bounce_count` and `_bounce_count` and lifetime. Good.
+
+Is environmental count incremented BEFORE damage apply? Yes:
+```
+if not _is_damageable_collider(collider):
+    _environmental_bounce_count += 1
+...
+_apply_impact_damage(...)
+```
+
+If you bounce on a wall, count increases, then damage on wall is no-op (not damageable). Next enemy hit uses the updated count. Correct.
+
+If you hit an enemy (damageable), environmental count does NOT increase. Pressure doesn't apply from enemy bounces. Correct.
+
+**Order when hitting wall that is also...** walls aren't damageable.
+
+**Could `_is_damageable_collider` and `is_in_group("damageable")` diverge?** If so, count might increment on something that still takes damage. Without seeing `_is_damageable_collider` in the package, I assume they match as before.
+
+### ball_launcher.gd
+
+Adds bounce/lifetime bonuses from mola. Sets ranks on snapshot. Charge bonus computed but unused by new damage path (catalog uses ranks). Harmless redundancy.
+
+**max_bounces += bonus** on the duplicate snapshot each launch. Base resource unchanged. Good.
+
+Projectile config max_bounces range increased 0-6. Mola cap 3 + base 3 = 6. Matches.
+
+### enemy levels
+
+Formula in run_controller:
+```
+room_ordinal = 1 + (floor_index - 1) * (common_rooms_per_floor + 1) + (room_index - 1)
+descriptor["enemy_level"] = maxi(room_ordinal, 1)
+```
+Stamped on `descriptor.duplicate(true)` before configure. Configure happens before tree (process_mode DISABLED, configure_run_managed requires `not is_inside_tree()`). Good.
+
+**common_rooms_per_floor**: export default still 3 (script 8×4 means 8 floors × 3 common + 1 boss = 4 rooms per floor). RunRoot is 1 floor 4 rooms. Formula uses the export value, not hardcoded. Good.
+
+configure_level: `if is_inside_tree() ... return false`. Called from configure_run_managed which is outside tree. Recurses children. Enemies not yet in tree. Idempotent bases: first call captures, subsequent reuse bases. Good.
+
+`_ready`: `health = maxi(max_health, 1)` — max_health already scaled, so ready health = scaled max. No heal inside combat. Don't require heal inside tree. Good.
+
+Preserves AI/movement/jump/windup - only scales health, damage, cadence (recovery_duration / minimum_shot_interval). Doesn't change projectile speed, solver, jump, windup. Rivet: rivet_damage and minimum_shot_interval. TrainingTarget: attack_damage and recovery_duration.
+
+**TrainingTarget recovery_duration** is cadence. Rivet minimum_shot_interval is cadence. Windup unchanged. Good.
+
+**Other enemies?** Only these two have configure_level. If other combat enemies exist without configure_level, they stay level 1. Package only shows these two. HUD uses `enemy_level` default 1.
+
+**configure_level on subtree**: Main itself doesn't have configure_level. Walks children. What if a child has configure_level and also children? It configures the enemy then recurses. Fine.
+
+**Idempotent re-configure**: if configure_run_managed called twice when already managed, it compares descriptors and config, doesn't reconfigure. First-time only.
+
+If `_run_controller_managed` is false and called again... first call sets managed. Second with same request returns true without re-calling configure_level. If already inside tree, `is_inside_tree()` fails configure_run_managed at the start: `if is_inside_tree() or shared_build == null: return false`. Good.
+
+### HUD
+
+`"NV%d %s" % [target_level, display_name]` - prefix NV before name, no HUD size increase. Good.
+
+Default enemy_level = 1 if property missing.
+
+### Upgrade offer adapter
+
+Accepts 1-3 options (not exactly 3). Hides unused cards. Accepts Dictionary rows or old UpgradeDefinitionResource.
+
+**present_options with Dictionary**: uses rank_before from row if present. Main passes offer_rows from build_offer which includes rank_before. Also passes ranks_by_id. Preview uses preview_ranks.
+
+**Legacy path**: if someone passed Array[UpgradeDefinitionResource], still works. Good adapter.
+
+**Empty options**: returns false. Main then CANCELLED. At 220 this happens.
+
+**Keyboard**: still 3 buttons, extras hidden. Need to check if key 2/3 still select hidden cards...
+
+```
+_unhandled_key_input
+```
+Not fully shown. If keys 1-3 map to card indices, hidden cards might still be selectable via keys if `_offered_ids` is shorter.
+
+I don't have the rest of `_unhandled_key_input`. The diff only shows the start. Risk: key input for index >= offered size.
+
+Looking at typical pattern - if it uses `_offered_ids.size()` it should be fine. Without full function I should check...
+
+The file cut off the rest of upgrade_offer key handler. Original likely:
+```
+if event is key 1,2,3 select card
+```
+
+This could be P2 if keys can select hidden cards. Let me note as residual risk if handler uses fixed 3 keys without bounds check. I cannot confirm from package.
+
+**Focus**: grab_focus on card 0. Hidden cards disabled. Good.
+
+### run_controller.gd - boss reward removal
+
+Removed the entire second modal / RewardScreen after room. Final boss goes to victory. Common and boss rooms now both get in-room offer via `offer_build_upgrade: true`.
+
+**Is boss reward state leftover?** `_commit_room_candidate` still clears `_boss_reward_*` if source was the reward room. Dead code leftover, not a contract break. P2 cleanliness.
+
+**Are `_apply_reward`, `_boss_reward_is_applied_for` still referenced?** The call site in `_advance_after_room` was removed. If other call sites remain... not in the package. Could be unused methods left. Not P1.
+
+**Death/victory/cleanup**: `_is_final_boss()` still shows victory after room advance. Offer happens in-room before transition. Final boss: clear room → offer → select → release exit → progression ready → `_advance_after_room` → victory. Good. One upgrade including final boss.
+
+**Rollback**: package includes `_validate_attached_candidate` which restores HP from `_run_player_health`. Build is shared `_run_build`. Choice already applied before transition. If transition fails, candidate discarded. Source room still has the applied upgrade and HP.
+
+I don't have rollback of failed transition in the package. Briefing says "rollbackpreserva escolha e HP/build". The shared `_run_build` already has the upgrade; HP snapshot would be post-acquisition. Failed candidate is freed. Source remains. That preserves choice. Good.
+
+### main.gd offer always if reward_enabled
+
+Changed from `if reward_enabled and run_build.total_count() == 0` to `if reward_enabled`. Combined with always-true from run_controller. Every room offers. Good.
+
+Standalone scenes: reward_enabled export? Not in diff. If standalone still has reward_enabled true only when empty... that's the export on the scene, not this logic. Now if reward_enabled, offer even with existing upgrades. Standalone with snapshot could offer again. Might be intended for standalone testing.
+
+### _update_build_status
+
+```
+var upgrade_id := run_build.get_upgrade_ids()[0]
+label.text = "BUILD: %s NV.%d" % [display_name, run_build.count_for(upgrade_id)]
+```
+
+Only shows FIRST upgrade! With 7 IDs and multiple acquisitions, the debug label shows only one. This is the old single-upgrade label adapted with NV. Etapa A is data/flow; HUD B later. The briefing says "NVprefixonopainelfixo cabe antesnome, nãoaumentarHUD" - that's the TARGET panel (enemy NV), not this BUILD label. P2 incomplete debug label, not contract break.
+
+### upgrade_definition_resource.gd
+
+`dash_cooldown_override` changed from range -1..3 default -1 to 0..2 default 0. Motor still sets 0.4. Catalog uses dash_cooldown_by_rank, not override. Fine.
+
+`reactive_charge_enabled` moved to progression category. carga.tres still sets it.
+
+Legacy fields kept for compatibility.
+
+### Resources
+
+7 tres files. Icons not set (null) - deliberate.
+
+chassi rank_cap 95 = 100-5. Matches default base 5.
+
+carga rank_cap 220, impacto 220 - repeatable. Good.
+
+### Enemy level config formulas
+
+health: `ceili(base * (1 + (level-1)*0.12))` - matches `ceil(base*(1+.12*(lv-1)))`
+
+damage: `base + min(floor((lv-1)/10), 2)` - matches
+
+cadence: `max(0.65, 1 - 0.015*(lv-1))` - matches
+
+### configure_level inside tree returns false
+
+If Main._ready or something called configure after enter tree, it would fail. It's only called from configure_run_managed before tree. Good.
+
+**Subtree walk includes ALL children with configure_level**. Could a non-enemy node have that method? Unlikely.
+
+### MAIN._configure_managed_enemy_levels failure
+
+If any enemy configure_level fails, configure_run_managed returns false, room candidate rejected. Enemies inside tree would fail - but they're not in tree yet. Good.
+
+### Unique source ID / ordinals
+
+Offer seed uses room_seed + room_ordinal (via enemy_level). Per-instance cache because RNG is created per build_offer call from seed. Same room = same offer. Different rooms = different ordinal. Good.
+
+Is room_seed unique per room? Comes from descriptor. Assumed from existing generator.
+
+### Impacto + carga double counting?
+
+ball_launcher:
+```
+derived_config.charged_damage_bonus = charge_rank * per_rank
+```
+ricochet uses catalog.projectile_damage which adds charge again from rank, NOT from charged_damage_bonus. No double.
+
+Does anything else still add charged_damage_bonus from config? Old ricochet used it; new doesn't. If another consumer uses config.charged_damage_bonus + catalog, that would double. Only ricochet shown. OK.
+
+### Carga rank 0 preview: "+0 > +2 dano"
+
+Minor UX, P2.
+
+### present_options preview_ranks key type
+
+```
+preview_ranks[definition.upgrade_id] = int(row.get("rank_before", 0))
+...
+int(preview_ranks.get(definition.upgrade_id, preview_ranks.get(String(definition.upgrade_id), 0)))
+```
+Handles both. Good.
+
+### RunBuild.add_upgrade vs Chassi at cap with different base
+
+P2 as noted.
+
+### replace_state max_rank_for without base health
+
+Chassi cap 95 assuming base 5. If snapshot has chassi 95 and base is 5, OK. If someone had base 1, cap should be 99 but resource rank_cap is 95 anyway. OK.
+
+### Health apply on retry/enter
+
+`apply_run_build` without acquired id: no heal. Retry would apply build then maybe restore. Need to check retry path...
+
+Not fully in package. `restore_health_for_room_transition` requires not dead, clamps HP. If retry uses apply_run_build without acquisition, no heal. Good.
+
+### Death cleanup flush input guard
+
+`_resolve_after_physics_flush` death path still closes offer, ends guard, finish_death. Unchanged except the offer condition. Good.
+
+### Second modal
+
+Reward screen removed from advance path. Good.
+
+### TrainingTarget is Tranca-Lata
+
+HUD still uses TRANCA_PORTRAIT for TrainingTarget. Don't treat as missing enemy. Good.
+
+### Issues to look more carefully...
+
+**P1 candidate: RunBuild.add_upgrade vs Main selection race with Chassi health cap**
+
+Not really P1 with base 5.
+
+**P1 candidate: empty offer at teto**
+
+Contract says always non-empty. At 220, empty. Technical ceiling. Current run 4 rooms. I'll put as P2.
+
+**P1 candidate: `_update_build_status` only first upgrade** - not critical contract.
+
+**P1 candidate: room_ordinal for offer uses enemy_level**
+
+If enemy_level is combat level and later diverges from room ordinal, offer seed changes. Currently they are the same stamped value. Coupled. P2 design smell, not bug now.
+
+**P1 candidate: player.apply_run_build on enter after health _ready**
+
+When managed with existing chassi ranks, apply_run_build sets max from rank, clamps current (which is full exported 5), no heal. Then restore sets actual HP. 
+
+WAIT. Order in Main._ready:
+```
+player.apply_run_build(run_build)  # if chassi rank 2, max=7, current was 5 (from health._ready), clamp 5, no heal, emit 5/7
+restore_health_snapshot  # sets snapshot values
+```
+
+For managed runs, incoming_snapshot is empty (not consumed). So restore_health_snapshot stays false. Main._ready applies build but does NOT restore HP!
+
+Then RunController `_validate_attached_candidate` restores HP from `_run_player_health`.
+
+Then `_apply_run_upgrades` - NOT IN PACKAGE.
+
+If `_apply_run_upgrades` calls apply_run_build:
+- After restore, current = snapshot (e.g. 4/7)
+- apply sets max=7, clamp 4, no heal. OK.
+
+If `_apply_run_upgrades` is missing or doesn't call apply, Main._ready already applied build (cooldowns, projectile, health max). Then validate restores HP. Good.
+
+If `_apply_run_upgrades` still uses old signature `apply_run_build(build)` - compatible with new default args. Good.
+
+**P1 candidate: health._ready captures base AFTER...**
+
+Wait! configure_level is for enemies. For player health:
+
+Could maximum_health already be modified before health._ready?
+
+configure_run_managed walks configure_level on enemies only. Player doesn't have configure_level.
+
+When room is instantiated, exported maximum_health is 5. _ready captures 5. Then apply_run_build with chassi sets max to 5+rank.
+
+**CRITICAL: _base_maximum_health is only set in _ready.** If apply_run_build is called before health._ready, `_base_maximum_health` is still 5 (the var initializer), and `current_health` might be 0 (uninitialized until _ready)!
+
+apply_run_build is from Main._ready, after children ready. OK.
+
+Is apply_run_build called from RunController before Main._ready? configure_run_managed is before tree, doesn't apply player build. _apply_run_upgrades is after attach (after _ready). OK.
+
+**P1: Dinamo refund during dash (not cooldown)**
+
+`if _dash_state != DashState.COOLDOWN` - no refund if still in dash. Contract: "só remaining cooldown". If dash is active, there's no remaining cooldown yet. Correct.
+
+**P1: Charge additive applied twice if both charged_damage_bonus on config AND catalog?**
+
+ricochet only uses catalog. OK.
+
+**Impacto resource still has projectile_damage_override = 2** unused by new path. Dead field. OK.
+
+**Motor dash_cooldown_override = 0.4** unused, uses array. OK.
+
+### build_offer when only evolutions or only new
+
+If only new: first if fails (need both non-empty), remaining gets all new, fills up to 3. Good.
+
+If only evo: same. Good.
+
+If 1 new and 1 evo: takes 1+1, remaining empty, returns 2 cards. present_options allows size 1-3. Good.
+
+If 1 candidate total: 1 card. Non-empty. Good.
+
+### Hybrid 1 new + 1 evo when both exist
+
+Yes, then fill third from remaining (could be new or evo). Contract: "quandoexistirambospools1nova1evolução" - doesn't say the third must be anything specific. Good.
+
+### Offer not cached as instance field
+
+"RNGseparado/cacheofertaporinstancia"
+
+They recompute from seed each time `_open_upgrade_offer` is called. Deterministic seed = cached-by-computation. If you open twice same room, same offer. Not stored on instance. If ranks change between opens (shouldn't without selecting), offer would change.
+
+If present_options fails and retries... wouldn't retry same open typically.
+
+If player dies and room resets... new instance.
+
+Good enough as seed cache.
+
+### Could `_open_upgrade_offer` be called twice?
+
+Victory pending + room cleared. After cancel, state CANCELLED. After select, SELECTED. Re-entry to _resolve_after_physics_flush: `if _upgrade_flow_state != VICTORY_PENDING` return. Good.
+
+### Source ID unique
+
+upgrade_id is the unique ID. Evolutions are same ID higher rank, not new IDs. Good.
+
+### adapter 1..3
+
+present_options 1-3, hide extras. Good.
+
+### HUD NV prefix might overflow?
+
+"nãoaumentarHUD" - they only change the string, not panel size. Long names + "NV12 " could clip. P2 visual for etapa B.
+
+### TrainingTarget name_label in _ready: `display_name` without NV
+
+The world name label on the enemy is unchanged. HUD panel gets NV prefix. Contract: "NVprefixonopainelfixo cabe antesnome". That's the HUD target panel. Good.
+
+### Missing _apply_run_upgrades in package
+
+The briefing says the file contains all source diffs and new sources. Run_controller context includes _validate and _commit which calls `_apply_run_upgrades`. That function is NOT in the diff - meaning it wasn't changed. I should evaluate based on existing behavior from context... I don't have the body of `_apply_run_upgrades`.
+
+If it still does something like apply boss rewards or only apply the 3 old upgrades, that could be a problem. Typically it would call player.apply_run_build(run_build). With new default args, that works.
+
+If it used to apply RewardScreen bonuses (damage multiplier etc.), those remain. Out of scope.
+
+### run_controller still has floors_per_run 8, common 3
+
+Briefing: "atualRunRoot1andar4salas, defaults script8×4". They kept script defaults. Good. Don't invent changing RunRoot.
+
+### Godot snapshot replace_state TYPE_INT
+
+JSON snapshots might restore numbers as float. Old code required TYPE_INT. Same as before. If new ranks come through Dictionary from Godot, ints stay ints. OK.
+
+### card_preview requires can_acquire
+
+If current_rank is at cap, card_preview returns {}. present_options then returns false for that option. build_offer already filters can_acquire. OK.
+
+### effect_topics not used in adapter
+
+Etapa B. OK.
+
+### P1: Main._on_upgrade_selected - get_base_maximum_health without null check
+
+```
+var base_maximum_health := player.health.get_base_maximum_health()
+```
+
+Player null and is_dead already checked. health null? `player.health.get_base_maximum_health()` would crash if health is null.
+
+Old code didn't need health for add_upgrade. New code assumes health exists. Player typically has health. If health missing, crash on select.
+
+`_open_upgrade_offer` already null-checks health for the offer. Selection doesn't. P2 robustness.
+
+### P1: apply_run_build early return if _base_movement_config == null
+
+```
+if _base_movement_config == null:
+    return
+```
+Would skip ball_launcher, racket, AND health apply!
+
+If this is called before movement base is captured, chassi heal wouldn't apply!
+
+When is `_base_movement_config` set? Typically in player._ready before apply. Main._ready is after children. Player._ready should have set it.
+
+If apply_run_build is called from somewhere before player._ready, entire apply including health is skipped.
+
+On upgrade select, player is long ready. OK.
+
+This early return existed before (same pattern). Now it's more dangerous because health/racket are after the early return. Pre-existing structure. If _base_movement_config is always set after ready, OK.
+
+I'll mention as P2 coupling risk.
+
+### Parry and environmental count
+
+Don't require reset on parry - they preserved. Good.
+
+### Enemy heal inside tree
+
+They don't heal in _ready beyond setting health = max_health (initial spawn). That's not "heal inside combat", that's spawn. Contract says readyhealth=maxescalado. Correct.
+
+### Is there a P1 with Carga charged_damage_bonus still on resource AND per_rank?
+
+carga.tres:
+```
+charged_damage_bonus = 2
+charged_damage_bonus_per_rank = 2
+```
+
+ball_launcher uses per_rank * rank for config field.
+catalog projectile_damage uses per_rank * rank.
+Consistent.
+
+### Pressure on first hit before any wall: env=0, bonus=0. Good.
+
+### Launch zeros env count. New ball = fresh. Good.
+
+### Mola cap 3: rank_cap=3, can_acquire rank<3. Good.
+
+### Motor cap 3: dash_cooldown_by_rank size 3, rank 4 wouldn't be acquirable. dash_cooldown_for_rank uses mini(rank, size)-1 so rank 3 uses index 2. Good.
+
+### Impacto repeatable to 220: rank_cap 220, MAX 220. If you only take impacto 220 times. Good.
+
+### Chassi offer removed when gain zero
+
+max_rank_for = min(100-base, cap). At rank 95, cannot acquire. card not in pool. If somehow HP already 100 with lower rank (base 100?), max_rank = 0, can_acquire(0) is 0<0 false. Chassi never offered. Good.
+
+If base is 5 and rank 94, next would be 99 HP, can acquire. Rank 95 → 100. Next would be 101 clamped 100, zero gain. max_rank=95, current 95, cannot acquire. Good.
+
+### Duplicate IDs in catalog?
+
+7 unique. Good.
+
+### Class_name UpgradeCatalog vs preload UpgradeCatalogScript
+
+run_build preloads to avoid circular? Catalog doesn't reference RunBuild. Good.
+
+### EnemyLevelConfigResource class_name used as type in main without preload of script?
+
+```
+const DEFAULT_ENEMY_LEVEL_CONFIG: EnemyLevelConfigResource = preload("res://resources/progression/enemy_levels.tres")
+```
+
+The .tres has the script. class_name globally registered. Should work if script is in project. New file. OK.
+
+### configure_run_managed signature change
+
+Added 5th param with default. Old callers with 4 args still work. Run controller passes 5. Good.
+
+### Did they miss updating other configure_run_managed callers?
+
+Only run_controller in package. If tests or other scenes call it, default config is used. OK.
+
+### Reward_enabled always true
+
+Standalone second_room might have been offering only if empty. Now if reward_enabled export is true, always offer. Scene exports not in package. P2 if standalone double-offers. Not the managed run path.
+
+### Is there an issue with `_managed_descriptor_error` requiring enemy_level
+
+```
+if typeof(descriptor.get("enemy_level")) != TYPE_INT or int(descriptor.get("enemy_level", 0)) < 1:
+```
+
+Stamped before configure. If something calls configure_run_managed without stamping (standalone?), descriptor without enemy_level fails.
+
+Who calls configure_run_managed besides run_controller? If only run_controller, OK.
+
+If tests pass empty/old descriptors, they fail. Etapa A managed path stamps it.
+
+Could authored standalone use configure_run_managed? The function is for managed. Standalone doesn't call it. Good.
+
+### floor/room from proposal
+
+```
+var floor_index: int = int(proposal.get("floor", current_floor))
+var room_index: int = int(proposal.get("room", current_room))
+```
+
+If proposal missing floor/room, uses current - might be stale during prepare of NEXT room?
+
+This is important! `_prepare_room_candidate` prepares the NEXT room. If proposal has floor/room, good. If not, it uses `current_floor` and `current_room` which are the CURRENT room, not the next!
+
+That would stamp the wrong enemy_level on the next room!
+
+I need to know if proposal always has floor and room. The package doesn't include `_next_stage_proposal()`. This is a real risk.
+
+If proposal is built with next floor/room, OK. Fallback to current would be a P1 bug: room 2 would get room 1's level.
+
+Briefing: "Nível =1+(floor-1)*(common+1)+(room-1) estampado em descriptorcópia antes configureforaárvore"
+
+They compute from proposal.get("floor", current_floor). The correctness depends on proposal containing the destination indices.
+
+This is a likely P1 if proposal uses different key names like "floor_index" or only current is available.
+
+I don't have `_next_stage_proposal` in the package. I should flag this as P1 if the fallback is used, or P2 uncertainty.
+
+Looking at typical run_controller patterns from the variable names: current_floor, current_room, proposal from `_next_stage_proposal()`. The `_commit_stage_proposal` exists. High likelihood proposal has floor/room if they chose those keys. I'll flag as P2 residual: fallback to current_* is wrong for the next room if keys are absent; confirm proposal keys.
+
+### Another issue: Godot `child.call("configure_level", level, level_config)` 
+
+If configure_level fails because is_inside_tree() - enemies aren't in tree when room isn't in tree. When room is instantiated and process disabled, is the room inside a tree?
+
+`_prepare_room_candidate`: instantiate, process_mode DISABLED, then configure_run_managed. Is the instance in a tree? `if is_inside_tree() or shared_build == null: return false` - configure requires NOT in tree. So Main is not in tree. Children of an uninstanced-into-tree node: `is_inside_tree()` is false. Good.
+
+### TrainingTarget configure captures max_health from export.
+
+If configure called twice (idempotent): second time uses captured base. Good.
+
+### Rivet worker same.
+
+### health_for_level uses ceili
+
+Godot ceili of 3 * 1.12 = 3.36 → 4. Matches ceil.
+
+Level 1: scale 1.0, health = base. Good.
+
+### I should also look at run_controller leftover RewardScreen
+
+They removed the preload. If other methods still reference RewardScreenScript, parse error. Diff only shows removal of preload and the await block. Context `_commit` still references `_boss_reward_*` variables. If `_boss_reward_is_applied_for` or `_apply_reward` still use RewardScreenScript, that would be a parse error P1.
+
+The preload was removed. Any remaining RewardScreenScript reference would break the script.
+
+Package doesn't include those functions. If they still exist and reference RewardScreenScript, P1 parse error.
+
+I should flag: **P1 if leftover RewardScreenScript references remain** - but I must only review provided source. The diff removes the only visible uses of RewardScreenScript (preload + the block). Other functions aren't in the package. I'll state P2/RISK: leftover boss-reward helpers still exist in _commit but preload removed; if those helpers still reference RewardScreenScript they would not parse — not evidenced in the provided excerpt.
+
+Don't invent findings without evidence.
+
+### upgrade_offer: effect_topics ignored, concatenates summary
+
+Etapa A adapter. OK.
+
+### Keyboard focus and 1 card: keys 2/3?
+
+Without handler, P2 risk.
+
+Let me look at present_options again for a real P1.
+
+```
+if options.is_empty() or options.size() > _card_buttons.size():
+    return false
+```
+
+Max 3 cards. build_offer max 3. Good.
+
+### RunBuild.get_upgrade_ids order is catalog order, not acquisition order.
+
+First ID in catalog with rank>0 is always impacto if owned. BUILD label bias. P2.
+
+### Snapshot counts: replace_state requires ids_from_counts match upgrade_ids list.
+
+Legacy: upgrade_ids has the one upgrade, counts have that id = 1 and others 0. Works.
+New: all owned ids must be in upgrade_ids. to_snapshot_data writes all rank>0 into upgrade_ids. Consistent.
+
+If new snapshot omits an id from upgrade_ids but has count>0, reject. Good.
+
+### Integer keys? No.
+
+### player_health apply_run_build when build is null
+
+chassis_rank = 0, max = base, clamp, maybe heal if acquired id set with null build:
+```
+build.count_for(acquired_upgrade_id) if build != null else previous_rank
+acquisition_heal(..., previous_rank, previous_rank) = 0
+```
+OK.
+
+### Movement update doesn't clamp dash cooldown timer to new shorter cooldown
+
+If you buy Motor while dash is on 0.55s cooldown with 0.50 remaining, new cooldown is 0.40 but timer stays 0.50. You wait longer than new cooldown. 
+
+Contract: "Movementupdateconfigsemconfigure/resetrefill" - don't reset. Doesn't say to clamp timer. Preserving state means leftover 0.50 stays. Acceptable. Not a defect against contract.
+
+### Dinamo + Motor interaction: refund 0.15 from remaining. Fine.
+
+Let me look for actual P1 bugs more carefully...
+
+If health._ready runs:
+```
+_base_maximum_health = maxi(maximum_health, 1)  # 5
+current_health = maxi(maximum_health, 1)  # 5
+```
+
+Then apply_run_build with chassi 2:
+max = 7, current clamp 5, no heal.
+
+Then restore 4, 7. Good.
+
+If apply happens with chassi 0: max 5, current 5. Restore 4, 5. Good.
+
+If someone acquires chassi, HP 6/6, snapshot 6/6, next room apply: max 6, current 5 (from _ready!), clamp 5, no heal, THEN restore 6/6.
+
+**Race: apply BEFORE restore temporarily shows 5/6 then restore 6/6.** Not a logic bug. Signals might flash. P2.
+
+**Managed path: apply in Main._ready BEFORE RunController restore.** Same flash. Then _apply_run_upgrades again.
+
+### DEADLY P1?: apply_run_build on enter with current_health from _ready (full base) and chassi ranks
+
+Without restore (if RunController restore fails or _run_player_health < 0):
+
+```
+if _run_player_health < 0:
+    return {"valid": true, "player": candidate_player}
+```
+
+First room: _run_player_health < 0, skip restore. apply_run_build with empty build. HP 5/5. OK.
+
+Later rooms: restore required.
+
+If `_run_player_health < 0` only initially. OK.
+
+### Another angle: `get_base_maximum_health` in _open_upgrade_offer uses live base. After chassi, base is still 5, max is 7. Offer uses base 5 for chassi cap and preview. Preview: current_health = min(5+rank, 100). Correct derived display.
+
+### acquisition_heal uses next_rank - previous_rank. add_upgrade increments by 1. Always +1. Good.
+
+### Can add_upgrade increment by more than 1? No, +1 only.
+
+### replace_state can load rank 5 directly. Then apply_run_build without acquired id: max = 5+5=10, current from _ready=5, no heal. Player enters with 5/10 even if they had 10/10 unless snapshot restores. Snapshot should have hp. Good.
+
+### Standalone consume snapshot: apply then restore. Good.
+
+I'll look at ricochet environmental increment happening even when bounce converts to return...
+
+```
+if next_bounce_index > _config.max_bounces:
+    _start_returning()
+    return
+_bounce_count = next_bounce_index
+...
+if not damageable:
+    _environmental_bounce_count += 1
+```
+
+Count only increments when bounce is consumed (not when starting return). Good.
+
+### Parry preserve: I don't have parry code in the package. Original comment says it preserves bounce count and lifetime. Env count is separate variable, not reset in shown parry code. Trust contract + no reset in diff.
+
+### Is `_environmental_bounce_count` incremented on parry redirect collision? Unlikely.
+
+Let me think about **Carga additive vs old override**.
+
+Old: charged_damage_bonus = 2 (flat).
+New: rank * 2. Rank 1 = +2. Same.
+
+projectile_damage uses `_config.damage` as base then adds impact rank. `_config.damage` is base from projectile_config.tres (probably 1) after multiplier.
+
+Old impacto: override damage to 2.
+New: 1 + 1*1 = 2. Same.
+
+### **P1: Ball launcher sets impact_rank but also the run damage multiplier applies to base only, then impact is added after in projectile_damage. Old: override 2 then multiplier. New: (1 * mult) + rank.**
+
+If _run_damage_multiplier != 1 (boss rewards?):
+Old impacto: damage = 2 * mult
+New: damage = 1*mult + rank
+
+If mult is 1.5 and impacto rank 1: old 3, new 1.5+1=2 (roundi 2) + wait:
+
+```
+derived_config.damage = maxi(roundi(float(derived_config.damage) * _run_damage_multiplier), 1)
+```
+This happens AFTER setting ranks, on the base damage. Then projectile_damage adds impact on top of already-multiplied base.
+
+Old: if impacto, damage=2, then * mult.
+New: damage=1, * mult, then + impact_rank.
+
+**Inconsistency with boss reward multipliers** if those still exist. They removed boss reward modal. `_run_speed_multiplier` etc. might still exist from old rewards.
+
+If multiplier is always 1.0 now, no issue. If leftover reward multipliers exist, impacto scaling changed. P2 given boss rewards removed.
+
+### File completeness
+
+The input file ended abruptly at `_disconnect_room_player_signals`. The briefing said the file contains all diffs and new sources. I reviewed everything provided.
+
+Let me also think about **GDScript typed Array[Dictionary] vs Array** in present_options.
+
+build_offer returns Array[Dictionary]. present_options takes Array. Fine.
+
+Main:
+```
+for row: Dictionary in offer_rows:
+    definition = row.get("definition")
+    if definition == null: continue
+    _offered_upgrade_ids.append(definition.upgrade_id)
+if not _upgrade_offer.present_options(offer_rows, ...):
+```
+
+If some rows have null definition, IDs skipped but present_options still gets those rows and returns false on null definition. Inconsistent. card_preview always sets definition. OK.
+
+### **P1: Upgrade offer present_options still binds 3 specific scene nodes (ImpactCard, MotorCard, ChargeCard)**
+
+Adapter reuses 3 old cards for any 7 IDs. Titles/descriptions update. Icons hidden if null. Works for etapa A. B will do pixel cards.
+
+### **can_acquire in add_upgrade without total check ordering**
+
+add_upgrade checks total >= MAX first, then can_acquire. If total is 219, can add. If 220, no. Good.
+
+### Hybrid offer when 2 new and 0 evo at start
+
+Only new pool. 3 random new. First room all new. Good.
+
+Second room if player has 1 upgrade: 1 new + 1 evo + 1 from remaining. Good.
+
+### **Seed uses enemy_level as ordinal**
+
+First room: floor 1 room 1 → level 1. Offer seed = f(room_seed, 1).
+Boss floor 1 room 4 → level 4. Good.
+
+### common_rooms_per_floor in formula
+
+If RunRoot overrides to 3 common + 1 boss, 4 rooms: levels 1,2,3,4. Good.
+
+If someone sets common_rooms_per_floor to 3 but rooms are 4 including boss, room_index for boss is 4: 1+0+3=4. Good.
+
+### **P1 found?: `max_rank_for` for chassi uses `100 - base` but `can_acquire` / `add_upgrade` / `replace_state`**
+
+replace_state: `var cap := UpgradeCatalogScript.max_rank_for(upgrade_id)` default base 5.
+
+If loading snapshot with chassi 95, OK.
+
+### **P1: player.gd apply_run_build doesn't pass build null-safe to ball_launcher**
+
+`ball_launcher.apply_run_build(build)` always called even if build null? After movement update. If build null, ball_launcher probably stores null and snapshot uses base. Health apply_run_build handles null. Racket too.
+
+If `_base_movement_config == null`, nothing applied including health on acquisition! On select, movement config exists. OK.
+
+Let me look at **upgrade_definition dash_cooldown_override default 0**.
+
+If someone called old code path using override: 0 would mean 0s dash cooldown! Old path removed from player.gd. Only catalog array. OK.
+
+### **effect_topics on old 3 resources** provided. New 4 have topics. card_preview copies topics. UI doesn't display as list yet. A is data. OK.
+
+I think I have a solid P1:
+
+Look at `player_health.apply_run_build` + `restore_health_for_room_transition` + `maximum_health` export.
+
+When apply_run_build runs, it SETS `maximum_health` to derived value. This is an @export var. Fine at runtime.
+
+**_ready only runs once.** Base captured once. Good.
+
+### **configure_level returns false if inside tree - what about TrainingTarget in authored scene that's already...** no, whole room is outside tree.
+
+### **Nested configure_level: does Main's walk hit the player?** Player doesn't have configure_level.
+
+### Rivet minimum_shot_interval vs recovery/windup
+
+Contract: cadence multiplier. They scaled minimum_shot_interval, not windup. Good.
+
+TrainingTarget: recovery_duration scaled, not windup. Good.
+
+### **Could there be a P1 in run_build.replace_state removing the MAX check on normalized_ids.size()?**
+
+Old: ids list couldn't exceed MAX_UPGRADES (then 1). New: ids can be 7, total ranks checked. A snapshot with 7 ids each rank 1 = total 7, OK. Good.
+
+### **has_upgrade now true for any rank>0.** Callers using has_upgrade for "exactly one" still work as boolean owned. Good.
+
+Let me search for a real logic bug in projectile_damage vs ball_launcher charge.
+
+What if charge_rank > 0 but reactive_charge_enabled is false? Damage won't add charge. carga.tres has enabled true. Good.
+
+### **Ricochete: environmental count increments on wall, then _apply_impact_damage on the wall (no-op), then later hits enemy with count.**
+
+Does hitting a wall apply pressure damage to the wall? No, not damageable. Pressure is for subsequent hits. Contract: "rank*min(env,3)" on damage calculation. The damage is applied to the target being hit. If you hit enemy after 2 walls, bonus = rank*2. If you hit wall, no damage. The formula includes env count at moment of damage. After incrementing for this wall, if we damaged the wall... we don't. Next hit sees updated count. 
+
+**Wait: increment happens BEFORE _apply_impact_damage for THIS collision.** If a collider were incorrectly classified as non-damageable for count but damageable for take_damage, this bounce would get the increment immediately. Existing helper. OK.
+
+### **P1: Godot 4 PackedStringArray in .tres**
+
+`effect_topics = PackedStringArray("Parry carrega a bola", "+2 dano no próximo hit")` - valid Godot 4 resource syntax. OK.
+
+### **class_name UpgradeCatalog** - new. Collision? No.
+
+I'll also consider **Grok as implementation reviewer** - be concrete with file/line.
+
+Line numbers: I should use the NEW file line numbers from the provided sources, or the diff line numbers in the package?
+
+The briefing says "arquivo e linha". For diffs, the new-file lines in the etapa-a-r1 versions. For new files, the line numbers in the FILE sections.
+
+For upgrade_catalog.gd, the FILE section starts at package line 1399, and the code itself starts at `class_name` as line 1 of that file.
+
+I should cite as `scripts/progression/upgrade_catalog.gd` with lines relative to the source file as presented (1-based from class_name).
+
+upgrade_catalog.gd:
+- Line 1: class_name
+- build_offer starts ~74
+- etc.
+
+enemy_level_config_resource.gd starts at 1667 as class_name = file line 1.
+
+For diffs, the new file line numbers appear in the `@@` hunks.
+
+Example run_build.gd new file is 112 lines. add_upgrade at new lines ~20-28 from the first hunk.
+
+Let me map critical lines more carefully from the diffs.
+
+```
+@@ -1,122 +1,112 @@
+```
+So new file starts at 1.
+
+new run_build.gd:
+1 class_name
+...
+I can count from the + lines...
+
+From the new file content in the first hunk:
+1: class_name RunBuild
+2: extends RefCounted
+3: empty
+4-5: comment
+6: empty
+7: const UpgradeCatalogScript
+8-10: consts
+11: MAX_UPGRADES
+12: empty
+13: var _counts
+14: empty
+15-16: _init
+17: empty
+18-26: add_upgrade
+...
+
+add_upgrade can_acquire without base_maximum_health: approximately line 21.
+
+I'll use the package's new-file content structure.
+
+For main.gd `_open_upgrade_offer` room_ordinal from enemy_level: around new lines 1426+ area... the @@ says `@@ -1393,34 +1426,51` for _resolve and `@@` for _open at +1426.
+
+_open_upgrade_offer new:
+```
+func _open_upgrade_offer() -> void:
+...
+	room_ordinal = int(_managed_room_descriptor.get("enemy_level", 1))
+```
+From hunk +1426, _open starts after the reward_enabled change which is in the same hunk.
+
+Looking at hunk:
+```
+@@ -1393,34 +1426,51 @@ func _resolve_after_physics_flush() -> void:
+...
+ func _open_upgrade_offer() -> void:
+...
++	room_ordinal = int(_managed_room_descriptor.get("enemy_level", 1))
+```
+
+The +1426 is the start of the hunk context. _open_upgrade_offer is a few lines into the hunk. Roughly line 1434-1455.
+
+I'll cite approximately from the hunk headers which give exact new line numbers for the first context line.
+
+`@@ -1393,34 +1426,51` means new file line 1426 is the first line of the hunk (context or change).
+
+```
+1426: 		_close_owned_offer_pause()
+...
+1434: 	if reward_enabled:
+1435: 		_open_upgrade_offer()
+...
+1438: func _open_upgrade_offer() -> void:
+1449: 		room_ordinal = int(_managed_room_descriptor.get("enemy_level", 1))
+```
+
+Let me count more carefully...
+
+```
+@@ -1393,34 +1426,51 @@ func _resolve_after_physics_flush() -> void:
+ 		_close_owned_offer_pause()
+ 		_end_input_guard()
+ 		_update_build_status()
+ 		if player != null and is_instance_valid(player):
+ 			player.finish_death_after_physics()
+ 		return
+ 
+ 	if _upgrade_flow_state != UpgradeFlowState.VICTORY_PENDING or not combat_room.room_is_cleared:
+ 		return
+-	if reward_enabled and run_build.total_count() == 0:
++	if reward_enabled:
+ 		_open_upgrade_offer()
+ 	else:
+ 		_release_exit_or_complete()
+ 
+ func _open_upgrade_offer() -> void:
+ 	if _upgrade_offer == null or not is_instance_valid(_upgrade_offer):
+ 		_upgrade_flow_state = UpgradeFlowState.CANCELLED
+ 		push_error("Main: não foi possível criar a oferta de upgrades.")
+ 		if _run_controller_managed:
+ 			_release_exit_or_complete()
+ 		return
+ 	_offered_upgrade_ids.clear()
+-	for definition in _upgrade_definitions:
++	var snapshot_data := run_build.to_snapshot_data()
++	var ranks_by_id: Dictionary = snapshot_data.get("counts_by_id", {})
++	var room_seed := room_layout_seed
++	var room_ordinal := 1
++	if _run_controller_managed:
++		room_seed = int(_managed_room_descriptor.get("room_seed", room_seed))
++		room_ordinal = int(_managed_room_descriptor.get("enemy_level", 1))
+```
+
+Line 1426: `_close_owned_offer_pause()`  (first line of hunk)
+1427: _end_input_guard
+1428: _update_build_status
+1429: if player
+1430: finish_death
+1431: return
+1432: empty
+1433: if _upgrade_flow_state
+1434: return
+1435: if reward_enabled:
+1436: _open_upgrade_offer
+1437: else
+1438: _release
+1439: empty
+1440: func _open_upgrade_offer
+1441: if _upgrade_offer == null
+1442: CANCELLED
+1443: push_error
+1444: if managed
+1445: _release
+1446: return
+1447: _offered_upgrade_ids.clear()
+1448: snapshot_data
+1449: ranks_by_id
+1450: room_seed
+1451: room_ordinal := 1
+1452: if managed
+1453: room_seed = ...
+1454: room_ordinal = enemy_level
+
+### run_controller stamp
+```
+@@ -196,21 +197,25 @@ func _prepare_room_candidate
+```
+197: if next_room == null (first context line)
+
+Count:
+197: if next_room == null
+198: return instantiate error
+199: process_mode
+200: if not configure_run_managed
+201: free
+202: return error
+203: if not signal
+204: free
+205: return error
+206: var descriptor = duplicate
+207: floor_index
+208: room_index
+209: room_ordinal
+210: descriptor enemy_level
+211: requested_seed
+212: configure call with true
+...
+
+### player_health apply
+```
+@@ -3,30 +3,50 @@
+```
+New apply_run_build around line 32-46.
+
+From the hunk starting at line 3:
+3: signal health_changed? Wait the @@ is `-3,30 +3,50` so line 3 of new file is the first context line.
+
+Looking at the diff:
+```
+@@ -3,30 +3,50 @@ extends Node
+
+ signal health_changed
+...
+ func _ready() -> void:
++	_base_maximum_health = maxi(maximum_health, 1)
+ 	current_health = maxi(maximum_health, 1)
+...
++func apply_run_build...
+```
+
+Line 3: empty after extends? The header is `@@ -3,30 +3,50 @@ extends Node` meaning context starts at line 3, and the @@ annotation shows "extends Node" as function context from before.
+
+I'll cite using reasonable new-file lines from hunks.
+
+### Finding: RunBuild.add_upgrade ignores base_maximum_health
+
+scripts/progression/run_build.gd add_upgrade ~line 20-24
+vs main _on_upgrade_selected which passes base.
+
+If Main check passes, add_upgrade with default 5. Consistent when base is 5.
+
+If Main check uses actual base 5, both agree.
+
+Not P1.
+
+### Finding: empty offer
+
+upgrade_catalog.gd build_offer lines 79-81 return [] at 220.
+present_options 1269 returns false if empty.
+main then CANCELLED and release.
+
+Contract "sempre manter opções não-vazias". At teto, they skip offer rather than keep cards. Intentional escape hatch for 220? The teto is technical. Skipping offer to not block the run is reasonable. P2.
+
+### Finding: _update_build_status first id only
+
+P2.
+
+### Is there a real P1 with `apply_run_build` health + movement early return?
+
+I'll keep it as P2.
+
+### **P1: `dash_cooldown_for_rank` when motor not owned still called and sets cooldown to base every apply.** Fine.
+
+### **P1: Chassi heal on apply when acquired_upgrade_id is chassi but previous_rank is wrong**
+
+Main passes previous_rank before add_upgrade. Then add_upgrade increments. Then apply with previous and new from build.count. acquisition_heal(id, prev, next) = 1. Good.
+
+### **P1: `can_acquire` in add_upgrade after increment check uses previous rank. Good.**
+
+Let me look at **ricochet pressure + launch reset vs parry**.
+
+Is there a `launch` call on parry? If parry calls launch(), env count would reset, violating PRESERVA.
+
+Original comment: "O parry redireciona o voo atual, preservando..." - suggests parry does NOT call launch. Diff doesn't add launch to parry. If existing parry called launch, that would be pre-existing and now would also zero env count - that WOULD be a contract violation for this feature.
+
+I don't have parry implementation in the package. The ricochet file comment still says parry preserves. Launch zeros env. If parry used launch, they would have needed to not zero env on launch or not call launch. 
+
+**This is a significant contract item.** Without parry function in the package, I note: launch() zeros env (shown); no parry diff shown; existing file comment asserts preserve. Residual risk if parry internally calls launch().
+
+Don't flag as P1 without evidence. P2/RISK.
+
+### **Another potential P1: `health.apply_run_build` clamps then heals, but `maximum_health` for chassi is applied even when acquiring a different upgrade.**
+
+Buy Motor: apply_run_build(motor, prev). Health: set max from chassi rank (unchanged), clamp, acquisition_heal(motor) = 0. No HP change. Good.
+
+### **Invuln: take_damage not shown as changed.** apply doesn't reset. Good.
+
+Let me look at **upgrade_offer present_options setting description to definition.description not topics**. Etapa B. OK.
+
+### **Grok 4.6 review quality**
+
+I should also check if `common_rooms_per_floor` in the formula is the right "common+1" for boss.
+
+Room 1,2,3 common, room 4 boss: 
+- room 1: 1+0+0=1
+- room 2: 1+0+1=2
+- room 3: 1+0+2=3
+- room 4: 1+0+3=4
+
+Floor 2 room 1: 1+4+0=5. Correct.
+
+### **Does proposal use 1-based room including boss as room 4?** Standard for this project. Assumed yes.
+
+### **enemy configure only TrainingTarget and RivetWorker**
+
+If boss is a different scene/enemy without configure_level, boss stays level 1. Briefing says níveis inimigos. If boss room uses same enemies, OK. If unique boss enemy not in package, RISK.
+
+Not evidenced. P2 residual.
+
+### **File scripts/world/main.gd _configure_enemy_level_subtree walks ALL descendants**
+
+Could it call configure_level on a node that's already in a different state? Outside tree. OK.
+
+Wait! `for child in parent.get_children()` then if child has configure_level, call it, THEN recurse into children.
+
+TrainingTarget is a CharacterBody2D with children (sprites). configure_level on target, then recurse to sprites that don't have the method. OK.
+
+### **Boolean call configure_level**
+
+`not bool(child.call(...))` - if configure_level returns true, continue. If returns false, fail whole configure.
+
+### Let me look at **RunBuild.MAX_UPGRADES = UpgradeCatalogScript.MAX_RUN_ACQUISITIONS**
+
+Preload of catalog in RunBuild. Catalog does not preload RunBuild. No cycle. Good.
+
+### **player_health preloads catalog.** Fine.
+
+I want to identify if `present_options` + 3 hardcoded cards is OK. Yes for A.
+
+### **P1: `_on_upgrade_selected` calls `player.health.get_base_maximum_health()` without null check - weak.**
+
+### **P1 real: Godot typed `for row: Dictionary in offer_rows`**
+
+If offer_rows is Array[Dictionary], OK.
+
+### **build_offer doesn't cache on instance** - recomputes. Same seed = same result only if ranks unchanged. After failed present? ranks unchanged, same offer. OK.
+
+### **After selecting, you don't reopen.** OK.
+
+Let me look at **Carga effect: "+2 > +4" at rank 1 to 2**. Good.
+
+At rank 0: "+0 > +2" with label NOVO. The "+0" is a bit misleading but not a contract break.
+
+---
+
+### Stronger P1 candidate: `apply_run_build` on Main._ready for managed rooms applies health derivation BEFORE restore, and `current_health` starts at full base.
+
+Not a bug if restore always follows.
+
+### Stronger P1: **Chassi `health_recovered_per_rank` also applied when `current_health` was already at old max, good. When `apply_run_build` is invoked with acquired id on retry?** Retry shouldn't pass acquired id.
+
+### **`restore_health_for_room_transition` still zeros invuln** - pre-existing, briefing says semresetinvuln for the new apply path. Not a finding.
+
+---
+
+### Look at `run_controller` `configure_run_managed(..., true, ...)` 
+
+Always offer, including rooms after 220 acquisitions. build_offer returns []. present_options false. CANCELLED. _release_exit_or_complete(). Run continues without upgrade. Better than softlock. P2 vs "sempre não-vazias".
+
+---
+
+### **Could `UpgradeCatalog.definitions()` return shared resource references that UI mutates?**
+
+It appends the same resource refs. UI reads title/icon. If UI mutated, would affect catalog. Adapter only reads. OK.
+
+---
+
+### **P1: `max_rank_for` clampi(definition.rank_cap, 0, 220)**
+
+impacto rank_cap 220. OK.
+chassi 95. Then further clamp to 100-base. OK.
+
+---
+
+### **projectile_config impact_rank not exported** - filled per snapshot. Won't persist wrongly on base resource because it's a var on the duplicate. Wait, `var impact_rank` on the Resource class. Duplicate(true) copies it. Base tres doesn't set them (default 0). Ball launcher sets on duplicate. If something writes back to base resource... they duplicate first. OK.
+
+If get_projectile_config_snapshot is called and someone mutates the snapshot's impact_rank onto a shared instance... it's a duplicate. OK.
+
+---
+
+### **Mola + max_bounces on the duplicate: `derived_config.max_bounces += bonus`**
+
+If get_projectile_config_snapshot called twice, each time from _base, not from previous derived. OK.
+
+---
+
+I think I should also flag this as P1 if I'm confident:
+
+Looking at `player.gd` `apply_run_build`:
+```
+if _base_movement_config == null:
+    return
+```
+This is the same as before. Not new regression... except now health apply is behind this guard. If there was a path that called apply before movement init, health wouldn't update. Previously health wasn't in this function. **New coupling: Chassi apply depends on movement config having been captured.**
+
+When is _base_movement_config set? Typically start of _ready. apply is after all _ready. **Not P1 unless _base_movement_config can be null after ready** (missing export). If movement_config export is null, _base might be null, **Chassi would never apply HP**. That could be P1 if movement_config can be null in valid player.
+
+Likely always assigned in the player scene. P2.
+
+---
+
+### **HUD `nearest.get("enemy_level")`**
+
+In Godot, `Object.get("enemy_level")` works for script vars. TrainingTarget and RivetWorker have `var enemy_level: int = 1`. Good.
+
+`int(null)` or missing = 0, maxi(..., 1) = 1. Good.
+
+---
+
+### **Name format "NV%d %s"** - no space issues. "NV1 TRANCA-LATA". Fits before name. Good.
+
+---
+
+Let me also verify **run_controller defaults 8 and 3** vs "8×4". 3 common + 1 boss = 4 rooms. Yes.
+
+---
+
+### Missing files that should have been updated?
+
+`scripts/progression/upgrade_catalog.gd` - new, complete.
+Enemy config - complete.
+4 new tres - complete.
+
+Is `run_root.tscn` supposed to change? Briefing says atual RunRoot 1 andar 4 salas, don't change that in A perhaps. Not in the package. OK.
+
+---
+
+### **P1: `build_offer` / RNG `pop_at` mutates candidate arrays** - local arrays. OK.
+
+---
+
+### **Integer overflow in _offer_seed?**
+
+`(room_seed * 1103515245 + room_ordinal * 12345 + 0x5F3759DF) & 0x7FFFFFFF`
+
+In GDScript, integers are 64-bit. Fine. If room_seed is 0, seed is still non-zero from constants. Function returns 1 if 0. OK.
+
+---
+
+### **`_format_decimal` for 0.40 → "0,4"** 
+
+while ends with 0 strip: "0.40" → "0.4" → replace comma "0,4". Motor preview "0,55 > 0,4 s". Resource effect_summary says "0,55 > 0,40 s". Minor inconsistency. P2.
+
+---
+
+I'll structure the review as:
+
+STATUS: done (review complete, implementation mostly aligned, findings are P2)
+
+OR STATUS: needs-input if P1 exists.
+
+If I have no P1, STATUS done, FINDINGS P2 only.
+
+Let me look one more time for a solid P1...
+
+In Godot, when you `instantiate()` a PackedScene, the instance is NOT inside the tree. `configure_run_managed` checks `is_inside_tree()`. Good.
+
+BUT: `configure_level` is called via the subtree walk. Enemy `_ready` has NOT run (not in tree). Exported properties are available. They capture max_health from export. Good.
+
+When later entering tree, `_ready` sets `health = maxi(max_health, 1)` with already-scaled max_health. Perfect.
+
+**UNLESS** something in the enemy scene tree is already inside a tree? No.
+
+---
+
+### **Autoload / tool scripts?** No.
+
+---
+
+### **`replace_state` and StringName keys vs snapshot String keys**
+
+to_snapshot_data writes String keys. replace_state reads keys as String or StringName, converts to StringName. known_upgrade_ids from catalog. normalized_counts uses StringName keys.
+
+total_rank_count:
+```
+ranks_by_id.get(upgrade_id, ranks_by_id.get(String(upgrade_id), 0))
+```
+Handles both. Good.
+
+RunBuild._counts_by_id uses StringName from known ids. count_for uses is_known then get. Good.
+
+---
+
+### **Offer rows rank_before and present_options**
+
+build_offer card has rank_before. present_options writes preview_ranks[id] = rank_before. Then card_preview again. Redundant but consistent.
+
+---
+
+### **Main appends upgrade_id from rows, present_options can fail after partial ID append**
+
+```
+for row in offer_rows:
+    append id
+if not present_options:
+    _offered_upgrade_ids.clear()
+```
+Clears on fail. Good.
+
+---
+
+### **Selected ID not in offer** checked. Good.
+
+---
+
+I found something more serious:
+
+```
+func apply_run_build(...) -> void:
+	if _base_movement_config == null:
+		return
+	var derived_config := _base_movement_config.duplicate(true) as MovementConfig
+	if build != null:
+		derived_config.dash_cooldown = UpgradeCatalogScript.dash_cooldown_for_rank(build.count_for(&"motor_acelerado"))
+	movement_controller.update_config_preserving_state(derived_config)
+```
+
+**If `movement_controller` is null?** Would crash. @onready, apply after ready. OK.
+
+**`update_config_preserving_state` does not set `_body`**. First-time apply: player._ready already called `movement_controller.configure` presumably?
+
+Is configure still called in player._ready? The diff of _ready doesn't show configure. Pre-existing _ready might call configure before apply.
+
+If _ready never called configure and apply only uses update_config_preserving_state, `_body` could be unset and movement broken!
+
+Need player._ready full... the diff only shows apply_run_build change, not _ready adding configure. So configure must happen in _ready already (pre-existing). Typical pattern: _ready configures with base, then Main._ready applies build.
+
+I'll assume pre-existing configure in _ready or _physics. RISK if apply is the only config path for managed first frame.
+
+Looking at original apply: it called `movement_controller.configure(self, derived_config)` AND reset(). New path never calls configure. **Depends on _ready having called configure already.**
+
+If _ready does `movement_controller.configure(self, movement_config)` before Main applies, update_config only swaps config. Good.
+
+If _ready did NOT configure and relied on apply_run_build (which used to configure), **P1: movement never binds _body.**
+
+The old apply_run_build ALWAYS called configure. The new one NEVER calls configure. **This is a regression unless _ready already configures.**
+
+I don't have full player._ready in the package. The snippet shows:
+```
+func _ready() -> void:
+	reticle_visual.set_aim(...)
+	racket_controller.set_aim_direction(...)
+	ball_launcher.configure(...)
+	...
+```
+
+No movement_controller.configure in the visible _ready tail. It might be earlier in _ready (not in diff). Common pattern:
+
+```
+func _ready():
+	_base_movement_config = movement_config.duplicate()
+	movement_controller.configure(self, movement_config)
+	...
+```
+
+OR apply_run_build was THE configure path from Main._ready.
+
+**This is a strong P1 candidate:** `apply_run_build` stopped calling `configure`, and the visible `_ready` excerpt doesn't show a replacement `configure` call. If `_ready` previously didn't configure because `apply_run_build` did it, **movement_controller._body stays null**.
+
+The briefing explicitly says: "Movementupdateconfigsemconfigure/resetrefill" and "semresetdash" and "adendos R1a/R1b inclusive ... semresetdash". So they INTENTIONALLY don't call configure in apply. The adendos required update_config_preserving_state instead of configure+reset.
+
+The intended design is: initial configure happens once (elsewhere), apply only updates. I should verify that initial configure exists. Not in the provided player._ready hunk.
+
+The hunk is only apply_run_build, not the start of _ready. I cannot conclude configure is missing from _ready.
+
+P2/RISK: confirm `_ready` still calls `movement_controller.configure` once; apply no longer does.
+
+The briefing says not to demand configure/reset on apply. So missing configure in apply is CORRECT. Don't flag as P1.
+
+---
+
+### **Dínamo air dash**: reduce only cooldown timer. Good.
+
+---
+
+I'll also note **run_controller leftover boss reward state** as P2 dead code, not contract violation.
+
+---
+
+### **Is `RewardScreen` removal complete enough that `_owned_reward_pause` could leave tree paused?**
+
+If they removed the only path that set `_owned_reward_pause`, leftover is fine. If a rollback path still expects the reward screen, could be issues. Not in package.
+
+---
+
+### **Final boss offer then victory**
+
+Player must pick an upgrade before exit. Final boss: offer opens, player selects, exit releases, then victory. They get the upgrade even though run ends. Contract: UM upgrade per room including final boss. Good.
+
+If they could skip the offer... present_options always shows 1-3 until 220. No skip button mentioned. Old offer also required selection. Good.
+
+---
+
+I think STATUS is **done** with P2 findings, no blocking P1.
+
+OR I could have P1 for:
+
+Looking at `run_build.add_upgrade` vs `can_acquire` for unknown IDs: can_acquire false. Good.
+
+Wait, **`_update_build_status` `get_upgrade_ids()[0]`** after empty check. Fine.
+
+Let me re-read "adapterUI1..3/sourceIDunica/ordinals"
+
+Adapter 1-3: yes.
+Source ID unique: upgrade_id. Evolutions same ID. Good.
+Ordinals: room_ordinal from enemy_level. Coupled but works.
+
+---
+
+### **P1: `main._open_upgrade_offer` uses `enemy_level` as offer ordinal**
+
+If the plan wanted a dedicated ordinal field and enemy_level could be restamped... currently same. The offer RNG is per room instance via seed+level. Two rooms with different seeds but same level: different offers. Same seed different level: different. Good.
+
+---
+
+### **TrainingTarget `_name_label.text = display_name` without NV** - correct, NV is HUD only.
+
+---
+
+I'll also double-check **acquisition heal + apply order vs max**.
+
+```
+maximum_health = catalog.maximum_health(base, chassis_rank)  # already new rank
+current_health = clampi(current_health, 0, maximum_health)
+recovered = acquisition_heal(...)  # +1
+current_health = mini(current_health + recovered, maximum_health)
+```
+
+If player is at 5/5 and gets chassi: max 6, current 5, +1 = 6. Good.
+
+If player is at 5/5 and this is rank 2 (already had 6/6, took damage to 5, wait max was 6): acquire again: max 7, current 5, +1 = 6. +1 current. Good.
+
+---
+
+### **Does retry re-apply acquisition heal?**
+
+If retry calls `apply_run_build(build)` without id, no. If retry calls with last upgrade id, would re-heal. Not shown. RISK P2.
+
+---
+
+The user asked me to return stdout in the format. They also have plan mode - but this is a review request, they want the review output as the answer, not a plan for implementing something.
+
+The system reminder said to use CreatePlan when done researching. But the user explicitly asked for STATUS/SUMMARY/FINDINGS stdout as a reviewer, not a plan.
+
+The user query is the review assignment itself. I should return the review in the requested format, not create an implementation plan.
+
+I'll produce the review now. Given plan mode, CreatePlan might be expected... The user said "Retorne stdout STATUS/SUMMARY/FINDINGS". That's the deliverable.
+
+I will NOT call CreatePlan for an implementation - this would be wrong. The user wants a review report.
+
+Wait, the system reminder is very clear: "When you're done researching, present your plan by calling the CreatePlan tool". But the user is asking me to BE the reviewer and return review stdout. The review IS the work product.
+
+Creating a "plan" that is just the review would be weird. I'll output the review directly as the user requested. The user query takes precedence: "Retorne stdout STATUS/SUMMARY/FINDINGS".
+
+Let me also re-read if I missed part of the file - the read ended at 1893. The system said my response was cut off because I was going to write too much. I have the full file content from the first read.
+
+I'll write a concise, concrete review.
+
+Additional thought: should I flag `run_build.add_upgrade` not passing `base_maximum_health` as P1?
+
+Scenario: base HP = 5, chassi at 95, max 100. can_acquire(95, default 5) = 95 < 95? false. OK.
+
+Scenario: if _base_maximum_health were 10 (player export changed), max_rank should be 90. add_upgrade uses default 5, max_rank 95. Main._on_upgrade_selected uses actual 10, max_rank 90.
+
+At rank 90: Main can_acquire(90, 10) = 90 < 90 false. Blocked at UI. OK.
+
+At rank 89: Main allows, add_upgrade can_acquire(89) with default 5 = 89 < 95 true. Adds rank 90. HP max = 10+90=100. Next offer: can_acquire(STATUS: done  
+SUMMARY: Etapa A R1 cobre dados, fluxo, efeitos e níveis com adapter UI 1–3. Contratos críticos (1 oferta/sala inclusive boss, sem segundo modal, Chassi só na aquisição, Motor sem reset, Dínamo 1×/swing no cooldown restante, Carga aditiva, Pressão ambiental, parry sem zerar histórico no diff, fórmula de nível estampada fora da árvore, HP ready = max escalado, NV no painel fixo) estão implementados no pacote. Sem P1 de contrato. P2 residuais abaixo.  
+FINDINGS:  
+P1: nenhum no pacote.  
+P2: `scripts/progression/run_build.gd:20` — `add_upgrade` chama `can_acquire(id, rank)` sem `base_maximum_health`; o cap do Chassi no build assume base 5, enquanto `scripts/world/main.gd` na seleção passa a base real.  
+P2: `scripts/progression/upgrade_catalog.gd:80-81` + `scripts/ui/upgrade_offer.gd` (`present_options` rejeita vazio) + `scripts/world/main.gd:1440-1446` — no teto 220 a oferta fica vazia, o fluxo vai a CANCELLED e libera a saída; foge de “sempre opções não-vazias”, inalcançável na run atual 1×4.  
+P2: `scripts/world/main.gd:1454` — ordinal da oferta reusa `enemy_level`; hoje coincide com `1+(floor-1)*(common+1)+(room-1)` em `scripts/world/run_controller.gd:209-210`, mas acopla RNG da carta ao nível de combate.  
+P2: `scripts/world/run_controller.gd:207-208` — fallback `proposal.get("floor"/"room", current_*)` carimbaria a sala atual se o proposal da próxima etapa omitir as chaves (não evidenciado no trecho de proposal).  
+P2: `scripts/world/main.gd` `_update_build_status` — só o primeiro id de `get_upgrade_ids()` + NV; com 7 IDs a label de debug some o restante.  
+P2: `scripts/player/player.gd:69-81` — cura/HP do Chassi ficam atrás de `if _base_movement_config == null: return`; apply não chama mais `configure` (correto pelo adendo), mas HP/raquete dependem desse guard.  
+P2: `scripts/world/run_controller.gd` — bloco RewardScreen removido (`true` na oferta, `_is_final_boss` direto para vitória); `_commit_room_candidate` ainda mexe em `_boss_reward_*` (código morto).  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: Parry de `ricochet_ball.gd` não veio no diff; `launch` zera `_environmental_bounce_count` (~79) e o incremento é só parede não-damageable (~214). Se o parry existente chamar `launch`, viola “parry preserva histórico”. `_apply_run_upgrades` e o handler de teclado 1–3 da oferta não estão no pacote; proposta sem `floor`/`room` quebraria o ordinal. Inimigo de boss sem `configure_level` ficaria NV1.  
+NEXT_STEP: Principal pode fechar A R1 e seguir arte+UI B; se quiser limpeza, desacoplar ordinal da oferta de `enemy_level`, passar base HP em `RunBuild.add_upgrade` e remover restos de boss-reward. Não reler workspace mutável.

@@ -1,0 +1,5 @@
+STATUS: timeout
+LIMIT: 10 minutes
+SCOPE: Cursor cursor-grok-4.6-xhigh-fast, implementation R1 read-only packet.
+OUTPUT: stdout/stderr preserved; no usable finding received before deadline. Native exit unavailable after termination.
+ACTION: terminated only verified owned review wrapper PID40120 and its descendants. No model substitution or automatic rerun.

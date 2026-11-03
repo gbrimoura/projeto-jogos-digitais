@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Static review completed for `scripts/world/side_door_visual.gd` and `assets/environment/factory_v1/door/side-opening/preview-side-opening.lua`. The modest visual polish strictly preserves the 64×128 footprint (`Rect2(-32, -64, 64, 128)`), 2px world grid alignment, and standard factory palette without introducing speculative gameplay or collision changes. Drawing order, coordinates, and color assignments match 1:1 between GDScript and the Aseprite preview Lua script (+32, +64 translation to frame space), maintaining full parity across open (48×108 dark void with edge-only framing) and closed (reinforced bars, cross-rails, latch, amber pin) states.
+CHANGED_FILES: none
+TESTS: none
+RISKS: None identified in static review. The visual helper remains isolated from collision, interaction triggers, and tree lifecycle, functioning purely via CanvasItem `_draw()`.
+NEXT_STEP: Ready to apply the reviewed changes to the authorized files (`scripts/world/side_door_visual.gd` and `assets/environment/factory_v1/door/side-opening/preview-side-opening.lua`) when implementation is requested.

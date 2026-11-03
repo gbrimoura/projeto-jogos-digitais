@@ -1,0 +1,1943 @@
+READ-ONLY implementation review; timeout6min. No tools except reading this supplied packet when file-attached, no edits/shell/Godot/tests/parser/lint. User authorized basic roguelike loop: exterior safe playable lobby starts game; entire own Player capsule inside cab and grounded starts automatic short door/lights/shake/fade, existing RunRoot creates new run; final realdeath/victory summary returns lobby via button/R. Run remains1floor10common+boss, noeconomy/events/save/balancechanges. Product scope5files. Root already corrected sourcevisualfloor top560 matchescollision560 and walls32px matchesphysical; atlasnevercol3pipes. Plan review tightened pauseowned release andrestoreonSceneError, lobbynoglobalunpause, rearmmustexitfullynotinstantautoloop, unchangedtechnicalretry, localpreloadtypesavoidcache. Existing2filesdirtybefore; onlyproject main_scene andruncontrollerendflowallowed. RunController new Result90 below existingfade100 andtechnical200; fontbitmap2xwrapcenter. Lobbycamera zoom min(viewport/reference) fits1152x648 exactly1920x1080, no globaldisplaychanges. Renderingnearest integergeometrybutcamera mayfractionalfit. Caller fail_managed_room_transition onlydeclarationnocallerscurrently; leavelegacytechnicalpaths. Review concrete P1/P2 sourcebugs, actualAPI/parse/type, physics/lifecycle/UI/pauses/scenechange/snapshot. No hypothetical scopeexpansion. Return STATUS SUMMARY CHANGED_FILES:none TESTS:none RISKS NEXT_STEP with evidence.
+FILE scripts/world/lobby.gd
+extends Node2D
+
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const DESIGN_SIZE: Vector2 = Vector2(1152.0, 648.0)
+const ELEVATOR_INTERIOR: Rect2 = Rect2(912.0, 448.0, 128.0, 112.0)
+const RUN_ROOT_PATH: String = "res://run_root.tscn"
+
+@onready var _player: CharacterBody2D = get_node("Player") as CharacterBody2D
+@onready var _ball_container: Node2D = get_node("BallContainer") as Node2D
+@onready var _camera: Camera2D = get_node("LobbyCamera") as Camera2D
+@onready var _world_visual: Node2D = get_node("EnvironmentVisual") as Node2D
+@onready var _door_visual: Node2D = get_node("ElevatorDoorForeground") as Node2D
+@onready var _fade_rect: ColorRect = get_node("LobbyUI/Fade") as ColorRect
+@onready var _status: Control = get_node("LobbyUI/ElevatorStatus") as Control
+
+var _travel_in_progress: bool = false
+var _must_exit_cabin_before_retry: bool = false
+var _player_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
+var _ball_container_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_INHERIT
+	RoomTransition.clear_pending_snapshot()
+	_fade_rect.color = Color(0.0431373, 0.0627451, 0.0901961, 0.0)
+	_set_status("", false)
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.size_changed.connect(Callable(self, "_update_camera_fit"))
+	_update_camera_fit()
+
+func _physics_process(_delta: float) -> void:
+	if _travel_in_progress:
+		return
+	var player_bounds: Rect2 = _player_world_aabb()
+	if not _rect_has_area(player_bounds):
+		return
+	if _must_exit_cabin_before_retry:
+		if not player_bounds.intersects(ELEVATOR_INTERIOR):
+			_must_exit_cabin_before_retry = false
+		return
+	if bool(_player.get("is_dead")) or not _player.is_on_floor():
+		return
+	if ELEVATOR_INTERIOR.encloses(player_bounds):
+		_begin_elevator_travel()
+
+func _update_camera_fit() -> void:
+	if _camera == null:
+		return
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return
+	var viewport_size: Vector2 = viewport.get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var horizontal_fit: float = viewport_size.x / DESIGN_SIZE.x
+	var vertical_fit: float = viewport_size.y / DESIGN_SIZE.y
+	var zoom_factor: float = minf(horizontal_fit, vertical_fit)
+	if not is_finite(zoom_factor) or zoom_factor <= 0.0:
+		zoom_factor = 1.0
+	_camera.position = DESIGN_SIZE * 0.5
+	_camera.zoom = Vector2(zoom_factor, zoom_factor)
+
+func _player_world_aabb() -> Rect2:
+	if _player == null or not is_instance_valid(_player):
+		return Rect2()
+	var collision_shape: CollisionShape2D = _player.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision_shape == null or collision_shape.disabled or collision_shape.shape == null:
+		return Rect2()
+	var local_rect: Rect2 = collision_shape.shape.get_rect()
+	if local_rect.size.x <= 0.0 or local_rect.size.y <= 0.0:
+		return Rect2()
+	var transform: Transform2D = collision_shape.global_transform
+	var corners: PackedVector2Array = PackedVector2Array([
+		local_rect.position,
+		Vector2(local_rect.end.x, local_rect.position.y),
+		local_rect.end,
+		Vector2(local_rect.position.x, local_rect.end.y),
+	])
+	var first: Vector2 = transform * corners[0]
+	var minimum_x: float = first.x
+	var minimum_y: float = first.y
+	var maximum_x: float = first.x
+	var maximum_y: float = first.y
+	for corner_index: int in range(1, corners.size()):
+		var world_corner: Vector2 = transform * corners[corner_index]
+		minimum_x = minf(minimum_x, world_corner.x)
+		minimum_y = minf(minimum_y, world_corner.y)
+		maximum_x = maxf(maximum_x, world_corner.x)
+		maximum_y = maxf(maximum_y, world_corner.y)
+	return Rect2(
+		Vector2(minimum_x, minimum_y),
+		Vector2(maximum_x - minimum_x, maximum_y - minimum_y)
+	)
+
+func _rect_has_area(rect: Rect2) -> bool:
+	return rect.size.x > 0.0 and rect.size.y > 0.0
+
+func _begin_elevator_travel() -> void:
+	if _travel_in_progress or _player == null or _ball_container == null:
+		return
+	if bool(_player.get("is_dead")) or not _player.is_on_floor():
+		return
+	var player_bounds: Rect2 = _player_world_aabb()
+	if not ELEVATOR_INTERIOR.encloses(player_bounds):
+		return
+
+	_set_status("", false)
+
+	# Latch and save inherited processing before the first asynchronous cue.
+	_travel_in_progress = true
+	_player_process_mode_before_travel = _player.process_mode
+	_ball_container_process_mode_before_travel = _ball_container.process_mode
+	_player.process_mode = Node.PROCESS_MODE_DISABLED
+	_ball_container.process_mode = Node.PROCESS_MODE_DISABLED
+	_reset_lobby_combat_transients()
+	RoomTransition.clear_pending_snapshot()
+
+	await _tween_door_fraction(1.0, 0.20)
+	await _play_travel_cue()
+	_set_status("ANDAR 01", true)
+	await _fade_to(1.0, 0.20)
+
+	var change_error: int = get_tree().change_scene_to_file(RUN_ROOT_PATH)
+	if change_error == OK:
+		return
+	await _recover_failed_elevator_load()
+
+func _reset_lobby_combat_transients() -> void:
+	var launcher: Node = _player.get_node_or_null("BallLauncher")
+	if launcher != null and launcher.has_method("reset"):
+		launcher.call("reset")
+	var racket: Node = _player.get_node_or_null("RacketController")
+	if racket != null and racket.has_method("cancel"):
+		racket.call("cancel")
+
+func _play_travel_cue() -> void:
+	for cue_index: int in range(5):
+		var lights_on: bool = cue_index % 2 == 0
+		_world_visual.call("set_amber_lights_on", lights_on)
+		var shake: Vector2 = Vector2(2.0, 0.0) if cue_index % 2 == 0 else Vector2(-2.0, 1.0)
+		_camera.offset = shake
+		var timer: SceneTreeTimer = get_tree().create_timer(0.065)
+		await timer.timeout
+	_camera.offset = Vector2.ZERO
+	_world_visual.call("set_amber_lights_on", true)
+
+func _tween_door_fraction(target: float, duration: float) -> void:
+	var tween: Tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_method(
+		Callable(_door_visual, "set_door_closed_fraction"),
+		float(_door_visual.get("door_closed_fraction")),
+		target,
+		duration
+	)
+	await tween.finished
+
+func _fade_to(alpha: float, duration: float) -> void:
+	var tween: Tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_property(_fade_rect, "color:a", alpha, duration)
+	await tween.finished
+
+func _recover_failed_elevator_load() -> void:
+	RoomTransition.clear_pending_snapshot()
+	_must_exit_cabin_before_retry = true
+	await _tween_door_fraction(0.0, 0.16)
+	_world_visual.call("set_amber_lights_on", false)
+	_camera.offset = Vector2.ZERO
+	_set_status("ERRO AO ABRIR\nSAIA E ENTRE PARA TENTAR", true)
+	await _fade_to(0.0, 0.18)
+	_player.process_mode = _player_process_mode_before_travel
+	_ball_container.process_mode = _ball_container_process_mode_before_travel
+	_travel_in_progress = false
+
+func _set_status(message: String, visible_state: bool) -> void:
+	_status.call("set_text", message)
+	_status.visible = visible_state
+
+FILE scripts/world/lobby_visual.gd
+extends Node2D
+
+const FACTORY_ATLAS: Texture2D = preload("res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png")
+const TILE_SIZE: int = 32
+const WORLD_WIDTH: int = 1152
+const WORLD_HEIGHT: int = 648
+
+const NIGHT: Color = Color("#0E0D0E")
+const INK: Color = Color("#0C1B29")
+const STEEL: Color = Color("#142C40")
+const STEEL_LIGHT: Color = Color("#203E50")
+const STEEL_MID: Color = Color("#4B555D")
+const STEEL_EDGE: Color = Color("#879198")
+const RUST: Color = Color("#70432C")
+const AMBER: Color = Color("#D2A75C")
+const PALE: Color = Color("#E8D8B5")
+const GLASS: Color = Color("#0C1B29")
+
+@export_enum("World background", "Elevator foreground") var visual_layer: int = 0
+@export_range(0.0, 1.0, 0.01) var door_closed_fraction: float = 0.0
+@export var amber_lights_on: bool = false
+
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+func set_door_closed_fraction(value: float) -> void:
+	door_closed_fraction = clampf(value, 0.0, 1.0)
+	queue_redraw()
+
+func set_amber_lights_on(value: bool) -> void:
+	amber_lights_on = value
+	queue_redraw()
+
+func _draw() -> void:
+	if visual_layer == 0:
+		_draw_world()
+	else:
+		_draw_elevator_foreground()
+
+func _draw_world() -> void:
+	draw_rect(Rect2(0, 0, WORLD_WIDTH, WORLD_HEIGHT), NIGHT)
+
+	# Distant roofline and the tower keep the courtyard enclosed visually.
+	draw_rect(Rect2(0, 272, 736, 256), INK)
+	draw_rect(Rect2(24, 232, 184, 296), STEEL)
+	draw_rect(Rect2(216, 192, 208, 336), INK)
+	draw_rect(Rect2(432, 224, 240, 304), STEEL)
+	draw_rect(Rect2(704, 80, 400, 448), INK)
+	draw_rect(Rect2(736, 40, 352, 488), STEEL)
+	draw_rect(Rect2(776, 16, 304, 512), STEEL_LIGHT)
+	draw_rect(Rect2(800, 0, 248, 512), STEEL)
+	draw_rect(Rect2(824, 0, 16, 512), STEEL_MID)
+	draw_rect(Rect2(1032, 0, 16, 512), INK)
+	draw_rect(Rect2(816, 48, 240, 8), STEEL_EDGE)
+	draw_rect(Rect2(768, 88, 320, 8), STEEL_EDGE)
+	draw_rect(Rect2(728, 136, 376, 8), STEEL_EDGE)
+
+	# Windows sit in open wall bays; no pipe or beam crosses the glass.
+	for window_y: int in [88, 144, 200, 256, 312]:
+		for window_x: int in [744, 784, 864, 904, 984, 1024]:
+			draw_rect(Rect2(window_x - 3, window_y - 3, 22, 34), RUST)
+			draw_rect(Rect2(window_x, window_y, 16, 28), GLASS)
+			draw_rect(Rect2(window_x + 7, window_y, 2, 28), STEEL_EDGE)
+			draw_rect(Rect2(window_x, window_y + 13, 16, 2), STEEL_EDGE)
+			draw_rect(Rect2(window_x + 3, window_y + 4, 3, 3), AMBER)
+
+	# Small decorative maintenance bench; it has no collision or interaction.
+	draw_rect(Rect2(152, 488, 176, 12), INK)
+	draw_rect(Rect2(152, 480, 176, 8), RUST)
+	draw_rect(Rect2(160, 472, 160, 8), STEEL_MID)
+	draw_rect(Rect2(168, 500, 12, 60), STEEL_LIGHT)
+	draw_rect(Rect2(296, 500, 12, 60), STEEL_LIGHT)
+	draw_rect(Rect2(184, 464, 32, 16), STEEL)
+	draw_rect(Rect2(192, 456, 16, 8), AMBER)
+	draw_rect(Rect2(240, 468, 40, 12), STEEL)
+	draw_rect(Rect2(248, 460, 24, 8), STEEL_EDGE)
+	draw_rect(Rect2(204, 504, 80, 4), RUST)
+
+	# Elevator alcove and heavy frame. The entrance remains open at rest.
+	draw_rect(Rect2(872, 424, 208, 136), STEEL)
+	draw_rect(Rect2(888, 432, 176, 128), STEEL_MID)
+	draw_rect(Rect2(904, 448, 144, 112), INK)
+	draw_rect(Rect2(912, 448, 128, 112), GLASS)
+	draw_rect(Rect2(912, 448, 128, 4), STEEL_EDGE)
+	draw_rect(Rect2(912, 556, 128, 4), AMBER)
+	draw_rect(Rect2(896, 432, 16, 128), STEEL_LIGHT)
+	draw_rect(Rect2(1040, 432, 16, 128), STEEL_LIGHT)
+	draw_rect(Rect2(904, 424, 144, 8), AMBER)
+	draw_rect(Rect2(904, 438, 144, 4), STEEL_EDGE)
+
+	# A square amber-framed plaque carries the bitmap elevator sign.
+	draw_rect(Rect2(888, 384, 176, 40), INK)
+	draw_rect(Rect2(888, 384, 176, 3), AMBER)
+	draw_rect(Rect2(888, 421, 176, 3), AMBER)
+	draw_rect(Rect2(888, 384, 3, 40), AMBER)
+	draw_rect(Rect2(1061, 384, 3, 40), AMBER)
+	# Three status lamps above the elevator doors.
+	for lamp_x: int in [928, 968, 1008]:
+		var lamp_color: Color = AMBER if amber_lights_on else STEEL_MID
+		draw_rect(Rect2(lamp_x - 7, 428, 14, 14), INK)
+		draw_rect(Rect2(lamp_x - 4, 431, 8, 8), lamp_color)
+
+	# Steel courtyard floor: the existing 32 px atlas supplies top, middle and
+	# lower edges. Integer destination rectangles and nearest filtering preserve
+	# the factory palette and tile silhouette.
+	for tile_x_index: int in range(36):
+		var tile_x: int = tile_x_index * TILE_SIZE
+		var source_x: int = TILE_SIZE
+		if tile_x_index == 0:
+			source_x = 0
+		elif tile_x_index == 35:
+			source_x = TILE_SIZE * 2
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(tile_x, 560, TILE_SIZE, TILE_SIZE),
+			Rect2(source_x, 0, TILE_SIZE, TILE_SIZE)
+		)
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(tile_x, 592, TILE_SIZE, TILE_SIZE),
+			Rect2(source_x, TILE_SIZE, TILE_SIZE, TILE_SIZE)
+		)
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(tile_x, 624, TILE_SIZE, TILE_SIZE),
+			Rect2(source_x, TILE_SIZE * 3, TILE_SIZE, TILE_SIZE)
+		)
+
+	for tile_y_index: int in range(21):
+		var tile_y: int = tile_y_index * TILE_SIZE
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(0, tile_y, TILE_SIZE, TILE_SIZE),
+			Rect2(0, TILE_SIZE, TILE_SIZE, TILE_SIZE)
+		)
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(WORLD_WIDTH - TILE_SIZE, tile_y, TILE_SIZE, TILE_SIZE),
+			Rect2(TILE_SIZE * 2, TILE_SIZE, TILE_SIZE, TILE_SIZE)
+		)
+
+	# Bright, uncluttered entrance threshold.
+	draw_rect(Rect2(912, 556, 128, 4), PALE)
+
+func _draw_elevator_foreground() -> void:
+	var travel: float = clampf(door_closed_fraction, 0.0, 1.0)
+	var panel_width: int = 64
+	var door_top: int = 448
+	var door_height: int = 112
+	var left_x: int = 848 + roundi(float(panel_width) * travel)
+	var right_x: int = 1040 - roundi(float(panel_width) * travel)
+
+	_draw_door_panel(left_x, door_top, panel_width, door_height, true)
+	_draw_door_panel(right_x, door_top, panel_width, door_height, false)
+
+func _draw_door_panel(x: int, y: int, width: int, height: int, is_left: bool) -> void:
+	draw_rect(Rect2(x, y, width, height), STEEL)
+	draw_rect(Rect2(x + 4, y + 4, width - 8, height - 8), STEEL_LIGHT)
+	draw_rect(Rect2(x + 8, y + 8, width - 16, height - 16), STEEL)
+	draw_rect(Rect2(x + 12, y + 12, 4, height - 24), STEEL_EDGE)
+	draw_rect(Rect2(x + width - 16, y + 12, 4, height - 24), INK)
+	draw_rect(Rect2(x + width / 2 - 2, y + 8, 4, height - 16), RUST)
+	draw_rect(Rect2(x + width / 2 - 1, y + 16, 2, height - 32), AMBER)
+	draw_rect(Rect2(x + 8, y + height - 14, width - 16, 4), AMBER if is_left else RUST)
+FILE scenes/lobby.tscn
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/lobby.gd" id="1_lobby"]
+[ext_resource type="Script" path="res://scripts/world/lobby_visual.gd" id="2_visual"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="4_bitmap_text"]
+
+[sub_resource type="RectangleShape2D" id="Rect_floor"]
+size = Vector2(1152, 88)
+
+[sub_resource type="RectangleShape2D" id="Rect_left_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="Rect_right_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="Rect_ceiling"]
+size = Vector2(1152, 32)
+
+[node name="Lobby" type="Node2D"]
+script = ExtResource("1_lobby")
+
+[node name="LobbyCamera" type="Camera2D" parent="."]
+position = Vector2(576, 324)
+enabled = true
+position_smoothing_enabled = false
+limit_left = 0
+limit_top = 0
+limit_right = 1152
+limit_bottom = 648
+
+[node name="EnvironmentVisual" type="Node2D" parent="."]
+z_index = -10
+script = ExtResource("2_visual")
+
+[node name="ElevatorSign" type="Control" parent="EnvironmentVisual"]
+position = Vector2(896, 388)
+size = Vector2(160, 30)
+mouse_filter = 2
+script = ExtResource("4_bitmap_text")
+text = "ELEVADOR / ANDAR 01"
+font_color = Color(0.823529, 0.654902, 0.360784, 1)
+max_lines = 2
+center_text = true
+
+[node name="ElevatorDoorForeground" type="Node2D" parent="."]
+z_index = 5
+script = ExtResource("2_visual")
+visual_layer = 1
+
+[node name="BallContainer" type="Node2D" parent="."]
+z_index = 1
+
+[node name="World" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Floor" type="CollisionShape2D" parent="World"]
+position = Vector2(576, 604)
+shape = SubResource("Rect_floor")
+
+[node name="LeftBoundary" type="CollisionShape2D" parent="World"]
+position = Vector2(16, 324)
+shape = SubResource("Rect_left_wall")
+
+[node name="RightBoundary" type="CollisionShape2D" parent="World"]
+position = Vector2(1136, 324)
+shape = SubResource("Rect_right_wall")
+
+[node name="Ceiling" type="CollisionShape2D" parent="World"]
+position = Vector2(576, -16)
+shape = SubResource("Rect_ceiling")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(240, 560)
+
+[node name="LobbyUI" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="ElevatorStatus" type="Control" parent="LobbyUI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -360.0
+offset_top = 18.0
+offset_right = 360.0
+offset_bottom = 48.0
+mouse_filter = 2
+visible = false
+script = ExtResource("4_bitmap_text")
+text = ""
+font_color = Color(0.909804, 0.419608, 0.32549, 1)
+max_lines = 2
+center_text = true
+
+[node name="Fade" type="ColorRect" parent="LobbyUI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.0431373, 0.0627451, 0.0901961, 0)
+FILE scripts/world/run_controller.gd
+extends Node2D
+
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RoomRunLayout = preload("res://scripts/world/room_run_layout.gd")
+const DEFAULT_ENEMY_LEVEL_CONFIG: EnemyLevelConfigResource = preload("res://resources/progression/enemy_levels.tres")
+const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const LOBBY_SCENE_PATH: String = "res://scenes/lobby.tscn"
+
+@export_range(1, 20) var floors_per_run: int = 8
+@export_range(1, 10) var common_rooms_per_floor: int = 10
+@export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0
+@export var common_room_scene: PackedScene
+@export var boss_room_scene: PackedScene
+@export var run_seed: int = 0
+@export var randomize_run_seed: bool = true
+@export var enemy_level_config: EnemyLevelConfigResource = DEFAULT_ENEMY_LEVEL_CONFIG
+
+@onready var room_container: Node2D = $RoomContainer
+@onready var progress_label: Label = $HUD/ProgressLabel
+@onready var status_label: Label = $HUD/StatusLabel
+
+var current_floor: int = 1
+var current_room: int = 1
+var current_room_instance: Node
+var transition_pending: bool = false
+var _run_ended: bool = false
+var _legitimate_run_end: bool = false
+var _returning_to_lobby: bool = false
+var _result_pause_owned: bool = false
+var _result_overlay: CanvasLayer
+var _result_return_button: Button
+var _result_error_text: Control
+var _damage_multiplier: float = 1.0
+var _speed_multiplier: float = 1.0
+var _radius_multiplier: float = 1.0
+var _run_player_health: int = -1
+var _run_player_max_health: int = -1
+var _run_build: RunBuild = RunBuild.new()
+var _active_reward_screen: Node
+var _owned_reward_pause: bool = false
+var _owned_transition_pause: bool = false
+var _restart_in_progress: bool = false
+var _transition_fade_layer: CanvasLayer
+var _transition_fade_rect: ColorRect
+var _resolved_run_seed: int = 0
+var _floor_room_descriptors: Array[Dictionary] = []
+var _last_room_family: StringName = &""
+var _room_signal_connections: Dictionary = {}
+var _pending_stage_proposal: Dictionary = {}
+var _pending_stage_source: Node
+var _technical_error_layer: CanvasLayer
+var _technical_error_source: Node
+var _technical_retry_kind: StringName = &""
+var _technical_retry_proposal: Dictionary = {}
+var _technical_error_pause_owned: bool = false
+var _boss_reward_room_id: int = 0
+var _boss_reward_name: String = ""
+var _boss_reward_applied: bool = false
+var _initial_floor_plan_error: String = ""
+
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	RoomTransition.clear_pending_snapshot()
+	_resolved_run_seed = RoomRunLayout.resolve_seed(run_seed, randomize_run_seed)
+	if common_room_scene == null:
+		_present_technical_error("ERRO: cena de sala comum não definida.", {}, null, &"initial_load", true)
+		return
+	if boss_room_scene == null:
+		_present_technical_error("ERRO: cena de chefe não definida.", {}, null, &"initial_load", true)
+		return
+	if not _prepare_current_floor_plan():
+		_present_technical_error(_initial_floor_plan_error, {}, null, &"floor_plan", true)
+		return
+	_load_current_encounter()
+
+func get_resolved_run_seed() -> int:
+	return _resolved_run_seed
+
+func _prepare_current_floor_plan() -> bool:
+	var result: Dictionary = RoomRunLayout.build_floor(
+		_resolved_run_seed,
+		current_floor,
+		common_rooms_per_floor + 1,
+		_last_room_family
+	)
+	if not bool(result.get("valid", false)):
+		_initial_floor_plan_error = "ERRO: não foi possível planejar a sequência de salas: %s" % String(result.get("error", "topologia inválida"))
+		return false
+	_floor_room_descriptors.clear()
+	for descriptor: Dictionary in result.get("rooms", []):
+		_floor_room_descriptors.append(descriptor.duplicate(true))
+	_last_room_family = StringName(result.get("last_family", _last_room_family))
+	_initial_floor_plan_error = ""
+	return true
+
+func _stage_proposal(floor_index: int, room_index: int, descriptors: Array[Dictionary], last_family: StringName) -> Dictionary:
+	var descriptor_index := room_index - 1
+	if descriptor_index < 0 or descriptor_index >= descriptors.size():
+		return {
+			"valid": false,
+			"error": "ERRO: descritor da sala %d do andar %d ausente." % [room_index, floor_index],
+			"floor": floor_index,
+			"room": room_index,
+			"descriptors": descriptors.duplicate(true),
+			"last_family": last_family,
+		}
+	var destination_descriptor: Dictionary = descriptors[descriptor_index].duplicate(true)
+	return {
+		"valid": true,
+		"floor": floor_index,
+		"room": room_index,
+		"descriptors": descriptors.duplicate(true),
+		"last_family": last_family,
+		"descriptor": destination_descriptor,
+	}
+
+func _current_stage_proposal() -> Dictionary:
+	return _stage_proposal(current_floor, current_room, _floor_room_descriptors, _last_room_family)
+
+func _next_stage_proposal() -> Dictionary:
+	var proposed_floor: int = current_floor
+	var proposed_room: int = current_room
+	var proposed_descriptors: Array[Dictionary] = _floor_room_descriptors.duplicate(true)
+	var proposed_last_family: StringName = _last_room_family
+	if _is_boss_room():
+		proposed_floor += 1
+		proposed_room = 1
+		var result: Dictionary = RoomRunLayout.build_floor(
+			_resolved_run_seed,
+			proposed_floor,
+			common_rooms_per_floor + 1,
+			proposed_last_family
+		)
+		if not bool(result.get("valid", false)):
+			return {
+				"valid": false,
+				"error": "ERRO: não foi possível planejar o andar %d: %s" % [proposed_floor, String(result.get("error", "topologia inválida"))],
+				"floor": proposed_floor,
+				"room": proposed_room,
+				"descriptors": [],
+				"last_family": proposed_last_family,
+			}
+		proposed_descriptors.clear()
+		for descriptor: Dictionary in result.get("rooms", []):
+			proposed_descriptors.append(descriptor.duplicate(true))
+		proposed_last_family = StringName(result.get("last_family", proposed_last_family))
+	else:
+		proposed_room += 1
+	return _stage_proposal(proposed_floor, proposed_room, proposed_descriptors, proposed_last_family)
+
+func _commit_stage_proposal(proposal: Dictionary) -> void:
+	current_floor = int(proposal.get("floor", current_floor))
+	current_room = int(proposal.get("room", current_room))
+	_floor_room_descriptors.clear()
+	for descriptor: Dictionary in proposal.get("descriptors", []):
+		_floor_room_descriptors.append(descriptor.duplicate(true))
+	_last_room_family = StringName(proposal.get("last_family", _last_room_family))
+
+func _is_boss_room() -> bool:
+	return current_room > common_rooms_per_floor
+
+
+func _is_final_boss() -> bool:
+	return current_floor == floors_per_run and _is_boss_room()
+
+func is_active_room_instance(room: Node) -> bool:
+	return not _run_ended and is_instance_valid(current_room_instance) and room == current_room_instance
+
+
+func _load_current_encounter(retry_proposal: Dictionary = {}) -> bool:
+	if _run_ended:
+		return false
+	var proposal: Dictionary = retry_proposal.duplicate(true) if bool(retry_proposal.get("valid", false)) else _current_stage_proposal()
+	if not bool(proposal.get("valid", false)):
+		_present_technical_error(String(proposal.get("error", "descritor atual inválido")), proposal, null, &"initial_load", true)
+		return false
+	var candidate_result: Dictionary = _prepare_room_candidate(proposal)
+	if not bool(candidate_result.get("valid", false)):
+		_present_technical_error(String(candidate_result.get("error", "falha técnica ao preparar a sala")), proposal, null, &"initial_load", true)
+		return false
+	var candidate: Node = candidate_result.get("room") as Node
+	room_container.add_child(candidate)
+	var attached_result: Dictionary = _validate_attached_candidate(candidate)
+	if not bool(attached_result.get("valid", false)):
+		room_container.remove_child(candidate)
+		candidate.queue_free()
+		_present_technical_error(String(attached_result.get("error", "falha técnica ao validar jogador/HP")), proposal, null, &"initial_load", true)
+		return false
+	var candidate_player: Player = attached_result.get("player") as Player
+	_commit_room_candidate(candidate, candidate_player, proposal, null)
+	_dismiss_technical_error()
+	_release_technical_error_pause()
+	return true
+
+func _prepare_room_candidate(proposal: Dictionary) -> Dictionary:
+	if not bool(proposal.get("valid", false)):
+		return {"valid": false, "error": String(proposal.get("error", "proposta de sala inválida"))}
+	var target_room: int = int(proposal.get("room", 0))
+	var packed_scene: PackedScene = boss_room_scene if target_room > common_rooms_per_floor else common_room_scene
+	if packed_scene == null:
+		return {"valid": false, "error": "ERRO: cena de sala destino não definida."}
+	var next_room: Node = packed_scene.instantiate()
+	if next_room == null:
+		return {"valid": false, "error": "ERRO: não foi possível instanciar a cena destino."}
+	next_room.process_mode = Node.PROCESS_MODE_DISABLED
+	if not next_room.has_method("configure_run_managed"):
+		next_room.free()
+		return {"valid": false, "error": "ERRO: a cena de sala não oferece integração gerenciada."}
+	if not next_room.has_signal("run_progression_ready"):
+		next_room.free()
+		return {"valid": false, "error": "ERRO: a sala não oferece o sinal run_progression_ready."}
+	var descriptor: Dictionary = proposal.get("descriptor", {}).duplicate(true)
+	var floor_index: int = int(proposal.get("floor", current_floor))
+	var room_index: int = int(proposal.get("room", current_room))
+	var room_ordinal: int = 1 + (floor_index - 1) * (common_rooms_per_floor + 1) + (room_index - 1)
+	descriptor["enemy_level"] = maxi(room_ordinal, 1)
+	var requested_seed: int = int(descriptor.get("room_seed", 0))
+	if not bool(next_room.call("configure_run_managed", _run_build, true, requested_seed, descriptor, enemy_level_config)):
+		var layout_error := ""
+		if next_room.has_method("get_authored_layout_error"):
+			layout_error = String(next_room.call("get_authored_layout_error"))
+		next_room.free()
+		var failure := "ERRO: não foi possível configurar a sala para esta run."
+		if not layout_error.is_empty():
+			failure += " Layout: " + layout_error
+		return {"valid": false, "error": failure}
+	return {"valid": true, "room": next_room}
+
+func _validate_attached_candidate(candidate: Node) -> Dictionary:
+	if candidate.has_method("is_authored_layout_valid") \
+		and not bool(candidate.call("is_authored_layout_valid")):
+		var layout_error := ""
+		if candidate.has_method("get_authored_layout_error"):
+			layout_error = String(candidate.call("get_authored_layout_error"))
+		return {"valid": false, "error": "ERRO: a sala candidata falhou na validação ao entrar na árvore. " + layout_error}
+	var candidate_player: Player = _find_player(candidate)
+	if candidate_player == null or candidate_player.health == null:
+		return {"valid": false, "error": "ERRO: a sala candidata não contém um jogador com PlayerHealth."}
+	if _run_player_health < 0:
+		return {"valid": true, "player": candidate_player}
+	if _run_player_health <= 0 or _run_player_max_health <= 0:
+		return {"valid": false, "error": "ERRO: snapshot de HP inválido; a sala candidata foi descartada."}
+	if not candidate_player.health.restore_health_for_room_transition(_run_player_health, _run_player_max_health):
+		return {"valid": false, "error": "ERRO: não foi possível restaurar o HP na sala candidata."}
+	return {"valid": true, "player": candidate_player}
+
+func _commit_room_candidate(candidate: Node, candidate_player: Player, proposal: Dictionary, source: Node) -> void:
+	if source != null:
+		_disconnect_room_player_signals(source)
+	_commit_stage_proposal(proposal)
+	current_room_instance = candidate
+	candidate.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_connect_room_player_signals(candidate, candidate_player)
+	_connect_room_progression_signal(candidate)
+	_apply_run_upgrades(candidate)
+	if source != null and _boss_reward_room_id == source.get_instance_id():
+		_boss_reward_room_id = 0
+		_boss_reward_name = ""
+		_boss_reward_applied = false
+	_update_hud("ENCONTRO ATIVO")
+
+func _connect_room_player_signals(room: Node, room_player: Player) -> void:
+	if room == null or not is_instance_valid(room) or room_player == null or not is_instance_valid(room_player):
+		return
+	var room_id: int = room.get_instance_id()
+	var health_callback := Callable(self, "_on_room_health_changed").bind(room)
+	var died_callback := Callable(self, "_on_room_player_died").bind(room)
+	if not room_player.health_changed.is_connected(health_callback):
+		room_player.health_changed.connect(health_callback)
+	if not room_player.died.is_connected(died_callback):
+		room_player.died.connect(died_callback)
+	_room_signal_connections[room_id] = {"player": room_player, "health": health_callback, "died": died_callback}
+	_on_room_health_changed(room_player.current_health, room_player.maximum_health, room)
+
+func _disconnect_room_player_signals(room: Node) -> void:
+	if room == null or not is_instance_valid(room):
+		return
+	var room_id: int = room.get_instance_id()
+	var connection_data: Dictionary = _room_signal_connections.get(room_id, {})
+	var room_player: Player = connection_data.get("player") as Player
+	var health_callback: Callable = connection_data.get("health", Callable())
+	var died_callback: Callable = connection_data.get("died", Callable())
+	if room_player != null and is_instance_valid(room_player):
+		if health_callback.is_valid() and room_player.health_changed.is_connected(health_callback):
+			room_player.health_changed.disconnect(health_callback)
+		if died_callback.is_valid() and room_player.died.is_connected(died_callback):
+			room_player.died.disconnect(died_callback)
+	_room_signal_connections.erase(room_id)
+
+func _connect_room_progression_signal(room: Node) -> void:
+	if room == null or not is_instance_valid(room) or not room.has_signal("run_progression_ready"):
+		return
+	var progression_callback := Callable(self, "_on_room_progression_ready").bind(room)
+	if not room.is_connected("run_progression_ready", progression_callback):
+		room.connect("run_progression_ready", progression_callback, CONNECT_ONE_SHOT)
+
+func _transition_source_matches(room: Node, transition_token: int, allow_detached: bool = false) -> bool:
+	if _run_ended or _restart_in_progress or room == null or not is_instance_valid(room) \
+		or room != current_room_instance or not room.has_method("get_managed_transition_token"):
+		return false
+	if not allow_detached and not room.is_inside_tree():
+		return false
+	return int(room.call("get_managed_transition_token")) == transition_token
+
+func _present_recoverable_transition_error(source: Node, transition_token: int, message: String, proposal: Dictionary) -> void:
+	if _run_ended or _restart_in_progress:
+		_finish_managed_transition(false)
+		return
+	if source == null or not is_instance_valid(source) or source != current_room_instance:
+		transition_pending = true
+		_present_technical_error(message, proposal, null, &"", false)
+		return
+	if not source.is_inside_tree():
+		room_container.add_child(source)
+	if not source.has_method("recover_managed_transition_failure") \
+		or not bool(source.call("recover_managed_transition_failure", transition_token, message)):
+		transition_pending = true
+		_present_technical_error(message + " A sala concluída não pôde ser reativada com segurança.", proposal, null, &"", false)
+		return
+	_pending_stage_proposal = proposal.duplicate(true) if bool(proposal.get("valid", false)) else {}
+	_pending_stage_source = source
+	_connect_room_progression_signal(source)
+	transition_pending = true
+	_update_hud("ERRO TÉCNICO NA PRÓXIMA SALA")
+	_present_technical_error(message, proposal, source, &"", false)
+
+func _present_restart_only_technical_error(message: String, proposal: Dictionary) -> void:
+	if _run_ended or _restart_in_progress:
+		return
+	transition_pending = true
+	_present_technical_error(message, proposal, null, &"", false)
+
+func _on_room_progression_ready(transition_token: int, room: Node) -> void:
+	if _run_ended or transition_pending or room != current_room_instance:
+		return
+	if not _transition_source_matches(room, transition_token):
+		return
+	transition_pending = true
+	call_deferred("_advance_after_room", room, transition_token)
+
+func _advance_after_room(completed_room: Node, transition_token: int) -> void:
+	if not _transition_source_matches(completed_room, transition_token):
+		_present_restart_only_technical_error("ERRO: a sala concluída não está mais disponível para avançar.", _next_stage_proposal())
+		return
+
+	if _is_final_boss():
+		_run_ended = true
+		_show_victory_screen()
+		return
+
+	if transition_delay > 0.0:
+		_update_hud("SALA CONCLUÍDA. PRÓXIMA ETAPA EM %.1f s." % transition_delay)
+		var delay_timer: SceneTreeTimer = get_tree().create_timer(transition_delay)
+		await delay_timer.timeout
+	else:
+		_update_hud("SALA CONCLUÍDA. PREPARANDO PRÓXIMA ETAPA.")
+	if not _transition_source_matches(completed_room, transition_token):
+		_present_restart_only_technical_error("ERRO: a sala concluída deixou de estar disponível após a preparação.", _next_stage_proposal())
+		return
+	_owned_transition_pause = not get_tree().paused
+	if _owned_transition_pause:
+		get_tree().paused = true
+	await _fade_managed_transition_to(1.0, 0.18)
+	if not _transition_source_matches(completed_room, transition_token):
+		_finish_managed_transition(false)
+		if not _run_ended and not _restart_in_progress:
+			_present_technical_error("ERRO: a origem da transição deixou de estar disponível após o fade.", _next_stage_proposal(), null, &"", false)
+		return
+
+	var proposal: Dictionary
+	if _pending_stage_source == completed_room and bool(_pending_stage_proposal.get("valid", false)):
+		proposal = _pending_stage_proposal.duplicate(true)
+	else:
+		proposal = _next_stage_proposal()
+	if not bool(proposal.get("valid", false)):
+		_present_recoverable_transition_error(completed_room, transition_token, String(proposal.get("error", "falha ao preparar a próxima etapa")), proposal)
+		return
+	_pending_stage_proposal = proposal.duplicate(true)
+	_pending_stage_source = completed_room
+
+	var candidate_result: Dictionary = _prepare_room_candidate(proposal)
+	if not bool(candidate_result.get("valid", false)):
+		_present_recoverable_transition_error(completed_room, transition_token, String(candidate_result.get("error", "falha técnica ao preparar a próxima sala")), proposal)
+		return
+	var candidate: Node = candidate_result.get("room") as Node
+	var source_player: Player = _find_player(completed_room)
+	if source_player == null or source_player.health == null or source_player.is_dead:
+		candidate.free()
+		if source_player != null and source_player.is_dead:
+			_on_room_player_died(completed_room)
+			_finish_managed_transition(false)
+			return
+		_present_recoverable_transition_error(completed_room, transition_token, "ERRO: não foi possível confirmar o estado de HP da sala concluída.", proposal)
+		return
+	_run_player_health = source_player.health.current_health
+	_run_player_max_health = source_player.health.maximum_health
+	if _run_player_health <= 0 or _run_player_max_health <= 0:
+		candidate.free()
+		_present_recoverable_transition_error(completed_room, transition_token, "ERRO: snapshot de HP inválido na sala concluída.", proposal)
+		return
+
+	room_container.remove_child(completed_room)
+	await get_tree().process_frame
+	var source_is_detached: bool = is_instance_valid(completed_room) and not completed_room.is_inside_tree()
+	if not source_is_detached or not _transition_source_matches(completed_room, transition_token, true):
+		candidate.free()
+		if is_instance_valid(completed_room) and completed_room == current_room_instance \
+			and not completed_room.is_inside_tree():
+			room_container.add_child(completed_room)
+		if _run_ended or _restart_in_progress:
+			_finish_managed_transition(false)
+			return
+		_finish_managed_transition(false)
+		_present_technical_error("ERRO: a sala concluída deixou de ser uma origem válida durante a preparação.", proposal, null, &"", false)
+		return
+
+	room_container.add_child(candidate)
+	var attached_result: Dictionary = _validate_attached_candidate(candidate)
+	if not bool(attached_result.get("valid", false)):
+		room_container.remove_child(candidate)
+		candidate.queue_free()
+		await get_tree().process_frame
+		if is_instance_valid(completed_room) and completed_room == current_room_instance \
+			and not completed_room.is_inside_tree():
+			room_container.add_child(completed_room)
+		if _run_ended or _restart_in_progress:
+			_finish_managed_transition(false)
+			return
+		_present_recoverable_transition_error(completed_room, transition_token, String(attached_result.get("error", "falha técnica ao validar a próxima sala")), proposal)
+		return
+	var source_remains_detached: bool = is_instance_valid(completed_room) and not completed_room.is_inside_tree()
+	if not source_remains_detached or not _transition_source_matches(completed_room, transition_token, true):
+		room_container.remove_child(candidate)
+		candidate.queue_free()
+		await get_tree().process_frame
+		if is_instance_valid(completed_room) and completed_room == current_room_instance \
+			and not completed_room.is_inside_tree():
+			room_container.add_child(completed_room)
+		if _run_ended or _restart_in_progress:
+			_finish_managed_transition(false)
+			return
+		_finish_managed_transition(false)
+		_present_technical_error("ERRO: a origem da transição mudou antes da confirmação da sala candidata.", proposal, null, &"", false)
+		return
+
+	var candidate_player: Player = attached_result.get("player") as Player
+	_commit_room_candidate(candidate, candidate_player, proposal, completed_room)
+	completed_room.queue_free()
+	_pending_stage_proposal.clear()
+	_pending_stage_source = null
+	transition_pending = false
+	await _fade_managed_transition_to(0.0, 0.22)
+	if _run_ended or _restart_in_progress:
+		_finish_managed_transition(false)
+		return
+	if not is_instance_valid(current_room_instance) or not current_room_instance.is_inside_tree():
+		_finish_managed_transition(false)
+		_present_restart_only_technical_error("ERRO: a sala candidata deixou de estar disponível após o commit.", _current_stage_proposal())
+		return
+	_finish_managed_transition(true)
+
+func _boss_reward_is_applied_for(room: Node) -> bool:
+	return room != null and is_instance_valid(room) \
+		and _boss_reward_applied and _boss_reward_room_id == room.get_instance_id()
+
+func _update_hud(status_text: String) -> void:
+	var stage_text := (
+		"CHEFE"
+		if _is_boss_room()
+		else "SALA %d/%d" % [current_room, common_rooms_per_floor]
+	)
+	if progress_label != null:
+		progress_label.text = "ANDAR %02d/%02d | %s | SEED %d" % [
+			current_floor,
+			floors_per_run,
+			stage_text,
+			_resolved_run_seed,
+		]
+	if status_label != null:
+		status_label.text = status_text
+
+
+func _show_victory_screen() -> void:
+	_legitimate_run_end = true
+	_show_run_summary(true, "")
+
+func _show_game_over_screen(message_text: String = "O robô ficou sem energia.") -> void:
+	if message_text != "O robô ficou sem energia.":
+		_legitimate_run_end = false
+		_show_legacy_game_over_screen(message_text)
+		return
+	_legitimate_run_end = true
+	_show_run_summary(false, "ROBO SEM ENERGIA")
+
+func _show_run_summary(is_victory: bool, cause_text: String) -> void:
+	if is_instance_valid(_result_overlay):
+		return
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	_result_pause_owned = not tree.paused
+	if _result_pause_owned:
+		tree.paused = true
+
+	var overlay: CanvasLayer = CanvasLayer.new()
+	overlay.name = "RunResultOverlay"
+	overlay.layer = 90
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+	_result_overlay = overlay
+
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.name = "Backdrop"
+	backdrop.color = Color(0.031, 0.055, 0.078, 0.96)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+
+	var panel: PanelContainer = PanelContainer.new()
+	panel.name = "ResultPanel"
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var panel_width: float = minf(720.0, maxf(240.0, viewport_size.x - 32.0))
+	var panel_height: float = minf(360.0, maxf(220.0, viewport_size.y - 32.0))
+	panel.custom_minimum_size = Vector2(panel_width, panel_height)
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color("#0C1B29")
+	panel_style.border_color = Color("#D2A75C") if is_victory else Color("#B84B42")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(0)
+	panel_style.content_margin_left = 24
+	panel_style.content_margin_right = 24
+	panel_style.content_margin_top = 18
+	panel_style.content_margin_bottom = 18
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	panel.add_child(content)
+
+	var title_text: String = "RUN CONCLUIDA" if is_victory else "FIM DA RUN"
+	var title_color: Color = Color("#D2A75C") if is_victory else Color("#E86B69")
+	_add_result_bitmap_text(content, "Title", title_text, title_color, 36.0)
+
+	var position_text: String = "CHEGOU AO ANDAR %02d, SALA %02d" % [current_floor, current_room]
+	_add_result_bitmap_text(content, "ReachedPosition", position_text, Color("#E8D8B5"), 28.0)
+
+	var acquisition_count: int = _run_build.total_count() if _run_build != null else 0
+	var health_text: String = "HP %d/%d    UPGRADES %d" % [
+		maxi(_run_player_health, 0),
+		maxi(_run_player_max_health, 0),
+		acquisition_count,
+	]
+	_add_result_bitmap_text(content, "RunState", health_text, Color("#B6BEC3"), 24.0)
+	if not cause_text.is_empty():
+		_add_result_bitmap_text(content, "Cause", cause_text, Color("#E8D8B5"), 24.0)
+
+	_result_error_text = _add_result_bitmap_text(content, "ReturnError", "", Color("#E86B69"), 24.0)
+	_result_error_text.visible = false
+
+	var return_button: Button = Button.new()
+	return_button.name = "ReturnToLobby"
+	return_button.text = ""
+	return_button.custom_minimum_size = Vector2(minf(panel_width - 48.0, 360.0), 52.0)
+	return_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return_button.focus_mode = Control.FOCUS_ALL
+	var button_normal: StyleBoxFlat = StyleBoxFlat.new()
+	button_normal.bg_color = Color("#203E50")
+	button_normal.border_color = Color("#879198")
+	button_normal.set_border_width_all(2)
+	button_normal.set_corner_radius_all(0)
+	var button_hover: StyleBoxFlat = button_normal.duplicate() as StyleBoxFlat
+	button_hover.bg_color = Color("#353B3B")
+	button_hover.border_color = Color("#D2A75C")
+	var button_pressed: StyleBoxFlat = button_normal.duplicate() as StyleBoxFlat
+	button_pressed.bg_color = Color("#142C40")
+	button_pressed.border_color = Color("#E8D8B5")
+	return_button.add_theme_stylebox_override("normal", button_normal)
+	return_button.add_theme_stylebox_override("hover", button_hover)
+	return_button.add_theme_stylebox_override("pressed", button_pressed)
+	return_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	content.add_child(return_button)
+	_result_return_button = return_button
+	return_button.pressed.connect(_return_to_lobby)
+	_add_result_bitmap_text(
+		return_button,
+		"Text",
+		"VOLTAR AO LOBBY",
+		Color("#E8D8B5"),
+		24.0
+	)
+
+func _add_result_bitmap_text(
+	parent: Node,
+	node_name: String,
+	value: String,
+	font_color: Color,
+	minimum_height: float
+) -> Control:
+	var frame: Control = Control.new()
+	frame.name = node_name + "Frame"
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.custom_minimum_size = Vector2(0.0, minimum_height)
+	if parent is Container:
+		frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	else:
+		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	parent.add_child(frame)
+
+	var label: Control = Control.new()
+	label.name = node_name
+	label.set_script(HudBitmapTextScript)
+	label.set("text", value)
+	label.set("font_color", font_color)
+	label.set("center_text", true)
+	label.set("max_lines", 1)
+	label.scale = Vector2(2.0, 2.0)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(label)
+	frame.resized.connect(Callable(self, "_layout_result_bitmap_text").bind(frame, label))
+	_layout_result_bitmap_text(frame, label)
+	return label
+
+func _layout_result_bitmap_text(frame: Control, label: Control) -> void:
+	if not is_instance_valid(frame) or not is_instance_valid(label):
+		return
+	label.size = Vector2(frame.size.x * 0.5, 12.0)
+	label.position = Vector2(0.0, floorf((frame.size.y - 22.0) * 0.5))
+
+
+func _return_to_lobby() -> void:
+	if not _run_ended or not _legitimate_run_end or _returning_to_lobby \
+		or is_instance_valid(_technical_error_layer) or not is_instance_valid(_result_overlay):
+		return
+	_returning_to_lobby = true
+	if is_instance_valid(_result_return_button):
+		_result_return_button.disabled = true
+	if is_instance_valid(_result_error_text):
+		_result_error_text.visible = false
+
+	var source_room: Node = current_room_instance
+	var source_process_mode: int = Node.PROCESS_MODE_INHERIT
+	var source_process_mode_saved: bool = false
+	if source_room != null and is_instance_valid(source_room):
+		source_process_mode = source_room.process_mode
+		source_room.process_mode = Node.PROCESS_MODE_DISABLED
+		source_process_mode_saved = true
+
+	RoomTransition.clear_pending_snapshot()
+	await _fade_managed_transition_to(1.0, 0.18)
+
+	if not _run_ended or not _legitimate_run_end or is_instance_valid(_technical_error_layer):
+		if source_process_mode_saved and is_instance_valid(source_room):
+			source_room.process_mode = source_process_mode
+		_returning_to_lobby = false
+		if is_instance_valid(_result_return_button):
+			_result_return_button.disabled = false
+		_hide_managed_transition_fade()
+		return
+
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		_restore_failed_lobby_return(source_room, source_process_mode, source_process_mode_saved, false, false)
+		return
+	var pause_before_change: bool = tree.paused
+	var released_result_pause: bool = _result_pause_owned and tree.paused
+	if released_result_pause:
+		tree.paused = false
+	RoomTransition.clear_pending_snapshot()
+	var change_error: int = tree.change_scene_to_file(LOBBY_SCENE_PATH)
+	if change_error == OK:
+		_result_pause_owned = false
+		return
+	_restore_failed_lobby_return(
+		source_room,
+		source_process_mode,
+		source_process_mode_saved,
+		released_result_pause,
+		pause_before_change
+	)
+
+func _restore_failed_lobby_return(
+	source_room: Node,
+	source_process_mode: int,
+	source_process_mode_saved: bool,
+	restore_pause: bool,
+	pause_before_change: bool
+) -> void:
+	if source_process_mode_saved and source_room != null and is_instance_valid(source_room):
+		source_room.process_mode = source_process_mode
+	var tree: SceneTree = get_tree()
+	if restore_pause and tree != null:
+		tree.paused = pause_before_change
+	_returning_to_lobby = false
+	if is_instance_valid(_result_return_button):
+		_result_return_button.disabled = false
+	if is_instance_valid(_result_error_text):
+		_result_error_text.call("set_text", "FALHA AO ABRIR O LOBBY")
+		_result_error_text.visible = true
+	_hide_managed_transition_fade()
+
+func _show_legacy_game_over_screen(message_text: String) -> void:
+	var overlay: CanvasLayer = CanvasLayer.new()
+	overlay.name = "GameOverOverlay"
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.color = Color(0.02, 0.04, 0.08, 0.94)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(backdrop)
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+	var panel: PanelContainer = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(620.0, 280.0)
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color("#101c2c")
+	panel_style.border_color = Color("#e86b69")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(14)
+	panel_style.content_margin_left = 32
+	panel_style.content_margin_right = 32
+	panel_style.content_margin_top = 28
+	panel_style.content_margin_bottom = 28
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 20)
+	panel.add_child(content)
+	var title: Label = Label.new()
+	title.text = "RUN ENCERRADA"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", Color("#e86b69"))
+	content.add_child(title)
+	var message: Label = Label.new()
+	message.text = message_text
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_size_override("font_size", 20)
+	content.add_child(message)
+	var restart_button: Button = Button.new()
+	restart_button.text = "TENTAR NOVAMENTE"
+	restart_button.custom_minimum_size = Vector2(260.0, 54.0)
+	restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	restart_button.pressed.connect(_restart_run)
+	content.add_child(restart_button)
+	get_tree().paused = true
+
+
+func _ensure_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_layer) and is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_layer = CanvasLayer.new()
+	_transition_fade_layer.name = "ManagedRoomTransitionFade"
+	_transition_fade_layer.layer = 100
+	_transition_fade_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_transition_fade_layer)
+	_transition_fade_rect = ColorRect.new()
+	_transition_fade_rect.name = "Fade"
+	_transition_fade_rect.color = Color(0.0, 0.0, 0.0, 0.0)
+	_transition_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_fade_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_fade_layer.add_child(_transition_fade_rect)
+
+func _fade_managed_transition_to(target_alpha: float, duration: float) -> void:
+	_ensure_transition_fade()
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_rect.show()
+	var start_alpha := _transition_fade_rect.color.a
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_method(_set_managed_fade_alpha, start_alpha, target_alpha, duration)
+	await tween.finished
+
+func _set_managed_fade_alpha(alpha: float) -> void:
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	var tint := _transition_fade_rect.color
+	tint.a = clampf(alpha, 0.0, 1.0)
+	_transition_fade_rect.color = tint
+
+func _finish_managed_transition(release_owned_pause: bool) -> void:
+	if is_instance_valid(_transition_fade_layer):
+		_transition_fade_layer.queue_free()
+	_transition_fade_layer = null
+	_transition_fade_rect = null
+	if release_owned_pause and not _run_ended and _owned_transition_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_transition_pause = false
+
+func _hide_managed_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_rect):
+		_set_managed_fade_alpha(0.0)
+		_transition_fade_rect.hide()
+
+func fail_managed_room_transition(room: Node, message: String) -> void:
+	if _run_ended or room != current_room_instance:
+		return
+	_run_ended = true
+	transition_pending = true
+	_update_hud("FALHA NA TRANSIÇÃO: %s" % message)
+	call_deferred("_present_managed_transition_failure")
+
+func _present_managed_transition_failure() -> void:
+	_finish_managed_transition(false)
+	_owned_transition_pause = not get_tree().paused
+	if _owned_transition_pause:
+		get_tree().paused = true
+	if _run_ended:
+		_show_game_over_screen("A transição da sala falhou.")
+
+
+func _present_technical_error(message: String, proposal: Dictionary, source: Node, retry_kind: StringName, allow_initial_retry: bool) -> void:
+	if is_instance_valid(_technical_error_layer):
+		_technical_error_layer.queue_free()
+	_technical_error_source = source if source != null and is_instance_valid(source) \
+		and source == current_room_instance and source.is_inside_tree() else null
+	_technical_retry_kind = retry_kind
+	_technical_retry_proposal = proposal.duplicate(true)
+	if not get_tree().paused:
+		_technical_error_pause_owned = true
+		get_tree().paused = true
+	var overlay := CanvasLayer.new()
+	overlay.name = "ManagedRoomTechnicalError"
+	overlay.layer = 200
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+	_technical_error_layer = overlay
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.02, 0.04, 0.08, 0.96)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(backdrop)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(820.0, 380.0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color("#101c2c")
+	panel_style.border_color = Color("#f0b35b")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(14)
+	panel_style.content_margin_left = 30
+	panel_style.content_margin_right = 30
+	panel_style.content_margin_top = 26
+	panel_style.content_margin_bottom = 26
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 16)
+	panel.add_child(content)
+	var title := Label.new()
+	title.text = "ERRO TÉCNICO — RUN PRESERVADA"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color("#f0b35b"))
+	content.add_child(title)
+	var details := Label.new()
+	details.text = _technical_error_details(message, proposal)
+	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	details.custom_minimum_size = Vector2(740.0, 190.0)
+	content.add_child(details)
+	if _technical_error_source != null:
+		var return_button := Button.new()
+		return_button.text = "VOLTAR À SALA CONCLUÍDA"
+		return_button.custom_minimum_size = Vector2(300.0, 48.0)
+		return_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		return_button.pressed.connect(_return_to_completed_room)
+		content.add_child(return_button)
+	elif allow_initial_retry:
+		var retry_button := Button.new()
+		retry_button.text = "TENTAR NOVAMENTE COM A MESMA SEED"
+		retry_button.custom_minimum_size = Vector2(360.0, 48.0)
+		retry_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		retry_button.pressed.connect(_retry_initial_load)
+		content.add_child(retry_button)
+	var restart_button := Button.new()
+	restart_button.text = "REINICIAR RUN"
+	restart_button.custom_minimum_size = Vector2(240.0, 42.0)
+	restart_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	restart_button.pressed.connect(_restart_run)
+	content.add_child(restart_button)
+
+func _technical_error_details(message: String, proposal: Dictionary) -> String:
+	var floor_index: int = int(proposal.get("floor", current_floor))
+	var room_index: int = int(proposal.get("room", current_room))
+	var descriptor: Dictionary = proposal.get("descriptor", {})
+	var destination_text := "Andar %d, sala %d" % [floor_index, room_index]
+	var family_text := String(descriptor.get("family", proposal.get("last_family", "indisponível")))
+	var room_seed_text := "indisponível"
+	if descriptor.has("room_seed"):
+		room_seed_text = str(int(descriptor.get("room_seed", 0)))
+	destination_text += " — família %s, seed da sala %s" % [family_text, room_seed_text]
+	return "%s\n\nSeed da run: %d\nDestino: %s" % [message, _resolved_run_seed, destination_text]
+
+func _dismiss_technical_error() -> void:
+	if is_instance_valid(_technical_error_layer):
+		_technical_error_layer.queue_free()
+	_technical_error_layer = null
+	_technical_error_source = null
+
+func _release_technical_error_pause() -> void:
+	if _technical_error_pause_owned and get_tree().paused:
+		get_tree().paused = false
+	_technical_error_pause_owned = false
+
+func _return_to_completed_room() -> void:
+	var source: Node = _technical_error_source
+	if source == null or not is_instance_valid(source) or source != current_room_instance or not source.is_inside_tree():
+		return
+	_dismiss_technical_error()
+	transition_pending = false
+	_connect_room_progression_signal(source)
+	_update_hud("SALA CONCLUÍDA — ATRAVESSE A SAÍDA PARA TENTAR DE NOVO")
+	if is_instance_valid(_transition_fade_layer):
+		_finish_managed_transition(true)
+	else:
+		_release_technical_error_pause()
+
+func _retry_initial_load() -> void:
+	if not is_instance_valid(_technical_error_layer) \
+		or is_instance_valid(current_room_instance) \
+		or _run_ended or _restart_in_progress \
+		or _technical_error_source != null:
+		return
+	var retry_kind: StringName = _technical_retry_kind
+	var retry_proposal: Dictionary = _technical_retry_proposal.duplicate(true)
+	_dismiss_technical_error()
+	if retry_kind == &"floor_plan":
+		if not _prepare_current_floor_plan():
+			_present_technical_error(_initial_floor_plan_error, {}, null, &"floor_plan", true)
+			return
+		retry_proposal = _current_stage_proposal()
+	if not bool(retry_proposal.get("valid", false)):
+		retry_proposal = _current_stage_proposal()
+	if not _load_current_encounter(retry_proposal):
+		return
+	_release_technical_error_pause()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _run_ended or _returning_to_lobby or not event is InputEventKey:
+		return
+	var key_event: InputEventKey = event as InputEventKey
+	if not key_event.pressed or key_event.echo or key_event.keycode != KEY_R:
+		return
+	if _legitimate_run_end and is_instance_valid(_result_overlay) \
+		and not is_instance_valid(_technical_error_layer):
+		get_viewport().set_input_as_handled()
+		_return_to_lobby()
+	elif not _legitimate_run_end:
+		get_viewport().set_input_as_handled()
+		_restart_run()
+
+func _restart_run() -> void:
+	if (not _run_ended and not is_instance_valid(_technical_error_layer)) or _restart_in_progress:
+		return
+	_restart_in_progress = true
+	_dismiss_technical_error()
+	_technical_error_pause_owned = false
+	_finish_managed_transition(false)
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+func _apply_reward(reward_name: String) -> void:
+	match reward_name:
+		"Núcleo de impacto":
+			_damage_multiplier *= 1.25
+		"Propulsor":
+			_speed_multiplier *= 1.15
+		"Esfera ampliada":
+			_radius_multiplier *= 1.15
+
+
+func _apply_run_upgrades(node: Node) -> void:
+	if node is BallLauncher:
+		(node as BallLauncher).set_run_reward_multipliers(
+			_damage_multiplier,
+			_speed_multiplier,
+			_radius_multiplier
+		)
+	for child in node.get_children():
+		_apply_run_upgrades(child)
+
+
+func _find_player(node: Node) -> Player:
+	if node is Player:
+		return node as Player
+	for child in node.get_children():
+		var found := _find_player(child)
+		if found != null:
+			return found
+	return null
+
+
+func _on_room_player_died(room: Node) -> void:
+	if room != current_room_instance or _run_ended:
+		return
+	_run_ended = true
+	transition_pending = true
+	_dismiss_technical_error()
+	_technical_error_pause_owned = false
+	_finish_managed_transition(false)
+	if is_instance_valid(_active_reward_screen) and _active_reward_screen.has_method("cancel_offer"):
+		_active_reward_screen.call("cancel_offer")
+	call_deferred("_present_game_over_after_physics")
+
+func _present_game_over_after_physics() -> void:
+	_close_owned_reward_pause()
+	if _run_ended:
+		_show_game_over_screen()
+
+func _close_owned_reward_pause() -> void:
+	if _owned_reward_pause and not _run_ended and get_tree().paused:
+		get_tree().paused = false
+	_owned_reward_pause = false
+
+func _on_room_health_changed(current_health: int, maximum_health: int, room: Node) -> void:
+	if room != current_room_instance or not is_instance_valid(room):
+		return
+	_run_player_health = current_health
+	_run_player_max_health = maximum_health
+
+func _discard_current_room(message: String) -> void:
+	var room_to_discard := current_room_instance
+	current_room_instance = null
+	if is_instance_valid(room_to_discard):
+		if room_to_discard.is_inside_tree():
+			room_container.remove_child(room_to_discard)
+		room_to_discard.queue_free()
+	_present_technical_error(message, _current_stage_proposal(), null, &"initial_load", true)
+
+func _fail_run(message: String) -> void:
+	push_error("RunController: " + message)
+	_update_hud(message)
+	_present_technical_error(message, _current_stage_proposal(), current_room_instance, &"initial_load", current_room_instance == null)
+
+FILE scripts/ui/hud/bitmap_text.gd
+class_name HudBitmapText
+extends Control
+
+const FONT_METADATA_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font.json"
+const FONT_ATLAS_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font-atlas.png"
+
+@export var text: String = "":
+	set(value):
+		if text == value:
+			return
+		text = value
+		queue_redraw()
+@export var font_color: Color = Color("E8D8B5"):
+	set(value):
+		if font_color == value:
+			return
+		font_color = value
+		queue_redraw()
+@export_range(1, 4, 1) var max_lines: int = 1
+@export var center_text: bool = false
+@export var right_align: bool = false
+
+var _font_atlas: Texture2D
+var _glyphs: Dictionary = {}
+var _advance: int = 6
+var _line_height: int = 12
+var _warned_missing_glyph: bool = false
+
+static func load_font_bundle() -> Dictionary:
+	if not ResourceLoader.exists(FONT_METADATA_PATH) or not ResourceLoader.exists(FONT_ATLAS_PATH):
+		return {"valid": false, "reason": "fonte bitmap do HUD ausente"}
+	var metadata_resource: Resource = ResourceLoader.load(FONT_METADATA_PATH)
+	var atlas_resource: Resource = ResourceLoader.load(FONT_ATLAS_PATH)
+	var metadata_json: JSON = metadata_resource as JSON
+	var font_atlas: Texture2D = atlas_resource as Texture2D
+	if metadata_json == null or font_atlas == null:
+		return {"valid": false, "reason": "metadados ou atlas da fonte bitmap inválidos"}
+	var raw_data: Variant = metadata_json.data
+	if typeof(raw_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "font.json não contém um objeto"}
+	var font_data: Dictionary = raw_data as Dictionary
+	var raw_glyphs: Variant = font_data.get("glyphs", null)
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "font.json não contém a lista de glifos"}
+	var glyphs: Dictionary = {}
+	var glyph_list: Array = raw_glyphs as Array
+	for glyph_variant: Variant in glyph_list:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant as Dictionary
+		var codepoint: int = int(glyph_data.get("codepoint", -1))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if codepoint < 0 or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant as Dictionary
+		var glyph_rect: Rect2i = Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > font_atlas.get_width() \
+			or glyph_rect.end.y > font_atlas.get_height():
+			continue
+		glyphs[String.chr(codepoint)] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 0)), 1),
+		}
+	var advance: int = int(font_data.get("advance", 0))
+	var line_height: int = int(font_data.get("line_height", 0))
+	if glyphs.is_empty() or advance <= 0 or line_height <= 0 or not glyphs.has(" "):
+		return {"valid": false, "reason": "métricas incompletas da fonte bitmap"}
+	return {"valid": true, "atlas": font_atlas, "glyphs": glyphs, "advance": advance, "line_height": line_height}
+
+func configure_font(bundle: Dictionary) -> bool:
+	if not bool(bundle.get("valid", false)):
+		return false
+	_font_atlas = bundle.get("atlas") as Texture2D
+	_glyphs = bundle.get("glyphs", {}) as Dictionary
+	_advance = int(bundle.get("advance", 6))
+	_line_height = int(bundle.get("line_height", 12))
+	var configured: bool = _font_atlas != null and not _glyphs.is_empty() and _advance > 0 and _line_height > 0
+	visible = configured
+	queue_redraw()
+	return configured
+
+func set_text(value: String) -> void:
+	text = value
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if _font_atlas == null:
+		configure_font(load_font_bundle())
+
+func _draw() -> void:
+	if _font_atlas == null or _glyphs.is_empty() or _advance <= 0 or _line_height <= 0:
+		return
+	var lines: Array[String] = _make_lines()
+	for line_index: int in range(lines.size()):
+		var line: String = lines[line_index]
+		var line_width: int = line.length() * _advance
+		var line_x: float = 0.0
+		if center_text:
+			line_x = floorf((size.x - float(line_width)) * 0.5)
+		elif right_align:
+			line_x = floorf(size.x - float(line_width))
+		for char_index: int in range(line.length()):
+			var character: String = line.substr(char_index, 1)
+			var glyph_variant: Variant = _glyphs.get(character, null)
+			if glyph_variant == null:
+				if not _warned_missing_glyph:
+					push_warning("Fonte bitmap do HUD sem glifo para: %s" % character)
+					_warned_missing_glyph = true
+				glyph_variant = _glyphs.get(" ", {})
+			if typeof(glyph_variant) != TYPE_DICTIONARY:
+				continue
+			var glyph_data: Dictionary = glyph_variant as Dictionary
+			var source_rect: Rect2i = glyph_data.get("rect", Rect2i())
+			var source: Rect2 = Rect2(Vector2(source_rect.position), Vector2(source_rect.size))
+			var destination: Rect2 = Rect2(
+				Vector2(line_x + float(char_index * _advance), float(line_index * _line_height)),
+				Vector2(source_rect.size)
+			)
+			draw_texture_rect_region(_font_atlas, destination, source, font_color)
+
+func _make_lines() -> Array[String]:
+	var result: Array[String] = []
+	var max_chars: int = int(floor(size.x / float(_advance)))
+	if max_chars <= 0:
+		return result
+	var source_lines: PackedStringArray = text.replace("—", "-").replace("–", "-").split("\n")
+	for source_line: String in source_lines:
+		var line: String = _normalize_line(source_line)
+		if line.length() > max_chars:
+			line = line.substr(0, max_chars)
+			if max_chars > 1 and not line.ends_with("-"):
+				line = line.substr(0, max_chars - 1) + "-"
+		result.append(line)
+		if result.size() >= max_lines:
+			break
+	return result
+
+func _normalize_line(value: String) -> String:
+	var normalized: String = ""
+	for index: int in range(value.length()):
+		var character: String = value.substr(index, 1)
+		var prior_character: String = value.substr(index - 1, 1) if index > 0 else ""
+		if character == "s" and prior_character >= "0" and prior_character <= "9":
+			normalized += "s"
+		else:
+			normalized += character.to_upper()
+	return normalized
+FILE scripts/world/room_transition.gd
+extends RefCounted
+
+## Snapshot simples e one-shot que atravessa uma troca de cena. Não persiste
+## RunBuild nem qualquer Resource vivo.
+
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+
+static var _pending_snapshot: Dictionary = {}
+
+static func prepare_run_snapshot(
+	destination_scene: PackedScene,
+	current_health: Variant,
+	maximum_health: Variant,
+	build: RunBuild
+) -> bool:
+	_pending_snapshot.clear()
+	if destination_scene == null or not is_instance_valid(destination_scene) or build == null:
+		return false
+	if typeof(current_health) != TYPE_INT or typeof(maximum_health) != TYPE_INT:
+		return false
+
+	var canonical_destination := destination_scene.resource_path
+	if not _is_canonical_resource_path(canonical_destination):
+		return false
+	var build_data := build.to_snapshot_data()
+	var snapshot := {
+		"version": 1,
+		"canonical_destination": canonical_destination,
+		"hp_current": current_health,
+		"hp_max": maximum_health,
+		"upgrade_ids": build_data.get("upgrade_ids"),
+		"counts_by_id": build_data.get("counts_by_id"),
+	}
+	if not _is_valid_snapshot(snapshot, canonical_destination):
+		return false
+	_pending_snapshot = snapshot.duplicate(true)
+	return true
+
+static func consume_pending_snapshot(destination_scene: PackedScene) -> Dictionary:
+	if _pending_snapshot.is_empty():
+		return {}
+	var snapshot := _pending_snapshot.duplicate(true)
+	_pending_snapshot.clear()
+	if destination_scene == null or not is_instance_valid(destination_scene):
+		return {}
+	var canonical_destination := destination_scene.resource_path
+	if not _is_canonical_resource_path(canonical_destination):
+		return {}
+	if not _is_valid_snapshot(snapshot, canonical_destination):
+		return {}
+	return snapshot.duplicate(true)
+
+static func clear_pending_snapshot() -> void:
+	_pending_snapshot.clear()
+
+static func _is_valid_snapshot(snapshot: Variant, expected_destination: String) -> bool:
+	if typeof(snapshot) != TYPE_DICTIONARY or not _is_canonical_resource_path(expected_destination):
+		return false
+	var required_keys: Array[String] = [
+		"version",
+		"canonical_destination",
+		"hp_current",
+		"hp_max",
+		"upgrade_ids",
+		"counts_by_id",
+	]
+	if snapshot.size() != required_keys.size():
+		return false
+	for key in required_keys:
+		if not snapshot.has(key):
+			return false
+	if typeof(snapshot["version"]) != TYPE_INT or int(snapshot["version"]) != 1:
+		return false
+	if typeof(snapshot["canonical_destination"]) != TYPE_STRING:
+		return false
+	if String(snapshot["canonical_destination"]) != expected_destination:
+		return false
+	if typeof(snapshot["hp_current"]) != TYPE_INT or typeof(snapshot["hp_max"]) != TYPE_INT:
+		return false
+	var current_health := int(snapshot["hp_current"])
+	var maximum_health := int(snapshot["hp_max"])
+	# PlayerHealth.restore_health_for_room_transition aceita somente máximo 1..100.
+	if maximum_health < 1 or maximum_health > 100 or current_health < 1 or current_health > maximum_health:
+		return false
+	if typeof(snapshot["upgrade_ids"]) != TYPE_ARRAY or typeof(snapshot["counts_by_id"]) != TYPE_DICTIONARY:
+		return false
+	for upgrade_id in snapshot["upgrade_ids"]:
+		if typeof(upgrade_id) != TYPE_STRING:
+			return false
+	for upgrade_id in snapshot["counts_by_id"].keys():
+		if typeof(upgrade_id) != TYPE_STRING:
+			return false
+	var validated_build := RunBuild.new()
+	return validated_build.replace_state(snapshot["upgrade_ids"], snapshot["counts_by_id"])
+
+static func _is_canonical_resource_path(path: String) -> bool:
+	return path.begins_with("res://") and path.length() > "res://".length()
+
+PROJECT_APPLICATION (ONLYDIFF main_scene run_root.tscn ->scenes/lobby.tscn)
+
+[application]
+
+config/name="Selenite Tower"
+run/main_scene="res://scenes/lobby.tscn"
+config/features=PackedStringArray("4.7")
+
+[display]
+
+window/size/mode=3
+window/size/window_width_override=1920
+window/size/window_height_override=1080
+window/stretch/mode="canvas_items"
+
+[input]
+
+move_left={
+"deadzone": 0.5,
+PLAYER_HELPERS
+class_name Player
+extends CharacterBody2D
+
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+
+signal health_changed(current_health: int, maximum_health: int)
+signal died
+
+@export var movement_config: MovementConfig
+
+@onready var movement_controller: MovementController = $MovementController
+@onready var aim_controller: AimController = $AimController
+@onready var player_visual: PlayerVisual = $PlayerVisual
+@onready var reticle_visual: ReticleVisual = $ReticleVisual
+@onready var shot_origin: Node2D = $ShotOrigin
+@onready var ball_launcher: BallLauncher = $BallLauncher
+@onready var trajectory_preview: Node2D = $TrajectoryPreview
+@onready var health: PlayerHealth = $Health
+@onready var racket_controller: RacketController = $RacketController
+@onready var racket_visual: RacketVisual = $PlayerVisual/RacketVisual
+
+var is_dead: bool:
+	get:
+		return health != null and health.is_dead
+var current_health: int:
+	get:
+		return health.current_health if health != null else 0
+var maximum_health: int:
+	get:
+		return health.maximum_health if health != null else 0
+
+var aim_direction: Vector2:
+	get:
+		return aim_controller.aim_direction
+
+var aim_target_position: Vector2:
+	get:
+		return aim_controller.aim_target_position
+
+var _base_movement_config: MovementConfig
+var _death_presentation_applied: bool = false
+
+func _ready() -> void:
+	add_to_group("player")
+	if movement_config == null:
+		movement_config = MovementConfig.new()
+	_base_movement_config = movement_config.duplicate(true) as MovementConfig
+	movement_controller.configure(self, _base_movement_config.duplicate(true) as MovementConfig)
+	movement_controller.reset()
+	health.health_changed.connect(_on_health_changed)
+	health.damage_accepted.connect(_on_damage_accepted)
+	health.died.connect(_on_died)
+	_on_health_changed(health.current_health, health.maximum_health)
+	aim_controller.aim_changed.connect(reticle_visual.set_aim)
+	reticle_visual.set_aim(aim_controller.aim_direction, aim_controller.aim_target_position)
+	racket_controller.set_aim_direction(aim_controller.aim_direction)
+	ball_launcher.configure(self, aim_controller, shot_origin, _find_projectile_parent())
+	ball_launcher.launch_accepted.connect(racket_visual.start_shot)
+	racket_controller.swing_started.connect(racket_visual.start_parry)
+	racket_controller.swing_cancelled.connect(racket_visual.clear_transient)
+	racket_controller.swing_cancelled.connect(_on_swing_cancelled)
+	trajectory_preview.call("configure", aim_controller, shot_origin, ball_launcher)
+
+func apply_run_build(
+	build: RunBuild,
+	acquired_upgrade_id: StringName = &"",
+	previous_rank: int = 0
+) -> void:
+	if _base_movement_config == null:
+		return
+	var derived_config := _base_movement_config.duplicate(true) as MovementConfig
+	if build != null:
+		derived_config.dash_cooldown = UpgradeCatalogScript.dash_cooldown_with_adjustment(
+			build.count_for(&"motor_acelerado"),
+			build.count_for(&"ajuste_recarga_dash")
+		)
+	movement_controller.update_config_preserving_state(derived_config)
+	ball_launcher.apply_run_build(build)
+	if racket_controller != null:
+		racket_controller.apply_run_build(build)
+	if health != null:
+		health.apply_run_build(build, acquired_upgrade_id, previous_rank)
+
+func _physics_process(delta: float) -> void:
+	if is_dead:
+		velocity = Vector2.ZERO
+
+func _on_died() -> void:
+	# take_damage may be called from a projectile sweep; only request a stop here.
+	racket_visual.clear_transient()
+	ball_launcher.request_stop_active_sweep()
+	died.emit()
+
+func finish_death_after_physics() -> void:
+	if _death_presentation_applied:
+		return
+	_death_presentation_applied = true
+	velocity = Vector2.ZERO
+	movement_controller.reset()
+	racket_controller.cancel()
+	trajectory_preview.hide()
+	trajectory_preview.set_physics_process(false)
+	reticle_visual.hide()
+	player_visual.set_dead(true)
+
+func _find_projectile_parent() -> Node:
+	var player_parent := get_parent()
+	if player_parent != null:
+		var ball_container := player_parent.get_node_or_null("BallContainer")
+		if ball_container != null:
+			return ball_container
+	return player_parent
+RUNBUILD_COUNT_API
+class_name RunBuild
+extends RefCounted
+
+## Estado temporário da run. Snapshots usam somente Strings, ints, Arrays e
+## Dictionaries; efeitos e limites pertencem ao catálogo.
+
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+const IMPACTO_REFORCADO: StringName = &"impacto_reforcado"
+const MOTOR_ACELERADO: StringName = &"motor_acelerado"
+const CARGA_REATIVA: StringName = &"carga_reativa"
+const MAX_UPGRADES: int = UpgradeCatalogScript.MAX_RUN_ACQUISITIONS
+
+var _counts_by_id: Dictionary = {}
+
+func _init() -> void:
+	_clear_counts()
+
+func add_upgrade(upgrade_id: StringName) -> bool:
+	var current_rank := count_for(upgrade_id)
+	if total_count() >= MAX_UPGRADES or not UpgradeCatalogScript.can_acquire(upgrade_id, current_rank):
+		return false
+	_counts_by_id[upgrade_id] = current_rank + 1
+	return true
+
+func has_upgrade(upgrade_id: StringName) -> bool:
+	return count_for(upgrade_id) > 0
+
+func count_for(upgrade_id: StringName) -> int:
+	return int(_counts_by_id.get(upgrade_id, 0)) if is_known_upgrade_id(upgrade_id) else 0
+
+func total_count() -> int:
+	return UpgradeCatalogScript.total_rank_count(_counts_by_id)
+
+func get_upgrade_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for upgrade_id in known_upgrade_ids():
+		if count_for(upgrade_id) > 0:
+			result.append(upgrade_id)
+	return result
+
+## Fully validates the incoming legacy/new snapshot before replacing live state.
+func replace_state(upgrade_ids: Variant, counts_by_id: Variant) -> bool:
+LAUNCHER_RESET
+
+func reset() -> void:
+	var ball_to_cleanup := _active_ball
+	if ball_to_cleanup == null or not is_instance_valid(ball_to_cleanup):
+		_active_ball = null
+		return
+	ball_to_cleanup.request_stop_sweep()
+	call_deferred("_cleanup_ball_after_flush", ball_to_cleanup)
+
+func request_stop_active_sweep() -> void:
+	if _active_ball != null and is_instance_valid(_active_ball):
+		_active_ball.request_stop_sweep()
+
+## Call only after the current physics callback/flush has returned.
+func cleanup_active_ball_after_flush() -> void:
+	_cleanup_ball_after_flush(_active_ball)
+
+func _cleanup_ball_after_flush(ball_to_cleanup: RicochetBall) -> void:

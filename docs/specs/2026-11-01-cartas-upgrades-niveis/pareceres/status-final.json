@@ -1,0 +1,16 @@
+{
+  "PlanR1": "findings avaliados R1a/R1b antesescrita",
+  "PlanGeminiR1b": "timeout5min native0 stdoutvazio",
+  "PlanGrokR1b": "exit0stdoutvazio",
+  "CodeA": "Gemini/Grok/Muse semP1",
+  "CodeB": "Gemini/Grok/Muse semP1",
+  "DeltaFinal": "Gemini/Muse favoráveis; Grokexit0stdoutvazio",
+  "OpusAGY": "quota429exit3",
+  "OpusCursorA": "quotaexit1",
+  "OpusCursorB": "quotaexit1",
+  "OpusFinalDelta": "indisponívelporquotaconhecida, semnovaretry",
+  "Runtime": "não executado",
+  "Tests": "none",
+  "Branch": "corrigir-sprites-salas-plataformas",
+  "CommitPush": "none"
+}

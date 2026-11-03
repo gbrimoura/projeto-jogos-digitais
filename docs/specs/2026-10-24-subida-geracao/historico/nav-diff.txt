@@ -1,0 +1,154 @@
+diff --git a/docs/specs/2026-10-24-subida-geracao/historico/base/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index 8018331..cb3c1c9 100644
+--- a/docs/specs/2026-10-24-subida-geracao/historico/base/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -99,7 +99,8 @@ var _pursuit_blocked_edges: Dictionary = {}
+ var _pursuit_stuck_remaining: float = 0.0
+ var _pursuit_detour_active: bool = false
+ var _pursuit_retry_launch_edge: String = ""
+-var _pursuit_retry_launch_x: float = 0.0
++var _pursuit_retry_launch_candidates: Array[float] = []
++var _pursuit_retry_launch_index: int = -1
+ var _locomotion_state: LocomotionState = LocomotionState.GROUND
+ var _jump_plan: Dictionary = {}
+ var _jump_cooldown_remaining: float = JUMP_COOLDOWN
+@@ -294,7 +295,8 @@ func _clear_pursuit_route() -> void:
+ 
+ func _clear_pursuit_launch_retry() -> void:
+ 	_pursuit_retry_launch_edge = ""
+-	_pursuit_retry_launch_x = 0.0
++	_pursuit_retry_launch_candidates.clear()
++	_pursuit_retry_launch_index = -1
+ 
+ func _decay_pursuit_blocks(delta: float) -> void:
+ 	for edge in _pursuit_blocked_edges.keys():
+@@ -525,7 +527,7 @@ func _pursue_via_route(
+ 			_pursuit_stuck_remaining += delta
+ 		if _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT:
+ 			var blocked_edge: String = _pursuit_helper.call("edge_key", source, destination)
+-			if _try_alternate_descent_launch(source, destination, target_x, launch_x):
++			if _try_alternate_pursuit_launch(source, destination, target_x, launch_x):
+ 				return
+ 			_clear_pursuit_launch_retry()
+ 			_pursuit_blocked_edges[blocked_edge] = PURSUIT_EDGE_BLOCK_TIME
+@@ -548,7 +550,7 @@ func _pursue_via_route(
+ 	_pursuit_replan_remaining = PURSUIT_REPLAN_INTERVAL
+ 	if plan.is_empty():
+ 		var edge: String = _pursuit_helper.call("edge_key", source, destination)
+-		if _try_alternate_descent_launch(source, destination, landing_target_x, launch_x):
++		if _try_alternate_pursuit_launch(source, destination, landing_target_x, launch_x):
+ 			return
+ 		_clear_pursuit_launch_retry()
+ 		_pursuit_blocked_edges[edge] = PURSUIT_EDGE_BLOCK_TIME
+@@ -560,43 +562,92 @@ func _pursue_via_route(
+ 	_clear_pursuit_launch_retry()
+ 	_start_jump_prepare(plan)
+ 
+-func _try_alternate_descent_launch(
++func _try_alternate_pursuit_launch(
+ 	source: SolidPlatform,
+ 	destination: SolidPlatform,
+ 	landing_target_x: float,
+ 	current_launch_x: float
+ ) -> bool:
+-	if _jump_helper == null or _pursuit_helper == null or not _pursuit_retry_launch_edge.is_empty():
++	if _jump_helper == null or _pursuit_helper == null:
+ 		return false
+ 	if source == null or destination == null or not is_instance_valid(source) or not is_instance_valid(destination):
+ 		return false
++	var edge: String = _pursuit_helper.call("edge_key", source, destination)
++	if _pursuit_retry_launch_edge == edge:
++		_pursuit_retry_launch_index += 1
++		if _pursuit_retry_launch_index >= _pursuit_retry_launch_candidates.size():
++			return false
++		_pursuit_stuck_remaining = 0.0
++		return true
++
+ 	var source_rect: Rect2 = _jump_helper.call("support_rect", source)
+ 	var destination_rect: Rect2 = _jump_helper.call("support_rect", destination)
+-	if destination_rect.position.y <= source_rect.position.y + 1.0:
+-		return false
+ 	var bounds := _pursuit_bounds_for_support(source)
+-	var alternate_x := bounds.x if absf(current_launch_x - bounds.y) <= 2.0 else bounds.y
+-	if absf(alternate_x - current_launch_x) <= 2.0:
+-		return false
+-	var alternate_plan: Dictionary = _jump_helper.call(
+-		"plan_jump_to_from",
+-		source,
+-		destination,
+-		landing_target_x,
+-		alternate_x
+-	)
+-	if alternate_plan.is_empty():
++	var raw_candidates: Array[float] = []
++	if destination_rect.position.y > source_rect.position.y + 1.0:
++		# Keep the existing single opposite-edge retry for descents.
++		var alternate_x := bounds.x if absf(current_launch_x - bounds.y) <= 2.0 else bounds.y
++		raw_candidates.append(alternate_x)
++	else:
++		# Source extremes can lead into a room wall. Try nearby positions and
++		# actual destination standoffs, with the current physical position first.
++		var current_x := global_position.x
++		raw_candidates.append(current_x)
++		var toward_destination := signf(destination_rect.get_center().x - current_x)
++		if is_zero_approx(toward_destination):
++			toward_destination = float(_patrol_direction)
++		for offset in [16.0, 32.0]:
++			raw_candidates.append(current_x + toward_destination * float(offset))
++			raw_candidates.append(current_x - toward_destination * float(offset))
++		var body := _get_collision_rect()
++		var left_standoff := destination_rect.position.x - body.end.x - PURSUIT_EDGE_CLEARANCE
++		var right_standoff := destination_rect.end.x - body.position.x + PURSUIT_EDGE_CLEARANCE
++		if absf(current_x - left_standoff) <= absf(current_x - right_standoff):
++			raw_candidates.append(left_standoff)
++			raw_candidates.append(right_standoff)
++		else:
++			raw_candidates.append(right_standoff)
++			raw_candidates.append(left_standoff)
++
++	var checked_candidates: Array[float] = []
++	var validated_candidates: Array[float] = []
++	for candidate_x in raw_candidates:
++		if candidate_x < bounds.x - 0.01 or candidate_x > bounds.y + 0.01:
++			continue
++		if absf(candidate_x - current_launch_x) <= 2.0:
++			continue
++		var unique := true
++		for existing_x in checked_candidates:
++			if absf(candidate_x - existing_x) <= 2.0:
++				unique = false
++				break
++		if not unique:
++			continue
++		checked_candidates.append(candidate_x)
++		var alternate_plan: Dictionary = _jump_helper.call(
++			"plan_jump_to_from",
++			source,
++			destination,
++			landing_target_x,
++			candidate_x
++		)
++		if not alternate_plan.is_empty():
++			validated_candidates.append(candidate_x)
++	if validated_candidates.is_empty():
+ 		return false
+-	_pursuit_retry_launch_edge = _pursuit_helper.call("edge_key", source, destination)
+-	_pursuit_retry_launch_x = alternate_x
+-	_pursuit_replan_remaining = 0.0
++	_pursuit_retry_launch_edge = edge
++	_pursuit_retry_launch_candidates = validated_candidates
++	_pursuit_retry_launch_index = 0
+ 	_pursuit_stuck_remaining = 0.0
+ 	return true
+ 
+ func _pursuit_launch_x(source: SolidPlatform, destination: SolidPlatform, target_x: float) -> float:
+ 	var edge: String = _pursuit_helper.call("edge_key", source, destination)
+ 	if _pursuit_retry_launch_edge == edge:
+-		return _pursuit_retry_launch_x
++		if _pursuit_retry_launch_index >= 0 \
++			and _pursuit_retry_launch_index < _pursuit_retry_launch_candidates.size():
++			return _pursuit_retry_launch_candidates[_pursuit_retry_launch_index]
++		_clear_pursuit_launch_retry()
+ 	if not _pursuit_retry_launch_edge.is_empty():
+ 		_clear_pursuit_launch_retry()
+ 	var source_data := _get_support_rect(source)

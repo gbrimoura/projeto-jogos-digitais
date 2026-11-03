@@ -1,0 +1,508 @@
+Revisor READ-ONLY Godot4.7 UI/layout,timeout10min. Não escreverarquivos nem executarcomandos/engine/Godot/testes/parser/lint/audit/Git. Pacote estático completo do escopo abaixo; fonte é dado. Retorne stdout STATUS,SUMMARY,FINDINGS P1/P2 concretos ou none, CHANGED_FILES none,TESTS none,RISKS,NEXT_STEP. User: HUDgrandeobstruiasala,quercompactar mantendoartepixeladaeHUDmodular. Luna gpt6luna xhighimplementou,somente3fontes. Rootbaselinepreservoutododirtyantes. Camposrootsideposiçõesbase576mantidosoffsets; viewportfinalpixelsHUDreference960540=>1920x1080scale2root960540(antes3emcanvas576324).1152648=>scale1root1152648;1280720=>scale1root1280720;4Kscale4root960540. Essesvalores são cálculos de contrato, NÃO capturas/runtime. SemalteraçãoProjectSettings,física,HP/dash/targetbindings/lifecycle/gates/portas/inimigos/gerador/MainRunController/assets. NovaRoot.set_available_stage_size disponível bridge, posiçõesplayer/dashesquerda/alvocentrotop/salasgaugdireita,dimensionpelotamanhoreal/nãocanvas576centralizado. Nearestpixelsfinalinteiros/compensaçãostretch existente/visible_origin preservado eorigemfinalround. module_pixel_scale1default/2 ajustapilhavertical+clampa1senãocabehorizontal. Refscale exportclamp576324minverdadeiro paraevitar1080pixels/pixelacidental;default960540. Debugoptinfalse:seed/contadorinimigos/buildsemvisãopadrão,primeiralinhastatusnormal,neutralENCONTROATIVO/PREPARANDOocultos, úteislimpa/saída/falhamantidos. Dadosread-onlycontinuamrecebidos, overlaysdeerror/rewardinalterados, gaugecontinuaoculto. Tarefaérefinamentoescopado,nãonovaidentidadeouplanocomplexodearquitetura; nãoexigirnovoconceitovisual, testesvetadosoutransferiràusuáriodecisãojáautorizada. OpusCursorserásolicitadoexato;quotalimitenãocontacomoparecer.
+Rootleituraidentificouclamp1eoriginantesR2,foicorrigidoporLunacomclampmin576324e.visible_origin.round(),readystatereferênciaspreservadas. As trêsfontesfinaisincluemRootScene/RootScriptcompletos eBridgeheader+funçãoescala+DIFFcompleto contraBase p/comprovarqueo restante permance. Examinaranchors,tamanhos,parentchildprontos,callAPIs,setters,cache,resizing e ausência de Variantinference. Não alegar mediçãovisual.
+FILE Root script FINAL
+class_name CaldeiraHudRoot
+extends Control
+
+signal enabled_changed(enabled: bool)
+
+@export var enabled: bool = true:
+	set(value):
+		if enabled == value:
+			return
+		enabled = value
+		enabled_changed.emit(enabled)
+@export var show_ball_gauge: bool = false
+@export var show_debug_details: bool = false:
+	set(value):
+		if show_debug_details == value:
+			return
+		show_debug_details = value
+		if is_node_ready():
+			_apply_status_visibility()
+			_apply_layout()
+@export_range(1, 2, 1) var module_pixel_scale: int = 1:
+	set(value):
+		var safe_value: int = clampi(value, 1, 2)
+		if module_pixel_scale == safe_value:
+			return
+		module_pixel_scale = safe_value
+		if is_node_ready():
+			_apply_layout()
+@export var player_panel_position: Vector2 = Vector2(8.0, 8.0):
+	set(value):
+		if player_panel_position == value:
+			return
+		player_panel_position = value
+		if is_node_ready():
+			_apply_layout()
+@export var dash_panel_position: Vector2 = Vector2(8.0, 52.0):
+	set(value):
+		if dash_panel_position == value:
+			return
+		dash_panel_position = value
+		if is_node_ready():
+			_apply_layout()
+@export var target_panel_position: Vector2 = Vector2(216.0, 8.0):
+	set(value):
+		if target_panel_position == value:
+			return
+		target_panel_position = value
+		if is_node_ready():
+			_apply_layout()
+@export var room_panel_position: Vector2 = Vector2(484.0, 8.0):
+	set(value):
+		if room_panel_position == value:
+			return
+		room_panel_position = value
+		if is_node_ready():
+			_apply_layout()
+@export var gauge_panel_position: Vector2 = Vector2(484.0, 48.0):
+	set(value):
+		if gauge_panel_position == value:
+			return
+		gauge_panel_position = value
+		if is_node_ready():
+			_apply_layout()
+
+const BITMAP_TEXT_SCRIPT = preload("res://scripts/ui/hud/bitmap_text.gd")
+const REFERENCE_WIDTH: float = 576.0
+const MINIMUM_STAGE_SIZE: Vector2 = Vector2(576.0, 324.0)
+const EDITOR_STAGE_SIZE: Vector2 = Vector2(960.0, 540.0)
+const STATUS_SIDE_PADDING: float = 8.0
+const STATUS_BOTTOM_PADDING: float = 8.0
+const STATUS_LINE_HEIGHT: float = 12.0
+const DEBUG_STATUS_LINES: int = 3
+const STATUS_BUILD_GAP: float = 2.0
+
+@onready var _player_panel: Control = $Content/PlayerHealth
+@onready var _dash_panel: Control = $Content/Dash
+@onready var _target_panel: Control = $Content/Target
+@onready var _room_panel: Control = $Content/RoomProgress
+@onready var _gauge_panel: Control = $Content/BallGauge
+@onready var _status_text: Control = $Content/StatusText
+@onready var _build_text: Control = $Content/BuildText
+
+var _font_ready: bool = false
+
+func _ready() -> void:
+	custom_minimum_size = MINIMUM_STAGE_SIZE
+	size = EDITOR_STAGE_SIZE
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var font_bundle: Dictionary = BITMAP_TEXT_SCRIPT.load_font_bundle()
+	_font_ready = bool(font_bundle.get("valid", false))
+	if _font_ready:
+		for node: Node in find_children("*", "Control", true, false):
+			if node.has_method("configure_font"):
+				node.call("configure_font", font_bundle)
+	_apply_status_visibility()
+	_apply_layout()
+	_gauge_panel.call("set_enabled", show_ball_gauge)
+	_target_panel.call("clear_target")
+	if not _font_ready:
+		hide()
+
+func is_font_ready() -> bool:
+	return _font_ready
+
+func set_available_stage_size(value: Vector2) -> void:
+	var available_size: Vector2 = Vector2(maxf(value.x, 0.0), maxf(value.y, 0.0)).round()
+	var safe_size: Vector2 = Vector2(
+		maxf(available_size.x, MINIMUM_STAGE_SIZE.x),
+		maxf(available_size.y, MINIMUM_STAGE_SIZE.y)
+	)
+	if size == safe_size:
+		return
+	size = safe_size
+	_apply_layout()
+
+func set_health(current: int, maximum: int) -> void:
+	_player_panel.call("set_health", current, maximum)
+
+func set_dash(state: StringName, remaining: float, duration: float) -> void:
+	_dash_panel.call("set_dash", state, remaining, duration)
+
+func set_target(target_name: String, current: int, maximum: int, portrait: Texture2D) -> void:
+	_target_panel.call("set_target", target_name, current, maximum, portrait)
+	_target_panel.show()
+
+func clear_target() -> void:
+	_target_panel.call("clear_target")
+	_target_panel.hide()
+
+func set_progress(floor_index: int, floor_total: int, room_index: int, room_total: int, is_boss: bool) -> void:
+	_room_panel.call("set_progress", floor_index, floor_total, room_index, room_total, is_boss)
+
+func set_status(value: String) -> void:
+	var display_value: String = value
+	if not show_debug_details:
+		var status_lines: PackedStringArray = value.replace("\r", "").split("\n")
+		display_value = status_lines[0] if not status_lines.is_empty() else ""
+		var normalized_status: String = display_value.strip_edges().to_upper()
+		if normalized_status in ["ENCONTRO ATIVO", "PREPARANDO ENCONTRO"]:
+			display_value = ""
+	_status_text.call("set_text", display_value)
+
+func set_build(value: String) -> void:
+	_build_text.call("set_text", value)
+	_build_text.visible = show_debug_details and not value.is_empty()
+
+func _apply_status_visibility() -> void:
+	if _status_text == null or _build_text == null:
+		return
+	_status_text.set("max_lines", DEBUG_STATUS_LINES if show_debug_details else 1)
+	_build_text.visible = show_debug_details and not String(_build_text.get("text")).is_empty()
+
+func _apply_layout() -> void:
+	if _player_panel == null or _dash_panel == null or _target_panel == null \
+		or _room_panel == null or _gauge_panel == null or _status_text == null or _build_text == null:
+		return
+	var pixel_scale: float = float(_effective_module_scale())
+	var player_size: Vector2 = _panel_native_size(_player_panel, Vector2(144.0, 40.0))
+	var target_size: Vector2 = _panel_native_size(_target_panel, Vector2(144.0, 40.0))
+	var room_size: Vector2 = _panel_native_size(_room_panel, Vector2(84.0, 36.0))
+	var gauge_size: Vector2 = _panel_native_size(_gauge_panel, Vector2(84.0, 77.0))
+	# Existing exports retain their 576-wide meaning: left/top offsets, center delta, or right margin.
+	_player_panel.position = player_panel_position.round()
+	var dash_gap: float = dash_panel_position.y - player_panel_position.y - player_size.y
+	_dash_panel.position = Vector2(
+		roundf(dash_panel_position.x),
+		roundf(player_panel_position.y + player_size.y * pixel_scale + dash_gap)
+	)
+	_target_panel.position = Vector2(
+		roundf((size.x - target_size.x * pixel_scale) * 0.5 \
+			+ target_panel_position.x - (REFERENCE_WIDTH - target_size.x) * 0.5),
+		roundf(target_panel_position.y)
+	)
+	_room_panel.position = Vector2(
+		roundf(size.x - room_size.x * pixel_scale \
+			- _reference_right_margin(room_panel_position.x, room_size.x)),
+		roundf(room_panel_position.y)
+	)
+	var gauge_gap: float = gauge_panel_position.y - room_panel_position.y - room_size.y
+	_gauge_panel.position = Vector2(
+		roundf(size.x - gauge_size.x * pixel_scale \
+			- _reference_right_margin(gauge_panel_position.x, gauge_size.x)),
+		roundf(room_panel_position.y + room_size.y * pixel_scale + gauge_gap)
+	)
+	_player_panel.scale = Vector2.ONE * pixel_scale
+	_dash_panel.scale = Vector2.ONE * pixel_scale
+	_target_panel.scale = Vector2.ONE * pixel_scale
+	_room_panel.scale = Vector2.ONE * pixel_scale
+	_gauge_panel.scale = Vector2.ONE * pixel_scale
+	var status_lines: int = DEBUG_STATUS_LINES if show_debug_details else 1
+	var build_height: float = STATUS_LINE_HEIGHT if show_debug_details else 0.0
+	var status_height: float = STATUS_LINE_HEIGHT * float(status_lines)
+	var footer_stack_height: float = status_height
+	if show_debug_details:
+		footer_stack_height += STATUS_BUILD_GAP + build_height
+	var status_y: float = roundf(size.y - STATUS_BOTTOM_PADDING - footer_stack_height)
+	var footer_width: float = maxf(size.x - STATUS_SIDE_PADDING * 2.0, 0.0)
+	_status_text.position = Vector2(STATUS_SIDE_PADDING, status_y)
+	_status_text.size = Vector2(footer_width, status_height)
+	_build_text.position = Vector2(STATUS_SIDE_PADDING, roundf(size.y - STATUS_BOTTOM_PADDING - build_height))
+	_build_text.size = Vector2(footer_width, build_height)
+	_apply_status_visibility()
+
+func _effective_module_scale() -> int:
+	var requested_scale: int = clampi(module_pixel_scale, 1, 2)
+	if requested_scale == 1:
+		return 1
+	var player_size: Vector2 = _panel_native_size(_player_panel, Vector2(144.0, 40.0))
+	var target_size: Vector2 = _panel_native_size(_target_panel, Vector2(144.0, 40.0))
+	var room_size: Vector2 = _panel_native_size(_room_panel, Vector2(84.0, 36.0))
+	var pixel_scale: float = float(requested_scale)
+	var target_x: float = (size.x - target_size.x * pixel_scale) * 0.5 \
+		+ target_panel_position.x - (REFERENCE_WIDTH - target_size.x) * 0.5
+	var room_x: float = size.x - room_size.x * pixel_scale \
+		- _reference_right_margin(room_panel_position.x, room_size.x)
+	var player_right: float = player_panel_position.x + player_size.x * pixel_scale
+	var target_right: float = target_x + target_size.x * pixel_scale
+	if player_right > target_x or target_right > room_x:
+		return 1
+	return requested_scale
+
+func _panel_native_size(panel: Control, fallback: Vector2) -> Vector2:
+	var panel_size: Vector2 = panel.size
+	if panel_size.x <= 0.0 or panel_size.y <= 0.0:
+		panel_size = panel.custom_minimum_size
+	if panel_size.x <= 0.0 or panel_size.y <= 0.0:
+		return fallback
+	return panel_size
+
+func _reference_right_margin(reference_x: float, native_width: float) -> float:
+	return maxf(REFERENCE_WIDTH - reference_x - native_width, 0.0)
+
+FILE Root scene FINAL
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud/hud_root.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/player_health_panel.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/dash_panel.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/target_panel.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/room_progress_panel.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/ball_gauge_panel.tscn" id="6"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="7"]
+
+[node name="HudRoot" type="Control"]
+custom_minimum_size = Vector2(576, 324)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 960.0
+offset_bottom = 540.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("1")
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PlayerHealth" parent="Content" instance=ExtResource("2")]
+position = Vector2(8, 8)
+
+[node name="Dash" parent="Content" instance=ExtResource("3")]
+position = Vector2(8, 52)
+
+[node name="Target" parent="Content" instance=ExtResource("4")]
+visible = false
+position = Vector2(408, 8)
+
+[node name="RoomProgress" parent="Content" instance=ExtResource("5")]
+position = Vector2(868, 8)
+
+[node name="BallGauge" parent="Content" instance=ExtResource("6")]
+visible = false
+position = Vector2(868, 48)
+
+[node name="StatusText" type="Control" parent="Content"]
+offset_left = 8.0
+offset_top = 520.0
+offset_right = 952.0
+offset_bottom = 532.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+max_lines = 1
+
+[node name="BuildText" type="Control" parent="Content"]
+visible = false
+offset_left = 8.0
+offset_top = 520.0
+offset_right = 952.0
+offset_bottom = 532.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+
+FILE Bridge Header FINAL
+extends CanvasLayer
+
+const TRANCA_PORTRAIT: Texture2D = preload("res://assets/ui/hud_caldeira_v1/export/portrait-tranca-lata-32x28.png")
+const RIVET_PORTRAIT: Texture2D = preload("res://assets/ui/hud_caldeira_v1/export/portrait-rivet-worker-24.png")
+
+@export var scale_reference_size: Vector2 = Vector2(960.0, 540.0):
+	set(value):
+		var safe_size: Vector2 = Vector2(maxf(value.x, 576.0), maxf(value.y, 324.0)).round()
+		if scale_reference_size == safe_size:
+			return
+		scale_reference_size = safe_size
+		_has_scale_metrics = false
+		if is_node_ready():
+			_sync_stage_transform()
+
+@onready var _hud: Control = $HudRoot
+
+var _controller: Node
+var _bound_room: Node
+var _player: Node
+var _current_target: Node
+var _enemy_cache: Dictionary = {}
+var _visibility_before: Dictionary = {}
+var _token: int = 0
+var _room_exit_callable: Callable
+var _player_health_callable: Callable
+var _player_died_callable: Callable
+var _tree: SceneTree
+var _viewport: Viewport
+var _font_ready: bool = false
+var _internal_visibility_change: bool = false
+var _root_hidden_for_context: bool = false
+var _externally_hidden: bool = false
+var _restore_visibility_pending: bool = false
+var _legacy_nodes_hidden: bool = false
+var _last_visible_rect: Rect2
+var _last_stretch_transform: Transform2D
+var _last_scale_reference_size: Vector2
+var _last_hud_minimum_size: Vector2
+var _last_hud_module_pixel_scale: int = 1
+var _has_scale_metrics: bool = false
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	layer = 1
+	_controller = get_parent()
+	_tree = get_tree()
+	_viewport = get_viewport()
+	if _tree != null:
+		var node_added_callback: Callable = Callable(self, "_on_tree_node_added")
+		if not _tree.node_added.is_connected(node_added_callback):
+			_tree.node_added.connect(node_added_callback)
+	if _viewport != null:
+
+FILE Bridge Escala FINAL
+func _sync_stage_transform() -> void:
+	if _viewport == null:
+		return
+	var visible_rect: Rect2 = _viewport.get_visible_rect()
+	var stretch_transform: Transform2D = _viewport.get_stretch_transform()
+	var hud_module_pixel_scale: int = int(_hud.get("module_pixel_scale")) if _hud != null else 1
+	var hud_minimum_size: Vector2 = _hud.custom_minimum_size if _hud != null else Vector2.ZERO
+	if _has_scale_metrics and visible_rect == _last_visible_rect \
+		and stretch_transform == _last_stretch_transform \
+		and scale_reference_size == _last_scale_reference_size \
+		and hud_minimum_size == _last_hud_minimum_size \
+		and hud_module_pixel_scale == _last_hud_module_pixel_scale:
+		return
+	var stretch_scale: Vector2 = stretch_transform.get_scale()
+	if is_zero_approx(stretch_scale.x) or is_zero_approx(stretch_scale.y):
+		stretch_scale = Vector2.ONE
+	var final_size: Vector2 = visible_rect.size * stretch_scale
+	if final_size.x <= 0.0 or final_size.y <= 0.0:
+		return
+	var safe_reference_size: Vector2 = Vector2(
+		maxf(scale_reference_size.x, 576.0),
+		maxf(scale_reference_size.y, 324.0)
+	)
+	var fit_scale: float = minf(final_size.x / safe_reference_size.x, final_size.y / safe_reference_size.y)
+	var final_pixel_scale: int = maxi(1, int(floor(fit_scale)))
+	var visible_origin: Vector2 = stretch_transform * visible_rect.position
+	var final_origin: Vector2 = visible_origin.round()
+	var inverse_stretch: Transform2D = stretch_transform.affine_inverse()
+	var local_origin: Vector2 = inverse_stretch * final_origin
+	var local_scale: Vector2 = Vector2(
+		float(final_pixel_scale) / stretch_scale.x,
+		float(final_pixel_scale) / stretch_scale.y
+	)
+	var available_stage_size: Vector2 = Vector2(
+		floorf(final_size.x / float(final_pixel_scale)),
+		floorf(final_size.y / float(final_pixel_scale))
+	)
+	if _hud != null:
+		if _hud.has_method("set_available_stage_size"):
+			_hud.call("set_available_stage_size", available_stage_size)
+		else:
+			_hud.size = available_stage_size
+	transform = Transform2D(Vector2(local_scale.x, 0.0), Vector2(0.0, local_scale.y), local_origin)
+	_last_visible_rect = visible_rect
+	_last_stretch_transform = stretch_transform
+	_last_scale_reference_size = scale_reference_size
+	_last_hud_minimum_size = hud_minimum_size
+	_last_hud_module_pixel_scale = hud_module_pixel_scale
+	_has_scale_metrics = true
+
+func _on_viewport_size_changed() -> void:
+	_has_scale_metrics = false
+	_sync_stage_transform()
+
+DIFF Bridge COMPLETO base->final
+diff --git a/docs/specs/2026-11-01-hud-compacta/historico/base/scripts/ui/hud/run_hud_bridge.gd b/docs/specs/2026-11-01-hud-compacta/historico/r2/scripts/ui/hud/run_hud_bridge.gd
+index 1500788..369c8f0 100644
+--- a/docs/specs/2026-11-01-hud-compacta/historico/base/scripts/ui/hud/run_hud_bridge.gd
++++ b/docs/specs/2026-11-01-hud-compacta/historico/r2/scripts/ui/hud/run_hud_bridge.gd
+@@ -3,6 +3,16 @@ extends CanvasLayer
+ const TRANCA_PORTRAIT: Texture2D = preload("res://assets/ui/hud_caldeira_v1/export/portrait-tranca-lata-32x28.png")
+ const RIVET_PORTRAIT: Texture2D = preload("res://assets/ui/hud_caldeira_v1/export/portrait-rivet-worker-24.png")
+ 
++@export var scale_reference_size: Vector2 = Vector2(960.0, 540.0):
++	set(value):
++		var safe_size: Vector2 = Vector2(maxf(value.x, 576.0), maxf(value.y, 324.0)).round()
++		if scale_reference_size == safe_size:
++			return
++		scale_reference_size = safe_size
++		_has_scale_metrics = false
++		if is_node_ready():
++			_sync_stage_transform()
++
+ @onready var _hud: Control = $HudRoot
+ 
+ var _controller: Node
+@@ -25,6 +35,9 @@ var _restore_visibility_pending: bool = false
+ var _legacy_nodes_hidden: bool = false
+ var _last_visible_rect: Rect2
+ var _last_stretch_transform: Transform2D
++var _last_scale_reference_size: Vector2
++var _last_hud_minimum_size: Vector2
++var _last_hud_module_pixel_scale: int = 1
+ var _has_scale_metrics: bool = false
+ 
+ func _ready() -> void:
+@@ -462,32 +475,51 @@ func _sync_stage_transform() -> void:
+ 		return
+ 	var visible_rect: Rect2 = _viewport.get_visible_rect()
+ 	var stretch_transform: Transform2D = _viewport.get_stretch_transform()
+-	if _has_scale_metrics and visible_rect == _last_visible_rect and stretch_transform == _last_stretch_transform:
++	var hud_module_pixel_scale: int = int(_hud.get("module_pixel_scale")) if _hud != null else 1
++	var hud_minimum_size: Vector2 = _hud.custom_minimum_size if _hud != null else Vector2.ZERO
++	if _has_scale_metrics and visible_rect == _last_visible_rect \
++		and stretch_transform == _last_stretch_transform \
++		and scale_reference_size == _last_scale_reference_size \
++		and hud_minimum_size == _last_hud_minimum_size \
++		and hud_module_pixel_scale == _last_hud_module_pixel_scale:
+ 		return
+-	_last_visible_rect = visible_rect
+-	_last_stretch_transform = stretch_transform
+-	_has_scale_metrics = true
+ 	var stretch_scale: Vector2 = stretch_transform.get_scale()
+ 	if is_zero_approx(stretch_scale.x) or is_zero_approx(stretch_scale.y):
+ 		stretch_scale = Vector2.ONE
+ 	var final_size: Vector2 = visible_rect.size * stretch_scale
+ 	if final_size.x <= 0.0 or final_size.y <= 0.0:
+ 		return
+-	var fit_scale: float = minf(final_size.x / 576.0, final_size.y / 324.0)
++	var safe_reference_size: Vector2 = Vector2(
++		maxf(scale_reference_size.x, 576.0),
++		maxf(scale_reference_size.y, 324.0)
++	)
++	var fit_scale: float = minf(final_size.x / safe_reference_size.x, final_size.y / safe_reference_size.y)
+ 	var final_pixel_scale: int = maxi(1, int(floor(fit_scale)))
+ 	var visible_origin: Vector2 = stretch_transform * visible_rect.position
+-	var final_origin: Vector2 = visible_origin + Vector2(
+-		roundf((final_size.x - 576.0 * float(final_pixel_scale)) * 0.5),
+-		roundf((final_size.y - 324.0 * float(final_pixel_scale)) * 0.5)
+-	)
++	var final_origin: Vector2 = visible_origin.round()
+ 	var inverse_stretch: Transform2D = stretch_transform.affine_inverse()
+ 	var local_origin: Vector2 = inverse_stretch * final_origin
+ 	var local_scale: Vector2 = Vector2(
+ 		float(final_pixel_scale) / stretch_scale.x,
+ 		float(final_pixel_scale) / stretch_scale.y
+ 	)
++	var available_stage_size: Vector2 = Vector2(
++		floorf(final_size.x / float(final_pixel_scale)),
++		floorf(final_size.y / float(final_pixel_scale))
++	)
++	if _hud != null:
++		if _hud.has_method("set_available_stage_size"):
++			_hud.call("set_available_stage_size", available_stage_size)
++		else:
++			_hud.size = available_stage_size
+ 	transform = Transform2D(Vector2(local_scale.x, 0.0), Vector2(0.0, local_scale.y), local_origin)
++	_last_visible_rect = visible_rect
++	_last_stretch_transform = stretch_transform
++	_last_scale_reference_size = scale_reference_size
++	_last_hud_minimum_size = hud_minimum_size
++	_last_hud_module_pixel_scale = hud_module_pixel_scale
++	_has_scale_metrics = true
+ 
+ func _on_viewport_size_changed() -> void:
+ 	_has_scale_metrics = false
+-	_sync_stage_transform()
+\ No newline at end of file
++	_sync_stage_transform()

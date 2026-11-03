@@ -1,0 +1,86 @@
+[
+  {
+    "Path": "resources/upgrades/impacto_reforcado.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/motor_acelerado.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/carga_reativa.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/ricochete_pressao.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/mola_retorno.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/dinamo_defesa.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/chassi_reforcado.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/ajuste_velocidade_bola.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/ajuste_recarga_dash.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/upgrades/reparo_campo.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/progression/upgrade_definition_resource.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/progression/upgrade_catalog.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/progression/enemy_level_config_resource.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "resources/progression/enemy_levels.tres",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/player/player.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/player/ball_launcher.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/enemy/rivet_worker.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scripts/world/training_target.gd",
+    "Unchanged": true
+  },
+  {
+    "Path": "scenes/rivet_worker.tscn",
+    "Unchanged": true
+  },
+  {
+    "Path": "scenes/training_target.tscn",
+    "Unchanged": true
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/README.md",
+    "Unchanged": false
+  }
+]

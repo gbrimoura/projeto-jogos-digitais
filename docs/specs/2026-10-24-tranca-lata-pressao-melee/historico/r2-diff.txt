@@ -1,0 +1,13 @@
+diff --git a/docs/specs/2026-10-24-tranca-lata-pressao-melee/historico/runtime-r1/scripts/world/training_target.gd b/scripts/world/training_target.gd
+index 1dfbcc9..eb5675c 100644
+--- a/docs/specs/2026-10-24-tranca-lata-pressao-melee/historico/runtime-r1/scripts/world/training_target.gd
++++ b/scripts/world/training_target.gd
+@@ -452,7 +452,7 @@ func _pursue_on_current_support(
+ 		_pursuit_stuck_remaining = 0.0
+ 	if _pursuit_stuck_remaining >= PURSUIT_STUCK_TIMEOUT \
+ 		and _pursuit_replan_remaining <= 0.0:
+-		var stalled_player := _find_melee_engagement_player(attack_center, true)
++		var stalled_player := _find_melee_engagement_player(global_position + attack_center_offset, true)
+ 		if stalled_player != null:
+ 			_known_player = stalled_player
+ 			_begin_windup(stalled_player)

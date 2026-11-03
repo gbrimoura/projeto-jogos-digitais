@@ -1,0 +1,20 @@
+STATUS: done
+SUMMARY: Revisão estática DELTA FINAL B (R1a -> R3) concluída com aprovação total. As correções em [upgrade_card.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/ui/upgrade_card.gd), [main.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd) e [upgrade_card.tscn](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scenes/ui/upgrade_card.tscn) resolvem a compatibilidade de glifos ausentes (`;` e `|` substituídos por `/`), eliminam estilos padrão do botão Godot via `StyleBoxEmpty`, corrigem o carregamento de JSON empacotado via `ResourceLoader` e garantem legibilidade e centralização visual na geometria das cartas sem regressões.
+
+FINDINGS:
+- **P1 (Bloqueios / Regressões / Falhas de Execução)**: NENHUM.
+- **P2 / Observações Concretas**:
+  1. **Compatibilidade de Glifos**:
+     - A troca de `;` por `/` em `UpgradeCard.configure` (`scripts/ui/upgrade_card.gd#L94`) e de ` | ` por ` / ` em `Main._update_build_status` (`scripts/world/main.gd#L1820`) garante que todos os caracteres separadores pertençam à lista base do HUD (`s /,:.-%`). Evita glifos ausentes ou caixas vazias.
+     - A substituição 1:1 preserva a contagem de caracteres (`≤ 24`) e não altera as quebras em `_wrap_text`.
+  2. **Carregamento de Adições da Fonte**:
+     - `UpgradeCard.load_card_font_bundle` agora usa `ResourceLoader.load(...) as JSON` seguido de `.data`, com validação estrita de nulo e dicionário. Elimina a dependência de acesso a arquivos soltos no sistema de arquivos (`FileAccess`), assegurando funcionamento em builds exportadas (`.pck`) e alinhamento com `HudBitmapText`.
+  3. **Visual do Botão e Suporte a Duas Linhas (TSCN)**:
+     - `StyleBoxEmpty` aplicado nos 6 estados (`normal`, `hover`, `pressed`, `disabled`, `focus`, `hover_pressed`) anula os temas nativos do Godot, garantindo que o `$Frame` (`TextureRect`) gerencie exclusivamente os estados visuais.
+     - `SummaryBackdrop` (`ColorRect` opaco `#0C1B29`, `mouse_filter = 2`) cobre exatamente a faixa `(8, 118)` a `(152, 142)` (144×24 px), posicionando-se imediatamente antes do nó `Summary`. Isso mascara as réguas horizontais internas do frame em `Y=119` e `Y=138` sem cobrir a ilustração (termina em `114`) nem os tópicos (iniciam em `146`), permitindo até duas linhas de texto de 12 px sem colisão visual.
+     - O nó `Badge` foi ajustado de `204..228` (24 px com texto renderizado a partir do topo) para `210..222` (12 px de altura exata), resultando em centralização vertical perfeita (6 px de respiro superior e inferior) na faixa inferior de 24 px da carta.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco impeditivo identificado. O separador de build `" / "` na HUD de depuração mantém o comportamento de linha única sem quebra automática (pré-existente), sem impacto na interface de cartas do jogador.
+NEXT_STEP: Integrar o snapshot Delta Final R3 como fechamento definitivo da Etapa B e prosseguir para consolidação documental/registros de pareceres.

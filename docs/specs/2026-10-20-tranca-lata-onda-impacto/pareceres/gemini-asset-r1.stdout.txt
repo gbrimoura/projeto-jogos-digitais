@@ -1,0 +1,11 @@
+STATUS: done
+SUMMARY: Revisão estática documental do pacote de assets da onda de impacto do Tranca-Lata (script de autoria Lua, metadata.json, recurso SpriteFrames .tres e manifesto SHA-256). Todos os requisitos foram verificados com sucesso:
+- **Resolução e Cels**: 6 cels nativos de 160x160 com pivô em (80, 80); atlas gerado em 960x160 com canal alfa estritamente binário (RGBA 0 ou 255) e bordas hardpixel.
+- **Paleta e Geometria**: Aderência estrita às 8 cores homologadas (`#192031`, `#373F4D`, `#70432C`, `#925A36`, `#B37949`, `#CFC3B7`, `#F5A84F`, `#F5E9D8`); centro oco rigorosamente transparente no pivô (80, 80) em todos os quadros; raio máximo de conteúdo contido no limite de 70 px nativos (pico de 69,92 px no cel 4).
+- **Camadas e Pipeline**: 5 camadas editáveis no Aseprite na ordem prevista; previews GIF isolam a pausa de apresentação (700 ms) e o timing 4x sem contaminar o atlas de runtime; caminhos fixos no script Lua são exclusivos da ferramenta de autoria e sem dependência de execução do jogo.
+- **SpriteFrames**: Configurado com animação `impact` (desacoplada da tag interna `shockwave` do Aseprite), `speed: 1.0` com durações em segundos (0.02, 0.02, 0.02, 0.02, 0.03, 0.03) totalizando 140 ms, e `loop: 0` (não-cíclico), mapeando perfeitamente as 6 regiões no atlas.
+- **Integridade e Escopo**: O manifesto SHA-256 confirma identidade exata de bytes entre `fonte`, `projeto` e `snapshot`. Os 33 arquivos existentes do projeto estão protegidos e nenhuma fiação com a lógica do inimigo foi introduzida.
+CHANGED_FILES: none
+TESTS: none
+RISKS: no findings
+NEXT_STEP: Prosseguir para a futura etapa de consumo em runtime (instanciação/exibição do efeito e liberação após `animation_finished`), mantendo os scripts e comportamentos existentes intactos.

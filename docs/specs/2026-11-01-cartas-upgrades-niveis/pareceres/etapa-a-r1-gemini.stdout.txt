@@ -1,0 +1,17 @@
+```text
+STATUS: done
+SUMMARY: Revisão estática da Etapa A R1 concluída com sucesso sobre o arquivo imutável. Os contratos críticos de dados, catálogo (UpgradeCatalog), fluxo de run sem modal duplicado de chefe, pools híbridos (inédita + evolução), escala matemática determinística de níveis de inimigos e preservação de estado/rollback foram implementados fielmente sem bloqueios P1. Identificados 4 apontamentos P2 concretos relacionados à anotação de export range, adaptação da HUD antiga para builds múltiplas e robustez defensiva.
+
+FINDINGS:
+- [P2] scripts/progression/enemy_level_config_resource.gd:1670: Anotação `@export_range(1.0, 5.0, 0.01) var health_multiplier_per_level: float = 0.12` possui limite inferior (1.0) acima do valor padrão (0.12). Qualquer ajuste via Godot Inspector prenderá o valor em no mínimo 1.0 (+100% HP por nível em vez dos 12% contratuais). Recomendado alterar para `@export_range(0.0, 1.0, 0.01)`.
+- [P2] scripts/world/main.gd:513: Em `_update_build_status()`, `var upgrade_id := run_build.get_upgrade_ids()[0]` extrai apenas o primeiro upgrade do catálogo. Em builds com múltiplos upgrades distintos ativos, o HUD legado exibe apenas o primeiro ID e ignora os demais. Como a Etapa B trará a UI definitiva, o adapter atual é funcional porém truncado.
+- [P2] scripts/world/main.gd:484: Em `_on_upgrade_selected()`, a chamada `var base_maximum_health := player.health.get_base_maximum_health()` assume `player.health` não nulo sem verificação defensiva, divergindo da linha 448 (`_open_upgrade_offer()`) que faz o fallback seguro para 5.
+- [P2] scripts/world/main.gd:463: Quando a run atinge o limite total de aquisições (220) ou todos os ranks são maximizados, `UpgradeCatalogScript.build_offer` retorna lista vazia. `_open_upgrade_offer()` passa a lista para `present_options([])` e emite `push_error("Main: definições inválidas para a oferta.")`. Embora o fluxo libere a saída corretamente, logar erro de console para esgotamento legítimo de opções é impróprio; recomenda-se verificar `offer_rows.is_empty()` antes de acionar erro.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Modificação inadvertida do recurso `res://resources/progression/enemy_levels.tres` via Godot Inspector pode elevar a escala de vida dos inimigos para 100% por nível devido ao range mínimo 1.0 em `health_multiplier_per_level`.
+- Limitação visual transitória no HUD legado durante a Etapa A, onde apenas o primeiro upgrade obtido é mostrado na tela da sala.
+NEXT_STEP: Ajustar o range em `enemy_level_config_resource.gd` e os tratamentos pontuais em `main.gd` para estabilização final da Etapa A antes de prosseguir com a Etapa B (arte de cartas e UI final).
+```

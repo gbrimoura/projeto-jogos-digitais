@@ -1,0 +1,520 @@
+REVISÃO FINAL DELTA RUNTIME R4 SOMENTE LEITURA. NÃO use ferramentas/comandos/arquivos externos/agentes; todo contexto necessário abaixo. Sem alterações/Godot/parser/testes/linter/QA/simulação. Timeout10min. STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP. Aponte P1/P2 concretos restantes, sem reabrir escopo.
+R2fullpacket274076bytes foi revisado integralmenteGemini/Muse. R3corrigiu4pontos, Gemini confirmou semP1P2. MuseR3concordouquatrocorreçõesmasfaltava dados dos retângulos para testemunha de pouso e contexto do chamador invalid. A fonte R3 não muda nesses aspectos; aqui os contextos COMPLETOS canônicos e prepare_authored_layout(inclui invalid) fecham a ambiguidade, não são novas regras.
+CORREÇÃO DE CONTEXTO: os intervalos [846,962] e [874,934] antes informados JÁ ERAM A FAIXA SEGURA COM INSET22, NÃO os bounds do rect. Não aplicar22 uma segunda vez. Rectroof4dest REAL=Rect2(824,160,160,16),bounds824..984,safe846..962, sourceRect(608,256,160,16),launch744vx260landing~908. Rectroof5dest REAL=Rect2(852,160,104,16),bounds852..956,safe874..934,sourceRect(708,232,104,16),launch752vx100landing~924INTERPOLADO. Demais apoios na função canônica abaixo. Player jump640/gravity1600/speed260/acc1600/maxfall900,body76raio14centro-root−38. Root não executou nada: só relações cinemáticas sobre fonte. Main abaixo recusa fallback.valid=false ANTES de aplicar geometrias, revalida rota física, portanto não há bypass de invalid. Se esse contexto fecha suas duas pendênciasR3, declare isso.
+R4 muda SOMENTE duas colisões de nomes locais em Main: (1)fallback_index já existia em escopo pai de prepare_authored_layout, segundo childif agora canonical_fallback_index com seus usos; (2)player_body já existia e era validado no pai de _validate_authored_target, redeclaração interna removida e outer reutilizado. Sem outra mudançaR3→R4. Regra confirmada por leitura de fonte oficial, sem executar parser: https://raw.githubusercontent.com/godotengine/godot/master/modules/gdscript/gdscript_parser.cpp (parse_suite consulta get_local e get_local procura parent_block). Avalie deltas/contextosfuncionais e referências; não afirmar compilação executada. Demais scripts idênticosR3/hashsnapshot, OpusCursor/AGYindisponíveis quota,nãocontamcomoaprovação. GrokR1/R2/R3vazio.
+Não inventar revisita RIGHTDOWNLEFTUP: apenas UM sentidohorizontal é permitido por andar e no máximo1verticalporcoluna. Não exigir todosinputspossíveis: há busca limitada de uma rota segura, com canônico revalidado e seedlocal, faseslinearescomUP/DOWN. Não pedimos redesenho de algoritmo nesta revisão final.
+===== EXACT R4 DELTA =====
+diff --git a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/main.gd b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/main.gd
+index d41d0c4..2669136 100644
+--- a/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r3/scripts/world/main.gd
++++ b/docs/specs/2026-10-27-salas-verticais-variedade/historico/runtime-r4/scripts/world/main.gd
+@@ -225,12 +225,12 @@ func prepare_authored_layout() -> bool:
+ 			if fallback_platforms.size() != authored_platform_names.size():
+ 				return _fail_authored_layout("fallback da família %s diverge da quantidade de apoios" % String(family))
+ 			var fallback_primary := int(fallback_generation.get("primary_index", -1))
+-			var fallback_index := int(fallback_generation.get("fallback_index", -1))
++			var canonical_fallback_index := int(fallback_generation.get("fallback_index", -1))
+ 			if fallback_primary < 0 or fallback_primary >= authored_platform_names.size() \
+-				or fallback_index < 0 or fallback_index >= authored_platform_names.size():
++				or canonical_fallback_index < 0 or canonical_fallback_index >= authored_platform_names.size():
+ 				return _fail_authored_layout("fallback da família %s não definiu suportes de Tranca-Lata" % String(family))
+ 			target.fixed_support_path = NodePath("../" + String(authored_platform_names[fallback_primary]))
+-			target.fallback_support_path = NodePath("../" + String(authored_platform_names[fallback_index]))
++			target.fallback_support_path = NodePath("../" + String(authored_platform_names[canonical_fallback_index]))
+ 			for platform_index in authored_platform_names.size():
+ 				var platform_name: StringName = authored_platform_names[platform_index]
+ 				var platform := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
+@@ -986,7 +986,6 @@ func _validate_authored_target(platform_rects: Dictionary) -> bool:
+ 	_authored_target_patrol_max_x = to_global(Vector2(float(selected.get("maximum_center_x", 0.0)), 0.0)).x
+ 	_authored_target_patrol_enabled = not selected_patrol.is_empty()
+ 	if _run_controller_managed:
+-		var player_body := get_node_or_null("Player") as CollisionObject2D
+ 		var player_spawn := get_node_or_null("PlayerSpawnMarker") as Marker2D
+ 		var player_bounds_result := _body_aabb(player_body, false) if player_body != null else {}
+ 		if player_spawn == null or not bool(player_bounds_result.get("valid", false)):
+
+===== MAIN FUNCTION CONTEXT =====
+func prepare_authored_layout() -> bool:
+	if not authored_layout_enabled:
+		return true
+	if _authored_layout_prepared:
+		return _authored_layout_valid
+
+	_authored_layout_prepared = true
+	_authored_layout_valid = false
+	_authored_layout_error = ""
+	_authored_target_position = Vector2.ZERO
+	_authored_target_node = null
+	_authored_target_support = null
+	_authored_target_support_path = NodePath("")
+	_authored_target_patrol_enabled = false
+	_authored_target_patrol_min_x = 0.0
+	_authored_target_patrol_max_x = 0.0
+	_authored_world_obstacles.clear()
+	_prepared_platform_rects.clear()
+
+	var generation: Dictionary
+	var authored_platform_names: Array[StringName] = []
+	if _run_controller_managed:
+		if _managed_room_descriptor.is_empty():
+			return _fail_authored_layout("descritor gerenciado ausente")
+		var family := StringName(_managed_room_descriptor.get("family", &""))
+		var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+		var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+		var entry_offset := float(_managed_room_descriptor.get("entry_offset", -1.0))
+		var exit_offset := float(_managed_room_descriptor.get("exit_offset", -1.0))
+		generation = RoomLayoutGenerator.generate_managed_layout(
+			family, room_layout_seed, entry_dir, exit_dir, entry_offset, exit_offset
+		)
+		if not bool(generation.get("valid", false)):
+			return _fail_authored_layout("família %s: gerador recusou a geometria ou a orientação" % String(family))
+		var generated_entries: Array = generation.get("platforms", [])
+		if not _ensure_managed_platform_nodes(generated_entries.size()):
+			return _fail_authored_layout("não foi possível preparar a contagem de apoios gerenciados")
+		var managed_set: Dictionary = _detect_authored_platform_set()
+		if not bool(managed_set.get("valid", false)):
+			return _fail_authored_layout(String(managed_set.get("error", "fixture gerenciada inválida")))
+		authored_platform_names = managed_set.get("names", [])
+		_managed_topology = ManagedRoomTopologyScript.new()
+		var topology_result: Dictionary = _managed_topology.call("configure", self, _managed_room_descriptor)
+		if not bool(topology_result.get("valid", false)):
+			return _fail_authored_layout(String(topology_result.get("error", "limites gerenciados inválidos")))
+		if not _configure_managed_spawn(entry_dir, entry_offset):
+			return _fail_authored_layout("spawn incompatível com a porta de entrada")
+	else:
+		var platform_set_result: Dictionary = _detect_authored_platform_set()
+		if not bool(platform_set_result.get("valid", false)):
+			return _fail_authored_layout(String(platform_set_result.get("error", "fixture de plataformas inválida")))
+		authored_platform_names = platform_set_result.get("names", [])
+		generation = RoomLayoutGenerator.generate_layout(
+			authored_platform_names.size(),
+			room_layout_seed,
+			_get_player_spawn_x_for_layout()
+		)
+	_prepared_room_layout_seed = int(generation.get("seed", 0))
+	if not bool(generation.get("valid", false)):
+		return _fail_authored_layout(String(generation.get("error", "gerador de layout recusou a sala")))
+	var generated_platforms: Array[Dictionary] = generation.get("platforms", [])
+	if generated_platforms.size() != authored_platform_names.size():
+		return _fail_authored_layout("gerador retornou quantidade diferente de plataformas")
+	var target := get_node_or_null("TrainingTarget") as TrainingTarget
+	if target == null or not target.authored_support_enabled:
+		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+	var primary_index := int(generation.get("primary_index", -1))
+	var fallback_index := int(generation.get("fallback_index", -1))
+	if primary_index < 0 or primary_index >= authored_platform_names.size() or fallback_index < 0 or fallback_index >= authored_platform_names.size():
+		return _fail_authored_layout("gerador não definiu suportes primário e fallback")
+	target.fixed_support_path = NodePath("../" + String(authored_platform_names[primary_index]))
+	target.fallback_support_path = NodePath("../" + String(authored_platform_names[fallback_index]))
+	for platform_index in authored_platform_names.size():
+		var platform_name: StringName = authored_platform_names[platform_index]
+		var platform := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
+		if platform == null:
+			return _fail_authored_layout("plataforma ausente ou de tipo incorreto: %s" % String(platform_name))
+		var generated: Dictionary = generated_platforms[platform_index]
+		var generated_size: Vector2 = generated.get("size", Vector2.ZERO)
+		var generated_position: Vector2 = generated.get("position", Vector2.ZERO)
+		platform.randomize_position = false
+		platform.randomize_width = false
+		platform.size = generated_size
+		platform.position = generated_position
+		var platform_result: Dictionary = _validate_authored_platform(
+			platform,
+			generated_position,
+			generated_size
+		)
+		if not bool(platform_result.get("valid", false)):
+			return _fail_authored_layout(String(platform_result.get("error", "plataforma inválida")))
+		_prepared_platform_rects[platform_name] = platform_result.get("rect", Rect2())
+
+	if _run_controller_managed:
+		_suppress_authored_layout_errors = true
+		var candidate_route_valid := _validate_managed_generated_route(authored_platform_names, generation)
+		_suppress_authored_layout_errors = false
+		if not candidate_route_valid:
+			var candidate_error := _authored_layout_error
+			_authored_layout_error = ""
+			_prepared_platform_rects.clear()
+			var family := StringName(_managed_room_descriptor.get("family", &""))
+			var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+			var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+			var entry_offset := float(_managed_room_descriptor.get("entry_offset", -1.0))
+			var exit_offset := float(_managed_room_descriptor.get("exit_offset", -1.0))
+			var fallback_generation := RoomLayoutGenerator.generate_managed_layout(
+				family, room_layout_seed, entry_dir, exit_dir, entry_offset, exit_offset, true
+			)
+			if not bool(fallback_generation.get("valid", false)):
+				return _fail_authored_layout("layout candidato inválido (%s); fallback da família %s: %s" % [
+					candidate_error,
+					String(family),
+					String(fallback_generation.get("error", "geometria recusada")),
+				])
+			var fallback_platforms: Array[Dictionary] = fallback_generation.get("platforms", [])
+			if fallback_platforms.size() != authored_platform_names.size():
+				return _fail_authored_layout("fallback da família %s diverge da quantidade de apoios" % String(family))
+			var fallback_primary := int(fallback_generation.get("primary_index", -1))
+			var canonical_fallback_index := int(fallback_generation.get("fallback_index", -1))
+			if fallback_primary < 0 or fallback_primary >= authored_platform_names.size() \
+				or canonical_fallback_index < 0 or canonical_fallback_index >= authored_platform_names.size():
+				return _fail_authored_layout("fallback da família %s não definiu suportes de Tranca-Lata" % String(family))
+			target.fixed_support_path = NodePath("../" + String(authored_platform_names[fallback_primary]))
+			target.fallback_support_path = NodePath("../" + String(authored_platform_names[canonical_fallback_index]))
+			for platform_index in authored_platform_names.size():
+				var platform_name: StringName = authored_platform_names[platform_index]
+				var platform := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
+				if platform == null:
+					return _fail_authored_layout("plataforma ausente durante fallback: %s" % String(platform_name))
+				var generated: Dictionary = fallback_platforms[platform_index]
+				var generated_size: Vector2 = generated.get("size", Vector2.ZERO)
+				var generated_position: Vector2 = generated.get("position", Vector2.ZERO)
+				platform.size = generated_size
+				platform.position = generated_position
+				var platform_result := _validate_authored_platform(platform, generated_position, generated_size)
+				if not bool(platform_result.get("valid", false)):
+					return _fail_authored_layout("fallback da família %s: %s" % [
+						String(family),
+						String(platform_result.get("error", "plataforma inválida")),
+					])
+				_prepared_platform_rects[platform_name] = platform_result.get("rect", Rect2())
+			_suppress_authored_layout_errors = true
+			var fallback_route_valid := _validate_managed_generated_route(authored_platform_names, fallback_generation)
+			var fallback_error := _authored_layout_error
+			_suppress_authored_layout_errors = false
+			if not fallback_route_valid:
+				return _fail_authored_layout("layout candidato da família %s falhou (%s); fallback canônico também falhou (%s)" % [
+					String(family),
+					candidate_error,
+					fallback_error,
+				])
+			generation = fallback_generation
+			_authored_layout_error = ""
+		if not _validate_managed_room_boundaries():
+			return false
+	elif not _validate_generated_route(authored_platform_names):
+		return false
+	elif not _validate_authored_room_boundaries():
+		return false
+	if not _collect_authored_world_obstacles():
+		return false
+	if not _validate_authored_spawns_and_patrol():
+		return false
+	if not _validate_authored_target(_prepared_platform_rects):
+		return false
+
+	_authored_layout_valid = true
+	return true
+
+
+===== MAIN FUNCTION CONTEXT =====
+func _validate_authored_target(platform_rects: Dictionary) -> bool:
+	var target := get_node_or_null("TrainingTarget") as TrainingTarget
+	if target == null or not target.authored_support_enabled:
+		return _fail_authored_layout("TrainingTarget não está no modo de suporte autoral")
+	if target.collision_layer != 8:
+		return _fail_authored_layout("TrainingTarget deve permanecer na collision layer 8")
+	if target.collision_mask != 3:
+		return _fail_authored_layout("TrainingTarget deve manter collision_mask 3 para World e Player")
+	var player_body := get_node_or_null("Player") as CollisionObject2D
+	if player_body == null or player_body.collision_mask != 9:
+		return _fail_authored_layout("Player deve manter collision_mask 9 para World e TrainingTarget vivo")
+	var target_local_result: Dictionary = _body_aabb(target, true)
+	if not bool(target_local_result.get("valid", false)):
+		return _fail_authored_layout("collider do TrainingTarget ausente")
+	var target_local_bounds: Rect2 = target_local_result.get("rect", Rect2())
+	if target.fixed_support_path.is_empty() or target.fallback_support_path.is_empty():
+		return _fail_authored_layout("caminho de suporte autoral vazio")
+
+	var support_paths: Array[NodePath] = [target.fixed_support_path, target.fallback_support_path]
+	var first_safe_position: Dictionary = {}
+	var selected_patrol: Dictionary = {}
+	for support_path in support_paths:
+		var support := _resolve_authored_support(target, support_path)
+		if support == null or not platform_rects.has(support.name):
+			continue
+		var support_is_compatible := _is_target_support_compatible(support)
+		var support_rect: Rect2 = platform_rects[support.name]
+		if support_rect.size.x < target_local_bounds.size.x + AUTHORED_EDGE_MARGIN * 2.0:
+			continue
+		var target_origin := Vector2(
+			support_rect.get_center().x - target_local_bounds.get_center().x,
+			support_rect.position.y - target_local_bounds.end.y
+		)
+		var target_bounds: Rect2 = Rect2(target_local_bounds.position + target_origin, target_local_bounds.size)
+		if target_bounds.position.x < support_rect.position.x + AUTHORED_EDGE_MARGIN - 0.01:
+			continue
+		if target_bounds.end.x > support_rect.end.x - AUTHORED_EDGE_MARGIN + 0.01:
+			continue
+		if absf(target_bounds.end.y - support_rect.position.y) > AUTHORED_CONTACT_TOLERANCE:
+			continue
+		if not _find_world_layer_overlap(target_bounds, support).is_empty():
+			continue
+		var minimum_center_x := support_rect.position.x + AUTHORED_EDGE_MARGIN - target_local_bounds.position.x
+		var maximum_center_x := support_rect.end.x - AUTHORED_EDGE_MARGIN - target_local_bounds.end.x
+		var route_is_useful := support_is_compatible and maximum_center_x - minimum_center_x >= 8.0
+		var route_is_clear := false
+		if route_is_useful:
+			var sweep_bounds := Rect2(
+				Vector2(minimum_center_x + target_local_bounds.position.x, target_origin.y + target_local_bounds.position.y),
+				Vector2(maximum_center_x - minimum_center_x + target_local_bounds.size.x, target_local_bounds.size.y)
+			)
+			route_is_clear = _find_world_layer_overlap(sweep_bounds, support).is_empty()
+		var candidate: Dictionary = {
+			"position": target_origin,
+			"support": support,
+			"support_path": support_path,
+			"minimum_center_x": minimum_center_x,
+			"maximum_center_x": maximum_center_x,
+		}
+		if first_safe_position.is_empty():
+			first_safe_position = candidate
+		if route_is_clear:
+			selected_patrol = candidate
+			break
+
+	var selected: Dictionary = selected_patrol if not selected_patrol.is_empty() else first_safe_position
+	if selected.is_empty():
+		return _fail_authored_layout("suportes primário e fallback do TrainingTarget são inválidos ou sem posição segura")
+	_authored_target_position = selected.get("position", Vector2.ZERO)
+	_authored_target_node = target
+	_authored_target_support = selected.get("support") as SolidPlatform
+	_authored_target_support_path = selected.get("support_path", NodePath(""))
+	_authored_target_patrol_min_x = to_global(Vector2(float(selected.get("minimum_center_x", 0.0)), 0.0)).x
+	_authored_target_patrol_max_x = to_global(Vector2(float(selected.get("maximum_center_x", 0.0)), 0.0)).x
+	_authored_target_patrol_enabled = not selected_patrol.is_empty()
+	if _run_controller_managed:
+		var player_spawn := get_node_or_null("PlayerSpawnMarker") as Marker2D
+		var player_bounds_result := _body_aabb(player_body, false) if player_body != null else {}
+		if player_spawn == null or not bool(player_bounds_result.get("valid", false)):
+			return _fail_authored_layout("spawn do jogador não pode ser comparado ao TrainingTarget")
+		var player_bounds: Rect2 = player_bounds_result.get("rect", Rect2())
+		player_bounds.position += player_spawn.position - player_body.position
+		var target_bounds: Rect2 = target_local_bounds
+		target_bounds.position += _authored_target_position
+		if _positive_overlap_area(player_bounds, target_bounds) > AUTHORED_OVERLAP_AREA_LIMIT:
+			return _fail_authored_layout("spawn do jogador intersecta o TrainingTarget preparado")
+	return true
+
+
+===== EXACT CANONICAL DATA =====
+static func _canonical_managed_entries(
+	family: StringName,
+	entry_dir: Vector2i,
+	exit_dir: Vector2i,
+	entry_offset: float,
+	exit_offset: float
+) -> Array[Dictionary]:
+	var centers: Array[float] = []
+	var tops: Array[float] = []
+	var widths: Array[float] = []
+	if family == &"roof_four":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [448.0, 352.0, 256.0, 160.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
+		if portal_x == 248.0:
+			for index in centers.size():
+				centers[index] = 1152.0 - centers[index]
+	elif family == &"roof_five":
+		centers = [328.0, 472.0, 616.0, 760.0, 904.0]
+		tops = [448.0, 376.0, 304.0, 232.0, 160.0]
+		widths = [104.0, 104.0, 104.0, 104.0, 104.0]
+		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
+		if portal_x == 248.0:
+			for index in centers.size():
+				centers[index] = 1152.0 - centers[index]
+	elif family == &"catwalk":
+		centers = [256.0, 472.0, 688.0]
+		tops = [448.0, 400.0, 448.0]
+		widths = [160.0, 176.0, 160.0]
+	elif family == &"ridge":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [448.0, 384.0, 352.0, 416.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+	elif family == &"valley":
+		centers = [256.0, 472.0, 688.0, 904.0]
+		tops = [400.0, 448.0, 448.0, 400.0]
+		widths = [160.0, 160.0, 160.0, 160.0]
+	if family != &"roof_four" and family != &"roof_five":
+		var spawn_right := entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and entry_offset > 576.0)
+		if spawn_right:
+			for index in centers.size():
+				centers[index] = 1152.0 - centers[index]
+	var entries: Array[Dictionary] = []
+	for index in centers.size():
+		var size := Vector2(widths[index], 16.0)
+		var position := Vector2(centers[index], tops[index] + 8.0)
+		entries.append({"position": position, "size": size, "rect": Rect2(position - size * 0.5, size)})
+	return entries
+
+
+===== UNCHANGED R3 PHYSICAL LANDING =====
+func _managed_can_jump_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int, top_open: bool) -> bool:
+	var required_rise := source.position.y - target.position.y
+	if required_rise < 0.0 or required_rise > 128.0:
+		return false
+	var movement := _managed_movement_values()
+	var max_speed := float(movement.get("move_speed", 260.0))
+	var acceleration := float(movement.get("acceleration", 1600.0))
+	var deceleration := float(movement.get("deceleration", 2200.0))
+	var gravity := float(movement.get("gravity", 1600.0))
+	var jump_velocity := float(movement.get("jump_velocity", 640.0))
+	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	var launch_min := source.position.x + 14.0
+	var launch_max := source.end.x - 14.0
+	if launch_max < launch_min:
+		return false
+	var launch_points := _managed_launch_points(source, target, launch_min, launch_max)
+	var speed_candidates: Array[float] = [0.0, -100.0, 100.0, -180.0, 180.0, -260.0, 260.0]
+	for launch_x in launch_points:
+		var approach_axis := 0.0
+		if launch_x < target.position.x + 22.0:
+			approach_axis = 1.0
+		elif launch_x > target.end.x - 22.0:
+			approach_axis = -1.0
+		for initial_speed in speed_candidates:
+			if not is_zero_approx(initial_speed) and signf(initial_speed) != approach_axis:
+				continue
+			var runway := initial_speed * initial_speed / maxf(2.0 * acceleration, 1.0)
+			if initial_speed > 0.0 and launch_x - launch_min + 0.01 < runway:
+				continue
+			if initial_speed < 0.0 and launch_max - launch_x + 0.01 < runway:
+				continue
+			var root := Vector2(launch_x, source.position.y)
+			var vx := initial_speed
+			var vy := 0.0
+			var candidate_blocked := false
+			for frame in 120:
+				vy = minf(vy + gravity * dt, max_fall_speed)
+				if frame == 0:
+					vy = -jump_velocity
+				var horizontal_rate := acceleration if not is_zero_approx(approach_axis) else deceleration
+				vx = move_toward(vx, approach_axis * max_speed, horizontal_rate * dt)
+				var next := root + Vector2(vx, vy) * dt
+				var body := Rect2(Vector2(next.x - 14.0, next.y - 76.0), Vector2(28.0, 76.0))
+				if body.position.x < 64.0 or body.end.x > 1088.0:
+					candidate_blocked = true
+					break
+				var descending_landing := vy > 0.0 and root.y <= target.position.y and next.y >= target.position.y
+				if descending_landing:
+					var crossing_fraction := clampf((target.position.y - root.y) / (next.y - root.y), 0.0, 1.0)
+					var landing_x := lerpf(root.x, next.x, crossing_fraction)
+					if landing_x >= target.position.x + 22.0 and landing_x <= target.end.x - 22.0:
+						return true
+				for blocker_index in rects.size():
+					if blocker_index == source_index:
+						continue
+					if _positive_overlap_area(body, rects[blocker_index]) <= 0.01:
+						continue
+					# Plataformas sólidas também bloqueiam subida e colisões laterais.
+					# Só a aterrissagem descendente no topo do alvo é uma rota válida.
+					candidate_blocked = true
+					break
+				if candidate_blocked:
+					break
+				if body.position.y < 64.0 and body.end.y > -32.0:
+					var portal_x := float(_managed_room_descriptor.get("exit_offset", -1.0))
+					var inside_open_hatch := top_open \
+						and _managed_room_descriptor.get("exit_dir", Vector2i.ZERO) == Vector2i(0, -1) \
+						and body.position.x >= portal_x - 128.0 \
+						and body.end.x <= portal_x + 128.0
+					if not inside_open_hatch:
+						candidate_blocked = true
+						break
+				root = next
+				if root.y > source.position.y + 180.0:
+					break
+			# Um bloqueio invalida apenas este lançamento; os demais são testados.
+			if candidate_blocked:
+				continue
+	return false
+
+func _managed_can_drop_between(source: Rect2, target: Rect2, rects: Array[Rect2], source_index: int) -> bool:
+	if target.position.y <= source.position.y or target.position.y - source.position.y > 400.0:
+		return false
+	var movement := _managed_movement_values()
+	var max_speed := float(movement.get("move_speed", 260.0))
+	var acceleration := float(movement.get("acceleration", 1600.0))
+	var gravity := float(movement.get("gravity", 1600.0))
+	var max_fall_speed := float(movement.get("max_fall_speed", 900.0))
+	var dt := 1.0 / float(ProjectSettings.get_setting("physics/common/physics_ticks_per_second", 60))
+	var launch_min := source.position.x - 14.0
+	var launch_max := source.end.x + 14.0
+	var launch_points := _managed_launch_points(source, target, launch_min, launch_max)
+	for launch_x in launch_points:
+		for direction in [-1.0, 1.0]:
+			var root := Vector2(launch_x, source.position.y)
+			var vx := 0.0
+			var vertical_speed := 0.0
+			for _frame in 120:
+				var previous := root
+				vx = move_toward(vx, direction * max_speed, acceleration * dt)
+				root.x += vx * dt
+				var still_supported := root.x + 14.0 > source.position.x and root.x - 14.0 < source.end.x
+				if still_supported:
+					root.y = source.position.y
+					vertical_speed = 0.0
+				else:
+					vertical_speed = minf(vertical_speed + gravity * dt, max_fall_speed)
+					root.y += vertical_speed * dt
+				var body := Rect2(Vector2(root.x - 14.0, root.y - 76.0), Vector2(28.0, 76.0))
+				if body.position.x < 64.0 or body.end.x > 1088.0:
+					break
+				var descending_landing := not still_supported and previous.y <= target.position.y and root.y >= target.position.y
+				if descending_landing:
+					var crossing_fraction := clampf((target.position.y - previous.y) / (root.y - previous.y), 0.0, 1.0)
+					var landing_x := lerpf(previous.x, root.x, crossing_fraction)
+					if landing_x >= target.position.x + 22.0 and landing_x <= target.end.x - 22.0:
+						return true
+				var blocked := false
+				for blocker_index in rects.size():
+					if blocker_index == source_index:
+						continue
+					if _positive_overlap_area(body, rects[blocker_index]) > 0.01:
+						blocked = true
+						break
+				if blocked:
+					break
+				if root.y > target.position.y + 80.0:
+					break
+	return false
+
+
+
+===== UNCHANGED LAUNCH CANDIDATES AND CONFIG =====
+func _managed_launch_points(source: Rect2, target: Rect2, launch_min: float, launch_max: float) -> Array[float]:
+	var points: Array[float] = []
+	var candidates: Array[float] = [
+		launch_min + 8.0,
+		launch_min + 32.0,
+		source.get_center().x,
+		launch_max - 32.0,
+		launch_max - 8.0,
+		target.position.x - 64.0,
+		target.position.x - 32.0,
+		target.position.x + 22.0,
+		target.get_center().x,
+		target.end.x - 22.0,
+		target.end.x + 32.0,
+		target.end.x + 64.0,
+	]
+	for candidate in candidates:
+		var point := clampf(snappedf(candidate, 8.0), launch_min, launch_max)
+		if not points.has(point):
+			points.append(point)
+	return points
+
+func _managed_movement_values() -> Dictionary:
+	var config := MovementConfig.new()
+	var player_node := get_node_or_null("Player") as Player
+	if player_node != null and player_node.movement_config != null:
+		config = player_node.movement_config
+	return {
+		"move_speed": config.move_speed,
+		"acceleration": config.acceleration,
+		"deceleration": config.deceleration,
+		"gravity": config.gravity,
+		"jump_velocity": config.jump_velocity,
+		"max_fall_speed": config.max_fall_speed,
+	}
+

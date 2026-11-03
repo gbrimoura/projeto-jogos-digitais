@@ -1,0 +1,65 @@
+O arquivo [implementacao-r2-input.txt](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/docs/specs/2026-10-19-travessia-salas/pareceres/implementacao-r2-input.txt) foi analisado integralmente em modo estritamente somente leitura. Nenhuma alteração foi realizada em arquivos do repositório, e nenhum comando de shell, Git ou Godot foi executado.
+
+---
+
+### Análise e Cobertura dos Itens de Correção R1 $\to$ R2
+
+#### 1. Correção P1 `gate.disabled` (`is_gate_open`)
+* **Localização**: [`scripts/world/exit_door.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L159-L161) (`is_gate_open()`, linhas 159–161) e conexões em [`set_room_cleared()`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L89-L110) (linhas 93–95), [`_ready()`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L48-L55) (linha 53), [`set_terminal_complete()`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L162-L173) (linha 171) e validações em [`main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd#L529) (linhas 529 e 581).
+* **Avaliação**: Em R1, `is_gate_open()` retornava `not disabled`, invertendo a semântica física do Godot. Em R2, `is_gate_open()` retorna `_gate != null and _gate.disabled`. Como o colisor do portão inicia com `disabled = false` (ativo/bloqueado) e passa a `disabled = true` quando a sala é liberada (`set_room_cleared(true)`), a verificação reflete com exatidão a desativação física do obstáculo. No terminal, `disabled = false` fecha o gate. Correção P1 validada sem defeito.
+
+#### 2. Mensagem Managed/Retry e Desarmamento de Falha
+* **Localização**: [`scripts/world/exit_door.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L124-L137) (`report_transition_failure()`, linhas 124–137; `_update_presentation()`, linhas 224–235; `_physics_process()`, linhas 68–74).
+* **Avaliação**: 
+  1. Em `_update_presentation()`, `if not _failure_message.is_empty():` é avaliado antes de `elif _transition_busy:`, impedindo que o estado busy mascare a mensagem de erro.
+  2. Quando `_retry_enabled == false`, exibe apenas `_failure_message` sem o sufixo `"\nRECUE E TENTE NOVAMENTE"`.
+  3. Em `report_transition_failure()`, se `not _retry_enabled`, define `_transition_busy = true`. Com isso, a guarda de rearme em `_physics_process()` (`(_retry_enabled or not _transition_busy)`) resulta em `false`, impedindo permanentemente o rearme da porta na sala gerenciada após falha.
+  4. Na sala gerenciada inicial sem falha (`set_room_cleared(true)`), `_transition_busy == false`, permitindo o armamento inicial regular se o centro estiver antes da linha. Correção P2 validada.
+
+#### 3. Linha Atual $x \ge 1120$ no Amostrador e Validação
+* **Localização**: [`scripts/world/exit_door.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/exit_door.gd#L75-L78) (`_physics_process()`, linhas 75–78; `is_player_inside_exit_opening()`, linhas 150–158) e [`scripts/world/main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd#L516-L532) (`_exit_crossing_validation_error()`, linha 528; `_exit_crossing_validation_error_after_lock()`, linha 580).
+* **Avaliação**:
+  1. `is_player_inside_exit_opening()` agora exige expressamente `center.x >= _exit_line_x_in_room() and _point_is_inside_exit_opening(center)`.
+  2. As validações em `main.gd` (tanto na fase deferred quanto após o lock) invocam `is_player_inside_exit_opening()`. Isso garante que a geometria presente do centro do colisor do jogador está além ou sobre a linha $x=1120$ e contida no vão, eliminando dependência exclusiva de histórico temporal no momento da validação pelo `Main`.
+  3. O amortecedor de tipo Variant em `exit_door.gd` possui anotações e casts explícitos para `Vector2` nas três chamadas (`_physics_process`, `set_room_cleared`, `is_player_inside_exit_opening`). Correção validada.
+
+#### 4. Rollback de Timeout Restrito à Fonte Ainda Ativa
+* **Localização**: [`scripts/world/room_transition_overlay.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/room_transition_overlay.gd#L341-L350) (`_process()`, linhas 341–350; `_finish()`, linhas 367–396) e [`scripts/world/main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd#L613-L625) (`transition_overlay_source_still_active_after_timeout()`, linhas 613–625).
+* **Avaliação**:
+  1. Ao esgotar `MAX_SCENE_WAIT_FRAMES` (120 frames), se `is_instance_valid(_source_scene) and current_scene == _source_scene`, o overlay não limpa o snapshot de imediato nem força rollback direto durante o fade; ele marca `_rollback_after_accepted_swap_timeout = true` e inicia o fade out do preto (220 ms).
+  2. Em `_finish()`, delega a `transition_overlay_source_still_active_after_timeout(token, message)`.
+  3. Em `main.gd`, o método dedicado exige cumulativamente: mesmo token, `_standalone_swap_committed == true`, `_transition_in_progress == true`, não gerenciado, sem morte pendente, `_transition_source_scene == self`, `is_inside_tree()`, `_is_current_room_source()` e `get_tree().current_scene == self`.
+  4. Somente após essa validação estrita, redefine `_standalone_swap_committed = false` e chama `transition_overlay_failed()`, que destrava o player, limpa o snapshot e notifica a porta.
+  5. Se o swap tiver se completado durante o fade de 220 ms e a nova cena estiver ativa, `current_scene == self` falha, o rollback é recusado e a nova cena preserva a execução. Correção validada.
+
+#### 5. Preservação de Snapshot em Swap Legítimo e Cleanup em Falha/Timeout Irrecuperável
+* **Localização**: [`scripts/world/room_transition_overlay.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/room_transition_overlay.gd#L280-L288) (`cancel_transition()`, linhas 280–288; `_finish()`, linhas 378–386; `_clear_after_unrecoverable_swap()`, linhas 360–365) e [`scripts/world/main.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/main.gd#L630-L642) (`_cancel_standalone_transition()`, linhas 638–639).
+* **Avaliação**:
+  1. Tanto no cancelamento do overlay quanto no cancelamento de `main.gd`, `RoomTransition.clear_pending_snapshot()` só é disparado se `not _swap_accepted` / `not _standalone_swap_committed`.
+  2. Se a troca for aceita e a nova cena assumir, o snapshot permanece intacto para consumo pela nova sala em seu `_ready()`.
+  3. Se ocorrer timeout de 120 frames e o rollback for recusado (a cena fonte já saiu, mas uma nova cena pronta ainda não assumiu), `_finish()` verifica `new_scene_ready`; caso não haja cena utilizável, limpa o snapshot, evitando snapshot órfão.
+  4. Em `_clear_after_unrecoverable_swap()`, limpa o snapshot e recupera o fade sem deixar tela preta permanente. Correção validada.
+
+#### 6. Default de Delay Zero e Overrides Positivos em `RunController`
+* **Localização**: [`scripts/world/run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/projeto-jogos-digitais/scripts/world/run_controller.gd#L430-L459) (`transition_delay`, linha 440; `_advance_after_room()`, linhas 450–456 e contexto linhas 708–715).
+* **Avaliação**:
+  1. `@export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0` define o default em `0.0`.
+  2. Em `_advance_after_room()`, se `transition_delay > 0.0`, emite HUD com tempo e cria o timer assíncrono via `get_tree().create_timer(transition_delay)`.
+  3. Se `transition_delay <= 0.0`, exibe `"SALA CONCLUÍDA. PREPARANDO PRÓXIMA ETAPA."` e não instancia timer, iniciando imediatamente a verificação de estado e o fade out para a próxima sala.
+  4. A guarda `if _run_ended or completed_room != current_room_instance: return` permanece ativa após o eventual delay. Correção validada.
+
+---
+
+### Avaliação de Regressões P1 / P2
+Não foram identificadas regressões lógicas, deadlocks de await, falhas de tipagem estática ou caminhos órfãos de tela preta / lock de jogador nas implementações de R2. Todas as correções atendem rigorosamente ao contrato documental R3.
+
+---
+
+```text
+STATUS: done
+SUMMARY: R2 revisado em modo read-only estático. As 6 correções prioritárias (gate.disabled, apresentação managed/retry, centro x>=1120, rollback timeout com fonte ativa, retenção de snapshot em swap legítimo e delay zero/overrides) foram verificadas nos 4 scripts e validadas sem regressões P1/P2 concretas.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Se a cena de destino demorar mais de 120 frames para instanciar mas carregar com sucesso exatamente durante os 220 ms do fade_in_failure de timeout, a transição para a nova sala prosseguirá sem tela de erro, o que é o comportamento pretendido e seguro pelo contrato.
+NEXT_STEP: Encaminhar parecer de aprovação estática do delta R2 ao agente principal para consolidação e encerramento da rodada.
+```

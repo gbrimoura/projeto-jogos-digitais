@@ -1,0 +1,99 @@
+STATUS: done
+
+SUMMARY: O plano pode ser executado no Aseprite, e o escopo está bem fechado: só arquivos novos em `assets/ui/hud_caldeira_v1/**`, sem integrar Godot, sem testes, e a referência ImageGen04 não entra como asset. A pesquisa está declarada como inferência de composição. O comando segue a ordem certa (`--script-param` antes de `--script`). Mesmo assim, há três contradições numéricas que impedem a produção como está escrita: o espaço do painel de dash, a altura da fonte com acentos e a escala da prévia com fundo real. Há também lacunas de definição que deixariam o implementador decidindo regras sozinho. Fiz a revisão só sobre o conteúdo enviado, sem usar ferramentas.
+
+FINDINGS:
+
+**P1-1 — O conteúdo do painel de dash (144x28) não cabe.**
+- **Altura:** o relógio de 24x24 deixa só 2px de cada lado. Isso fica dentro da borda e dos cantos de 6px do 9-slice.
+- **Largura:** ícone 16 + relógio 24 + "RECARREGANDO" (12×6 = 71px) + "1,5s" (~23px) + espaços (~9px) dá cerca de 143px. Com bordas de ≥4px, o interior útil é de uns 136px.
+- **Correção:** dizer se o relógio envolve ou substitui o ícone (um único espaço de 24px). Também fixar a espessura real da borda, separada do tamanho do canto do 9-slice. Opções:
+  - subir o dash para 144x32 (igual ao player); ou
+  - reduzir o relógio para 20x20.
+- O novo valor vai no `layout.json`.
+
+**P1-2 — A altura da fonte não comporta Ç, Ã e acentos.**
+- A letra maiúscula tem 7 linhas. Til e acento agudo precisam de 2 linhas acima, e a cedilha de 1–2 abaixo. Isso dá uma célula de cerca de 11 linhas, contra uma altura de linha de 9.
+- Nos painéis com duas linhas (salas, instrumento), o acento encosta na linha de cima ou na borda.
+- **Correção:** definir a altura total, a linha de base e o espaçamento entre linhas. Por exemplo, célula de 11 linhas com base na linha 9 e espaçamento de 10–11. A alternativa é desenhar as maiúsculas acentuadas com 6 linhas de altura. Depois, conferir de novo as alturas internas dos painéis.
+
+**P1-3 — A prévia 3x com fundo real exige escala fracionária.**
+- 1728x972 é 3x da arte da HUD (576x324), mas 1,5x do espaço lógico 1152x648 onde ficam o fundo e os sprites de 64/32px.
+- Montar o contexto em 576x324 obrigaria a reduzir a arte do mundo pela metade.
+- **Correção:** montar o contexto em 1152x648 (HUD em 2x por vizinho mais próximo, mundo em 1x), com versão opcional em 2304x1296. A prévia de 1728x972 fica só para a HUD e o overlay sem fundo.
+
+**P2-1 — Relógio sem convenção.** Falta dizer:
+- onde começa (12h?);
+- se a área cinza cresce ou diminui no sentido horário;
+- o que significam o passo 0 e o 16 (por exemplo, 0 = acabou de usar, tudo cinza; 16 = pronto);
+- a regra de arredondamento da razão para o passo (floor ou ceil).
+
+Também falta garantir que cada passo contém o anterior: decidir pelo ângulo do centro de cada pixel, de forma determinística, para não haver pixels piscando entre os 17 quadros.
+
+**P2-2 — Medidor com largura par (36).** Não existe coluna central, então a agulha vertical fica ambígua. Usar 35 ou 37 e marcar o pivô na base central. Decidir também entre agulhas pré-desenhadas em N passos (contagem visual, não regra de jogo) ou agulha girada no runtime. Girar pixel art no Godot quebra a grade; registrar isso como pendência.
+
+**P2-3 — Preenchimento da barra.**
+- Falta a regra de arredondamento. Sugestão: floor; ≥1px se HP>0; cheio só se HP=máximo.
+- Sugerir interior útil múltiplo de 30 (90 ou 120px) para que 3/5 e 4/6 fiquem exatos na prévia.
+- Reservar largura para números de até N dígitos (por exemplo, "999/999") sem fixar a economia de vida.
+
+**P2-4 — Conjunto de caracteres.**
+- Os segundos precisam de "s" minúsculo, que não está em A–Z. Alternativas: incluir "s" ou usar "S" e registrar a escolha.
+- O conjunto de acentos está aberto, e nomes de inimigos são dinâmicos. Sugiro incluir ÁÀÂÃÉÊÍÓÔÕÚÇ.
+- Falta regra de corte ou abreviação para nome longo no alvo (cerca de 18 caracteres de 6px).
+
+**P2-5 — Retratos.**
+- Faltam o arquivo de origem, o quadro e o recorte de cada retrato (player e quais inimigos).
+- Declarar que os retratos ficam fora da paleta bloqueada.
+- Densidade de pixel: a arte da HUD é desenhada pela metade e ampliada 2x. Se o mundo for desenhado 1:1 no espaço lógico, os pixels da HUD e dos retratos ficarão o dobro dos do mundo. Confirmar com o usuário se essa diferença é aceita.
+
+**P2-6 — Importação no Godot.**
+- Arquivos novos dentro do projeto serão importados quando o editor abrir (`.import` e UIDs).
+- Se houver addon importador de `.aseprite`, ele também importa os fontes.
+- Prévias com fundo real e com a pesquisa virariam texturas do projeto.
+- Sugestão: separar `source/`, `preview/` e `export/` e colocar um `.gdignore` (arquivo novo dentro do kit) em `source/` e `preview/`.
+
+**P2-7 — Manifesto sem formato definido.** Fixar um formato mínimo antes de produzir:
+- id, arquivo, retângulo no atlas, pivô;
+- margens do 9-slice e retângulo útil interno;
+- retângulo útil do preenchimento;
+- estados e quadros;
+- origem e recorte dos retratos;
+- escala nativa e escala de aplicação.
+
+Sugestão: usar slices nativos do Aseprite (center/pivot) e exportá-los junto com o JSON.
+
+**P2-8 — Mudança no layout aprovado.** Levar o instrumento do canto inferior direito para o alto altera a prancha04 aprovada. Pedir aceite explícito do usuário, ou deixar a camada movível e documentar as duas posições.
+
+**P2-9 — Revisores divergem do AGENTS.md.**
+- O AGENTS.md exige Cursor `grok-4.7-xhigh-fast`; o plano usa `cursor-grok-4.6-xhigh-fast` e cita uma "instrução global". Guardar a fonte dessa instrução no preflight; sem ela, está em desacordo com o AGENTS.md.
+- Para o Muse falta a variante `xhigh` e o agente `plan`.
+
+**P2-10 — Escopo grande para 30 minutos com um só implementador.** Inclui fonte com glifos à mão, 17 quadros do relógio, medidor, retratos, atlas, JSON, composição e prévias. Definir a ordem de entrega:
+1. paleta, 9-slice e barras;
+2. fonte;
+3. relógio e medidor;
+4. retratos;
+5. atlas e manifesto;
+6. composição e prévias.
+
+Pedir entrega parcial explícita se der timeout.
+
+**P2-11 — Execução no Aseprite.**
+- Fixar a versão mínima, porque o módulo `json` e o `Image{fromFile}` só existem a partir da 1.3.
+- Pôr aspas no root e no `--script`: o caminho tem espaços ("TEC - Jogos").
+- Ler stdout e stderr da execução, porque o modo `-b` pode encerrar com código 0 mesmo com erro no Lua. Isso faz parte da produção, não é QA.
+- Sugestão: usar modo indexado com o índice 0 transparente nas peças novas, para garantir a paleta e a transparência binária.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- O painel de alvo no centro do topo e a coluna da direita podem tapar a arena em salas verticais ou geradas. O plano já trata isso como pendente.
+- Falta um estado "sem alvo". Não está definido e não deve ser inventado; registrar como pendência de integração.
+- O relógio cinza sobre o navy tem contraste moderado. O texto PRONTO/RECARREGANDO compensa, mas a legibilidade em 2x só será conhecida na integração.
+- A escala para 1920x1080 (1,667x) segue não inteira e fica para a integração.
+- A inspeção visual do principal não substitui QA, e o plano já evita afirmar isso.
+
+NEXT_STEP: Corrigir os P1-1 a P1-3 nas dimensões e na especificação. Fechar as convenções dos P2-1 a P2-7. Pedir ao usuário aceite do P2-8 e da densidade de pixel (P2-5), e registrar a justificativa do Grok 4.6 (P2-9). Depois congelar a v0.2 do plano e liberar o GPT-6 Luna com a ordem de entrega e as regras de entrega parcial.

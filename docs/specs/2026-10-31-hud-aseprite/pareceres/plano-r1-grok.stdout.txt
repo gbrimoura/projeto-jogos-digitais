@@ -1,0 +1,17 @@
+STATUS: done  
+SUMMARY: Plano e spec são executáveis no escopo Aseprite-only (kit nativo em `assets/ui/hud_caldeira_v1/**`, sem Godot/QA). Identidade, paleta binária, 9-slice, fills separados, fonte própria, layout 576x324 e pesquisa-só-referência estão coerentes e não inventam regras pendentes. Há conflito dimensional real entre painéis sugeridos e peças 24px, e a convenção do relógio cinza ainda não está fechada no texto congelado.
+
+FINDINGS:  
+P1: Painel dash 144x28 + moldura 9-slice 6px deixa interior 132x16; o relógio 24x24 não cabe no cromo. Painel alvo 144x32 deixa interior 20px de altura; o retrato 24x24 também não cabe. Seguir os tamanhos “sugeridos” ao pé da letra quebra 9-slice ou recorta arte. A cláusula de ajuste pequeno precisa ser usada de fato: subir altura do dash/alvo (ou relógio/retrato fora do interior fatiável) e gravar os rects finais no manifesto.  
+P1: Relógio 24x24 / 17 passos 0..16 está pedido, mas plano/spec não fixam sentido horário nem o que é 0 e 16 (vazio=PRONTO vs fatia cheia=cooldown). Sem isso o kit não tem contrato de estados, só “passos”. Definir no manifesto: sentido horário; 0 = vazio/PRONTO; 16 = cheio/RECARREGANDO (ou o inverso, desde que explícito). Sem duração de dash.  
+P2: Fills 3/5 e alvo 4/6=2/3 exigem clipping inteiro. Largura útil do fill deveria ser múltipla de 15, ou o arredondamento (floor/nearest) precisa ir no manifesto; senão o preview mente a fração.  
+P2: Fonte 5x7/linha 9/advance 6 cobre A–Z 0–9 /,:.-% e Ã/Ç de ACELERAÇÃO; “demais labels PT-BR” não lista as strings. Fechar o set de estudo (RECARREGANDO, PRONTO, ACELERAÇÃO, SALA/ANDAR se existirem) e não puxar nome de inimigo com acento fora do atlas. Branco só máscara.  
+P2: Retrato 24x24 a partir de sprite 64x64 só é legal como recorte de janela 24x24 (escala 64→24 é fracionária). Pacote não nomeia os PNG/Aseprite-fonte nem o crop.  
+P2: Árvore de saída, padding anti-bleed do atlas e pivôs não estão nomeados; layout.json/anchors sim. Instrumento 84x48: “ACELERAÇÃO” (60px) cabe no interior 72px, mas é apertado. 17 fatias em 24x24 tendem a passos vizinhos pouco distintos.
+
+CHANGED_FILES: none  
+TESTS: none  
+
+RISKS: Timeout 30 min é apertado para Lua+fonte+17 estados+9-slice+retratos+atlas+composição 576x324 e preview 1728x972; kit parcial é o risco operacional, não falha de regra. Relógio em pizza 16 setores pode ficar ilegível mesmo com convenção correta. Verticalidade/seed ainda pode tapar módulos — o plano já não promete oclusão zero. 1920x1080 e escala final continuam fora. Split Luna=kit / principal=docs pode deixar contrato escrito atrás da arte se o tempo estourar. Risco de produção: esticar moldura com rebites no centro fatiável, colar HP no fill, ou empacotar fundo/ImageGen/pesquisa como textura. Nenhuma unidade de HP, dash, aceleração ou targeting foi (nem deve ser) inventada.
+
+NEXT_STEP: Congelar overrides de altura dash/alvo (ou peça fora do slice), convenção horária 0..16 e crop 24x24 nomeado; em seguida Luna gera só `assets/ui/hud_caldeira_v1/**` via `Aseprite.exe -b --script-param root=<repo> --script <kit/generate_hud.lua>`, inspeciona visualmente, sem Godot/testes/audit.

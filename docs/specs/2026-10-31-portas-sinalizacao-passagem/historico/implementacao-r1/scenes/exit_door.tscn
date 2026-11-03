@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/exit_door.gd" id="1_exit_door"]
+[ext_resource type="Script" path="res://scripts/world/side_door_visual.gd" id="2_side_door_visual"]
+[ext_resource type="Script" path="res://scripts/world/door_foreground_visual.gd" id="3_door_foreground_visual"]
+[ext_resource type="Script" path="res://scripts/world/exit_direction_indicator.gd" id="4_exit_direction_indicator"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit_sensor"]
+size = Vector2(64.0, 128.0)
+
+[node name="ExitDoor" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_exit_door")
+
+[node name="SensorShape" type="CollisionShape2D" parent="."]
+position = Vector2(80.0, -26.0)
+shape = SubResource("RectangleShape2D_exit_sensor")
+
+[node name="SideDoorVisual" type="Node2D" parent="."]
+position = Vector2(80, -26)
+z_index = -1
+z_as_relative = false
+script = ExtResource("2_side_door_visual")
+flip_h = false
+is_open = false
+
+[node name="DoorForegroundVisual" type="Node2D" parent="SideDoorVisual"]
+z_index = 1
+z_as_relative = false
+script = ExtResource("3_door_foreground_visual")
+flip_h = false
+is_open = false
+
+[node name="DoorLabel" type="Label" parent="."]
+offset_left = -224.0
+offset_top = -146.0
+offset_right = 0.0
+offset_bottom = -106.0
+visible = false
+theme_override_colors/font_color = Color(0.827451, 0.764706, 0.654902, 1)
+theme_override_font_sizes/font_size = 10
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ExitDirectionIndicator" type="Node2D" parent="."]
+visible = false
+z_index = 1
+z_as_relative = false
+script = ExtResource("4_exit_direction_indicator")

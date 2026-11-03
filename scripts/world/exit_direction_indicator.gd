@@ -1,0 +1,91 @@
+@tool
+extends Node2D
+
+const RIGHT := Vector2i(1, 0)
+const DOWN := Vector2i(0, 1)
+const LEFT := Vector2i(-1, 0)
+const UP := Vector2i(0, -1)
+const OUTLINE := Color("#302D2A")
+const AMBER := Color("#B78342")
+const CREAM := Color("#E2C99B")
+const BLINK_ON_DURATION: float = 0.8
+const BLINK_CYCLE_DURATION: float = 1.2
+
+const OUTLINE_RECTS: Array[Rect2i] = [
+	Rect2i(-24, -8, 40, 16),
+	Rect2i(0, -16, 8, 32),
+	Rect2i(8, -12, 8, 24),
+	Rect2i(16, -8, 8, 16),
+	Rect2i(24, -4, 12, 8),
+]
+
+const ARROW_RECTS: Array[Rect2i] = [
+	Rect2i(-20, -4, 28, 8),
+	Rect2i(0, -12, 8, 24),
+	Rect2i(8, -8, 8, 16),
+	Rect2i(16, -4, 8, 8),
+	Rect2i(24, -4, 8, 8),
+]
+
+@export var direction: Vector2i = RIGHT:
+	set(value):
+		if not _is_cardinal(value):
+			return
+		direction = value
+		queue_redraw()
+
+var _blink_enabled: bool = false
+var _blink_elapsed: float = 0.0
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	set_process(false)
+	queue_redraw()
+
+func configure(next_direction: Vector2i, next_position: Vector2, enabled: bool) -> void:
+	if _is_cardinal(next_direction):
+		direction = next_direction
+	position = next_position
+	visible = enabled
+	if enabled != _blink_enabled:
+		_blink_enabled = enabled
+		_blink_elapsed = 0.0
+		set_process(enabled and not Engine.is_editor_hint())
+	queue_redraw()
+
+func _process(delta: float) -> void:
+	if not _blink_enabled or Engine.is_editor_hint():
+		return
+	var was_lit := _blink_elapsed < BLINK_ON_DURATION
+	_blink_elapsed = fmod(_blink_elapsed + delta, BLINK_CYCLE_DURATION)
+	if was_lit != (_blink_elapsed < BLINK_ON_DURATION):
+		queue_redraw()
+
+func _draw() -> void:
+	if _blink_enabled and _blink_elapsed >= BLINK_ON_DURATION:
+		return
+	for raw_rect in OUTLINE_RECTS:
+		var rect: Rect2i = raw_rect
+		draw_rect(_oriented_rect(rect), OUTLINE)
+	for raw_rect in ARROW_RECTS:
+		var rect: Rect2i = raw_rect
+		draw_rect(_oriented_rect(rect), AMBER)
+	draw_rect(_oriented_rect(Rect2i(-16, -2, 16, 4)), CREAM)
+
+func _oriented_rect(rect: Rect2i) -> Rect2:
+	var position_i := rect.position
+	var size_i := rect.size
+	var oriented_position := position_i
+	var oriented_size := size_i
+	if direction == DOWN:
+		oriented_position = Vector2i(-position_i.y - size_i.y, position_i.x)
+		oriented_size = Vector2i(size_i.y, size_i.x)
+	elif direction == LEFT:
+		oriented_position = Vector2i(-position_i.x - size_i.x, -position_i.y - size_i.y)
+	elif direction == UP:
+		oriented_position = Vector2i(position_i.y, -position_i.x - size_i.x)
+		oriented_size = Vector2i(size_i.y, size_i.x)
+	return Rect2(Vector2(oriented_position), Vector2(oriented_size))
+
+func _is_cardinal(value: Vector2i) -> bool:
+	return value == RIGHT or value == DOWN or value == LEFT or value == UP

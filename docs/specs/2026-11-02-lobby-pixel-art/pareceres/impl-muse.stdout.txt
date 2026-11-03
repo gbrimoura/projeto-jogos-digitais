@@ -1,0 +1,13 @@
+STATUS: HOLD - concrete source/API/manifest mismatches, no runtime approval change
+
+SUMMARY:
+- Scope kept: only `scripts/world/lobby_visual.gd` runtime + `lobby_v1` assets, `Texture2D preload` + `NEAREST` + `2x` destinations correct.
+- P1 palette divergence: `lobby_visual.gd: INK #0C1B29, STEEL #142C40, STEEL_LIGHT #203E50, STEEL_MID #4B555D` not in `HEX[20]`/manifest `factory_17+3=20`; preview plaque `rect(context,444,192,88,20,K.ink)` uses `#0E0D0E`. Runtime plaque/lamps `draw_rect(Rect2(888,384,176,40),INK)` / `STEEL_MID` off-palette.
+- P1 floor bottom row: runtime `Rect2(tile_x,624,32,32)` from `Rect2(source_x,96,32,32)` overdraws to `656>648`; generator preview `tileHeight=row==2 and 24` + `world:drawImage(tile,tx*32,560+row*32)` ends exact `648`.
+- P1 manifest/player-study inconsistent: `draw_origin_native:[88,223]` + `bounds:[21,7,23,50]` + `foot:280` vs code `nativeX=120-floor((minx+maxx+1)/2)` / `nativeY=279-maxy` -> `98,229` for those bounds, `223+50+1=274!=280`; sprite-center `88+32=120` vs bbox-center formula.
+- P2 duplicates/dead: `rect(E,444,193,88,19,K.iron)` x2; `nearestScale(backdrop,2/3)` `saveAs` x2 each; unused `GLASS/STEEL/STEEL_LIGHT/STEEL_EDGE/RUST/PALE`; `ROOT` fallback absolute `projeto-jogos-digitais`; `makePalette pcall` swallows lock; preview `8x8/2px` lamps/plaque vs runtime `14x14/3px`; floor preview decimation `atlas:getPixel(sx+x*2,sy+y*2)` vs runtime full-tile; exclusive `visual_layer==0` needs 2 instances undocumented; `workbench [70,238]` -> world `140` vs manifest `≈144`; sides `21*32=672>648`.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS: plaque/lamp hue drift; floor 8px overdraw/clip; study coords not reusable for spawn/foot alignment; silent palette/ROOT fallback.
+NEXT_STEP: align runtime colors to 20-locked hex, fix bottom-row to 24px, correct manifest origin/bounds/foot to generator math, dedupe saves/rect, remove or use dead consts.

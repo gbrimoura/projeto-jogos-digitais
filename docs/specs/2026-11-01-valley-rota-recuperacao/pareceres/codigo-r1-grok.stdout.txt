@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: R1 valley/HUD, no escopo, sem erro concreto novo. Canônico valley só desloca corredores (centers 216/456/696/936, tops 400/448/448/400, primary0/fallback1 intactos); geometria bate com a prova inner1[376,536] e wing0[136,296]. RNG dos internos e gaps continua a ser consumido; jitter interno é ignorado e gap valley passa a 80..96. HUD valida raw Variant com is_instance_valid/`is` antes de `as`, o que ataca o cast em objeto freed em `_restore_legacy_visibility`.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: Revisão estática do trecho fornecido; Godot/parser/simulação/replay não executados. Determinismo vale para a versão nova, sem prova de replay. Gaps valley maiores podem aumentar rejeição aleatória e queda no canônico, sem relaxar o validador. `_is_live_node` extra no hide de inimigos é mais estreito que validade crua, sem indício de regressão visual no compacto.
+NEXT_STEP: Aceitar R1 nestes dois arquivos; persistir este stdout no parecer da pasta do plano; não reabrir física, índices primary/fallback nem outras famílias sem falha concreta nova.

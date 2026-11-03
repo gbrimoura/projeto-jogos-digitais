@@ -1,0 +1,77 @@
+### STATUS
+**APPROVED (STABLE)** — The proposed architecture and layout calculations are sound, mathematically verified, and fully resolve the name truncation defect without breaking asset contracts or sibling UI elements.
+
+---
+
+### SUMMARY
+The review confirms that the 144×40 layout properly fits all portrait, text, and target bar elements into their allocated pixel envelopes using the existing 5×11 font (advance 6px):
+
+1. **Resolution of Truncation (`NV1 TRANCA-- 1/6`)**:
+   - **`NameText` (offset 42..138, width 96px, height 12px at y 6..18)**:
+     - Capacity: $\lfloor 96 / 6 \rfloor = 16\text{ characters}$.
+     - `Tranca-Lata` (11 chars) and `Cospe-Rebite` (12 chars) fit on row 1 with zero truncation or hyphenation.
+   - **`LevelText` (offset 42..72, width 30px, height 12px at y 18..30)**:
+     - Capacity: $\lfloor 30 / 6 \rfloor = 5\text{ characters}$.
+     - `NV1` (3 chars) up to `NV220` (5 chars) fit cleanly without colliding with `ValueText`.
+   - **`ValueText` (offset 78..138, width 60px, height 12px at y 18..30, `right_align = true`)**:
+     - Capacity: $\lfloor 60 / 6 \rfloor = 10\text{ characters}$.
+     - Up to `999/999` (7 chars) and `9999/9999` (9 chars) fit right-aligned at $x = 138$.
+     - Clear horizontal separation between `LevelText` end ($x = 72$) and `ValueText` start ($x = 78$) provides a mandatory 6px (1-glyph) gap.
+
+2. **Target-Only Health Bar (position 42, 30, size 96×6)**:
+   - Spans $x \in [42, 138]$ and $y \in [30, 36]$, leaving a clean 4px margin before the 40px bottom border.
+   - Symmetrically nested: outer 96×6 $\rightarrow$ border 94×4 (inset 1px) $\rightarrow$ background well 92×2 (inset 2px) $\rightarrow$ fill strip up to 90×2 (at $x=45$, centered inside the 92px well with 1px framing on either side).
+   - Driven entirely by target `current` and `maximum` health; independent of player health bars.
+
+3. **Draw-Order Architecture (`Frame.show_behind_parent = true`)**:
+   - Under Godot 4 `CanvasItem` rendering semantics, children with `show_behind_parent = true` render prior to the parent's `NOTIFICATION_DRAW`.
+   - `Frame` (NinePatchRect background) renders first $\rightarrow$ `Target._draw()` draws the bar midground on top of the frame $\rightarrow$ `Portrait`, `NameText`, `LevelText`, and `ValueText` (`show_behind_parent = false`) render foreground elements last.
+
+4. **Portrait Fitting & Centering**:
+   - Region is 32×28 at position $(6, 6)$.
+   - 32×28 textures map 1:1 at $(6, 6)$.
+   - 24×24 textures center at $(10, 8)$ ($\Delta x = 4\text{px}, \Delta y = 2\text{px}$).
+   - Textures $> 32\times 28$ are scaled via `minf(32/w, 28/h)` with pixel-snapped `floorf` and nearest-neighbor sampling.
+
+5. **API & Bridge Contract**:
+   - Optional parameter `level: int = 1` in `set_target()` ensures backwards compatibility across any legacy callers while cleanly propagating target level from `_enemy_cache` via `nearest.get("enemy_level")`.
+   - `clear_target()` resets health values, empties text nodes, and clears/hides portrait and panel.
+
+---
+
+### CHANGED_FILES: none
+*(Read-only review mode; no codebase modifications executed).*
+
+---
+
+### TESTS: none
+*(Test execution suppressed per prompt review parameters).*
+
+---
+
+### RISKS
+
+#### P1 (Critical / Blocking)
+- **None**. The coordinate geometry, string buffer lengths, and Godot 4 draw-order mechanics are structurally correct.
+
+#### P2 (Defensive Edge Cases & Hardening)
+1. **Bootstrap Lifecycle Guard (`target_panel.gd`)**:
+   - *Source Evidence*: Lines `@onready var _name_text = $NameText`, etc., inside `set_target()` / `clear_target()`.
+   - *Condition*: If `clear_target()` or `set_target()` is called during scene initialization before `Target` has completed `_ready()`, calling `.call("set_text", ...)` on `@onready` variables will encounter `null` instances.
+   - *Mitigation*: Add an early exit guard: `if not is_node_ready(): return` or check `if _name_text == null: return`.
+2. **Division by Zero Protection on Broken Textures (`_set_portrait`)**:
+   - *Source Evidence*: `PORTRAIT_REGION.x / natural_size.x` and `PORTRAIT_REGION.y / natural_size.y`.
+   - *Condition*: If a dynamic or corrupted texture is passed with $w \le 0$ or $h \le 0$, floating point division by zero occurs.
+   - *Mitigation*: Add `if natural_size.x <= 0.0 or natural_size.y <= 0.0: return` before calculating `contain_scale`.
+3. **Empty / Null Display Name Fallback in Bridge (`BRIDGE_UPDATE_TARGET`)**:
+   - *Source Evidence*: `var target_name: String = String(nearest.get("display_name"))`.
+   - *Condition*: If an enemy node lacks the `display_name` property or returns an empty variant, `target_name` becomes empty or `"<null>"`.
+   - *Mitigation*: Fall back to `nearest.name` if `target_name.strip_edges().is_empty()`.
+
+---
+
+### NEXT_STEP
+When ready to execute, apply the reviewed GDScript and scene definitions to:
+1. `scripts/ui/hud/target_panel.gd` (incorporating P2 defensive guards).
+2. `scenes/ui/hud/target_panel.tscn` (establishing `Frame.show_behind_parent = true` and the updated node offsets).
+3. HUD root script and bridge forwarding methods.

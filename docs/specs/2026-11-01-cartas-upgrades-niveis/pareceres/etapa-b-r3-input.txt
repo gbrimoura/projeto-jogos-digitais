@@ -1,0 +1,490 @@
+Revisão DELTA FINAL B R1a->R3 somente-leitura timeout5min. Não executar comandos/engine/testes/parser/linter/auditoria/simulação, não editar. Retorne STATUS/SUMMARY/FINDINGSconcretos/CHANGED_FILESnone/TESTSnone/RISKS/NEXT_STEP. RodadasA eBcompletas Gemini/Grok/Muse semP1; rever só 3arquivos e correções mínimas abaixo. OpusCursorexatoquota até03/11 járegistrado nesta tarefa, não substituído.
+O que mudou: textoUIresumo troca';'por'/' (umcharporum) pois fonteHUDnão tem';'; BUILDtroca'|'por'/' pelo mesmo motivo. Badge12px agora210..222 dentrofaixa24px204..228 (anteslabel24pxcomeçavatopo). JSONfont local viaResourceLoaderasJSON/data comoHudBitmapText, paraimportedJSON/exportsemrawfile. StyleBoxEmptyemButtonnos6estados paraPNGserúnicovisual. SummaryBackdropColorRectopacoHUD0C1B29 em8,118..152,142antesSummary, masksréguas119/138parasuportar2linhas12pxsemcruzarframe; nãoencobreimagemquefina114nemosTopicscomeçam146. Nãoalteradosassets/formulas/selectionflow/ranks/níveis/Git. Width144px24glyphstextos, badge136pxcabeNOVO/NV.220. NãoexigirregenerarPNGoulerworkspaceinstável.
+Fontebasecaracteres: ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789s /,:.-%ÁÀÂÃÉÊÍÓÔÕÚÇ e glifoslocais+'>' (+ em72,2;>em78,2;84x105). TodosvaloresnuméricosdopróximonívelcontinuamgeradosnoCatalog; ';'éapenasdelimiterjásemglifo. EstudoarteAsepriteépreview,nãoscreenshotGodot.
+DIFF scripts/ui/upgrade_card.gd
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/ui/upgrade_card.gd "b/docs\\specs\\2026-11-01-cartas-upgrades-niveis\\historico\\etapa-b-r3\\scripts\\ui\\upgrade_card.gd"
+index 09ace66..44f2062 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/ui/upgrade_card.gd
++++ "b/docs\\specs\\2026-11-01-cartas-upgrades-niveis\\historico\\etapa-b-r3\\scripts\\ui\\upgrade_card.gd"
+@@ -38,17 +38,18 @@ func _ready() -> void:
+ 
+ static func load_card_font_bundle() -> Dictionary:
+ 	if bool(_cached_card_font_bundle.get("valid", false)):
+ 		return _cached_card_font_bundle.duplicate(true)
+ 	var bundle: Dictionary = HudBitmapTextScript.load_font_bundle()
+ 	if not bool(bundle.get("valid", false)):
+ 		return bundle
+ 	var atlas: Texture2D = ResourceLoader.load(CARD_FONT_ATLAS_PATH) as Texture2D
+-	var additions_data: Variant = JSON.parse_string(FileAccess.get_file_as_string(CARD_FONT_ADDITIONS_PATH))
++	var additions_json: JSON = ResourceLoader.load(CARD_FONT_ADDITIONS_PATH) as JSON
++	var additions_data: Variant = additions_json.data if additions_json != null else null
+ 	if atlas == null or typeof(additions_data) != TYPE_DICTIONARY:
+ 		return {"valid": false, "reason": "atlas local ou adições da fonte de cartas inválidos"}
+ 	var additions: Dictionary = additions_data
+ 	var glyphs: Dictionary = bundle.get("glyphs", {})
+ 	var raw_glyphs: Variant = additions.get("glyphs", [])
+ 	if typeof(raw_glyphs) != TYPE_ARRAY:
+ 		return {"valid": false, "reason": "lista de glifos locais inválida"}
+ 	for glyph_variant: Variant in raw_glyphs:
+@@ -85,17 +86,17 @@ func configure(row: Dictionary, font_bundle: Dictionary) -> bool:
+ 	var definition: UpgradeDefinitionResource = row.get("definition") as UpgradeDefinitionResource
+ 	if definition == null:
+ 		return false
+ 	var illustration: Texture2D = row.get("icon", definition.icon) as Texture2D
+ 	if illustration == null:
+ 		return false
+ 	if not _configure_text(_title, String(row.get("title", definition.title)), font_bundle, 1):
+ 		return false
+-	var summary_lines := _wrap_text(String(row.get("effect_summary", "")), 24, 2)
++	var summary_lines := _wrap_text(String(row.get("effect_summary", "")).replace(";", "/"), 24, 2)
+ 	if summary_lines.size() != 1 and summary_lines.size() != 2:
+ 		return false
+ 	if not _configure_text(_summary, "\n".join(PackedStringArray(summary_lines)), font_bundle, 2):
+ 		return false
+ 	var topic_lines: Array[String] = []
+ 	var topics_variant: Variant = row.get("topics", definition.effect_topics)
+ 	if typeof(topics_variant) == TYPE_PACKED_STRING_ARRAY or typeof(topics_variant) == TYPE_ARRAY:
+ 		for topic_variant: Variant in topics_variant:
+SOURCE scripts/ui/upgrade_card.gd
+class_name UpgradeCard
+extends Button
+
+const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const CARD_FONT_ATLAS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-atlas.png"
+const CARD_FONT_ADDITIONS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-additions.json"
+const FRAME_NORMAL: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_normal_160x240.png")
+const FRAME_FOCUS: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_focus_160x240.png")
+const FRAME_PRESSED: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_pressed_160x240.png")
+
+@onready var _frame: TextureRect = $Frame
+@onready var _illustration: TextureRect = $Illustration
+@onready var _title: HudBitmapText = $Title
+@onready var _summary: HudBitmapText = $Summary
+@onready var _topic_lines: Array[HudBitmapText] = [
+	$Topic0 as HudBitmapText,
+	$Topic1 as HudBitmapText,
+	$Topic2 as HudBitmapText,
+]
+@onready var _badge: HudBitmapText = $Badge
+
+var _hovered: bool = false
+var _pressed_visual: bool = false
+
+static var _cached_card_font_bundle: Dictionary = {}
+
+func _ready() -> void:
+	flat = true
+	focus_mode = Control.FOCUS_ALL
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	focus_entered.connect(_on_focus_entered)
+	focus_exited.connect(_on_focus_exited)
+	button_down.connect(_on_button_down)
+	button_up.connect(_on_button_up)
+	_apply_frame_state()
+
+static func load_card_font_bundle() -> Dictionary:
+	if bool(_cached_card_font_bundle.get("valid", false)):
+		return _cached_card_font_bundle.duplicate(true)
+	var bundle: Dictionary = HudBitmapTextScript.load_font_bundle()
+	if not bool(bundle.get("valid", false)):
+		return bundle
+	var atlas: Texture2D = ResourceLoader.load(CARD_FONT_ATLAS_PATH) as Texture2D
+	var additions_json: JSON = ResourceLoader.load(CARD_FONT_ADDITIONS_PATH) as JSON
+	var additions_data: Variant = additions_json.data if additions_json != null else null
+	if atlas == null or typeof(additions_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "atlas local ou adições da fonte de cartas inválidos"}
+	var additions: Dictionary = additions_data
+	var glyphs: Dictionary = bundle.get("glyphs", {})
+	var raw_glyphs: Variant = additions.get("glyphs", [])
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "lista de glifos locais inválida"}
+	for glyph_variant: Variant in raw_glyphs:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant
+		var character: String = String(glyph_data.get("character", ""))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if character.is_empty() or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant
+		var glyph_rect := Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > atlas.get_width() or glyph_rect.end.y > atlas.get_height():
+			continue
+		glyphs[character] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 6)), 1),
+		}
+	bundle["atlas"] = atlas
+	bundle["glyphs"] = glyphs
+	_cached_card_font_bundle = bundle.duplicate(true)
+	return _cached_card_font_bundle.duplicate(true)
+
+func configure(row: Dictionary, font_bundle: Dictionary) -> bool:
+	if not bool(font_bundle.get("valid", false)):
+		return false
+	var definition: UpgradeDefinitionResource = row.get("definition") as UpgradeDefinitionResource
+	if definition == null:
+		return false
+	var illustration: Texture2D = row.get("icon", definition.icon) as Texture2D
+	if illustration == null:
+		return false
+	if not _configure_text(_title, String(row.get("title", definition.title)), font_bundle, 1):
+		return false
+	var summary_lines := _wrap_text(String(row.get("effect_summary", "")).replace(";", "/"), 24, 2)
+	if summary_lines.size() != 1 and summary_lines.size() != 2:
+		return false
+	if not _configure_text(_summary, "\n".join(PackedStringArray(summary_lines)), font_bundle, 2):
+		return false
+	var topic_lines: Array[String] = []
+	var topics_variant: Variant = row.get("topics", definition.effect_topics)
+	if typeof(topics_variant) == TYPE_PACKED_STRING_ARRAY or typeof(topics_variant) == TYPE_ARRAY:
+		for topic_variant: Variant in topics_variant:
+			var wrapped_topic := _wrap_text("- " + String(topic_variant), 24, 3)
+			for line: String in wrapped_topic:
+				topic_lines.append(line)
+	if topic_lines.size() < 2 or topic_lines.size() > _topic_lines.size():
+		return false
+	for index in range(_topic_lines.size()):
+		var line := topic_lines[index] if index < topic_lines.size() else ""
+		if not _configure_text(_topic_lines[index], line, font_bundle, 1):
+			return false
+	if not _configure_text(_badge, String(row.get("rank_label", "")), font_bundle, 1):
+		return false
+	_illustration.texture = illustration
+	_illustration.show()
+	return true
+
+func _configure_text(control: HudBitmapText, value: String, font_bundle: Dictionary, lines: int) -> bool:
+	if control == null or not control.configure_font(font_bundle):
+		return false
+	control.max_lines = lines
+	control.set_text(value)
+	return true
+
+func _wrap_text(value: String, maximum_characters: int, maximum_lines: int) -> Array[String]:
+	var result: Array[String] = []
+	var current := ""
+	for word: String in value.replace("\n", " ").split(" ", false):
+		if word.length() > maximum_characters:
+			return []
+		var candidate := word if current.is_empty() else current + " " + word
+		if candidate.length() <= maximum_characters:
+			current = candidate
+			continue
+		result.append(current)
+		current = word
+		if result.size() >= maximum_lines:
+			return []
+	if not current.is_empty():
+		result.append(current)
+	if result.size() > maximum_lines:
+		return []
+	return result
+
+func _on_mouse_entered() -> void:
+	_hovered = true
+	_apply_frame_state()
+
+func _on_mouse_exited() -> void:
+	_hovered = false
+	_apply_frame_state()
+
+func _on_focus_entered() -> void:
+	_apply_frame_state()
+
+func _on_focus_exited() -> void:
+	_apply_frame_state()
+
+func _on_button_down() -> void:
+	_pressed_visual = true
+	_apply_frame_state()
+
+func _on_button_up() -> void:
+	_pressed_visual = false
+	_apply_frame_state()
+
+func _apply_frame_state() -> void:
+	if _frame == null:
+		return
+	if _pressed_visual:
+		_frame.texture = FRAME_PRESSED
+	elif _hovered or has_focus():
+		_frame.texture = FRAME_FOCUS
+	else:
+		_frame.texture = FRAME_NORMAL
+
+DIFF scripts/world/main.gd
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/world/main.gd "b/docs\\specs\\2026-11-01-cartas-upgrades-niveis\\historico\\etapa-b-r3\\scripts\\world\\main.gd"
+index 61c05c2..7191896 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scripts/world/main.gd
++++ "b/docs\\specs\\2026-11-01-cartas-upgrades-niveis\\historico\\etapa-b-r3\\scripts\\world\\main.gd"
+@@ -1813,17 +1813,17 @@ func _update_build_status() -> void:
+ 		label.text = "BUILD: VAZIA"
+ 		return
+ 
+ 	var entries: Array[String] = []
+ 	for upgrade_id: StringName in run_build.get_upgrade_ids():
+ 		var definition: UpgradeDefinitionResource = UpgradeCatalogScript.definition_for(upgrade_id)
+ 		var display_name: String = definition.title.to_upper() if definition != null else String(upgrade_id).to_upper()
+ 		entries.append("%s NV.%d" % [display_name, run_build.count_for(upgrade_id)])
+-	label.text = "BUILD: " + " | ".join(PackedStringArray(entries))
++	label.text = "BUILD: " + " / ".join(PackedStringArray(entries))
+ 
+ func _get_player_spawn_position() -> Vector2:
+ 	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D
+ 	if spawn_marker != null:
+ 		return spawn_marker.global_position
+ 	return FALLBACK_PLAYER_SPAWN
+ 
+ func _current_scene_path() -> String:
+DIFF scenes/ui/upgrade_card.tscn
+diff --git a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scenes/ui/upgrade_card.tscn "b/docs\\specs\\2026-11-01-cartas-upgrades-niveis\\historico\\etapa-b-r3\\scenes\\ui\\upgrade_card.tscn"
+index 967e3c1..300c91b 100644
+--- a/docs/specs/2026-11-01-cartas-upgrades-niveis/historico/etapa-b-r1a/scenes/ui/upgrade_card.tscn
++++ "b/docs\\specs\\2026-11-01-cartas-upgrades-niveis\\historico\\etapa-b-r3\\scenes\\ui\\upgrade_card.tscn"
+@@ -1,19 +1,27 @@
+-[gd_scene load_steps=3 format=3]
++[gd_scene load_steps=4 format=3]
+ 
+ [ext_resource type="Script" path="res://scripts/ui/upgrade_card.gd" id="1_card"]
+ [ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="2_bitmap_text"]
+ 
++[sub_resource type="StyleBoxEmpty" id="ButtonEmpty"]
++
+ [node name="UpgradeCard" type="Button"]
+ custom_minimum_size = Vector2(160, 240)
+ layout_mode = 2
+ focus_mode = 2
+ mouse_filter = 0
+ flat = true
++theme_override_styles/normal = SubResource("ButtonEmpty")
++theme_override_styles/hover = SubResource("ButtonEmpty")
++theme_override_styles/pressed = SubResource("ButtonEmpty")
++theme_override_styles/disabled = SubResource("ButtonEmpty")
++theme_override_styles/focus = SubResource("ButtonEmpty")
++theme_override_styles/hover_pressed = SubResource("ButtonEmpty")
+ texture_filter = 1
+ script = ExtResource("1_card")
+ 
+ [node name="Frame" type="TextureRect" parent="."]
+ layout_mode = 1
+ anchors_preset = 15
+ anchor_right = 1.0
+ anchor_bottom = 1.0
+@@ -41,16 +49,24 @@ offset_right = 152.0
+ offset_bottom = 20.0
+ mouse_filter = 2
+ texture_filter = 1
+ script = ExtResource("2_bitmap_text")
+ center_text = true
+ max_lines = 1
+ font_color = Color(0.909804, 0.847059, 0.709804, 1)
+ 
++[node name="SummaryBackdrop" type="ColorRect" parent="."]
++offset_left = 8.0
++offset_top = 118.0
++offset_right = 152.0
++offset_bottom = 142.0
++mouse_filter = 2
++color = Color(0.047059, 0.105882, 0.160784, 1)
++
+ [node name="Summary" type="Control" parent="."]
+ offset_left = 8.0
+ offset_top = 118.0
+ offset_right = 152.0
+ offset_bottom = 142.0
+ mouse_filter = 2
+ texture_filter = 1
+ script = ExtResource("2_bitmap_text")
+@@ -88,17 +104,17 @@ offset_bottom = 186.0
+ mouse_filter = 2
+ texture_filter = 1
+ script = ExtResource("2_bitmap_text")
+ max_lines = 1
+ font_color = Color(0.713725, 0.745098, 0.764706, 1)
+ 
+ [node name="Badge" type="Control" parent="."]
+ offset_left = 12.0
+-offset_top = 204.0
++offset_top = 210.0
+ offset_right = 148.0
+-offset_bottom = 228.0
++offset_bottom = 222.0
+ mouse_filter = 2
+ texture_filter = 1
+ script = ExtResource("2_bitmap_text")
+ center_text = true
+ max_lines = 1
+ font_color = Color(0.823529, 0.654902, 0.360784, 1)
+SOURCE scenes/ui/upgrade_card.tscn
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_card.gd" id="1_card"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="2_bitmap_text"]
+
+[sub_resource type="StyleBoxEmpty" id="ButtonEmpty"]
+
+[node name="UpgradeCard" type="Button"]
+custom_minimum_size = Vector2(160, 240)
+layout_mode = 2
+focus_mode = 2
+mouse_filter = 0
+flat = true
+theme_override_styles/normal = SubResource("ButtonEmpty")
+theme_override_styles/hover = SubResource("ButtonEmpty")
+theme_override_styles/pressed = SubResource("ButtonEmpty")
+theme_override_styles/disabled = SubResource("ButtonEmpty")
+theme_override_styles/focus = SubResource("ButtonEmpty")
+theme_override_styles/hover_pressed = SubResource("ButtonEmpty")
+texture_filter = 1
+script = ExtResource("1_card")
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Illustration" type="TextureRect" parent="."]
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 144.0
+offset_bottom = 114.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Title" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 152.0
+offset_bottom = 20.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.909804, 0.847059, 0.709804, 1)
+
+[node name="SummaryBackdrop" type="ColorRect" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+color = Color(0.047059, 0.105882, 0.160784, 1)
+
+[node name="Summary" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 2
+font_color = Color(0.321569, 0.729412, 0.780392, 1)
+
+[node name="Topic0" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 146.0
+offset_right = 152.0
+offset_bottom = 158.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic1" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 160.0
+offset_right = 152.0
+offset_bottom = 172.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic2" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 174.0
+offset_right = 152.0
+offset_bottom = 186.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Badge" type="Control" parent="."]
+offset_left = 12.0
+offset_top = 210.0
+offset_right = 148.0
+offset_bottom = 222.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.823529, 0.654902, 0.360784, 1)
+
+FONTLOCALMETADATA
+{
+  "source_font_paths": {
+    "bundle": "assets/ui/hud_caldeira_v1/export/font.json",
+    "atlas": "assets/ui/hud_caldeira_v1/export/font-atlas.png",
+    "palette": "assets/ui/hud_caldeira_v1/export/palette.json"
+  },
+  "base_canvas": {"w": 72, "h": 105},
+  "replacement_atlas": "assets/ui/upgrade_cards_v1/export/card-font-atlas.png",
+  "canvas": {"w": 84, "h": 105},
+  "font_metrics": {
+    "cell": {"w": 5, "h": 11},
+    "advance": 6,
+    "line_height": 12,
+    "baseline_from_top_zero_based": 8,
+    "mask": "#FFFFFF",
+    "alpha": [0, 255]
+  },
+  "glyphs": [
+    {"character": "+", "codepoint": 43, "rect": {"x": 72, "y": 2, "w": 5, "h": 11}, "advance": 6},
+    {"character": ">", "codepoint": 62, "rect": {"x": 78, "y": 2, "w": 5, "h": 11}, "advance": 6}
+  ],
+  "integration": "Load the existing font.json bundle; replace its atlas path with card-font-atlas.png; append these glyph records while retaining all base glyphs/metrics; then call configure_font(bundle) on HudBitmapText."
+}
+
+PATTERN HUD BASE
+	var font_atlas: Texture2D = atlas_resource as Texture2D
+	if metadata_json == null or font_atlas == null:
+		return {"valid": false, "reason": "metadados ou atlas da fonte bitmap inválidos"}
+	var raw_data: Variant = metadata_json.data
+	if typeof(raw_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "font.json não contém um objeto"}
+	var font_data: Dictionary = raw_data as Dictionary
+	var raw_glyphs: Variant = font_data.get("glyphs", null)
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "font.json não contém a lista de glifos"}
+	var glyphs: Dictionary = {}
+	var glyph_list: Array = raw_glyphs as Array
+	for glyph_variant: Variant in glyph_list:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue

@@ -1,0 +1,18 @@
+Revisão R1 em curso — lendo pacote estático integralmente, sem tocar workspace.
+```text
+STATUS: done
+SUMMARY: Revisão estática READ-ONLY do pacote imutável implementacao-r1-input.txt (1514 linhas). Contratos R2/R3 confrontados com 8 tscn + 10 scripts + run_root.tscn + diff MovementController. Nenhum bug de parse, tipo Variant 4.7, método/nó, setter, ready-order, JSON, pausa/callback, escala CanvasLayer ou resource-path detectado por leitura.
+FINDINGS: none — nenhum P1/P2 concreto com arquivo+trigger.
+  - bitmap_text.gd load via ResourceLoader.exists+load JSON .data + checagem tipos, fallback espaço + aviso único, uppercase com 's' pós-dígito preservado, travessão->hífen: conforme contrato.
+  - dash_panel.gd READY/PRONTO, COOLDOWN ceil décimos vírgula PT-BR mínimo 0,1s, ACTIVE/EM DASH, UNAVAILABLE/INDISPONÍVEL, clock floor(clamp*16+.5) duração0=>0 sem divisão: conforme.
+  - health_bar.gd fill floor(90*clamp+.5) max<=0=>0 sem mínimo1, inset (3,3): conforme.
+  - hud_root.gd font bundle, hide se inválido, layout pos rounded scale1 default, Status 560x36 3 linhas + Build 560x12 sem sobreposição, VIDA preservado: conforme.
+  - pause_guard.gd PAUSABLE NOTIFICATION_PAUSED hides Content + restore UNPAUSED: conforme R3.
+  - run_hud_bridge.gd ALWAYS layer1, token+identidade, tree_exiting/invalidação, deferred consider com filtro subtree+grupo, elegibilidade Node2D/health>0/max>0 nearest distance_squared desempate instance_id, per-frame HP sem busca global, morte priorizada, portrait is TrainingTarget/RivetWorker else null, legacy hide só se ligado+fonte pronta com re-hide e restore só alterados, enabled/visibility externa=>deactivate com _internal_visibility_change, pausa/overlay=>visible=false sem restore no frame, escala viewport.get_visible_rect+get_stretch_transform/inversa origem centrada round escala inteira: conforme R2 superado por R3.
+  - run_root.tscn só adiciona ModularHud, preserva HUD Progress/StatusLabel e RoomContainer: conforme.
+  - MovementController diff só getter puro maxf(_config.dash_cooldown,0) null=>0: conforme.
+CHANGED_FILES: none
+TESTS: none — nenhum teste/Godot/parser/lint/audit/Git executado por diretiva.
+RISKS: Linha FONT JSON truncada a 2000 chars no pacote (visível até 'V'), cobertura total dos 56 glyphs vírgula/barra/dígitos não verificável inline, mas código valida métricas e faz fallback espaço+legado; overlay blocker checa filhos diretos do controller — se overlay futuro aninhar, detecção falha e CanvasLayer1 empataria, mitigado pela regra pausa=>hide; module_pixel_scale configurável >1 overflow layout 576x324, default 1 seguro.
+NEXT_STEP: Congelar R1 como estável; seguir para próxima frente sem correção.
+```

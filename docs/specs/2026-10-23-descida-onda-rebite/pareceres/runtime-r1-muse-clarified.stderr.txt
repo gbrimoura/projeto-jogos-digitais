@@ -1,0 +1,7 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/specs/2026-10-23-descida-onda-rebite/pareceres/runtime-r1-muse-context.txt
+→ Read docs/specs/2026-10-23-descida-onda-rebite/pareceres/runtime-r1-input.txt
+→ Read docs/specs/2026-10-23-descida-onda-rebite/pareceres/runtime-r1-input.txt [limit=1200, offset=1234]
+→ Read docs/specs/2026-10-23-descida-onda-rebite/pareceres/runtime-r1-input.txt [limit=400, offset=2434]

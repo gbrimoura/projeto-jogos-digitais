@@ -1,0 +1,15 @@
+STATUS: done  
+SUMMARY: Frozen packet reviewed (implementation + plano/spec only). Current 3-platform fixtures, door/run lifecycle, seed/idempotent prepare, ceiling band, fallback edges 224..424 / 504..688 / 768..952, and numeric tscn colors are consistent with the written contract. No P1 API/parser/lifecycle/geometry break confirmed in this snapshot. Two P2 contract-vs-code gaps. No engine run; jump reachability not claimed.  
+CHANGED_FILES: none  
+TESTS: none  
+
+RISKS:  
+P1: none confirmed in this packet.
+
+P2: `scripts/world/room_layout_generator.gd` `generate_layout` — random step rise is `randi_range(2, MAX_RISE_PER_STEP / 8) * 8` (16..64 only). Plano “Contrato geométrico e algoritmo” and spec “Contrato de layout” allow per-step stay-level (0) and 8 px steps; `_entries_are_safe` / `main.gd` `_validate_generated_route` also allow `rise >= 0`. Clamp to y=376 still caps total rise at 64. Variety/contract mismatch, not a failed layout for the current 3-platform fixtures.
+
+P2: spec “Seed, aplicação e validação” says `randomize_position` / `randomize_width` are serialized false on instances. `PlatformA/B/C` and `West/Upper/East` do that; `Floor` in `scenes/main.tscn` and `scenes/second_room.tscn` does not. Lock is only `SolidPlatform._is_fixed_platform` (`name == &"Floor"`). Current Floor name keeps it fixed; rename would re-enable packed-scene defaults (`true`/`true`).
+
+Residual (not scored): no Godot/QA in this review; atlas `(1,0)` vs `terrain_top_mid` and real jump reach were not verified.
+
+NEXT_STEP: Keep this increment. Optional P2: allow rise `0..8` in the RNG (still clamp total to 376) and serialize Floor `randomize_* = false`. Do not treat this as gameplay/jump sign-off.

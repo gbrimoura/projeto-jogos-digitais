@@ -1,0 +1,24 @@
+STATUS: done
+SUMMARY: R3 corrige os 4 pontos no texto incluído, sem nova topologia. Engine NÃO executado. Parecer R2 não é aprovação R3. Opus/AGY quota não contam; Grok R1/R2 sem texto.
+CHANGED_FILES: none
+TESTS: none
+RISKS: prova de UMA rota não fecha só com texto incluído; sem `_canonical_managed_entries`, rects dest exatos, MIN/MAX, `tops_are_not_*`, caller de `invalid`.
+NEXT_STEP: enviar `_canonical_managed_entries`+rects roof4/roof5+tratamento de `invalid` no chamador para fechar P1 abaixo, ou manter R3 como não-aprovado para rota.
+
+Validação do delta R2→R3:
+1. `configure` UP/DOWN: SIM resolve. R3 usa só `left_edge/right_edge/right_width` locais. Nenhuma ref a `ceiling_left_edge/ceiling_right_edge` restante no trecho. Para offsets 248/904: left 120/776, right 376/1032, widths >0, gate 256x96/88 + guards mantidos.
+2. `force_canonical`: SIM resolve. Agora `canonical_entries` passa em `_managed_entries_are_safe` igual ao path normal; falha retorna `invalid`, não layout inseguro.
+3. `snap` centros: SIM resolve sem anular variação. `snappedf(center,8)` antes de `size/position/rect`. `widths` seguem `104+8*k`/`144+8*k`, `gap` mult 8, `tops` mult 8, âncora `portal_x` 248/904 já mult 8 preservada. Validador checa `center/size.x/position.y`, não `position.x`, logo passa.
+4. `landing` jump/drop: SIM troca overlap `0.5` por `landing_x` interpolado com inset `22`. Coerente com `approach_axis` e `_managed_launch_points` em `+22/-22` e corpo `±14`+margem 8. Denominador >0 analiticamente: jump `vy>0`, drop `vertical_speed>0` quando `not still_supported`; `clampf 0..1` ok.
+
+Testemunhas sem execução:
+- roof4 256→160 launch 744 vx260 pousa 908 em dest 846..962: inset 868..940, 908 DENTRO, ok. `Hatch antes y64` não verificável sem `top_open/portal_x` do frame.
+- roof5 232→160 launch 752 vx100 pousa ~924 em dest 874..934: inset seria 896..912, 924 FORA como escrito. Ou número é aproximado, ou dest real é mais largo. Sem rect canônico exato não dá para validar.
+
+P1 remanescente:
+- P1-1: prova de rota roof5 vs guard novo inconsistente nos números dados. Faltam canônicos/rects exatos.
+- P1-2: propagação de `invalid` do `force_canonical` fora do texto; se chamador ignorar, quebra garantia.
+
+P2 remanescente:
+- P2-1: `snap` pós-acúmulo pode mover `gap` efetivo ±8, aumenta retry/fallback 12 tentativas, mas seguro pois validador barra.
+- P2-2: sem guarda explícita denominador zero em `crossing_fraction`; analiticamente >0, mas frágil a futura mudança de `dt/gravity`.

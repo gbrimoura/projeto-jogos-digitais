@@ -1,0 +1,13 @@
+```text
+STATUS: done
+SUMMARY: Plano prospectivo de apresentação de portas, sinalização e passagem aprovado para execução. O escopo write está estritamente delimitado aos arquivos visuais autorizados (scripts/world/exit_door.gd, scripts/world/side_door_visual.gd, scenes/exit_door.tscn e overrides de DoorLabel nas salas), mantendo física, colisões, gates, tokens, RunController e lógica de recuperação intactos. As diretrizes visuais (remoção de labels de orientação, indicador pixelado discreto pós-clear e correção de profundidade no vão aberto) atendem fielmente às autorizações do usuário.
+FINDINGS:
+- [P2] Separação de CanvasItem para z_index: Em Godot 4, um único nó CanvasItem renderiza todo o seu conteúdo no mesmo `z_index`. Para posicionar o fundo escuro do vão atrás do player e a moldura/soleira à frente sem sobrepor o ator, a implementação deverá estruturar nós de desenho separados em `scenes/exit_door.tscn` (ex.: nó de fundo e nó de moldura frontal/indicador) ou instanciar nós-filhos dedicados, em vez de acumular todas as chamadas `_draw()` no mesmo nó.
+- [P2] Isolamento de transform/espelhamento no indicador: Em portas standalone que utilizam `flip_h` ou escala negativa no nó pai, a renderização da seta pixelada deve anular ou compensar transformações locais para evitar inverter a normal da seta ou deslocá-la duplamente.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Ausência de execução de engine nesta etapa (por restrição estática explícita) adia a validação de alinhamento fino em pixels do alçapão DOWN e setas para momento em que testes de runtime forem expressamente autorizados.
+- Manutenção do nó `DoorLabel` vazio/invisível requer que nenhum script acoplado dependa de conteúdo textual não vazio para fluxo de estado.
+NEXT_STEP: Prosseguir com a implementação delegada ao subagente gpt-6-luna (raciocínio xhigh, limite de 30 minutos), respeitando o escopo write exclusivo e a ausência de execução de testes/engine.
+```

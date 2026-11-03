@@ -1,0 +1,42 @@
+[
+  {
+    "Path": "scripts/world/lobby_visual.gd",
+    "SHA256": "38BD010937ABAC0D859F10AFA9E6D63941CED8222143157B245CC61852339F40"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/source/generate_lobby.lua",
+    "SHA256": "B6AB606600DB23907C0B47805AF48C085212791CEC74DD50988471A7E6EE3FAD"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/source/lobby-backdrop.aseprite",
+    "SHA256": "C7A904678E824031C17BEE83464A4661340289FE3B0F4727C8743B1476B5921C"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/source/elevator-doors.aseprite",
+    "SHA256": "9522B1171D00432CAEDD6FF0F705F4EB180AEC59F444F753D128E7640E87CAEC"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/export/lobby-backdrop-576x324.png",
+    "SHA256": "9E5526B357D96DF5AD789A2167971BDBED5ACF13A9D1DAC14FEDDE35A2BCB777"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/export/elevator-door-left-32x56.png",
+    "SHA256": "46724C0FA69C492DB08FE05969B457213E0B8158CA75D61A573710A6E70A5ACE"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/export/elevator-door-right-32x56.png",
+    "SHA256": "C6E792425F4B91467116E0A0F6EA9705DD7DCD5F488BCE7C1AAFF0DA1D2AE16A"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/manifest.json",
+    "SHA256": "8E56CB403AF90C2B2E58AC58D4D754ED3327F4EF0690219FE662A8374C7649E7"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/README.md",
+    "SHA256": "63A2610350500C0A028AF9ED416F27CE0504DF0B7B8C1FFF29B86A6D1BF6ABB4"
+  },
+  {
+    "Path": "assets/environment/factory_v1/lobby_v1/preview/lobby-context-player-study-1152x648.png",
+    "SHA256": "DA3DF787FD567FCECE87948110204D12CD24BB94016EFA7A508426A5EF1249D0"
+  }
+]

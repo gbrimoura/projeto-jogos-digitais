@@ -1,0 +1,18 @@
+STATUS: STABLE
+
+SUMMARY:
+- 10 COMMON +1 boss =11/floor correctly plumbed: `build_floor(..., common_rooms_per_floor+1)`, `_is_boss_room(): current_room > common_rooms_per_floor`, scene select `boss if target_room > common_rooms_per_floor`, ordinal `1+(floor-1)*(common+1)+(room-1)` all consistent.
+- Config bounds OK: `@export_range(1,10)=10` at max, no clamp; scene `common_rooms_per_floor=10` matches script default `10`.
+- `MAX_RUN_ACQUISITIONS 220 =20*(10+1)` already covers new max; no cap regression.
+- `build_floor` monotonic-x + reserved_vertical logic holds for `room_count=11/link_count=10`; no new guaranteed `legal.is_empty()` path vs 4-room case.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- Floor1 `enemy_level` ordinal now 1..11 vs 1..4 — intended difficulty up, balance untouched per scope.
+- `floors_per_run` scene=1 vs script=8 mismatch preserved as pre-existing dirty, not from these 2 edits; full 20-floor x 11-room max unexercised.
+- Longer chain = more layout RNG steps, only `valid=false` technical-error path if topology fails; no retry change.
+
+NEXT_STEP: Keep 2-line config as-is; do events/varied-enemy-counts next.

@@ -1,0 +1,9 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: R2 delta vs accepted R1 approved — no P1/P2. main.tscn makes skin explicit (true + Floor=1/A/B/C=0, no null tri-state) and adds PlatformA 220x24 authored RectangleShape2D + CollisionShape2D override matching B/C pattern and default/expected table, no geometry drift. main.gd get_prepared_authored_target_position Vector2->Variant, fail-closed null on !enabled/!prepared/!valid/wrong-target vs ZERO sentinel; provided caller typeof!=TYPE_VECTOR2 reject+disable already handles it, eliminates (0,0) misplace.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Pre-existing user-run missing .ctex both enemies -> PNG fail -> SpriteFrames -> missing animations persists, unrelated to this delta; import pending user authorization, no shader/art change in delta.
+NEXT_STEP: Authorize/wait user import, then re-validate enemy SpriteFrames only; no code change required from this delta.

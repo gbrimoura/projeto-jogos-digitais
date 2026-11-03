@@ -1,0 +1,62 @@
+[
+  {
+    "path": "scenes/player.tscn",
+    "sha256": "D1D2707899A8CB3DEDFF8311A8FF46998C6D55E561580F421C935C30BAF6B46D"
+  },
+  {
+    "path": "scenes/rivet_worker.tscn",
+    "sha256": "D6E598DB796FF38B1350AC5D8FE7036502655ABEB34843635091DB81018B0479"
+  },
+  {
+    "path": "scenes/training_target.tscn",
+    "sha256": "12D6C6477367E50443FDD304A5EF05C2F989E26590B65622D88E6BB1B0564AEE"
+  },
+  {
+    "path": "scenes/hostile_rivet.tscn",
+    "sha256": "4E537D042A713944EDB6C31721AAA402D36D143812B1041EFCC580CB33F1C41C"
+  },
+  {
+    "path": "scripts/world/factory_floor1_background.gd",
+    "sha256": "B18EF04DD82FF1CC4F9A57A1603A8FCB0833EE052EEF34B397CD97AEAC4625D4"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_pursuit.gd",
+    "sha256": "6C652B9AD17927BCC4A416F927087985C11F144723DE1109D94FC84DF9B300E5"
+  },
+  {
+    "path": "scripts/enemy/tranca_lata_dust.gd",
+    "sha256": "F79B1DF592A517C80BE0959DD56CBAC5E7229DE0ED08537E2EDBBD5FD00B77D7"
+  },
+  {
+    "path": "scripts/enemy/containment_attack_visual.gd",
+    "sha256": "FA03F262AC5F92AD4537D5A1468C0758DE5C66031CA397F4854BB3908FCEC755"
+  },
+  {
+    "path": "scripts/player/racket_controller.gd",
+    "sha256": "0A8944B8ABCEC3FEB236BAA7CC0E6E79366D4D7767F31368796F83E4361FD045"
+  },
+  {
+    "path": "scripts/player/racket_visual.gd",
+    "sha256": "D1ABFCCB79328872D6CD138121A6312391BD14E0C1E76F3742C9AF824B30146D"
+  },
+  {
+    "path": "scripts/player/ball_launcher.gd",
+    "sha256": "6564DB2D247601BD1D9261736B66E96131AD68E9AB37DEAFAF3AB035772B8D7B"
+  },
+  {
+    "path": "resources/enemy/training_target_sprite_frames.tres",
+    "sha256": "946257D18D056CB9CC091604003E916091375D321AE85C5B099D2ADC91E38D6E"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_jump_texture.tres",
+    "sha256": "DED0F36ECAC8DF2497B8CE238F83A4CC1064027888732D8808083E02AC2E644E"
+  },
+  {
+    "path": "resources/enemy/tranca_lata_shockwave_texture.tres",
+    "sha256": "BE297310EAE92AE9BC20D5D5AB76345A1FA785A53EAE2EFC5F86075F0F2D5D7C"
+  },
+  {
+    "path": "resources/enemy/cospe_rebite_projectile_texture.tres",
+    "sha256": "FE2E12D21803159CED82174531F32740A76469378EA61A1265B10EB8462590A7"
+  }
+]

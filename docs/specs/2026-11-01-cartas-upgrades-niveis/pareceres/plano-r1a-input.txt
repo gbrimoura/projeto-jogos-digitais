@@ -1,0 +1,70 @@
+Revisor Muse read-only timeout5min, sem comandos/arquivos/testes. Reavalie somente adendo do plano ANTESdewriter. Você levantou P1Tranca/HP/Boss. Fato: TrainingTarget em scripts/world/training_target.gd é Tranca-Lata e escopo já incluía essearquivo; não inventar tranca*.gd. Usuárioglobal exigecursor-grok-4.6-xhigh-fast, local4.7temprioridademenor. AdendoHP e remoçãoblocoBoss explícitos. Reportar STATUS/SUMMARY/FINDINGS/CHANGED_FILES none/TESTS none/RISKS/NEXT_STEP. Demais plano originalpreservado, não reabrir escopo hipotético.## Fechamento prospectivo R1a — avaliação da primeira revisão
+
+Muse P1-1 não procede: Tranca-Lata é class_name TrainingTarget em scripts/world/training_target.gd, arquivo explicitamente permitido; não existe tranca*.gd a inventar. P2Grok rejeitado: instrução global colada exige cursor-grok-4.6-xhigh-fast e prevalece sobre4.7 local. Não repetir preflight.
+
+P1HP aceito como detalhamento obrigatório: PlayerHealth captura _base_maximum_health no seu ready antes de Mainaplicarbuild; método derivado configura max=clampi(base+rank,1,100) e apenas parâmetro explícito de aquisição (delta>0) recupera esse delta deHP. Player.apply_run_build por padrão não cura; Mainseletor pode chamar apply_run_build com aquisição ou método dedicado depois de add. Ao entrar sala, playerready captura base, Main aplica buildmax semcura e depois snapshot restaura atual/máximo jácalculados. Nem reaplicar/retry nem nivelcura; nunca mudar invulnerability no upgrade. ValidaçãoChassi elegível por máximo-base efetivo100, não só rank95, sem mostrar ganho impossível. Evitar Heal durante morte/retornoHP<=0.
+
+Boss: remover explicitamente a chamada/bloco RewardScreen/_apply_reward em _advance_after_room (hoje335..361); não apenas tornar helperunused. Main gerenciado recebe rewardtrueinclusiveboss e resolve oferta antes da travessia/vitória. Helpers antigos podem ficar sem chamadas, mas não conceder bônus oculto ou segundo modal. _boss_reward* campos podem ficar sem uso para reduzir delta; não alterar rollback geral.
+
+RunBuild: MAX_UPGRADES técnico220, add incrementa porID/capsCatalog e soma<220; replace_state prévalida contagem0..capID/soma<=220 e correspondência IDspositivos, commit atômico. Campos ausentesdeIDsnovos são0, IDsestranhos rejeitados. Catalog não pode depender de RunBuildpreload/class para evitar ciclo (aceita counts/ranksparamint); RunBuild pode consultar catálogo fonteúnica dos IDs. Constantescompatibilidade antigas podem permanecer aliases, não uma segunda tabelaefeitos.
+
+UI/Catálogo: texto curto porlinha≤24glyphs (fonte5x11 advance6 não faz wordwrap automático), usar '-' ou '+' e '>' compatíveis comfontatlas em vez bullet/arrow ausentes. Nome/rankefeito em dados, não texto deimagem. Base576324, cartasY60..300(240h), cabeçalhoY12..36/instruçãoY40..52; totalcabe, 3cartasX36/208/380(160+12). Fonte/fontsHUD é somenteleitura. FaseB também pode editar APENAS icon em resources/upgrades/*.tres após PNGgerado; não referenciar assetinexistente por preload em faseA. B pode ajustar UpgradeOffer.present_options e chamada Main para passar build/ranks se APIA ainda nãoexistir; delimitar essa única chamada antes do writer B. FaseA manter chamadascompatíveis com ofertaantigaatéB ou registrar estado intermediárionão-runtime; entrega final temcoerênciaUI+dados.
+
+NívelHUD: menor delta preferido prefixo NV{level} no nome, antes do nomepotencialmentetruncado, dentro orçamento mínimo8glyphs comHPmaislongono painel. NV220 precisa5glyphs e cabe; nomepodeelidir. Não crescer144x40 nem alterar barra14px para cabertexto. Podem usar camposseparados se couberem sem sobreposição, mas não é necessário. Escala níveis antes de add_child e cachebase porinimigo obrigatórios.
+
+Fórmulas de dano/Mola/Motor/Dínamo no plano são derivadas da base/ranks, nunca acumuladas ao reaplicar; contadorambiental só colisãonão-damageable. RNGoferta cacheado por instância, mesmoordinal usado paralevel e seedoferta, nenhum RNGdegeração consumido. Todos números continuam provisórios.
+
+Evidência TrainingTarget
+class_name TrainingTarget
+extends CharacterBody2D
+
+## Alvo móvel de contenção que preserva o contrato técnico TrainingTarget.
+
+signal defeated
+
+enum AttackState { IDLE, WINDUP, ACTIVE, RECOVERY }
+enum LocomotionState { GROUND, PREPARE, FLIGHT, FALLING, LANDING }
+
+const JumpSolver = preload("res://scripts/enemy/tranca_lata_jump.gd")
+const PursuitSolver = preload("res://scripts/enemy/tranca_lata_pursuit.gd")
+
+const PLAYER_MASK: int = 2
+const WORLD_MASK: int = 1
+const PATROL_MASK: int = PLAYER_MASK | WORLD_MASK
+const MAX_QUERY_RESULTS: int = 32
+const CLAIMED_META := &"_target_claimed"
+const PATROL_SPEED: float = 48.0
+const PURSUIT_SPEED: float = 120.0
+const PREFERRED_MELEE_DISTANCE: float = 96.0
+const PURSUIT_STOP_PADDING: float = 8.0
+const PATROL_PAUSE: float = 0.25
+const MIN_PATROL_DISTANCE: float = 8.0
+const MOVEMENT_EPSILON: float = 0.01
+const JUMP_COOLDOWN: float = 2.5
+const JUMP_PREPARE_TIME: float = 0.16
+const JUMP_IMPULSE_TIME: float = 0.06
+const JUMP_LANDING_TIME: float = 0.18
+const JUMP_MAX_FLIGHT_TIME: float = 2.0
+const JUMP_GRAVITY: float = 1400.0
+const JUMP_MAX_SEGMENT: float = 8.0
+const JUMP_SAFE_MARGIN: float = 0.08
+const PLAYER_ESCAPE_SPEED: float = 48.0
+const PURSUIT_REPLAN_INTERVAL: float = 0.45
+
+const PURSUIT_DIRECTION_DEADZONE: float = 5.0
+const PURSUIT_EDGE_CLEARANCE: float = 96.0
+const PURSUIT_STUCK_TIMEOUT: float = 0.65
+const PURSUIT_EDGE_BLOCK_TIME: float = 1.5
+const SHOCKWAVE_VISUAL_DURATION: float = 0.175
+const SHOCKWAVE_RECOVERY_TAIL: float = 0.035
+
+@export var display_name: String = "Tranca-Lata"
+@export_range(1, 100, 1) var max_health: int = 3
+@export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
+@export_range(16.0, 400.0, 1.0) var attack_radius: float = 140.0
+@export var attack_center_offset: Vector2 = Vector2.ZERO
+@export_range(0.05, 3.0, 0.01) var windup_duration: float = 0.65
+@export_range(0.05, 1.0, 0.01) var active_window: float = 0.14
+@export_range(1, 100, 1) var attack_damage: int = 1
+@export_range(0.05, 5.0, 0.01) var recovery_duration: float = 1.4
+@export_range(0.0, 0.5, 0.01) var recovery_fade_duration: float = 0.18

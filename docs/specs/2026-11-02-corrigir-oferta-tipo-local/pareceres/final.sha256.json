@@ -1,0 +1,10 @@
+[
+  {
+    "Path": "scripts/ui/upgrade_card.gd",
+    "SHA256": "3A2EC369DF1C50C2AEF8D054F019AAB9772076F665268B4A48B60C8BFF6D91F4"
+  },
+  {
+    "Path": "scripts/ui/upgrade_stat_text.gd",
+    "SHA256": "5F3E1954E351EE62770C8FF9C548596F8994E6BCFEDCC6119A68830325AA18FB"
+  }
+]

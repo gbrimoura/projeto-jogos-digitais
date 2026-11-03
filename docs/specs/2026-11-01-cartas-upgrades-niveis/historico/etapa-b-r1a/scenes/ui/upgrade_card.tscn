@@ -1,0 +1,104 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_card.gd" id="1_card"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="2_bitmap_text"]
+
+[node name="UpgradeCard" type="Button"]
+custom_minimum_size = Vector2(160, 240)
+layout_mode = 2
+focus_mode = 2
+mouse_filter = 0
+flat = true
+texture_filter = 1
+script = ExtResource("1_card")
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Illustration" type="TextureRect" parent="."]
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 144.0
+offset_bottom = 114.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Title" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 152.0
+offset_bottom = 20.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.909804, 0.847059, 0.709804, 1)
+
+[node name="Summary" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 2
+font_color = Color(0.321569, 0.729412, 0.780392, 1)
+
+[node name="Topic0" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 146.0
+offset_right = 152.0
+offset_bottom = 158.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic1" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 160.0
+offset_right = 152.0
+offset_bottom = 172.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic2" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 174.0
+offset_right = 152.0
+offset_bottom = 186.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Badge" type="Control" parent="."]
+offset_left = 12.0
+offset_top = 204.0
+offset_right = 148.0
+offset_bottom = 228.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.823529, 0.654902, 0.360784, 1)

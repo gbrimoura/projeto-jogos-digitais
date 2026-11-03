@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Alinhei a altura de LEFT/RIGHT ao centro visual de `SideDoorVisual`, mantendo o recuo horizontal de 48 px. O indicador pisca em ciclo de 1,2 s, começa aceso ao habilitar e preserva a fase em chamadas repetidas de `configure` com o mesmo estado.
+CHANGED_FILES: `scripts/world/exit_door.gd`; `scripts/world/exit_direction_indicator.gd`
+TESTS: nenhum, conforme as instruções do repositório.
+RISKS: não executei Godot; a validação de runtime fica pendente. As alterações preexistentes em `exit_door.gd` foram preservadas.
+NEXT_STEP: revisão estática somente leitura no estado congelado.

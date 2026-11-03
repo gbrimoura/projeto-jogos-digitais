@@ -1,0 +1,17 @@
+STATUS: done
+SUMMARY: Revisão estática somente leitura do pacote integral concluída com sucesso. O pacote implementa com exatidão a apresentação do contador de nível e status no rodapé sem violar regras do GDD ou mecânicas existentes:
+1. `typedmetadataCardCatalog`: `UpgradeCatalog.card_preview` foi estendido de forma retrocompatível, fornecendo `rank_before`, `rank_after`, `rank_max`, `rank_status`, `rank_is_maximum` e mantendo `rank_label`.
+2. `capderivadohelper inclbaseHP`: `rank_max` é estritamente derivado via `max_rank_for(upgrade_id, base_maximum_health)`, respeitando o cálculo dinâmico de Chassi (`100 - base_maximum_health`) e os tetos fixos existentes (3 para Motor/Pressão/Mola/Dínamo e provisório 220 para Impacto/Carga).
+3. `contadoratual>ofertado/max`: Formato `NÍVEL {rank_before} > {rank_after} / {rank_max}` fielmente construído tanto em GDScript quanto no gerador Lua, com status base `NOVO` (rank 0) ou `EVOLUIR` (rank > 0), acrescido de ` - MÁXIMO` ao atingir o teto.
+4. `bounds22glyphs2linhaspixel`:
+   - Geometria horizontal: x=12..148 (largura 136 px). O pior caso (`NÍVEL 219 > 220 / 220`) possui 21 glifos (126 px com avanço 6), centralizando com folga de 5 px em cada margem.
+   - Geometria vertical: Status em y=205..217 (slot 12 px, glifo 11 px, y=205..215) e Contador em y=217..228 (slot 11 px, glifo 11 px, y=217..227), mantendo o gap de 1 px (y=216) e confinados na caixa de 204..228 sem estourar a moldura 160×240.
+5. `cores/previewcoerentes`: Paridade visual estrita entre runtime e Lua: status normal em ciano `#52BAC7` (`TOPIC_DASH_COLOR`), status no teto em amarelo `#D2A75C` (`TOPIC_VALUE_COLOR`), prefixo/separadores/máximo do contador em cinza `#B6BEC3` (`TOPIC_TEXT_COLOR`), e apenas o rank ofertado destacado em amarelo `#D2A75C` (`TOPIC_VALUE_COLOR`).
+6. `preservaçãoeffects/arte`: O renderizador `UpgradeStatText` e `HudBitmapText` foi reutilizado integralmente sem qualquer modificação em sua lógica de desenho; efeitos de gameplay, caps de aquisição, filtros de oferta, IDs de arte, atlas de fontes e texturas de moldura foram estritamente preservados.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Aprovação estética pendente: a inspeção visual manual dos PNGs pelo Root valida a conformidade técnica das dimensões e contraste, mas a aprovação do gosto estético final depende da validação direta do usuário.
+- Registro de processo Aseprite: os PNGs de estudo foram gerados pelo Aseprite em modo `preview_only=true`, porém com stdout vazio e exit code não capturado pela ferramenta externa; a integridade foi atestada pela existência dos arquivos gerados, sem asserção de código 0.
+- Validação estrita em `UpgradeCard.configure()`: a remoção do antigo fallback silencioso exige a presença de `rank_before`, `rank_after` e `rank_max` em qualquer dicionário de preview ofertado, rejeitando corretamente dados incompletos.
+NEXT_STEP: Apresentar o estudo visual e o resultado da integração ao usuário para validação visual e aprovação estética final.

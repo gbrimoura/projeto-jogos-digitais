@@ -1,0 +1,53 @@
+READ ONLY PLAN REVIEW, NO TOOLS/COMMANDS. Timeout10min. User correction doors must be holes through SIDE wall strips, not backwall panels. Review concrete defects, not scope expansion. Preserve physical boundaries, gameplay E and sensors intentionally. Source inline follows. Return STATUS/SUMMARY/CHANGED_FILES:none/TESTS:none/RISKS/NEXT_STEP. # Plano — Porta lateral recortada na parede
+
+**Data:** 18/10/2026  
+**Estado:** prospectivo, conforme última direção do usuário; snapshot local registrado antes de runtime.  
+**Branch/base:** `corrigir-sprites-salas-plataformas`, HEAD local `90b2e592bd70e1b2ff3e5828af8a9029031e1c66`, com alterações locais preservadas.
+
+## Objetivo
+
+Representar a saída/entrada como uma abertura horizontal recortada na parede lateral da sala, visualmente atravessando a faixa de 64 px em x=0..64 e x=1088..1152. A abertura vai de y=432 a y=560, termina no piso e alcança a borda externa do cenário. O painel landscape na parede de fundo da proposta anterior fica preservado como estudo descartado, sem uso em runtime.
+
+## Estratégia visual
+
+O helper existente `factory_wall_visual.gd` recebe exports `opening_top` e `opening_height`, com defaults que não cortam a parede. Nas instâncias de `Main` e `SecondRoom`, as duas paredes visuais omitem exatamente os pixels entre y=432 e y=560, recortando tiles em escala nearest; as paredes físicas não mudam. `SideDoorVisual` desenha no recorte um túnel escuro, ombreira/lintel discretos com cores já pertencentes à paleta de fábrica e um estado fechado no interior do túnel. Aberto revela o vazio; fechado mostra uma grade/folha atravessando a passagem. Nenhum painel frontal largo encobre a parede de fundo.
+
+A raiz da saída permanece `(1040,522)` e o sensor continua 96×108. A saída visual fica no centro global `(1120,496)`; entrada `(112,522)` tem visual em `(32,496)`. Cada abertura lateral mede 64×128 e termina em y=560. A entrada fica fechada; a saída mantém sua apresentação Closed/Open e label existente. Física, área de alcance, E, sinais, transições e câmera ficam intactos: a leitura visual do buraco não promete uma travessia física nova.
+
+## Etapas e validação permitida
+
+1. Preservar cópias e SHA-256 do estado local dos helpers, cenas e script de porta em `historico/baseline-local/`.
+2. Reproduzir somente a geometria visual no helper de parede e na porta; remover o sprite frontal 160×80 em uso.
+3. Criar uma montagem estática curta baseada no atlas/paleta atual para inspecionar buraco lateral aberto/fechado antes de congelar.
+4. Registrar os arquivos finais, hashes e limites; deixar revisão final para o principal.
+
+Sem Godot, importação, testes, quality_audit, QA automatizado, edição de arte antiga, collider ou regra de gameplay, commit/push, alteração de branch ou mudanças externas. O principal cuida do índice e dos pareceres.# Especificação — Porta lateral como abertura na parede
+
+**Estado:** implementação visual autorizada em 18/10/2026; runtime permanece sem verificação.  
+**Leitura:** `docs/README.md`, `AGENTS.md`, plano/spec/pareceres de geração de salas e plano/spec/registro anteriores da porta, e GDD `04-combate-e-builds.md` §3.4.
+
+## Geometria visual
+
+- Parede lateral esquerda: x=0..64; direita: x=1088..1152. As duas paredes visuais deixam de desenhar exatamente y=432..560 (128 px), atravessando toda a espessura lateral de 64 px e abrindo na borda externa da sala. A soleira termina no topo do piso y=560.
+- O helper `factory_wall_visual.gd` tem parâmetros visuais exportados `opening_top` e `opening_height`; defaults não criam abertura para chamadas atuais fora das salas. Instâncias de parede nas duas salas recebem topo 432 e altura 128.
+- Os tiles de parede são recortados na vertical no limite do vão, mantendo nearest e sem faixa por cima do corte. A parede física de 64×648 continua contínua e intacta.
+- `SideDoorVisual` substitui `DoorArt`: é uma vista do túnel no perfil lateral, não um painel na parede de fundo. O recorte é escuro e tem lintel/ombreira discretos usando somente cores do tileset/paleta da fábrica. Estado fechado mostra grade/folha dentro do túnel; estado aberto deixa o buraco visível. O vão não é fechado por uma moldura frontal e a imagem não se estende pelo cenário.
+
+## Posição e estado
+
+- Área da saída preserva raiz `(1040,522)` e sensor 96×108 (x=992..1088 no mundo). Centro do visual lateral: `(1120,496)`, offset local `(+80,-26)`, retângulo global x=1088..1152/y=432..560.
+- Área da entrada preserva raiz `(112,522)` e sensor desativado. Centro do visual lateral: `(32,496)`, offset local `(-80,-26)`, retângulo x=0..64/y=432..560. Orientação do acabamento aponta para o lado interno do túnel.
+- Ordem de desenho: WallVisuals permanece z=-1 e omite a área; visual do vão e porta, em nó descendente da raiz, desenha acima da parede, sem ocupar a parede de fundo; piso existente começa y=560 e cobre a base sem invadir a abertura. Nenhuma outra parede é recortada.
+- Entrada sempre fechada e sem interação. Saída usa Closed enquanto bloqueada/ocupada e Open liberada/terminal, preservando label e comportamento já existentes. O desenho de buraco é somente visual: paredes físicas e sensor permanecem como estão, assim como E, sinais, transição e fluxo de sala.
+
+## Critérios estáticos
+
+1. Não há mais sprite/painel frontal estendendo-se na parede de fundo; a abertura se limita à espessura lateral de 64 px.
+2. O recorte visual atravessa a faixa x=0..64 ou1088..1152 em y=432..560, rente ao piso e sem pixel de parede pintado por cima.
+3. Uma montagem estática simples mostra ambas extremidades e estados fechado/aberto usando atlas e cores existentes; não é captura do Godot.
+4. Apenas `factory_wall_visual.gd`, helper visual local, `exit_door.tscn`, `exit_door.gd` (apresentação) e overrides visuais das portas/WallVisuals em `main.tscn` e `second_room.tscn` são alterados.
+5. Cópias prévias e hashes refletem o estado local incluindo alterações anteriores; nenhuma mudança é desfeita.
+
+## Limites
+
+Não executar engine, import, testes, quality_audit ou QA automatizado. Não alterar colisões, sensores, física, geração, Main/RunController, combate, plataformas, jogador, assets existentes, `.import`, plugin/editor ou GDD. O estudo anterior `assets/environment/factory_v1/door/porta-fabrica-horizontal-v2.*` permanece intacto, mas não é usado em runtime.

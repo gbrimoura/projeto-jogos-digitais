@@ -1,0 +1,9 @@
+18/10/2026 — orientação resolvida pelo usuário
+
+Mensagens do usuário: “Desenho deitado, mais largo que alto” e “tem que ser na parede”. A orientação é landscape; não é apenas o sentido de movimento da folha. A proposta portrait anterior permanece arquivada e não é arte final.
+
+Decisão geométrica transmitida pelo principal: módulo opaco de parede 160×80 px nativos por estado, com porta integrada de 128×64 px em (16,8), folha horizontal de dois frames 320×80 nativos, HFrames=2 e escala 2×. A abertura útil do estado aberto deve ter altura nativa mínima 48 px. A parede de fundo, o piso e o ator aparecem na montagem estática para confirmar o encaixe.
+
+A saída mantém o Area2D em (1040,522); Sprite2D central local (-80,-26), centro global (960,496), bounds do módulo x=800..1120/y=416..576; abertura da porta x=832..1088/y=432..560. Entrada mantém Area2D (112,522); Sprite2D central local (+80,-26), centro global (192,496), bounds do módulo x=32..352/y=416..576; abertura x=64..320/y=432..560. Sprite z=-2, sob o piso (z=0), parede visual (z=-1) e atores (z=1). Nenhuma parede física ou trigger é recortado.
+
+O principal produzirá uma nova referência ImageGen horizontal e guardará o prompt v2 em arquivo separado. O prompt vertical antigo em `imagegen-prompt.txt` e a referência retrato ficam somente no histórico; não editar nem integrar como versão final.

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/mola_retorno_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"mola_retorno"
+title = "Mola de Retorno"
+description = "A bola dura mais e rebate mais vezes."
+effect_summary = "Mais duração e rebotes para a bola"
+effect_topics = PackedStringArray("+1 rebote da bola", "+0,20s de duração")
+rank_cap = 3
+max_bounces_per_rank = 1
+lifetime_per_rank = 0.20

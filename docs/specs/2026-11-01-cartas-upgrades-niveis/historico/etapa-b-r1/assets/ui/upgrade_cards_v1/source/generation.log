@@ -1,0 +1,6 @@
+UPGRADE_CARDS_GENERATION_OK
+ASEPRITE_VERSION=1.3.18.6
+ARTS=7x128x80
+FRAMES=3x160x240
+PREVIEW=576x324 plus integer 3x; ART_CONTACT=integer 2x
+PALETTE_SOURCE=C:/Users/danie/.codex/tmp/upgrade-cards-art-20261101/assets/ui/hud_caldeira_v1/export/palette.json

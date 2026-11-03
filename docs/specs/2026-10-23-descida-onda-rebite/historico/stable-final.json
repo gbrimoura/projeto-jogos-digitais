@@ -1,0 +1,58 @@
+[
+  {
+    "unchanged": true,
+    "path": "scripts/world/training_target.gd"
+  },
+  {
+    "unchanged": true,
+    "path": "scripts/enemy/tranca_lata_jump.gd"
+  },
+  {
+    "unchanged": true,
+    "path": "scripts/enemy/containment_attack_visual.gd"
+  },
+  {
+    "unchanged": true,
+    "path": "resources/enemy/tranca_lata_shockwave_sprite_frames.tres"
+  },
+  {
+    "unchanged": true,
+    "path": "scenes/hostile_rivet.tscn"
+  },
+  {
+    "unchanged": true,
+    "path": "resources/enemy/cospe_rebite_projectile_texture.tres"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/cospe_rebite-contact-preview.png"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/cospe_rebite-preview-8x.png"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/cospe_rebite.aseprite"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/cospe_rebite.png"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/generate_cospe_rebite.lua"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/metadata.json"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/README.md"
+  },
+  {
+    "unchanged": true,
+    "path": "assets/projectile/cospe_rebite/reference-imagegen.png"
+  }
+]

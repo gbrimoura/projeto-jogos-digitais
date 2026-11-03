@@ -1,0 +1,27 @@
+## Revisão Muse Spark 1.3 Contributor — somente leitura, inline, sem engine/testes
+
+Hipótese inicial não validada. Nada aqui valida gameplay/diversão. GDD pendente respeitado: sem slots/economia/raridade finais inventados.
+
+### P1 — bloqueiam implementação revisável
+- **P1-1 Oferta 1/sala até 220:** invariante `len(oferta)==1` p/ `N<=220` exige serviço sempre elegível. Se elegibilidade filtrar HP cheio, com `speed10+cd5` esgotados gera oferta vazia antes de 220 e cai no fallback atual `Main libera saída se oferta inválida`, que o plano proíbe como esgotamento normal. Fixar: serviço elegível mesmo cheio (cura pode ser 0, nunca revive), caps 10/5 e orçamento 220 não removem serviço.
+- **P1-2 Snapshot/cura idempotente/compat:** fixar ponto exato: cura só em `acquisition/apply`, nunca em `restore/load/get_snapshot`; `counts_by_id` inclui 3 novos IDs no orçamento 220; binários antigos sem IDs normalizam 0; `rank>teto` rejeitado integralmente sem clamping silencioso + reiniciar runs; explicitar onde valida/versão `v1`. Sem isso há risco de double-heal ao reentrar sala/re-aplicar `RunBuild`.
+- **P1-3 Efeitos derivados novos:** fixar ordem/fórmula: bola `base_duplicada*(1+0.02*n)`, `n<=10`, sem multiplicação cumulativa, respeitar sweep; dash `0.55-delta_Motor(rank)-0.01*n_fine`, `Motor 0.48/0.42/0.36`, mínimo `0.31`; Dínamo `min(0.05*rank,0.15,recarga_restante)`, sem restaurar dash ativo/aéreo; explicitar base Mola p/ derivar `6/2.80s` e base Pressão p/ `+1/parede max2, até6`. Sem isso há divergência de arredondamento/ordem.
+- **P1-4 Inimigos/defaults:** fixar tabela `HP=ceil(base*min(1+0.06*(n-1),4.0))`, `Tranca6/Cospe4`, dano `1 até16, 2 a partir17 cap+1`, cadência `max(1-0.01*(n-1),0.75)`, `windup0.65/active0.14` preservados; atualizar juntos `EnemyLevelConfigResource+2 scripts+2 cenas`, sem fallback divergente. Registrar: sem variedade/chefe, curva não garante desafio final.
+- **P1-5 Teto 220 técnico:** nunca expor 220 como nível; origem `20*(10+1)` ajustável p/ >220 futuro, não duração final; garantir sala 220 com 219 aquisições + serviço elegível, termina após escolha 220; não amarrar a 4/32.
+
+### P2 — endurecer
+- **P2-1 UI:** exigir tabela com contagem p/ `prefix24/footer22`: `AJUSTE/AJUSTAR`, `níveis/max10ou5`, `MANUTENÇÃO(10)` + `CURA ATÉ 1 VIDA(14)` sem falso contador/220, reuse ícones bobina/motor/chassi.
+- **P2-2 TTK inicial 2x:** `6/4HP vs dano1` pode gerar tédio na run atual 4 salas; manter como candidato até avaliação RL/humana futura, sem reajuste cego agora.
+- **P2-3 Escopo congelado:** listar paths exatos; `Main` só se necessário sem ramificação; sem `run_root`/tamanho run, geração/recovery/`RoomTransition`, save novo, arte/fonte/frame.
+
+### Ajuste mínimo no plano
+Adicionar invariantes oferta, predicado serviço ignora-HP, fórmulas ordem/clamp, ponto validação snapshot/rejeição, tabela inimiga+defaults, tabela UI widths, nota orçamento 220 ajustável. Nada de treino/instalação RL, simulação ou entregas extras nesta fase.
+
+```text
+STATUS: done
+SUMMARY: Plano como hipótese revisável com 5 P1 de invariantes/fórmulas/snapshot/UI-orçamento; sem validação gameplay
+CHANGED_FILES: none
+TESTS: none
+RISKS: oferta vazia pré-220 se serviço filtrar HP cheio; double-heal em restore; divergência derivados/rounding; fallback defaults inimigos; 220 lido como duração final; TTK inicial tedioso sem dados
+NEXT_STEP: aplicar ajuste mínimo acima ao plano e congelar lista de arquivos antes de delegar a Luna xhigh
+```

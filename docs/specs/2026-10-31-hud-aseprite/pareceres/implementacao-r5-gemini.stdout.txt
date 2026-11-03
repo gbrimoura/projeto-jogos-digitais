@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Revisão estática do delta editorial de R4 para R5 do README HUD concluída com aprovação total. A duplicação literal das frases sobre `clock-states.aseprite`, `gauge-needle-states.aseprite` e tags de playback foi eliminada com precisão, mantendo a descrição de estudo de playback e índices normalizados exatamente uma vez. O acréscimo dimensional de `CONCEITO` (74×15 px, centralizado na coluna do instrumento) foi integrado de forma estritamente documental, sem insinuar integração com Godot, sem alterar semântica de índices/timing/SaveCopy e sem tocar em binários, scripts Lua ou JSONs.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: none
+NEXT_STEP: Prosseguir com o registro do parecer/conclusão da rodada R5 no fluxo documental do plano.

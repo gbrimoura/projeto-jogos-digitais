@@ -1,0 +1,20 @@
+### Avaliação de Revisão Estática R2
+
+1. **Resolução do apontamento P2 (Muse Spark):**
+   - **Resolvido.** A chamada de fallback em `_pursue_on_current_support` agora calcula o centro da consulta com `global_position + attack_center_offset` imediatamente após a execução física de `_move_toward_pursuit_x`.
+   - Isso elimina qualquer descompasso (mesmo que sub-pixel, $<0.1\text{px}$) entre a posição testada na consulta de área/LOS e o centro efetivamente travado logo em seguida em `_begin_windup` (`_locked_attack_center = global_position + attack_center_offset`).
+
+2. **Análise de integridade e ausência de novos defeitos:**
+   - **Tipagem e sintaxe:** A expressão `global_position + attack_center_offset` retorna `Vector2`, aderente ao parâmetro `area_center: Vector2` de `_find_melee_engagement_player`.
+   - **Preservação de invariantes:** Não houve alteração nos gates de stuck/replan, no consumo do contador em `_begin_windup` (`_pursuit_stuck_remaining = 0.0`), nas guardas de LOS/geometria, nas velocidades, nos bounds ou nos tempos de windup/recovery/onda.
+   - **Fluxo de fallback/detour:** Caso nenhum jogador seja detectado no centro atualizado, o fluxo segue normalmente para `_try_begin_pursuit_detour` ou redefinição de intervalo de replanejamento sem vazamento de estado.
+   - Nenhum defeito ou regressão introduzida.
+
+```text
+STATUS: done
+SUMMARY: P2 do Muse resolvido com precisão sem introdução de defeitos; a consulta de fallback agora utiliza a posição física pós-movimento idêntica ao centro travado no windup.
+CHANGED_FILES: none
+TESTS: static review only
+RISKS: none
+NEXT_STEP: Prosseguir com a consolidação e fechamento da etapa de revisão delta R2.
+```

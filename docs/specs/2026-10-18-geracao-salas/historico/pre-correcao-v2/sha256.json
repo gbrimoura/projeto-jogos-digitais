@@ -1,0 +1,47 @@
+[
+  {
+    "path": "scripts/world/main.gd",
+    "sha256": "e818cfed456b7700530c382c3326387c7b5317190e97cbb908f36c752e172f13",
+    "snapshot": "scripts__world__main.gd"
+  },
+  {
+    "path": "scripts/world/exit_door.gd",
+    "sha256": "70c309f9d22bf6402ab60dba52adf4663a8086df85d6940537dcaafd814b5ad0",
+    "snapshot": "scripts__world__exit_door.gd"
+  },
+  {
+    "path": "scripts/world/room_layout_generator.gd",
+    "sha256": "2fea155c2a1de2174addf6eb8961bcec4858ca8bf06898b2388d6ad49740f67f",
+    "snapshot": "scripts__world__room_layout_generator.gd"
+  },
+  {
+    "path": "scripts/world/factory_ceiling_visual.gd",
+    "sha256": "4a9ca42c1b7a61b3e0b14d8da0674b8001695ddb9ad7aedd36c140b83a963fd3",
+    "snapshot": "scripts__world__factory_ceiling_visual.gd"
+  },
+  {
+    "path": "scenes/main.tscn",
+    "sha256": "b72237a51626f760100037b80a46803d47151e3fcb8fefaa9d53910bf0281e6d",
+    "snapshot": "scenes__main.tscn"
+  },
+  {
+    "path": "scenes/second_room.tscn",
+    "sha256": "51ef3b0a2fc0acd52497d44aa30bab9ab61e399ee8c94521df68a433ad443e20",
+    "snapshot": "scenes__second_room.tscn"
+  },
+  {
+    "path": "docs/specs/2026-10-18-geracao-salas/plano.md",
+    "sha256": "78f46219447a353648f76fa43e89a36d2531bc1af19e086831261b4b67011c09",
+    "snapshot": "docs__specs__2026-10-18-geracao-salas__plano.md"
+  },
+  {
+    "path": "docs/specs/2026-10-18-geracao-salas/spec.md",
+    "sha256": "9b5d5c27e39f30f0e0e99fc37fbd4479a45703c0bf3de4a98c74d0936a48ad32",
+    "snapshot": "docs__specs__2026-10-18-geracao-salas__spec.md"
+  },
+  {
+    "path": "docs/specs/2026-10-18-geracao-salas/registro.md",
+    "sha256": "53f606a54889485ea64b827a0f01abbac230b5022fab5c32f0d4b67a5803804a",
+    "snapshot": "docs__specs__2026-10-18-geracao-salas__registro.md"
+  }
+]

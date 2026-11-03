@@ -1,0 +1,10 @@
+Factory floor 1 — static hierarchy/contact preview
+Each quadrant is a separately composed background from the 2×2×2 module choices.
+The sample platforms and character are static context props used only to judge scale and contrast; they are not a gameplay capture or a representation of a particular generated room layout.
+
+Top left: bits 000 — boiler-wall base / left boiler circuit / right service sign (illustrative sample seed 0).
+Top right: bits 011 — boiler-wall base / left cabinet bank / right press (illustrative sample seed 6).
+Bottom left: bits 101 — maintenance-wall base / left boiler circuit / right press (illustrative sample seed 5).
+Bottom right: bits 110 — boiler-wall base / left cabinet bank / right service sign (illustrative sample seed 3).
+
+Runtime choice contract: base uses seed bit 0, left module uses bit 1, right module uses bit 2. The preview sample layouts are fixed composition examples, not an added layout rule.

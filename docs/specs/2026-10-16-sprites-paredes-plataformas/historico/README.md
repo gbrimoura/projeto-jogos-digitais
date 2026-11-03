@@ -1,0 +1,6 @@
+# Histórico
+
+- 2026-10-16 — V1: proposta preliminar, branch corrigir-sprites-salas-plataformas, base main 90b2e59; documentação somente. Snapshot preservado em v1/: plano SHA-256 2573205ED1CEA20314B56E91D38252423F422EBBD5E00207796C503523162E24; spec F917F12263CAF833B8AC658BC823957DCF178BAE8244CCC282827822952C287A.
+- 2026-10-16 — V2: ajustes dos pareceres R1, congelada em v2/ antes desta edição. SHA-256: plano A908C03DA5E282E230052718E97B71EE2D4324E4F0B0BC0BF524743866710873; spec AEA6E8252D747D7C2D9A650D6AAAB9286A91D24223411CBD01C80F0059E03787.
+- 2026-10-16 — V3: incorpora decisões de R2 sobre validação estática pré-árvore, tratamento de falha standalone/managed, bounds e inventário de spawn/bola, passagem ao redor do TrainingTarget sólido, cálculo de alpha, distinção entre afastamento do PlayerSpawnMarker e vão entre plataformas, visual das paredes e rollback por fase. SHA-256 dos documentos congelados: plano BBCC205FF2EAC15F4BD53F8CB0285F3CE16FC9CCCB3446D214DCBC7088D77626; spec AAFE9D963DDD64B107558762133B1E788B7CB1CEF86AA8708DAFCACCDA1D0B30. Não altera runtime, arte, GDD, Godot ou testes.
+- Inputs/hashes dos pareceres R1/R2 em pareceres/ são registros imutáveis; resultados de revisão e status ficam sob coordenação do principal.

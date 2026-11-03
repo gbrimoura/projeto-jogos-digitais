@@ -1,0 +1,6 @@
+STATUS: done  
+SUMMARY: Os bloqueios R2 (B1 dono da falha, B2 apoio, B3 spawns, A1 alvo sólido, M1 skin) não persistem no V3. As decisões do principal estão no texto, sem pendência humana de rotina. Não há contradição concreta nova que impeça o plano.  
+CHANGED_FILES: none  
+TESTS: none  
+RISKS: Residual não bloqueante: `free_room` no spec é nome lexical para `Node.free()` da instância não adicionada, não API pré-existente. Critérios visuais, LOS, salto/rota (incl. East→Upper e contorno do alvo vivo/após `queue_free`) e pose renderizada da linha-fonte 55/borda 56 continuam pendentes até verificação Godot explícita; o plano já os marca pendentes e não autoriza abrir Godot. Falha managed vs standalone é dual e coerente (rejeitar antes de `add_child` + `_fail_run` sem vitória; standalone em `_enter_tree` com gate, erro visível e reinício após a árvore pronta, filhos entram mas não ativam combate). Segunda chamada idempotente de `prepare_authored_layout` após o add managed não contradiz o fluxo. Detalhes de assinatura em Main/RunController/TrainingTarget estão escopados; não reabrem autorização humana.  
+NEXT_STEP: Congelar V3 como baseline documental desta frente. Implementação só com pedido explícito; Godot/import/teste só com pedido explícito de verificação. Não reabrir B1–B3/A1/M1 nem ampliar escopo.

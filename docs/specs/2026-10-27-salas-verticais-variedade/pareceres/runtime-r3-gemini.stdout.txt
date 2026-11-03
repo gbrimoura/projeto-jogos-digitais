@@ -1,0 +1,59 @@
+STATUS: done
+SUMMARY: Revisão estática delta R2→R3 concluída em modo somente leitura (sem ferramentas, comandos, testes ou execução de engine). O delta R3 corrige pontualmente e com precisão estrita os 4 apontamentos levantados sobre o R2: (1) referências locais em `managed_room_topology.gd` (`left_edge`, `right_edge`, `right_width`) estão totalmente resolvidas sem símbolos indefinidos; (2) `force_canonical` em `room_layout_generator.gd` agora passa obrigatoriamente pelo validador geométrico `_managed_entries_are_safe`, eliminando o bypass; (3) o snap `centers[index] = snappedf(centers[index], 8.0)` antes da instanciação de `position` e `rect` resolve a paridade 4 mod 8 de larguras ímpares em blocos de 8 (ex.: 104 px com meia-largura 52 px), garantindo `rect.get_center().x` múltiplo de 8 e desbloqueando a variação procedural entre as 12 tentativas sem anular a diversidade; (4) a detecção de aterrissagem em `_managed_can_jump_between` e `_managed_can_drop_between` agora interpola linearmente a travessia de pés (`crossing_fraction` com `lerpf`) e aplica margem segura `inset 22.0`, garantindo a cápsula do jogador (raio 14) com no mínimo 8 px de apoio interno e impedindo apoios espúrios fora da borda. Nenhum P1 ou P2 concreto remanescente foi identificado no delta R3.
+CHANGED_FILES: none
+TESTS: none
+
+### 1. Validação dos 4 Pontos do Delta R3
+
+1. **Resolução de símbolos em `managed_room_topology.gd` (`configure`)**:
+   - Ramos `UP` e `DOWN` substituíram integralmente os identificadores inexistentes (`ceiling_left_edge`, `ceiling_right_edge`, `ceiling_right_width`) por variáveis locais devidamente inicializadas (`left_edge`, `right_edge`, `right_width`).
+   - A geometria gerada preserva as larguras nominais: banda esquerda `[0, left_edge]`, vão `[left_edge, right_edge]` de largura exata `PORTAL_WIDTH` (256.0 px) centralizado em `_exit_offset`, e banda direita `[right_edge, 1152.0]` de largura `1152.0 - right_edge`.
+   - Todas as variáveis têm escopo local válido e não há vazamento nem referência nula.
+
+2. **Guarda geométrica em `force_canonical` (`room_layout_generator.gd`)**:
+   - O ramo `if force_canonical:` agora invoca `_managed_entries_are_safe(canonical_entries, family, entry_dir, exit_dir, entry_offset, exit_offset)`.
+   - Caso o contrato geométrico não seja satisfeito, retorna `_invalid_result(...)` de forma idêntica ao fallback pós-12 tentativas, unificando a garantia de invariantes estruturais.
+
+3. **Snap de centros e paridade de larguras (`room_layout_generator.gd`)**:
+   - `centers[index] = snappedf(centers[index], 8.0)` é executado antes do cálculo de `position` e `rect`.
+   - Isso garante que `rect.get_center().x` seja rigorosamente congruente a 0 mod 8, satisfazendo `fposmod(rect.get_center().x, 8.0) <= 0.01` em `_managed_entries_are_safe`.
+   - No R2, plataformas com largura como 104 px (meia-largura 52 px = 6×8 + 4) deslocavam o centro adjacente para um múltiplo de 4 mod 8, reprovando compulsoriamente 100% das tentativas procedurais de `roof_five`.
+   - No R3, o snap absorve o deslocamento de ±4 px na grade de 8 px; larguras, gaps e elevações continuam sorteados pelo RNG, preservando a variedade gerada sem forçar fallback canônico sistemático.
+   - No caso de `is_roof`, o último centro permanece indexado em `portal_x` (248.0 ou 904.0, ambos múltiplos exatos de 8: 31×8 e 113×8), de modo que `snappedf` não altera a ancoragem exata do portal.
+
+4. **Interpolação de aterrissagem e margem segura de 22.0 px (`main.gd`)**:
+   - Em `_managed_can_jump_between` e `_managed_can_drop_between`, a transição vertical é capturada no instante em que a base cruza `target.position.y`.
+   - `crossing_fraction := clampf((target.position.y - root.y) / (next.y - root.y), 0.0, 1.0)` é matematicamente estável (não há divisão por zero, pois `vy > 0` e `dt > 0` garantem avanço descendente estrito).
+   - `landing_x := lerpf(root.x, next.x, crossing_fraction)` determina o `x` exato do centro do jogador na linha do topo do alvo.
+   - O intervalo de validação `[target.position.x + 22.0, target.end.x - 22.0]` exige que o centro da cápsula (raio 14 px) fique a 22 px da borda, garantindo `22.0 - 14.0 = 8.0 px` de borda de plataforma sob os pés do personagem. Para a menor plataforma gerenciada (104 px), a janela útil de pouso é de 60 px (`104 - 44`), eliminando o risco do R2 em que o centro aterrissava até 13.5 px fora do sólido.
+
+---
+
+### 2. Testemunhas Analíticas (Sem Execução de Engine)
+
+- **Testemunha 1 (`roof_four` — salto 256.0 → 160.0)**:
+  - Origem $y = 256.0$, destino $y = 160.0$ ($\Delta y = 96.0 \le 128.0$). Portal em 904.0; destino com largura 160 px em `[824, 984]`; com inset 22 px, o intervalo válido é `[846.0, 962.0]`.
+  - Lançamento analítico em $x = 744.0$, $v_x = 260.0$ px/s, $v_{y0} = -640.0$ px/s, $g = 1600.0$ px/s².
+  - Vértice da parábola em $t = 0.40$ s com topo da cápsula atingindo $y = 52.0$ px (< 64.0 px). A entrada na abertura do hatch `[776.0, 1032.0]` ocorre em $t \approx 0.28$ s com a cápsula em $x \in [802, 830]$, dentro do vão desobstruído.
+  - Cruzamento descendente de $y = 160.0$ ocorre em $t = 0.60$ s ($36$ ticks de física): $x(0.60) = 744.0 + 260.0 \times 0.60 = 900.0$ px (ou $\approx 908.0$ px na discretização de ticks).
+  - Como $846.0 \le 900.0 \le 962.0$, a rota física analítica é estritamente válida e confirma a transição para a escotilha superior.
+
+- **Testemunha 2 (`roof_five` — salto 232.0 → 160.0)**:
+  - Origem $y = 232.0$, destino $y = 160.0$ ($\Delta y = 72.0 \le 128.0$). Portal em 904.0; destino de largura 104 px em `[852.0, 956.0]`; com inset 22 px, o intervalo válido é `[874.0, 934.0]`.
+  - Lançamento analítico em $x = 752.0$, $v_{x0} = 100.0$ px/s acelerando a $1600.0$ px/s² até $260.0$ px/s ($0.10$ s / 6 ticks, percorrendo 18 px).
+  - Cruzamento descendente em $y = 160.0$ ocorre em $t = 0.70$ s ($v_y = +480.0 > 0$).
+  - Deslocamento horizontal: $\Delta x = 18.0 + (260.0 \times 0.60) = 174.0$ px $\implies x_{pouso} \approx 926.0$ px (interpolado em ticks a $\approx 924.0$ px).
+  - Como $874.0 \le 924.0 \le 934.0$, a aterrissagem fica centrada na plataforma final de 104 px com margem segura superior a 8 px em relação a ambas as bordas.
+
+---
+
+### 3. Parecer de Severidades Remanescentes
+
+- **P1 Remanescentes**: 0 (nenhum símbolo indefinido, colisão inválida, rota quebrada ou travamento estático).
+- **P2 Remanescentes**: 0 (nenhum bypass de segurança geométrica, paridade espúria invalidando variedade ou aterrissagem com raiz fora do bordo).
+
+RISKS:
+1. Em sementes raras onde um gap nominal de 40 px em `roof_five` sofra aproximação mútua de centros pelo snap de 8 px, o vão resultante entre bordas pode atingir 36 px (< 40 px), levando à rejeição pontual daquela tentativa individual por `_managed_entries_are_safe`. O gerador lida com isso de forma prevista através do laço de 12 tentativas e fallback seguro.
+2. Como a revisão é puramente analítica e textual sem execução do runtime Godot, validações visuais finas (ex.: renderização de tiles/sprites das portas UP/DOWN) ficam a cargo de conferência visual posterior quando testes/QA forem autorizados.
+
+NEXT_STEP: Registrar a aprovação do delta R3 na documentação de histórico da especificação e prosseguir com a consolidação da branch/release estável conforme a governança do repositório.

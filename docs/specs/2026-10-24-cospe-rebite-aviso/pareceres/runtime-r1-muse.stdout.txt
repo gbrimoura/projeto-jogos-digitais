@@ -1,0 +1,10 @@
+Visão estática do aviso do Cospe-Rebite — lendo a entrada congelada.
+STATUS: done
+SUMMARY: Revisão estática da entrada congelada — sem P1/P2. Trajeto travado, cast CircleR6/clip, ranges, windup/cooldown/recuperação/spawn/tiro/IA/HP/áudio/parry preservados nos diffs; helper anônimo sem class_name/process/Tween/relógio global, sincronizado por Worker; hide/reset centralizado; coordenadas idênticas ao pai Line2D; z/contraste/charge/iminnência conformes.
+P1: none — geometria completa desde o 1º instante (rivet_worker.gd:529-544 usa locked_muzzle/direction+maximum_attack_range+cast_motion, sem mira nova); sem strobe (pulso Time removido, diff worker 950); sem _process próprio no helper (rivet_warning_visual.gd:686-750 só configure/set_progress/_draw); reset em todos os hides via _set_warning_visible(false)->set_progress(0) (linhas 511-517 cobrem _ready/take_damage/physics/patrol/retreat/fire).
+P2: none — marker y=-104+16=-88..-84 sem sobrepor HP top=-81 (tscn:853-892 + helper:678); z marker 3 sobre helper herdado 2; WarningLine width12 mantido só com default_color navy 0.44 faint (scene-diff); dashes amber 3px opacos (draw_line, não modulate); thresholds 0.20/0.48/0.72 + imminência 0.70 smoothstep sem relógio/tween.
+Opcional/dívida (não defeito): tscn WarningStem/Dot ainda salmão, sobrescrito para âmbar em configure() com tudo oculto; paleta sem creme #F5E9D8 — só âmbar/vermelho/navy/slot; terceiro slot 0.72 acende logo após início do vermelho 0.70 (transição suave, aceitável).
+CHANGED_FILES: none
+TESTS: static review only — só leitura da entrada, sem Godot/import/parser/linter/testes/QA/preflight/execução; sem alegação de validação runtime/render
+RISKS: Nenhum bloqueio estático; risco residual só de render/gameplay não verificável neste modo proibido.
+NEXT_STEP: Manter congelado e seguir para próxima revisão read-only do conjunto.

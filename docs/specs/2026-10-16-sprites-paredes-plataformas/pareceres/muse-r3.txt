@@ -1,0 +1,9 @@
+
+> plan · muse-spark-1.3-contributor
+
+STATUS: done
+SUMMARY: V3 resolve inline os bloqueios R2 sem nova contradição impeditiva. B1: Main.prepare_authored_layout local-only sem @onready/tree/fisica, Managed antes de add_child com descarte+_fail_run sem room_cleared/vitoria, standalone em _enter_tree com gate/invalido antes de _ready, erro/restart apos pronta sem porta/vitoria/spawn-duplo, flag acessivel a Target/Worker; free_room entendido como Node.free() de instancia nao-adicionada, nao API nova. B2: largura>=88, margem 8, contato 0.5, suporte escolhido permitido/excluido, outros World layer1 so area>0.01, borda=ok, Areas ignoradas, primario->fallback senao rejeita. B3/A1/M1: inventario player/ShotOrigin/sem-camera-pickup, layer8 vs mask9 solido vivo + queue_free apos derrota com rota antes/depois, helper local sem class_name com source id0 grade32 celulas (0,1)/(2,1) Rect2(0,32,32,32)/(64,32,32,32) 10x64x64+64x8 em x0/1088 z-1, snapshot por-fase baseline 90b2e59, pipeline inconclusivo pendente, row55 via edge56 392+2*(56-32)=440 / 560-48+2*(56-32)=560, contas de vaos/folgas/balistica 0.676s/176vs105 conferem e marcadas como teoricas.
+CHANGED_FILES: none
+TESTS: none
+RISKS: visual/rota/LOS/balistica seguem pendentes de verificacao autorizada; passagem 31 lateral e folga B apertada nao sao prova jogavel; implementar free() vs queue_free e detalhe de assinatura e rotina, sem chamar free_room() inexistente.
+NEXT_STEP: congelar V3 e autorizar implementacao por etapas com snapshot SHA-256, sem abrir Godot/testar sem pedido explicito.

@@ -1,0 +1,82 @@
+[
+  {
+    "file": "run_root.tscn",
+    "sha256": "4646D010359F459F4681D9726FB397F61CA06D950228A283EEBD81D7A54F70B5"
+  },
+  {
+    "file": "scenes\\ui\\hud\\ball_gauge_panel.tscn",
+    "sha256": "87A008809929D451B4D935E1E8F43F85F04CD1B10E362991DAA448114FF07C08"
+  },
+  {
+    "file": "scenes\\ui\\hud\\dash_panel.tscn",
+    "sha256": "929E23A4BB872B8DA3B354905E8EFD2F1FD4DF37A644FBE5FDF9C7597EE33C26"
+  },
+  {
+    "file": "scenes\\ui\\hud\\health_bar.tscn",
+    "sha256": "A4DCA767CE552F991347C2557B47C9288C847B253823C49269EDC03505F03DD2"
+  },
+  {
+    "file": "scenes\\ui\\hud\\hud_root.tscn",
+    "sha256": "F1238828707C78D1402189D3C71FB2B52E7890E7A99A1ED85BE33B936A47C882"
+  },
+  {
+    "file": "scenes\\ui\\hud\\player_health_panel.tscn",
+    "sha256": "99EC7060CD1A3F933676BB2D25041A290699B8EE87B00A18477944BF0C20EF4A"
+  },
+  {
+    "file": "scenes\\ui\\hud\\room_progress_panel.tscn",
+    "sha256": "258427FCEFCEECD18C5BB55713E472D4DBC9084BBB34AE7DFC02807C102E18E0"
+  },
+  {
+    "file": "scenes\\ui\\hud\\run_hud_bridge.tscn",
+    "sha256": "0F140055D345FC4EAD70D11B39BE0B15DADA0356E2774C51D67797F166525DE1"
+  },
+  {
+    "file": "scenes\\ui\\hud\\target_panel.tscn",
+    "sha256": "C1AA0FF343A6EAC418D094130ECF64537F2BCFD66B0B1C088AD0891166F92F9B"
+  },
+  {
+    "file": "scripts\\player\\movement_controller.gd",
+    "sha256": "E0773813DAD5BB424F412F7A58050D5E5CFE5DDB94640AEF574F96533CC1EAF9"
+  },
+  {
+    "file": "scripts\\ui\\hud\\ball_gauge_panel.gd",
+    "sha256": "F1733912338E95AAC9BBF644AE3D83B7B37D8319AE41372F0CDA35166C49F4A9"
+  },
+  {
+    "file": "scripts\\ui\\hud\\bitmap_text.gd",
+    "sha256": "74178A45A2087B27C7AE2A9876AFE859F047FA1A0F9A8F241F83B85BCC57B7E5"
+  },
+  {
+    "file": "scripts\\ui\\hud\\dash_panel.gd",
+    "sha256": "2E28BF8F1D9E869D46376CE51F5E1919BC1646ED1DADCBC5FB2140D53BD1B601"
+  },
+  {
+    "file": "scripts\\ui\\hud\\health_bar.gd",
+    "sha256": "CC7F1C2652BFA19CCAA706729E584C51C71D0B9973F44442EE71C7B1E708FF9F"
+  },
+  {
+    "file": "scripts\\ui\\hud\\hud_root.gd",
+    "sha256": "1CDFFB9060142F6774541B0AD306FEFDF3BC43E5B4EF93FC7D5F0742576600EB"
+  },
+  {
+    "file": "scripts\\ui\\hud\\pause_guard.gd",
+    "sha256": "D61C248198C9B7B671422CCE4174550A28B9829547389E5D98D8C596155A9311"
+  },
+  {
+    "file": "scripts\\ui\\hud\\player_health_panel.gd",
+    "sha256": "87310EFB7C2FD906FBFC9B018789AAF1D5F75A337A1F7CC0F3554552D661BD85"
+  },
+  {
+    "file": "scripts\\ui\\hud\\room_progress_panel.gd",
+    "sha256": "A28B666A348562B666A6C2F1C5B40A10ECE19E0D949AFAB40B63173A5606799E"
+  },
+  {
+    "file": "scripts\\ui\\hud\\run_hud_bridge.gd",
+    "sha256": "6DBC584B631658053EE9C855616B06E343C2ED908BAFC630339E54E3BF32CBE6"
+  },
+  {
+    "file": "scripts\\ui\\hud\\target_panel.gd",
+    "sha256": "85623F83AA5DBAB67082B44D04AEADE4D9B8EEAE803C012CB864D5330D2A9E2B"
+  }
+]

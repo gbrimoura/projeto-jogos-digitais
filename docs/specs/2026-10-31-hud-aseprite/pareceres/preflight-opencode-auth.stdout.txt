@@ -1,0 +1,6 @@
+T  Credentials [90m~\.local\share\opencode\auth.json
+|
+•  OpenCode Go [90mapi
+|
+—  1 credentials
+

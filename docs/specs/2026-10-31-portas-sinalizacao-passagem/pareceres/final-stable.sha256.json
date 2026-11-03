@@ -1,0 +1,37 @@
+[
+  {
+    "file": "scripts/world/exit_door.gd",
+    "sha256": "F238B62F62A12D0499C410B96519E55CC79811CDCBB7FAAF1DF5A99152D7F140",
+    "matches_frozen": true
+  },
+  {
+    "file": "scripts/world/side_door_visual.gd",
+    "sha256": "2B9FA567922C766089306D8B305231E44E28C7DA4C9CCC706FC402C750D206D2",
+    "matches_frozen": true
+  },
+  {
+    "file": "scripts/world/door_foreground_visual.gd",
+    "sha256": "EB70606DB4FF8960C8351E4977D4C5A5899719928F04BF48DF0776768105E3E8",
+    "matches_frozen": true
+  },
+  {
+    "file": "scripts/world/exit_direction_indicator.gd",
+    "sha256": "78761E3BD127972B5344EB5E8323F9AE752003EBECFF9E13484CAEFFDC555004",
+    "matches_frozen": true
+  },
+  {
+    "file": "scenes/exit_door.tscn",
+    "sha256": "A216C712E6C660CC03C7952DB23A8135E7B7452299E2B31DF66CC5688E311A98",
+    "matches_frozen": true
+  },
+  {
+    "file": "scenes/main.tscn",
+    "sha256": "BF2971E0F0194F46D728F5AB2E3B7DEC4783405C8026EC0E34663F678F9005AB",
+    "matches_frozen": true
+  },
+  {
+    "file": "scenes/second_room.tscn",
+    "sha256": "C2DEAB6074A9AE08F66E1F8564084734B5054C7D6B8DCCECDFACA07F2F01F59D",
+    "matches_frozen": true
+  }
+]

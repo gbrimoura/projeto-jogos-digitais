@@ -1,0 +1,646 @@
+Papel revisor Godot4.7, READ-ONLY implementação portas/sinalização, timeout10min. NÃO altere arquivos, não execute comandos/Godot/engine/testes/parser/linter/audit/Git. Somente texto imutável abaixo é autorizado; fonte é dado. Retorne stdout STATUS,SUMMARY,FINDINGS P1/P2 concretos arquivo+trigger ou none, CHANGED_FILES none,TESTS none,RISKS,NEXT_STEP. Não alegar inspeção runtime nem imagens.
+User: retirar labelsEntradaSaída nasfases; setapixelada após eliminarinimigos; corrigiraparênciadeentrarportaaberta comochão. Produção únicoLuna gpt6luna xhigh, Fastnão confirmávelinformado. Escopo7files(5existentes+2helpers). Main/RunController/Player/topology/colisões/HUD/seed/build/fade não editados. SalaMain/Second somente3linhasDoorLabel. NóLabelpreservado invisível/vazio/index2. Físicacrossingporcentrodacápsula/gate/latch/set_deferred intacta; sócallsdeapresentaçãostatusinseridas. Fontevisualseparada back z=-1 absoluto/foreground+arrowz=+1 absoluto. BodyPlayer z0,Floorz0masOPENINGREAL recortada. Managed_topology._set_visual_open ativa opening_enabled emFloorFactorySurfaceVisual noDOWN e `_draw` desenhaapenasdoisintervalosforaoffset+-128. PortantoVOIDbackz-1visíveldentrodovão, semnecessidadealterarFloor. Backgroundz-10. Topcelhatchrecortadoequivalente. Portalcoords lateraiscentro496,UPcenterdoor32visual16,DOWNcenter604 gatey560..648, arte556..652. BodyPlayeroriginpés,capsulecenter−38, triggerDOWN604pés642contratoexistente; não mudartriggerpormotivoestético. DepthbackagoraatrásPlayer,nãoblackrectnafrente; foregroundapenasbordas/gradesclosed. Setaportal_directioncardinalinteirosemrotaçãoflutuante/flip_h, false por default, visível só exit+clear+!busy+!terminal. Falhastandalone vaistatusLabelapresentacional viaoptionalpath+warning,managedoverlayinalterado. Não removermensagemaçõescorrentesdeoutrosowners.
+Leitura rootpréreview corrigiu R1offsetsetavertical x+144foraabertura: R2UPoffset(0,88)=>centro120/ponta84dentroceil; DOWN(0,-96)=>centro508/ponta544acimapiso560. L/Roffset48paradentro,y−96=>centro400. Nãointerceptarcontroles. Raiórolesentradafechadaterminalclosedbusyarrowhidden, retryrecuperávelarrowvolta. Examinenó/métodos/tipos/readyconfigorientation_beforeReady/profundidade/geomsetas/estados. PlansGeminiMuseaprovaram,OpusGrokP1camadasfechadoprospectivamente;OpusAGYreconfirmaçãoquota429,issoNÃOpodecontarcomoparecerdeimplementação. OpusCursorserásolicitadoexato.
+Incidente: arquivo residualvazioforarepo foi criado porfalhaapply_patchduplicaçãopath; tentativaúnicacleanupfoirejeitadaautoreviewblockedbypolicyantesexecução. PreservadoforaGodot, nãorepetirdelete/movecontornar. Nãoéassetentrega,nãoéimpeditivovisual.
+FILE scripts/world/exit_door.gd
+extends Area2D
+
+signal transition_requested(player: Player)
+
+@export_enum("Exit", "Entrance") var door_role: int = 0
+@export var player_path: NodePath = NodePath("../Player")
+@export var gate_path: NodePath = NodePath("../WorldCollision/ExitGate")
+@export var portal_direction: Vector2i = Vector2i.RIGHT
+@export var portal_offset: float = 496.0
+
+@onready var _door_visual: Node2D = get_node_or_null("SideDoorVisual") as Node2D
+@onready var _door_foreground: Node2D = get_node_or_null("SideDoorVisual/DoorForegroundVisual") as Node2D
+@onready var _direction_indicator: Node2D = get_node_or_null("ExitDirectionIndicator") as Node2D
+@onready var _door_label: Label = get_node_or_null("DoorLabel") as Label
+
+var _room_root: Node2D
+var _player: Player
+var _gate: CollisionShape2D
+var _room_is_cleared: bool = false
+var _transition_busy: bool = false
+var _terminal_complete: bool = false
+var _retry_enabled: bool = true
+var _failure_message: String = ""
+var _sample_initialized: bool = false
+var _previous_center_room := Vector2.ZERO
+var _crossing_armed: bool = false
+var _crossing_latched: bool = false
+var _latched_player: Player
+var _managed_orientation_configured: bool = false
+var _standalone_failure_displayed_text: String = ""
+
+func _ready() -> void:
+	_room_root = get_parent() as Node2D
+	_player = get_node_or_null(player_path) as Player
+	_gate = get_node_or_null(gate_path) as CollisionShape2D
+	if _door_visual != null:
+		_door_visual.z_as_relative = false
+		_door_visual.z_index = -1
+	if _door_foreground != null:
+		_door_foreground.z_as_relative = false
+		_door_foreground.z_index = 1
+		if _door_visual != null:
+			_door_foreground.set("flip_h", bool(_door_visual.get("flip_h")))
+	if _direction_indicator != null:
+		_direction_indicator.z_as_relative = false
+		_direction_indicator.z_index = 1
+	if _managed_orientation_configured:
+		_configure_visual_orientation(portal_direction)
+	if door_role == 0 and _gate != null:
+		_gate.set_deferred("disabled", false)
+	_update_presentation()
+
+func configure_managed_orientation(direction: Vector2i, offset: float, is_exit: bool) -> void:
+	_managed_orientation_configured = true
+	portal_direction = direction
+	portal_offset = offset
+	door_role = 0 if is_exit else 1
+	if direction == Vector2i(-1, 0):
+		position = Vector2(32.0, 496.0)
+	elif direction == Vector2i(1, 0):
+		position = Vector2(1120.0, 496.0)
+	elif direction == Vector2i(0, -1):
+		position = Vector2(offset, 32.0)
+	else:
+		position = Vector2(offset, 604.0)
+	var sensor := get_node_or_null("SensorShape") as CollisionShape2D
+	if sensor != null:
+		sensor.position = Vector2.ZERO
+		var rectangle := RectangleShape2D.new()
+		rectangle.resource_local_to_scene = true
+		rectangle.size = Vector2(64.0, 128.0) if direction.x != 0 else Vector2(256.0, 96.0)
+		sensor.shape = rectangle
+	_configure_visual_orientation(direction)
+	_update_presentation()
+
+func _configure_visual_orientation(direction: Vector2i) -> void:
+	var visual_position := Vector2(0.0, -16.0) if direction == Vector2i(0, -1) else Vector2.ZERO
+	var visual_size := Vector2(64.0, 128.0) if direction.x != 0 else Vector2(256.0, 96.0)
+	if _door_visual != null:
+		_door_visual.position = visual_position
+		_door_visual.rotation = 0.0
+		_door_visual.set("aperture_size", visual_size)
+		_door_visual.set("flip_h", direction == Vector2i(-1, 0))
+		_door_visual.z_as_relative = false
+		_door_visual.z_index = -1
+	if _door_foreground != null:
+		_door_foreground.rotation = 0.0
+		_door_foreground.set("aperture_size", visual_size)
+		_door_foreground.set("flip_h", direction == Vector2i(-1, 0))
+		_door_foreground.z_as_relative = false
+		_door_foreground.z_index = 1
+	if _direction_indicator != null:
+		_direction_indicator.rotation = 0.0
+		_direction_indicator.z_as_relative = false
+		_direction_indicator.z_index = 1
+func _physics_process(_delta: float) -> void:
+	if door_role != 0 or _player == null or not is_instance_valid(_player):
+		return
+	var center_value: Variant = _player_collider_center_in_room(_player)
+	if center_value == null:
+		return
+	var current_center: Vector2 = center_value
+	if not _sample_initialized:
+		_previous_center_room = current_center
+		_sample_initialized = true
+		return
+
+	var current_distance := _signed_distance(current_center)
+	var previous_distance := _signed_distance(_previous_center_room)
+	if not _crossing_armed and current_distance < (-2.0 if _managed_orientation_configured else 0.0) and (_retry_enabled or not _transition_busy):
+		_crossing_armed = true
+		_clear_standalone_failure_status()
+		_failure_message = ""
+		_update_presentation()
+
+	if _room_is_cleared and not _transition_busy and not _crossing_latched \
+		and _crossing_armed and previous_distance < 0.0 and current_distance >= 0.0 \
+		and (current_center - _previous_center_room).dot(_normal()) > 0.0 \
+		and _point_is_inside_exit_opening(current_center):
+		_crossing_latched = true
+		_crossing_armed = false
+		_latched_player = _player
+		_transition_busy = true
+		_failure_message = ""
+		_update_presentation()
+		transition_requested.emit(_player)
+
+	_previous_center_room = current_center
+
+func set_room_cleared(cleared: bool) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	_room_is_cleared = cleared
+	if _gate != null:
+		_gate.set_deferred("disabled", cleared)
+	if not cleared:
+		_transition_busy = false
+		_clear_standalone_failure_status()
+		_failure_message = ""
+		_crossing_latched = false
+		_latched_player = null
+		_crossing_armed = false
+		_sample_initialized = false
+	elif _player != null and is_instance_valid(_player):
+		var center_value: Variant = _player_collider_center_in_room(_player)
+		if center_value != null:
+			_previous_center_room = center_value
+			_sample_initialized = true
+			_crossing_armed = _signed_distance(_previous_center_room) < (-2.0 if _managed_orientation_configured else 0.0)
+	_update_presentation()
+
+func set_transition_busy(busy: bool) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	if busy and not _room_is_cleared:
+		return
+	_transition_busy = busy
+	if busy:
+		_clear_standalone_failure_status()
+		_failure_message = ""
+	_update_presentation()
+
+func set_retry_enabled(enabled: bool) -> void:
+	_retry_enabled = enabled
+
+func report_transition_failure(message: String) -> void:
+	if door_role != 0 or _terminal_complete:
+		return
+	_failure_message = message.strip_edges()
+	_crossing_latched = false
+	_latched_player = null
+	_crossing_armed = false
+	if _retry_enabled:
+		_transition_busy = false
+	else:
+		_transition_busy = true
+	_show_standalone_failure_status(_failure_message)
+	_update_presentation()
+
+func has_latched_crossing(player: Player) -> bool:
+	return (
+		door_role == 0
+		and _room_is_cleared
+		and _transition_busy
+		and _crossing_latched
+		and player != null
+		and is_instance_valid(player)
+		and player == _latched_player
+		and _player == player
+	)
+
+func is_player_inside_exit_opening(player: Player) -> bool:
+	if player == null or not is_instance_valid(player) or player != _player:
+		return false
+	var center_value: Variant = _player_collider_center_in_room(player)
+	if center_value == null:
+		return false
+	var center: Vector2 = center_value
+	return _signed_distance(center) >= 0.0 and _point_is_inside_exit_opening(center)
+
+func is_gate_open() -> bool:
+	return _gate != null and _gate.disabled
+
+func set_terminal_complete() -> void:
+	_terminal_complete = true
+	_room_is_cleared = false
+	_transition_busy = false
+	_clear_standalone_failure_status()
+	_failure_message = ""
+	_crossing_latched = false
+	_latched_player = null
+	_crossing_armed = false
+	if _gate != null:
+		_gate.set_deferred("disabled", false)
+	_update_presentation()
+
+func _player_collider_center_in_room(player: Player) -> Variant:
+	if _room_root == null or not is_instance_valid(_room_root):
+		return null
+	var collision := player.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision == null or collision.shape == null:
+		return null
+	var center_global := collision.global_transform * collision.shape.get_rect().get_center()
+	return _room_root.to_local(center_global)
+
+func _line_point_in_room() -> Vector2:
+	if _room_root == null:
+		return position
+	if not _managed_orientation_configured and _gate != null and _gate.shape != null:
+		var gate_center_global := _gate.global_transform * _gate.shape.get_rect().get_center()
+		return _room_root.to_local(gate_center_global)
+	return _room_root.to_local(global_position)
+
+func _normal() -> Vector2:
+	return Vector2(portal_direction)
+
+func _signed_distance(center_room: Vector2) -> float:
+	return (center_room - _line_point_in_room()).dot(_normal())
+
+func _point_is_inside_exit_opening(center_room: Vector2) -> bool:
+	if _gate == null or _room_root == null or _gate.shape == null:
+		return false
+	var gate_to_room := _room_root.global_transform.affine_inverse() * _gate.global_transform
+	var opening := _transform_rect(_gate.shape.get_rect(), gate_to_room)
+	return opening.has_point(center_room)
+
+func _transform_rect(rect: Rect2, transform: Transform2D) -> Rect2:
+	var a := transform * rect.position
+	var b := transform * Vector2(rect.end.x, rect.position.y)
+	var c := transform * rect.end
+	var d := transform * Vector2(rect.position.x, rect.end.y)
+	var minimum := Vector2(
+		minf(minf(a.x, b.x), minf(c.x, d.x)),
+		minf(minf(a.y, b.y), minf(c.y, d.y))
+	)
+	var maximum := Vector2(
+		maxf(maxf(a.x, b.x), maxf(c.x, d.x)),
+		maxf(maxf(a.y, b.y), maxf(c.y, d.y))
+	)
+	return Rect2(minimum, maximum - minimum)
+
+func _update_presentation() -> void:
+	if _door_label != null:
+		_door_label.text = ""
+		_door_label.visible = false
+	var opening_is_open := door_role == 0 and _room_is_cleared and not _terminal_complete
+	if is_instance_valid(_door_visual) and _door_visual.has_method("set_aperture_open"):
+		_door_visual.call("set_aperture_open", opening_is_open)
+	if is_instance_valid(_door_foreground) and _door_foreground.has_method("set_aperture_open"):
+		_door_foreground.call("set_aperture_open", opening_is_open)
+	if is_instance_valid(_direction_indicator) and _direction_indicator.has_method("configure"):
+		var indicator_visible := door_role == 0 and _room_is_cleared \
+			and not _terminal_complete and not _transition_busy
+		var line_local := Vector2.ZERO
+		if _room_root != null and is_instance_valid(_room_root):
+			line_local = to_local(_room_root.to_global(_line_point_in_room()))
+		var indicator_position := line_local + _indicator_offset()
+		_direction_indicator.call("configure", portal_direction, indicator_position, indicator_visible)
+
+func _indicator_offset() -> Vector2:
+	if portal_direction.x != 0:
+		return Vector2(-float(portal_direction.x) * 48.0, -96.0)
+	if portal_direction == Vector2i(0, -1):
+		return Vector2(0.0, 88.0)
+	if portal_direction == Vector2i(0, 1):
+		return Vector2(0.0, -96.0)
+	return Vector2.ZERO
+
+func _show_standalone_failure_status(message: String) -> void:
+	if message.is_empty() or _is_managed_room():
+		return
+	if _room_root == null or not is_instance_valid(_room_root):
+		return
+	var label := _room_root.get_node_or_null("CombatRoom/HUD/StatusLabel") as Label
+	if label == null:
+		push_warning("ExitDoor: HUD/StatusLabel não está disponível para mostrar falha standalone.")
+		return
+	label.text = message
+	_standalone_failure_displayed_text = message
+
+func _clear_standalone_failure_status() -> void:
+	if _standalone_failure_displayed_text.is_empty() or _is_managed_room():
+		return
+	if _room_root != null and is_instance_valid(_room_root):
+		var label := _room_root.get_node_or_null("CombatRoom/HUD/StatusLabel") as Label
+		if label != null and label.text == _standalone_failure_displayed_text:
+			label.text = ""
+	_standalone_failure_displayed_text = ""
+
+func _is_managed_room() -> bool:
+	var ancestor := get_parent()
+	while ancestor != null:
+		if ancestor.has_method("is_active_room_instance"):
+			return true
+		ancestor = ancestor.get_parent()
+	return false
+
+FILE scripts/world/side_door_visual.gd
+@tool
+extends Node2D
+
+const VOID := Color("#0E0D0E")
+const DEPTH := Color("#1D1B1A")
+const SHADOW := Color("#302D2A")
+const COPPER := Color("#70432C")
+
+@export var flip_h: bool = false
+
+@export var is_open: bool = false:
+	set(value):
+		is_open = value
+		queue_redraw()
+
+@export var aperture_size: Vector2 = Vector2(64.0, 128.0):
+	set(value):
+		aperture_size = Vector2(maxf(value.x, 64.0), maxf(value.y, 64.0))
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func set_aperture_open(value: bool) -> void:
+	is_open = value
+
+func _draw() -> void:
+	if not is_open:
+		return
+
+	var half := aperture_size * 0.5
+	draw_rect(Rect2(-half.x, -half.y, aperture_size.x, aperture_size.y), DEPTH)
+	draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, aperture_size.x - 16.0, aperture_size.y - 16.0), VOID)
+	draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, 4.0, aperture_size.y - 16.0), SHADOW)
+	draw_rect(Rect2(half.x - 12.0, -half.y + 8.0, 4.0, aperture_size.y - 16.0), COPPER)
+
+FILE scripts/world/door_foreground_visual.gd
+@tool
+extends Node2D
+
+const SHADOW := Color("#302D2A")
+const METAL_DARK := Color("#5B5249")
+const METAL := Color("#756957")
+const METAL_LIGHT := Color("#90816A")
+const COPPER := Color("#70432C")
+const AMBER := Color("#B78342")
+
+@export var flip_h: bool = false:
+	set(value):
+		flip_h = value
+		queue_redraw()
+
+@export var is_open: bool = false:
+	set(value):
+		is_open = value
+		queue_redraw()
+
+@export var aperture_size: Vector2 = Vector2(64.0, 128.0):
+	set(value):
+		aperture_size = Vector2(maxf(value.x, 64.0), maxf(value.y, 64.0))
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func set_aperture_open(value: bool) -> void:
+	is_open = value
+
+func _draw() -> void:
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+
+	var half := aperture_size * 0.5
+	var cap := minf(8.0, half.y)
+	draw_rect(Rect2(-half.x, -half.y, 4.0, aperture_size.y), SHADOW)
+	draw_rect(Rect2(half.x - 4.0, -half.y, 4.0, aperture_size.y), SHADOW)
+	draw_rect(Rect2(-half.x, -half.y, aperture_size.x, 4.0), METAL_DARK)
+	draw_rect(Rect2(-half.x + 4.0, -half.y + 2.0, aperture_size.x - 8.0, 2.0), METAL_LIGHT)
+	draw_rect(Rect2(-half.x, half.y - cap, aperture_size.x, cap), METAL_DARK)
+	draw_rect(Rect2(-half.x + 4.0, half.y - cap, aperture_size.x - 8.0, 2.0), METAL_LIGHT)
+	draw_rect(Rect2(-half.x + 4.0, -half.y + 4.0, 2.0, aperture_size.y - 4.0 - cap), COPPER)
+	draw_rect(Rect2(half.x - 6.0, -half.y + 4.0, 2.0, aperture_size.y - 4.0 - cap), METAL_DARK)
+
+	if not is_open:
+		var bar_count := maxi(3, floori(aperture_size.x / 18.0))
+		var inner_width := aperture_size.x - 24.0
+		for index in bar_count:
+			var fraction := (float(index) + 0.5) / float(bar_count)
+			var bar_x := snappedf(-inner_width * 0.5 + inner_width * fraction, 2.0)
+			draw_rect(Rect2(bar_x - 2.0, -half.y + 10.0, 4.0, aperture_size.y - 20.0), METAL)
+			draw_rect(Rect2(bar_x - 1.0, -half.y + 10.0, 1.0, aperture_size.y - 20.0), METAL_LIGHT)
+		var rail_y := snappedf(-half.y + aperture_size.y * 0.33, 2.0)
+		draw_rect(Rect2(-half.x + 10.0, rail_y, aperture_size.x - 20.0, 4.0), METAL_DARK)
+		var second_rail_y := snappedf(rail_y + aperture_size.y * 0.36, 2.0)
+		draw_rect(Rect2(-half.x + 10.0, second_rail_y, aperture_size.x - 20.0, 4.0), METAL_DARK)
+		draw_rect(Rect2(half.x - 14.0, -8.0, 6.0, 16.0), METAL_DARK)
+		draw_rect(Rect2(half.x - 12.0, -6.0, 2.0, 12.0), METAL_LIGHT)
+		draw_rect(Rect2(half.x - 14.0, -2.0, 6.0, 4.0), COPPER)
+		draw_rect(Rect2(half.x - 12.0, -2.0, 2.0, 4.0), AMBER)
+	else:
+		var rivet_y_values: Array[float] = [-half.y + 8.0, half.y - 10.0]
+		for rivet_y in rivet_y_values:
+			draw_rect(Rect2(-half.x + 6.0, rivet_y, 2.0, 2.0), AMBER)
+			draw_rect(Rect2(half.x - 8.0, rivet_y, 2.0, 2.0), METAL_LIGHT)
+
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+FILE scripts/world/exit_direction_indicator.gd
+@tool
+extends Node2D
+
+const RIGHT := Vector2i(1, 0)
+const DOWN := Vector2i(0, 1)
+const LEFT := Vector2i(-1, 0)
+const UP := Vector2i(0, -1)
+const OUTLINE := Color("#302D2A")
+const AMBER := Color("#B78342")
+const CREAM := Color("#E2C99B")
+
+const OUTLINE_RECTS: Array[Rect2i] = [
+	Rect2i(-24, -8, 40, 16),
+	Rect2i(0, -16, 8, 32),
+	Rect2i(8, -12, 8, 24),
+	Rect2i(16, -8, 8, 16),
+	Rect2i(24, -4, 12, 8),
+]
+
+const ARROW_RECTS: Array[Rect2i] = [
+	Rect2i(-20, -4, 28, 8),
+	Rect2i(0, -12, 8, 24),
+	Rect2i(8, -8, 8, 16),
+	Rect2i(16, -4, 8, 8),
+	Rect2i(24, -4, 8, 8),
+]
+
+@export var direction: Vector2i = RIGHT:
+	set(value):
+		if not _is_cardinal(value):
+			return
+		direction = value
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func configure(next_direction: Vector2i, next_position: Vector2, enabled: bool) -> void:
+	if _is_cardinal(next_direction):
+		direction = next_direction
+	position = next_position
+	visible = enabled
+	queue_redraw()
+
+func _draw() -> void:
+	for raw_rect in OUTLINE_RECTS:
+		var rect: Rect2i = raw_rect
+		draw_rect(_oriented_rect(rect), OUTLINE)
+	for raw_rect in ARROW_RECTS:
+		var rect: Rect2i = raw_rect
+		draw_rect(_oriented_rect(rect), AMBER)
+	draw_rect(_oriented_rect(Rect2i(-16, -2, 16, 4)), CREAM)
+
+func _oriented_rect(rect: Rect2i) -> Rect2:
+	var position_i := rect.position
+	var size_i := rect.size
+	var oriented_position := position_i
+	var oriented_size := size_i
+	if direction == DOWN:
+		oriented_position = Vector2i(-position_i.y - size_i.y, position_i.x)
+		oriented_size = Vector2i(size_i.y, size_i.x)
+	elif direction == LEFT:
+		oriented_position = Vector2i(-position_i.x - size_i.x, -position_i.y - size_i.y)
+	elif direction == UP:
+		oriented_position = Vector2i(position_i.y, -position_i.x - size_i.x)
+		oriented_size = Vector2i(size_i.y, size_i.x)
+	return Rect2(Vector2(oriented_position), Vector2(oriented_size))
+
+func _is_cardinal(value: Vector2i) -> bool:
+	return value == RIGHT or value == DOWN or value == LEFT or value == UP
+
+FILE scenes/exit_door.tscn
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/exit_door.gd" id="1_exit_door"]
+[ext_resource type="Script" path="res://scripts/world/side_door_visual.gd" id="2_side_door_visual"]
+[ext_resource type="Script" path="res://scripts/world/door_foreground_visual.gd" id="3_door_foreground_visual"]
+[ext_resource type="Script" path="res://scripts/world/exit_direction_indicator.gd" id="4_exit_direction_indicator"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exit_sensor"]
+size = Vector2(64.0, 128.0)
+
+[node name="ExitDoor" type="Area2D"]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_exit_door")
+
+[node name="SensorShape" type="CollisionShape2D" parent="."]
+position = Vector2(80.0, -26.0)
+shape = SubResource("RectangleShape2D_exit_sensor")
+
+[node name="SideDoorVisual" type="Node2D" parent="."]
+position = Vector2(80, -26)
+z_index = -1
+z_as_relative = false
+script = ExtResource("2_side_door_visual")
+flip_h = false
+is_open = false
+
+[node name="DoorForegroundVisual" type="Node2D" parent="SideDoorVisual"]
+z_index = 1
+z_as_relative = false
+script = ExtResource("3_door_foreground_visual")
+flip_h = false
+is_open = false
+
+[node name="DoorLabel" type="Label" parent="."]
+offset_left = -224.0
+offset_top = -146.0
+offset_right = 0.0
+offset_bottom = -106.0
+visible = false
+theme_override_colors/font_color = Color(0.827451, 0.764706, 0.654902, 1)
+theme_override_font_sizes/font_size = 10
+text = ""
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="ExitDirectionIndicator" type="Node2D" parent="."]
+visible = false
+z_index = 1
+z_as_relative = false
+script = ExtResource("4_exit_direction_indicator")
+
+BASE -> R2 DIFF scenes/main.tscn
+diff --git "a/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\base\\scenes\\main.tscn" "b/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\implementacao-r2\\scenes\\main.tscn"
+index fe35103..a257017 100644
+--- "a/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\base\\scenes\\main.tscn"
++++ "b/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\implementacao-r2\\scenes\\main.tscn"
+@@ -348,12 +348,13 @@ position = Vector2(-80, -26)
+ flip_h = true
+ 
+ [node name="DoorLabel" parent="EntranceDoor" index="2"]
++visible = false
+ offset_left = 32.0
+ offset_top = -146.0
+ offset_right = 256.0
+ offset_bottom = -106.0
+ horizontal_alignment = 0
+-text = "ENTRADA\nACESSO BLOQUEADO"
++text = ""
+ 
+ [node name="ExitDoor" parent="." unique_id=1371105835 instance=ExtResource("8_exit_door")]
+ position = Vector2(1040, 522)
+BASE -> R2 DIFF scenes/second_room.tscn
+diff --git "a/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\base\\scenes\\second_room.tscn" "b/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\implementacao-r2\\scenes\\second_room.tscn"
+index 82853f0..d97cc4b 100644
+--- "a/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\base\\scenes\\second_room.tscn"
++++ "b/docs\\specs\\2026-10-31-portas-sinalizacao-passagem\\historico\\implementacao-r2\\scenes\\second_room.tscn"
+@@ -192,12 +192,13 @@ position = Vector2(-80, -26)
+ flip_h = true
+ 
+ [node name="DoorLabel" parent="EntranceDoor" index="2"]
++visible = false
+ offset_left = 32.0
+ offset_top = -146.0
+ offset_right = 256.0
+ offset_bottom = -106.0
+ horizontal_alignment = 0
+-text = "ENTRADA\nACESSO BLOQUEADO"
++text = ""
+ 
+ [node name="ExitDoor" parent="." instance=ExtResource("10_exit_door")]
+ position = Vector2(1040, 522)
+PROTECTED FLOOR CONTEXT
+
+func _draw() -> void:
+	if surface_size.x <= 0.0 or surface_size.y <= 0.0:
+		return
+	var atlas_source: TileSetAtlasSource = FACTORY_TILESET.get_source(0) as TileSetAtlasSource
+	if atlas_source == null:
+		return
+	var atlas: Texture2D = atlas_source.texture
+	if atlas == null:
+		return
+	if not opening_enabled or opening_width <= 0.0:
+		_draw_interval(atlas, 0.0, surface_size.x)
+		return
+	var half_width := surface_size.x * 0.5
+	var left_edge := clampf(opening_center_x - opening_width * 0.5, -half_width, half_width)
+	var right_edge := clampf(opening_center_x + opening_width * 0.5, -half_width, half_width)
+	var left_width := left_edge + half_width
+	var right_width := half_width - right_edge
+	if left_width > MIN_REMAINDER:
+		_draw_interval(atlas, -half_width + left_width * 0.5, left_width)
+	if right_width > MIN_REMAINDER:
+		_draw_interval(atlas, right_edge + right_width * 0.5, right_width)
+
+func _draw_interval(atlas: Texture2D, center_x: float, width: float) -> void:
+	draw_set_transform(Vector2(center_x, 0.0), 0.0, Vector2.ONE)
+	if surface_style == SurfaceStyle.BLOCK:
+		_draw_block(atlas, width, surface_size.y)
+
+	return _is_open
+
+func _set_visual_open(value: bool) -> void:
+	var ceiling := _room.get_node_or_null("WallVisuals/CeilingVisual")
+	if ceiling != null:
+		ceiling.set("opening_center_x", _exit_offset - 576.0)
+		ceiling.set("opening_width", PORTAL_WIDTH)
+		ceiling.set("opening_enabled", value and _exit_dir == UP)
+	var floor_visual := _room.get_node_or_null("Floor/Visuals/FactorySurfaceVisual")
+	if floor_visual != null:
+		floor_visual.set("opening_center_x", _exit_offset - 576.0)
+		floor_visual.set("opening_width", PORTAL_WIDTH)
+		floor_visual.set("opening_enabled", value and _floor_exit)
+	var left_visual := _room.get_node_or_null("WallVisuals/LeftWallVisual")
+	var right_visual := _room.get_node_or_null("WallVisuals/RightWallVisual")
+	if left_visual != null:
+
+

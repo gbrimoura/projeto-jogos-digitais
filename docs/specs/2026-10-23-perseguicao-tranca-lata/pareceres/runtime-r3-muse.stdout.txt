@@ -1,0 +1,12 @@
+Revisão delta R3 — só leitura das duas guardas.
+```text
+STATUS: done
+SUMMARY: Delta R3 aprovado — 2 guardas corretas, sem regressão nas funções completas. (1) stuck agora usa needs_horizontal_approach, cobre bloqueio sem LOS dentro de stop_distance; fallback com allow_detour=false zera stuck e não recursa. (2) rota detour obsoleta (path[0]!=_bound_support) é descartada antes do teste de cooldown, impede _pursue_via_route com path[1] obsoleto durante replan>0. Sem OOB: empty-check antes de path[0], size<2 garante path[1] em via_route.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1: nenhum bloqueante nas guardas/caminhos atuais. Lógica de descarte+stuck+fallback coerente; ataque/estado/física/grafo inalterados por escopo.
+- P2: ramo cross-support (linha 85: if size<2 or path[0]!=bound) mantém padrão antigo — se _bound_support trocar durante replan_remaining>0 com size>=2 obsoleto, pode ir a via_route sem limpar antes. Fora do delta, só observar; não bloquear R3.
+- P2: threshold fixo absf(moved_x)>=0.1 não normalizado por delta — com delta muito pequeno, frame livre (ex. 48*0.001=0.048) acumula stuck indevidamente; timeout 0.65 dilui, mas pode antecipar detour em hitch. Só tuning futuro.
+NEXT_STEP: manter R3 como estado congelado; sem nova revisão de implementação por este delta.
+```
