@@ -90,7 +90,8 @@ static func _build_managed_entries(
 	if is_roof:
 		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
 		var horizontal_sign := -1.0 if portal_x == 248.0 else 1.0
-		var allowed_steps: Array[int] = [64, 72, 80] if family == &"roof_five" else [80, 88, 96, 104, 112]
+		var allowed_steps: Array[int] = []
+		allowed_steps.assign([64, 72, 80] if family == &"roof_five" else [80, 88, 96, 104, 112])
 		var rises: Array[int] = []
 		for _tries in 40:
 			rises.clear()
@@ -131,7 +132,10 @@ static func _build_managed_entries(
 			var offset_steps := rng.randi_range(-2, 2)
 			if index == 0:
 				offset_steps = rng.randi_range(-2, 0) if family != &"valley" else rng.randi_range(-1, 1)
-			tops[index] = clampf(base_tops[index] + float(offset_steps * 8), 376.0, 448.0)
+			var sampled_top := clampf(base_tops[index] + float(offset_steps * 8), 376.0, 448.0)
+			tops[index] = sampled_top
+			if family == &"valley" and (index == 1 or index == 2):
+				tops[index] = 448.0
 			widths[index] = float(144 + rng.randi_range(0, 5) * 8)
 		var spawn_x := 160.0 if entry_dir == Vector2i(-1, 0) else (992.0 if entry_dir == Vector2i(1, 0) else entry_offset)
 		var horizontal_sign := -1.0 if entry_dir == Vector2i(1, 0) or (entry_dir.y != 0 and spawn_x > 576.0) else 1.0
@@ -145,7 +149,9 @@ static func _build_managed_entries(
 			center_max = spawn_x + 24.0
 		centers[0] = float(rng.randi_range(roundi(center_min / 8.0), roundi(center_max / 8.0)) * 8)
 		for index in range(1, count):
-			var gap := float(48 + rng.randi_range(0, 6) * 8)
+			var gap_steps := rng.randi_range(0, 2) if family == &"valley" else rng.randi_range(0, 6)
+			var gap_base := 80 if family == &"valley" else 48
+			var gap := float(gap_base + gap_steps * 8)
 			centers[index] = centers[index - 1] + horizontal_sign * (widths[index - 1] * 0.5 + widths[index] * 0.5 + gap)
 	var entries: Array[Dictionary] = []
 	for index in count:
@@ -191,7 +197,7 @@ static func _canonical_managed_entries(
 		tops = [448.0, 384.0, 352.0, 416.0]
 		widths = [160.0, 160.0, 160.0, 160.0]
 	elif family == &"valley":
-		centers = [256.0, 472.0, 688.0, 904.0]
+		centers = [216.0, 456.0, 696.0, 936.0]
 		tops = [400.0, 448.0, 448.0, 400.0]
 		widths = [160.0, 160.0, 160.0, 160.0]
 	if family != &"roof_four" and family != &"roof_five":

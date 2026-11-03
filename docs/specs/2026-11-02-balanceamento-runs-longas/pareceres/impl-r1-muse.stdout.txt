@@ -1,0 +1,8 @@
+Revisão R1 final em modo somente-leitura — conferindo tipos, pools, cura e curvas inimigas sem alegar balanceamento validado.
+Pacote R1 lido — agora confiro contratos de catálogo, cura e inimigos nos arquivos.
+STATUS: done
+SUMMARY: R1 final READONLY sem P1/P2 bloqueador — tipos Godot4.7, pool 1..3 (21 cores cap3 + pós-build só após exaustão core + recovery sempre até 220), heal só aquisição viva, snapshot v1 tipado 10 IDs, derived-base-once, UI 24/22 e curvas inimigas 6/4HP com windup preservado conferem; hipótese inicial, não balanceado validado.
+CHANGED_FILES: none
+TESTS: none — sem Godot/testes/parser/audit/simulação por escopo
+RISKS: estética preview não aprovada pelo usuário; manifest Lua omite post-build-study nos previews (P2 metadados, sem impacto runtime); RunBuild usa base_health default 5 para cap Chassi (igual perfil atual 5→3, diverge só base≥98, P2 baixo); fallback texto velocidade difere do dinâmico mas nunca usado (P2 cosmético); sem validação gameplay/RL, RL fora de escopo correto.
+NEXT_STEP: manter congelado para rodada implementação; se corrigir manifest, atualizar previews[] com post-build-study-576x324.png e 1728x972.png sem regenerar arte.

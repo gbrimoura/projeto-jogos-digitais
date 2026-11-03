@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B0B8DB2B2AA6C874C331686B3C4086259099ACE03C960E4AE4C8D364C8E033ED",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\upgrade_card.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B50BCF3BC5E42621604C46E673817E8B93ADE834C7CADA329859A7E0339596FE",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\world\\main.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "BF596D403556A1C9036DCAEC595CE069C1DAFBADBA657B333B9B5C33EDDFB764",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scenes\\ui\\upgrade_card.tscn"
+  }
+]

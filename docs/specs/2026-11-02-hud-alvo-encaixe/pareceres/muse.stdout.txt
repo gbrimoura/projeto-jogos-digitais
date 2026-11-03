@@ -1,0 +1,6 @@
+STATUS: PASS
+SUMMARY: P1 name-fit fixed — NameText 42,6-138,18=96px/16ch holds TRANCA-LATA 11ch/66px, COSPE-REBITE 12ch/72px raw first-line, LevelText 42,18-72,18=30px/5ch holds NV220, ValueText 78,18-138,18=60px/10ch holds 999/999 right_align; P2 portrait/bar/draw-order OK — _set_portrait centers 32x28/24x24 in 32x28 region + contain+NEAREST fallback, _draw 96x6 at 42,30 target-only ratio current/real-max, Frame.show_behind_parent=true lets parent-bar over background with text/portrait children on top, set_target(...,level=1) forwarded HUD-root->panel, clear_target resets texts/health/portrait+hides.
+CHANGED_FILES: none
+TESTS: none
+RISKS: low — bar-fill preload path/font-atlas existence not run (read-only), fill inset 45..135 vs bg 44..136 leaves 1px bg edge by design, double show/hide root+panel harmless.
+NEXT_STEP: approve, verify in-engine once: Tranca/Rivete names single-line, NV second-line, bar tracks target HP only.

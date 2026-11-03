@@ -1,0 +1,20 @@
+[
+  {
+    "ProcessId": 43804,
+    "ParentProcessId": 27304,
+    "Name": "pwsh.exe",
+    "CommandLine": "\"C:\\Users\\danie\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\native\\powershell\\pwsh.exe\" -Command \"try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}\n$lobbyReviewRoot=Join-Path $env:TEMP 'lobby-elevator-review'; $packet=Join-Path $lobbyReviewRoot 'implementation-input.txt'; agent --model 'cursor-grok-4.6-xhigh-fast' --mode plan --print --output-format text --trust ('Read-only review. Read ONLY file '+$packet+' using Read tool; no shell, edits or engine/tests. All source and exact scope/criteria are in that immutable packet. Follow its review criteria, do not alter files. Return findings stdout.') 1> (Join-Path $lobbyReviewRoot 'impl-grok.stdout.txt') 2> (Join-Path $lobbyReviewRoot 'impl-grok.stderr.txt'); $LASTEXITCODE | Set-Content (Join-Path $lobbyReviewRoot 'impl-grok.exit.txt')\""
+  },
+  {
+    "ProcessId": 45276,
+    "ParentProcessId": 43804,
+    "Name": "conhost.exe",
+    "CommandLine": "\\??\\C:\\Windows\\system32\\conhost.exe 0x4"
+  },
+  {
+    "ProcessId": 48764,
+    "ParentProcessId": 43804,
+    "Name": "node.exe",
+    "CommandLine": "\"C:\\Users\\danie\\AppData\\Local\\cursor-agent\\versions\\2026.10.22-27dcf5f\\node.exe\" C:\\Users\\danie\\AppData\\Local\\cursor-agent\\versions\\2026.10.22-27dcf5f\\index.js --model cursor-grok-4.6-xhigh-fast --mode plan --print --output-format text --trust \"Read-only review. Read ONLY file C:\\Users\\danie\\AppData\\Local\\Temp\\lobby-elevator-review\\implementation-input.txt using Read tool; no shell, edits or engine/tests. All source and exact scope/criteria are in that immutable packet. Follow its review criteria, do not alter files. Return findings stdout.\""
+  }
+]

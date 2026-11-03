@@ -1,0 +1,28 @@
+STATUS: done
+SUMMARY: Avaliação do delta R2 em `scripts/world/run_controller.gd`. A inclusão da guarda no início de `_retry_initial_load()` fecha com precisão a brecha de reentrância por callbacks repetidos de botão pendentes no mesmo frame, preserva integralmente o fluxo de carga inicial e retry same-seed, e é 100% compatível com GDScript 4.x. Nenhum defeito P1 ou P2 foi encontrado.
+
+FINDINGS:
+1. **Guarda de Reentrância e Ciclo de Vida do CanvasLayer**:
+   - `_dismiss_technical_error()` atribui `_technical_error_layer = null` de forma síncrona antes de despachar a carga (`_prepare_current_floor_plan` / `_load_current_encounter`).
+   - Callbacks subsequentes do botão (cujo `queue_free()` é diferido para o final do frame pelo Godot) são barrados imediatamente pela primeira condição: `not is_instance_valid(_technical_error_layer)`.
+   - Após o sucesso da carga, `current_room_instance` passa a conter a instância válida da sala ativa, servindo como uma segunda barreira ortogonal via `is_instance_valid(current_room_instance)`.
+   - As checagens adicionais `_run_ended`, `_restart_in_progress` e `_technical_error_source != null` blindam o método contra chamadas espúrias durante encerramento, reinício ou quando a falha se originou de uma transição entre salas (que pertence ao fluxo de `_return_to_completed_room`).
+
+2. **Preservação do Fluxo Inicial e Retry Same-Seed**:
+   - Em caso de falha inicial legítima, `_technical_error_layer` é válido, `current_room_instance` é `null`, `_run_ended` e `_restart_in_progress` são `false`, e `_technical_error_source` é `null`. A guarda avalia como `false` e não aborta.
+   - O resgate e a duplicação de `_technical_retry_proposal` e `_technical_retry_kind` ocorrem exatamente após a guarda, mantendo a seed e o descritor idênticos para a nova tentativa.
+   - Se uma nova tentativa falhar de forma síncrona dentro de `_load_current_encounter`, um novo `_technical_error_layer` é apresentado com seu próprio botão e nova proposta, restabelecendo a possibilidade de retentativa válida.
+
+3. **Compatibilidade GDScript 4.x / 4.7**:
+   - Uso de quebra de linha com contrabarra `\` em expressões booleanas com `or` é sintaxe padrão e válida.
+   - `is_instance_valid()` lida com segurança tanto com ponteiros nulos (`null`) quanto com instâncias liberadas (`Freed Object`).
+   - A precedência do operador unário `not` sobre o conectivo `or` opera conforme pretendido: `(not is_instance_valid(_technical_error_layer)) or ...`.
+
+4. **Classificação de Defeitos (P1/P2)**:
+   - P1: none.
+   - P2: none.
+
+CHANGED_FILES: none
+TESTS: none (revisão documental estática conforme solicitado; nenhuma execução de testes)
+RISKS: Nenhum risco residual identificado na lógica do delta R2.
+NEXT_STEP: Incorporar o delta R2 na branch de trabalho da spec de transição recuperável e prosseguir com a consolidação do registro de pareceres.

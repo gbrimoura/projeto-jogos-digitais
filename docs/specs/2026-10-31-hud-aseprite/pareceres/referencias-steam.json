@@ -1,0 +1,29 @@
+[
+  {
+    "game": "Hollow Knight",
+    "publisher": [
+      "Team Cherry"
+    ],
+    "page": "https://store.steampowered.com/app/367520/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/367520/ss_5384f9f8b96a0b9934b2bc35a4058376211636d2.1920x1080.jpg?t=1776125684",
+    "path": "C:\\Users\\danie\\.codex\\tmp\\hud-referencias-2026-10-31\\hollow-knight.jpg"
+  },
+  {
+    "game": "Dead Cells",
+    "publisher": [
+      "Motion Twin"
+    ],
+    "page": "https://store.steampowered.com/app/588650/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/588650/ss_ac28000ade40cc2fe5c128f32ac98ba33c008a7a.1920x1080.jpg?t=1779086887",
+    "path": "C:\\Users\\danie\\.codex\\tmp\\hud-referencias-2026-10-31\\dead-cells.jpg"
+  },
+  {
+    "game": "Hades",
+    "publisher": [
+      "Supergiant Games"
+    ],
+    "page": "https://store.steampowered.com/app/1145360/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1145360/ss_c0fed447426b69981cf1721756acf75369801b31.1920x1080.jpg?t=1758127023",
+    "path": "C:\\Users\\danie\\.codex\\tmp\\hud-referencias-2026-10-31\\hades.jpg"
+  }
+]

@@ -1,0 +1,197 @@
+STATUS: frozen for read-only review
+OBJECTIVE: Improve seven existing upgrade cards with short condition/effect copy and named numerical stats. For NOVO, show the benefit; for EVOLUIR, compare current > next for the same stat where useful.
+CONSTRAINTS: descriptions at most two lines of 24 glyphs; stats at most three wrapped lines; badge at most 22 glyphs; use existing bitmap glyphs only. Preserve IDs, paths, numerical fields, and gameplay. Charge requires rebating the player's own ball and affects the next hit. Dynamo reduces remaining dash cooldown once per swing; not passive. Spring adds projectile bounce budget and lifetime. Chassis raises maximum health and heals only at selection. No Godot, import, tests, parser, linter, audit, benchmark or simulation.
+
+TEXT DIFF FROM R0 BASELINE
+--- impacto_reforcado
+BEFORE description = "A bola causa mais dano."
+AFTER  description = "A bola causa mais dano."
+BEFORE effect_summary = "+1 de dano na bola"
+AFTER  effect_summary = "Dano extra para a bola"
+BEFORE effect_topics = PackedStringArray("+1 de dano na bola")
+AFTER  effect_topics = PackedStringArray("Dano da bola: +1")
+--- motor_acelerado
+BEFORE description = "Seu dash fica pronto mais rápido."
+AFTER  description = "Use o dash com mais frequência."
+BEFORE effect_summary = "Dash pronto em 0,4 s"
+AFTER  effect_summary = "Recarga do dash em menos tempo"
+BEFORE effect_topics = PackedStringArray("Dash pronto em 0,4 s")
+AFTER  effect_topics = PackedStringArray("Recarga: 0,55s > 0,4s")
+--- carga_reativa
+BEFORE description = "Rebata sua bola para causar mais dano."
+AFTER  description = "Rebata sua bola para carregá-la."
+BEFORE effect_summary = "Dano extra ao rebater a bola"
+AFTER  effect_summary = "Carrega o próximo acerto"
+BEFORE effect_topics = PackedStringArray("Dano extra: +2", "Vale para 1 acerto")
+AFTER  effect_topics = PackedStringArray("Dano extra: +2", "No próximo acerto")
+--- ricochete_pressao
+BEFORE description = "A bola ganha dano ao bater nas paredes."
+AFTER  description = "A bola ganha dano ao bater nas paredes."
+BEFORE effect_summary = "Cada parede aumenta o dano da bola"
+AFTER  effect_summary = "Dano cresce a cada parede"
+BEFORE effect_topics = PackedStringArray("Cada parede: +1 dano", "Até 3 paredes por bola")
+AFTER  effect_topics = PackedStringArray("Dano por parede: +1", "Até 3 paredes por bola")
+--- mola_retorno
+BEFORE description = "A bola dura mais tempo e rebate mais vezes."
+AFTER  description = "A bola dura mais e rebate mais vezes."
+BEFORE effect_summary = "Mais tempo e rebotes para a bola"
+AFTER  effect_summary = "Mais duração e rebotes para a bola"
+BEFORE effect_topics = PackedStringArray("+1 rebote da bola", "+0,35s de duração")
+AFTER  effect_topics = PackedStringArray("+1 rebote da bola", "+0,35s de duração")
+--- dinamo_defesa
+BEFORE description = "Rebater adianta a recarga do dash."
+AFTER  description = "Rebater reduz a recarga do dash."
+BEFORE effect_summary = "Recarga: -0,15s após rebater"
+AFTER  effect_summary = "Recarga menor uma vez por rebatida"
+BEFORE effect_topics = PackedStringArray("Recarga: -0,15s", "Uma vez por rebatida")
+AFTER  effect_topics = PackedStringArray("Recarga do dash: -0,15s", "Uma vez por rebatida")
+--- chassi_reforcado
+BEFORE description = "Aumenta sua vida máxima e recupera vida."
+AFTER  description = "Aumenta a vida máxima e cura ao escolher."
+BEFORE effect_summary = "Mais vida máxima e vida recuperada"
+AFTER  effect_summary = "Mais vida máxima e cura na escolha"
+BEFORE effect_topics = PackedStringArray("+1 de vida máxima", "Recupera 1 de vida")
+AFTER  effect_topics = PackedStringArray("Vida máxima: +1", "Cura na escolha: +1 vida")
+
+FULL SEVEN RESOURCE FILES
+--- resources/upgrades/impacto_reforcado.tres
+
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/impacto_reforcado_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"impacto_reforcado"
+title = "Impacto Reforçado"
+description = "A bola causa mais dano."
+effect_summary = "Dano extra para a bola"
+effect_topics = PackedStringArray("Dano da bola: +1")
+projectile_damage_override = 2
+rank_cap = 220
+projectile_damage_per_rank = 1
+
+--- resources/upgrades/motor_acelerado.tres
+
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/motor_acelerado_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"motor_acelerado"
+title = "Motor Acelerado"
+description = "Use o dash com mais frequência."
+effect_summary = "Recarga do dash em menos tempo"
+effect_topics = PackedStringArray("Recarga: 0,55s > 0,4s")
+dash_cooldown_override = 0.4
+rank_cap = 3
+dash_cooldown_by_rank = PackedFloat32Array(0.4, 0.32, 0.26)
+
+--- resources/upgrades/carga_reativa.tres
+
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/carga_reativa_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"carga_reativa"
+title = "Carga Reativa"
+description = "Rebata sua bola para carregá-la."
+effect_summary = "Carrega o próximo acerto"
+effect_topics = PackedStringArray("Dano extra: +2", "No próximo acerto")
+reactive_charge_enabled = true
+charged_damage_bonus = 2
+rank_cap = 220
+charged_damage_bonus_per_rank = 2
+
+--- resources/upgrades/ricochete_pressao.tres
+
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/ricochete_pressao_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"ricochete_pressao"
+title = "Ricochete de Pressão"
+description = "A bola ganha dano ao bater nas paredes."
+effect_summary = "Dano cresce a cada parede"
+effect_topics = PackedStringArray("Dano por parede: +1", "Até 3 paredes por bola")
+rank_cap = 3
+environmental_bounce_damage_per_rank = 1
+environmental_bounce_damage_count_cap = 3
+
+--- resources/upgrades/mola_retorno.tres
+
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/mola_retorno_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"mola_retorno"
+title = "Mola de Retorno"
+description = "A bola dura mais e rebate mais vezes."
+effect_summary = "Mais duração e rebotes para a bola"
+effect_topics = PackedStringArray("+1 rebote da bola", "+0,35s de duração")
+rank_cap = 3
+max_bounces_per_rank = 1
+lifetime_per_rank = 0.35
+
+--- resources/upgrades/dinamo_defesa.tres
+
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/dinamo_defesa_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"dinamo_defesa"
+title = "Dínamo de Defesa"
+description = "Rebater reduz a recarga do dash."
+effect_summary = "Recarga menor uma vez por rebatida"
+effect_topics = PackedStringArray("Recarga do dash: -0,15s", "Uma vez por rebatida")
+rank_cap = 3
+dash_cooldown_refund_per_rank = 0.15
+
+--- resources/upgrades/chassi_reforcado.tres
+
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/chassi_reforcado_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"chassi_reforcado"
+title = "Chassi Reforçado"
+description = "Aumenta a vida máxima e cura ao escolher."
+effect_summary = "Mais vida máxima e cura na escolha"
+effect_topics = PackedStringArray("Vida máxima: +1", "Cura na escolha: +1 vida")
+rank_cap = 95
+maximum_health_per_rank = 1
+health_recovered_per_rank = 1
+
+STATIC ICON FLOW: The seven .tres files reference the seven existing PNGs below. UpgradeCatalog preloads these definitions; card_preview returns the definition/icon and copy. UpgradeOffer calls card_preview, assigns row.icon = definition.icon, instantiates UpgradeCard and calls configure. UpgradeCard reads row.icon and sets Illustration.texture. No icon connection changed.
+impacto_reforcado -> impacto_reforcado_128x80.png
+motor_acelerado -> motor_acelerado_128x80.png
+carga_reativa -> carga_reativa_128x80.png
+ricochete_pressao -> ricochete_pressao_128x80.png
+mola_retorno -> mola_retorno_128x80.png
+dinamo_defesa -> dinamo_defesa_128x80.png
+chassi_reforcado -> chassi_reforcado_128x80.png

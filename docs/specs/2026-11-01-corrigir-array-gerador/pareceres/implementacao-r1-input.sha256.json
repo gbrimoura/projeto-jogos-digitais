@@ -1,0 +1,12 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "30F8362493AC0B644797F1FB946AA81AE006C829A806F1E55911E45DE6920C27",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-11-01-corrigir-array-gerador\\pareceres\\implementacao-r1-input.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "7B7DA02C9BEF71052BE4DB4286DB489837CA69FD5CC5E8162BB31C32CB97F53E",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-11-01-corrigir-array-gerador\\historico\\r1\\scripts\\world\\room_layout_generator.gd"
+  }
+]

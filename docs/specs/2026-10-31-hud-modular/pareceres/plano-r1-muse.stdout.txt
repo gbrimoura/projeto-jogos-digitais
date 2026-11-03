@@ -1,0 +1,19 @@
+STATUS: done
+SUMMARY: Plano modular viável e bem limitado; falta congelar contratos/API e gatilho de religamento para Luna escrever sem adivinhar.
+
+FINDINGS:
+P1-1 Contrato legado não enumerado: citar `current_room_instance`, campos de progresso, `Labels` de status, `Player/CombatRoom`, ponto mundial da mira, `can_dash`/timer/`_config`, vivo/morto sem nomes/tipos/sinais. Fix: tabela nome+típo+origem antes da escrita, sem editar legados.
+P1-2 Religamento pós-erro sem gatilho: se instância restaurada mantém referência igual, troca de sala não dispara. Fix: definir `rebind()` explícito da bridge + quem chama/polling mínimo, sem editar `RunController/CombatRoom`.
+P1-3 API bridge->root ausente: plano diz root recebe via API mas sem assinaturas `set_health(cur,max)/set_dash(estado,seg)/set_target/set_progress/set_status`. Fix: congelar assinaturas puras de apresentação.
+P1-4 Dash sub-especificado: só 1 getter puro de duração efetiva em `movement_controller.gd` não cobre estado restante/ACTIVE/COOLDOWN/pronto vs `indisponível no ar/desabilitado`. Fix: definir se bridge lê timer existente ou adiciona getter(s) só-leitura, com fórmula de upgrade sem inventar regra.
+P1-5 Visibilidade legada sem dono: ocultar `HUD antigo/HealthFrame/Fill/NameLabel` só se ativa+ligada e restaurar em `_exit_tree`/desativação/remoção. Fix: onde guarda estado anterior e ordem de restauração; fonte de mensagem de status vs `Labels` ocultos para não perder/duplicar.
+P2-1 Pixel: sem fórmula de escala inteira em viewport não-múltiplo, ancoragem do painel fixo, margens nine-slice, método de recorte HP em pixels inteiros, `texture_filter nearest` por nó vs import, posições arredondadas.
+P2-2 Ordem visual: pai/camada da raiz em `run_root.tscn` e `z/layer` abaixo de diagnóstico/derrota/recompensa não definidos.
+P2-3 Alvo: cadência de atualização/invalidação de cache spawn/morte e espaço de coordenadas da mira não definidos.
+P2-4 `BallGauge` opcional: sem critério de aceite stub oculto vs excluído; risco de código morto.
+P2-5 Kit: sem denylist composição preview vs PNGs reais + caminho atlas/JSON da fonte e fallback seguro se metadata ausente.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS: Leitura errada de campo privado/timer gera cooldown/texto contraditório; referência obsoleta após transição/erro; sobreposição ou perda de mensagens; overlay coberto por camada errada.
+NEXT_STEP: Luna faz leitura read-only dos contratos, congela tabela legado + assinaturas bridge/root + gatilho rebind, então libera escrita de 30min só em `scripts/ui/hud/**`, `scenes/ui/hud/**` + instância em `run_root.tscn` + getter puro em `movement_controller.gd`, com baseline/hashes antes.

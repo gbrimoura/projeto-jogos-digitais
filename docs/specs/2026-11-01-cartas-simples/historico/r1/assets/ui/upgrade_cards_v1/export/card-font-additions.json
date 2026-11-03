@@ -1,0 +1,23 @@
+{
+  "source_font_paths": {
+    "bundle": "assets/ui/hud_caldeira_v1/export/font.json",
+    "atlas": "assets/ui/hud_caldeira_v1/export/font-atlas.png",
+    "palette": "assets/ui/hud_caldeira_v1/export/palette.json"
+  },
+  "base_canvas": {"w": 72, "h": 105},
+  "replacement_atlas": "assets/ui/upgrade_cards_v1/export/card-font-atlas.png",
+  "canvas": {"w": 84, "h": 105},
+  "font_metrics": {
+    "cell": {"w": 5, "h": 11},
+    "advance": 6,
+    "line_height": 12,
+    "baseline_from_top_zero_based": 8,
+    "mask": "#FFFFFF",
+    "alpha": [0, 255]
+  },
+  "glyphs": [
+    {"character": "+", "codepoint": 43, "rect": {"x": 72, "y": 2, "w": 5, "h": 11}, "advance": 6},
+    {"character": ">", "codepoint": 62, "rect": {"x": 78, "y": 2, "w": 5, "h": 11}, "advance": 6}
+  ],
+  "integration": "Load the existing font.json bundle; replace its atlas path with card-font-atlas.png; append these glyph records while retaining all base glyphs/metrics; then call configure_font(bundle) on HudBitmapText."
+}

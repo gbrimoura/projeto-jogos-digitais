@@ -1,0 +1,521 @@
+READ ONLY authorized source INLINE. Previous file-attachment review auto-rejected external_directory reading remaining temporary packet; do NOT retry file/tools or change permissions. This message contains complete relevant files. No tools, edits, shell/Godot/tests. Timeout5min. ScopeA: new Lobby controller+visual+scene, check physics28x76 groundedwholeAABB, retryrequirescompleteexit, player/projectiles frozen andreset, no globalpause, newRunRootloaded once, camera1152x648 fits1920x1080, foregrounddoors, walls32alignedcollision, groundtop560, drawingneveratlascol3pipes, localpreloadexistingPlayer/bitmap. Companion Controller scopeB reviewed separately handles resultreturnunpause/restore. Actualrun remains1floor10common+boss; economy/artbitmaps/playerchangesoutscope. Return STATUS SUMMARY CHANGED_FILES:none TESTS:none RISKS NEXT_STEP; concrete P1/P2 only.
+FILE scripts/world/lobby.gd
+extends Node2D
+
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const DESIGN_SIZE: Vector2 = Vector2(1152.0, 648.0)
+const ELEVATOR_INTERIOR: Rect2 = Rect2(912.0, 448.0, 128.0, 112.0)
+const RUN_ROOT_PATH: String = "res://run_root.tscn"
+
+@onready var _player: CharacterBody2D = get_node("Player") as CharacterBody2D
+@onready var _ball_container: Node2D = get_node("BallContainer") as Node2D
+@onready var _camera: Camera2D = get_node("LobbyCamera") as Camera2D
+@onready var _world_visual: Node2D = get_node("EnvironmentVisual") as Node2D
+@onready var _door_visual: Node2D = get_node("ElevatorDoorForeground") as Node2D
+@onready var _fade_rect: ColorRect = get_node("LobbyUI/Fade") as ColorRect
+@onready var _status: Control = get_node("LobbyUI/ElevatorStatus") as Control
+
+var _travel_in_progress: bool = false
+var _must_exit_cabin_before_retry: bool = false
+var _player_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
+var _ball_container_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_INHERIT
+	RoomTransition.clear_pending_snapshot()
+	_fade_rect.color = Color(0.0431373, 0.0627451, 0.0901961, 0.0)
+	_set_status("", false)
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.size_changed.connect(Callable(self, "_update_camera_fit"))
+	_update_camera_fit()
+
+func _physics_process(_delta: float) -> void:
+	if _travel_in_progress:
+		return
+	var player_bounds: Rect2 = _player_world_aabb()
+	if not _rect_has_area(player_bounds):
+		return
+	if _must_exit_cabin_before_retry:
+		if not player_bounds.intersects(ELEVATOR_INTERIOR):
+			_must_exit_cabin_before_retry = false
+		return
+	if bool(_player.get("is_dead")) or not _player.is_on_floor():
+		return
+	if ELEVATOR_INTERIOR.encloses(player_bounds):
+		_begin_elevator_travel()
+
+func _update_camera_fit() -> void:
+	if _camera == null:
+		return
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return
+	var viewport_size: Vector2 = viewport.get_visible_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		return
+	var horizontal_fit: float = viewport_size.x / DESIGN_SIZE.x
+	var vertical_fit: float = viewport_size.y / DESIGN_SIZE.y
+	var zoom_factor: float = minf(horizontal_fit, vertical_fit)
+	if not is_finite(zoom_factor) or zoom_factor <= 0.0:
+		zoom_factor = 1.0
+	_camera.position = DESIGN_SIZE * 0.5
+	_camera.zoom = Vector2(zoom_factor, zoom_factor)
+
+func _player_world_aabb() -> Rect2:
+	if _player == null or not is_instance_valid(_player):
+		return Rect2()
+	var collision_shape: CollisionShape2D = _player.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if collision_shape == null or collision_shape.disabled or collision_shape.shape == null:
+		return Rect2()
+	var local_rect: Rect2 = collision_shape.shape.get_rect()
+	if local_rect.size.x <= 0.0 or local_rect.size.y <= 0.0:
+		return Rect2()
+	var transform: Transform2D = collision_shape.global_transform
+	var corners: PackedVector2Array = PackedVector2Array([
+		local_rect.position,
+		Vector2(local_rect.end.x, local_rect.position.y),
+		local_rect.end,
+		Vector2(local_rect.position.x, local_rect.end.y),
+	])
+	var first: Vector2 = transform * corners[0]
+	var minimum_x: float = first.x
+	var minimum_y: float = first.y
+	var maximum_x: float = first.x
+	var maximum_y: float = first.y
+	for corner_index: int in range(1, corners.size()):
+		var world_corner: Vector2 = transform * corners[corner_index]
+		minimum_x = minf(minimum_x, world_corner.x)
+		minimum_y = minf(minimum_y, world_corner.y)
+		maximum_x = maxf(maximum_x, world_corner.x)
+		maximum_y = maxf(maximum_y, world_corner.y)
+	return Rect2(
+		Vector2(minimum_x, minimum_y),
+		Vector2(maximum_x - minimum_x, maximum_y - minimum_y)
+	)
+
+func _rect_has_area(rect: Rect2) -> bool:
+	return rect.size.x > 0.0 and rect.size.y > 0.0
+
+func _begin_elevator_travel() -> void:
+	if _travel_in_progress or _player == null or _ball_container == null:
+		return
+	if bool(_player.get("is_dead")) or not _player.is_on_floor():
+		return
+	var player_bounds: Rect2 = _player_world_aabb()
+	if not ELEVATOR_INTERIOR.encloses(player_bounds):
+		return
+
+	_set_status("", false)
+
+	# Latch and save inherited processing before the first asynchronous cue.
+	_travel_in_progress = true
+	_player_process_mode_before_travel = _player.process_mode
+	_ball_container_process_mode_before_travel = _ball_container.process_mode
+	_player.process_mode = Node.PROCESS_MODE_DISABLED
+	_ball_container.process_mode = Node.PROCESS_MODE_DISABLED
+	_reset_lobby_combat_transients()
+	RoomTransition.clear_pending_snapshot()
+
+	await _tween_door_fraction(1.0, 0.20)
+	await _play_travel_cue()
+	_set_status("ANDAR 01", true)
+	await _fade_to(1.0, 0.20)
+
+	var change_error: int = get_tree().change_scene_to_file(RUN_ROOT_PATH)
+	if change_error == OK:
+		return
+	await _recover_failed_elevator_load()
+
+func _reset_lobby_combat_transients() -> void:
+	var launcher: Node = _player.get_node_or_null("BallLauncher")
+	if launcher != null and launcher.has_method("reset"):
+		launcher.call("reset")
+	var racket: Node = _player.get_node_or_null("RacketController")
+	if racket != null and racket.has_method("cancel"):
+		racket.call("cancel")
+
+func _play_travel_cue() -> void:
+	for cue_index: int in range(5):
+		var lights_on: bool = cue_index % 2 == 0
+		_world_visual.call("set_amber_lights_on", lights_on)
+		var shake: Vector2 = Vector2(2.0, 0.0) if cue_index % 2 == 0 else Vector2(-2.0, 1.0)
+		_camera.offset = shake
+		var timer: SceneTreeTimer = get_tree().create_timer(0.065)
+		await timer.timeout
+	_camera.offset = Vector2.ZERO
+	_world_visual.call("set_amber_lights_on", true)
+
+func _tween_door_fraction(target: float, duration: float) -> void:
+	var tween: Tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_method(
+		Callable(_door_visual, "set_door_closed_fraction"),
+		float(_door_visual.get("door_closed_fraction")),
+		target,
+		duration
+	)
+	await tween.finished
+
+func _fade_to(alpha: float, duration: float) -> void:
+	var tween: Tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_property(_fade_rect, "color:a", alpha, duration)
+	await tween.finished
+
+func _recover_failed_elevator_load() -> void:
+	RoomTransition.clear_pending_snapshot()
+	_must_exit_cabin_before_retry = true
+	await _tween_door_fraction(0.0, 0.16)
+	_world_visual.call("set_amber_lights_on", false)
+	_camera.offset = Vector2.ZERO
+	_set_status("ERRO AO ABRIR\nSAIA E ENTRE PARA TENTAR", true)
+	await _fade_to(0.0, 0.18)
+	_player.process_mode = _player_process_mode_before_travel
+	_ball_container.process_mode = _ball_container_process_mode_before_travel
+	_travel_in_progress = false
+
+func _set_status(message: String, visible_state: bool) -> void:
+	_status.call("set_text", message)
+	_status.visible = visible_state
+
+FILE scripts/world/lobby_visual.gd
+extends Node2D
+
+const FACTORY_ATLAS: Texture2D = preload("res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png")
+const TILE_SIZE: int = 32
+const WORLD_WIDTH: int = 1152
+const WORLD_HEIGHT: int = 648
+
+const NIGHT: Color = Color("#0E0D0E")
+const INK: Color = Color("#0C1B29")
+const STEEL: Color = Color("#142C40")
+const STEEL_LIGHT: Color = Color("#203E50")
+const STEEL_MID: Color = Color("#4B555D")
+const STEEL_EDGE: Color = Color("#879198")
+const RUST: Color = Color("#70432C")
+const AMBER: Color = Color("#D2A75C")
+const PALE: Color = Color("#E8D8B5")
+const GLASS: Color = Color("#0C1B29")
+
+@export_enum("World background", "Elevator foreground") var visual_layer: int = 0
+@export_range(0.0, 1.0, 0.01) var door_closed_fraction: float = 0.0
+@export var amber_lights_on: bool = false
+
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+func set_door_closed_fraction(value: float) -> void:
+	door_closed_fraction = clampf(value, 0.0, 1.0)
+	queue_redraw()
+
+func set_amber_lights_on(value: bool) -> void:
+	amber_lights_on = value
+	queue_redraw()
+
+func _draw() -> void:
+	if visual_layer == 0:
+		_draw_world()
+	else:
+		_draw_elevator_foreground()
+
+func _draw_world() -> void:
+	draw_rect(Rect2(0, 0, WORLD_WIDTH, WORLD_HEIGHT), NIGHT)
+
+	# Distant roofline and the tower keep the courtyard enclosed visually.
+	draw_rect(Rect2(0, 272, 736, 256), INK)
+	draw_rect(Rect2(24, 232, 184, 296), STEEL)
+	draw_rect(Rect2(216, 192, 208, 336), INK)
+	draw_rect(Rect2(432, 224, 240, 304), STEEL)
+	draw_rect(Rect2(704, 80, 400, 448), INK)
+	draw_rect(Rect2(736, 40, 352, 488), STEEL)
+	draw_rect(Rect2(776, 16, 304, 512), STEEL_LIGHT)
+	draw_rect(Rect2(800, 0, 248, 512), STEEL)
+	draw_rect(Rect2(824, 0, 16, 512), STEEL_MID)
+	draw_rect(Rect2(1032, 0, 16, 512), INK)
+	draw_rect(Rect2(816, 48, 240, 8), STEEL_EDGE)
+	draw_rect(Rect2(768, 88, 320, 8), STEEL_EDGE)
+	draw_rect(Rect2(728, 136, 376, 8), STEEL_EDGE)
+
+	# Windows sit in open wall bays; no pipe or beam crosses the glass.
+	for window_y: int in [88, 144, 200, 256, 312]:
+		for window_x: int in [744, 784, 864, 904, 984, 1024]:
+			draw_rect(Rect2(window_x - 3, window_y - 3, 22, 34), RUST)
+			draw_rect(Rect2(window_x, window_y, 16, 28), GLASS)
+			draw_rect(Rect2(window_x + 7, window_y, 2, 28), STEEL_EDGE)
+			draw_rect(Rect2(window_x, window_y + 13, 16, 2), STEEL_EDGE)
+			draw_rect(Rect2(window_x + 3, window_y + 4, 3, 3), AMBER)
+
+	# Small decorative maintenance bench; it has no collision or interaction.
+	draw_rect(Rect2(152, 488, 176, 12), INK)
+	draw_rect(Rect2(152, 480, 176, 8), RUST)
+	draw_rect(Rect2(160, 472, 160, 8), STEEL_MID)
+	draw_rect(Rect2(168, 500, 12, 60), STEEL_LIGHT)
+	draw_rect(Rect2(296, 500, 12, 60), STEEL_LIGHT)
+	draw_rect(Rect2(184, 464, 32, 16), STEEL)
+	draw_rect(Rect2(192, 456, 16, 8), AMBER)
+	draw_rect(Rect2(240, 468, 40, 12), STEEL)
+	draw_rect(Rect2(248, 460, 24, 8), STEEL_EDGE)
+	draw_rect(Rect2(204, 504, 80, 4), RUST)
+
+	# Elevator alcove and heavy frame. The entrance remains open at rest.
+	draw_rect(Rect2(872, 424, 208, 136), STEEL)
+	draw_rect(Rect2(888, 432, 176, 128), STEEL_MID)
+	draw_rect(Rect2(904, 448, 144, 112), INK)
+	draw_rect(Rect2(912, 448, 128, 112), GLASS)
+	draw_rect(Rect2(912, 448, 128, 4), STEEL_EDGE)
+	draw_rect(Rect2(912, 556, 128, 4), AMBER)
+	draw_rect(Rect2(896, 432, 16, 128), STEEL_LIGHT)
+	draw_rect(Rect2(1040, 432, 16, 128), STEEL_LIGHT)
+	draw_rect(Rect2(904, 424, 144, 8), AMBER)
+	draw_rect(Rect2(904, 438, 144, 4), STEEL_EDGE)
+
+	# A square amber-framed plaque carries the bitmap elevator sign.
+	draw_rect(Rect2(888, 384, 176, 40), INK)
+	draw_rect(Rect2(888, 384, 176, 3), AMBER)
+	draw_rect(Rect2(888, 421, 176, 3), AMBER)
+	draw_rect(Rect2(888, 384, 3, 40), AMBER)
+	draw_rect(Rect2(1061, 384, 3, 40), AMBER)
+	# Three status lamps above the elevator doors.
+	for lamp_x: int in [928, 968, 1008]:
+		var lamp_color: Color = AMBER if amber_lights_on else STEEL_MID
+		draw_rect(Rect2(lamp_x - 7, 428, 14, 14), INK)
+		draw_rect(Rect2(lamp_x - 4, 431, 8, 8), lamp_color)
+
+	# Steel courtyard floor: the existing 32 px atlas supplies top, middle and
+	# lower edges. Integer destination rectangles and nearest filtering preserve
+	# the factory palette and tile silhouette.
+	for tile_x_index: int in range(36):
+		var tile_x: int = tile_x_index * TILE_SIZE
+		var source_x: int = TILE_SIZE
+		if tile_x_index == 0:
+			source_x = 0
+		elif tile_x_index == 35:
+			source_x = TILE_SIZE * 2
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(tile_x, 560, TILE_SIZE, TILE_SIZE),
+			Rect2(source_x, 0, TILE_SIZE, TILE_SIZE)
+		)
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(tile_x, 592, TILE_SIZE, TILE_SIZE),
+			Rect2(source_x, TILE_SIZE, TILE_SIZE, TILE_SIZE)
+		)
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(tile_x, 624, TILE_SIZE, TILE_SIZE),
+			Rect2(source_x, TILE_SIZE * 3, TILE_SIZE, TILE_SIZE)
+		)
+
+	for tile_y_index: int in range(21):
+		var tile_y: int = tile_y_index * TILE_SIZE
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(0, tile_y, TILE_SIZE, TILE_SIZE),
+			Rect2(0, TILE_SIZE, TILE_SIZE, TILE_SIZE)
+		)
+		draw_texture_rect_region(
+			FACTORY_ATLAS,
+			Rect2(WORLD_WIDTH - TILE_SIZE, tile_y, TILE_SIZE, TILE_SIZE),
+			Rect2(TILE_SIZE * 2, TILE_SIZE, TILE_SIZE, TILE_SIZE)
+		)
+
+	# Bright, uncluttered entrance threshold.
+	draw_rect(Rect2(912, 556, 128, 4), PALE)
+
+func _draw_elevator_foreground() -> void:
+	var travel: float = clampf(door_closed_fraction, 0.0, 1.0)
+	var panel_width: int = 64
+	var door_top: int = 448
+	var door_height: int = 112
+	var left_x: int = 848 + roundi(float(panel_width) * travel)
+	var right_x: int = 1040 - roundi(float(panel_width) * travel)
+
+	_draw_door_panel(left_x, door_top, panel_width, door_height, true)
+	_draw_door_panel(right_x, door_top, panel_width, door_height, false)
+
+func _draw_door_panel(x: int, y: int, width: int, height: int, is_left: bool) -> void:
+	draw_rect(Rect2(x, y, width, height), STEEL)
+	draw_rect(Rect2(x + 4, y + 4, width - 8, height - 8), STEEL_LIGHT)
+	draw_rect(Rect2(x + 8, y + 8, width - 16, height - 16), STEEL)
+	draw_rect(Rect2(x + 12, y + 12, 4, height - 24), STEEL_EDGE)
+	draw_rect(Rect2(x + width - 16, y + 12, 4, height - 24), INK)
+	draw_rect(Rect2(x + width / 2 - 2, y + 8, 4, height - 16), RUST)
+	draw_rect(Rect2(x + width / 2 - 1, y + 16, 2, height - 32), AMBER)
+	draw_rect(Rect2(x + 8, y + height - 14, width - 16, 4), AMBER if is_left else RUST)
+FILE scenes/lobby.tscn
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/lobby.gd" id="1_lobby"]
+[ext_resource type="Script" path="res://scripts/world/lobby_visual.gd" id="2_visual"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="4_bitmap_text"]
+
+[sub_resource type="RectangleShape2D" id="Rect_floor"]
+size = Vector2(1152, 88)
+
+[sub_resource type="RectangleShape2D" id="Rect_left_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="Rect_right_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="Rect_ceiling"]
+size = Vector2(1152, 32)
+
+[node name="Lobby" type="Node2D"]
+script = ExtResource("1_lobby")
+
+[node name="LobbyCamera" type="Camera2D" parent="."]
+position = Vector2(576, 324)
+enabled = true
+position_smoothing_enabled = false
+limit_left = 0
+limit_top = 0
+limit_right = 1152
+limit_bottom = 648
+
+[node name="EnvironmentVisual" type="Node2D" parent="."]
+z_index = -10
+script = ExtResource("2_visual")
+
+[node name="ElevatorSign" type="Control" parent="EnvironmentVisual"]
+position = Vector2(896, 388)
+size = Vector2(160, 30)
+mouse_filter = 2
+script = ExtResource("4_bitmap_text")
+text = "ELEVADOR / ANDAR 01"
+font_color = Color(0.823529, 0.654902, 0.360784, 1)
+max_lines = 2
+center_text = true
+
+[node name="ElevatorDoorForeground" type="Node2D" parent="."]
+z_index = 5
+script = ExtResource("2_visual")
+visual_layer = 1
+
+[node name="BallContainer" type="Node2D" parent="."]
+z_index = 1
+
+[node name="World" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Floor" type="CollisionShape2D" parent="World"]
+position = Vector2(576, 604)
+shape = SubResource("Rect_floor")
+
+[node name="LeftBoundary" type="CollisionShape2D" parent="World"]
+position = Vector2(16, 324)
+shape = SubResource("Rect_left_wall")
+
+[node name="RightBoundary" type="CollisionShape2D" parent="World"]
+position = Vector2(1136, 324)
+shape = SubResource("Rect_right_wall")
+
+[node name="Ceiling" type="CollisionShape2D" parent="World"]
+position = Vector2(576, -16)
+shape = SubResource("Rect_ceiling")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(240, 560)
+
+[node name="LobbyUI" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="ElevatorStatus" type="Control" parent="LobbyUI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -360.0
+offset_top = 18.0
+offset_right = 360.0
+offset_bottom = 48.0
+mouse_filter = 2
+visible = false
+script = ExtResource("4_bitmap_text")
+text = ""
+font_color = Color(0.909804, 0.419608, 0.32549, 1)
+max_lines = 2
+center_text = true
+
+[node name="Fade" type="ColorRect" parent="LobbyUI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.0431373, 0.0627451, 0.0901961, 0)
+PLAYER_REFERENCE
+class_name Player
+extends CharacterBody2D
+
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+
+signal health_changed(current_health: int, maximum_health: int)
+signal died
+
+@export var movement_config: MovementConfig
+
+@onready var movement_controller: MovementController = $MovementController
+@onready var aim_controller: AimController = $AimController
+@onready var player_visual: PlayerVisual = $PlayerVisual
+@onready var reticle_visual: ReticleVisual = $ReticleVisual
+@onready var shot_origin: Node2D = $ShotOrigin
+@onready var ball_launcher: BallLauncher = $BallLauncher
+@onready var trajectory_preview: Node2D = $TrajectoryPreview
+@onready var health: PlayerHealth = $Health
+@onready var racket_controller: RacketController = $RacketController
+@onready var racket_visual: RacketVisual = $PlayerVisual/RacketVisual
+
+var is_dead: bool:
+	get:
+		return health != null and health.is_dead
+var current_health: int:
+	get:
+		return health.current_health if health != null else 0
+var maximum_health: int:
+	get:
+		return health.maximum_health if health != null else 0
+
+func _find_projectile_parent() -> Node:
+	var player_parent := get_parent()
+	if player_parent != null:
+		var ball_container := player_parent.get_node_or_null("BallContainer")
+		if ball_container != null:
+			return ball_container
+	return player_parent
+
+> scenes\player.tscn:19:[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
+  scenes\player.tscn:20:radius = 14.0
+  scenes\player.tscn:21:height = 76.0
+  scenes\player.tscn:22:
+  scenes\player.tscn:23:[node name="Player" type="CharacterBody2D" groups=["player"]]
+  scenes\player.tscn:24:collision_layer = 2
+> scenes\player.tscn:32:[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+  scenes\player.tscn:33:position = Vector2(0.0, -38.0)
+> scenes\player.tscn:34:shape = SubResource("CapsuleShape2D_player")
+  scenes\player.tscn:35:
+  scenes\player.tscn:36:[node name="MovementController" type="Node" parent="."]
+  scenes\player.tscn:37:script = ExtResource("3_movement_controller")
+  scenes\player.tscn:38:
+  scenes\player.tscn:39:[node name="AimController" type="Node2D" parent="."]
+
+
+LAUNCHER_RESET
+func reset() -> void:
+	var ball_to_cleanup := _active_ball
+	if ball_to_cleanup == null or not is_instance_valid(ball_to_cleanup):
+		_active_ball = null
+		return
+	ball_to_cleanup.request_stop_sweep()
+	call_deferred("_cleanup_ball_after_flush", ball_to_cleanup)
+
+func request_stop_active_sweep() -> void:
+	if _active_ball != null and is_instance_valid(_active_ball):
+		_active_ball.request_stop_sweep()
+
+## Call only after the current physics callback/flush has returned.
+func cleanup_active_ball_after_flush() -> void:

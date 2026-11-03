@@ -1,0 +1,8 @@
+STATUS: done
+SUMMARY: Revisão estática da implementação de tópicos com traço e destaques nas cartas concluída com aprovação técnica (sem bloqueios P1). Tipagem GDScript 4.7 rigorosa, herança limpa de HudBitmapText sem duplicar renderizador ou fonte, realce exato de valores assinados/sem sinal e unidades preservando rótulos/valores atuais/setas cinzas, quebra de 22 glifos + prefixo de 2 colunas estritamente contida em até 3 linhas nos 7 upgrades (incluindo ranks máximos e condições de contorno), traço ciano presente somente na primeira linha de cada tópico com continuação indentada em 2 espaços, HUD base e mecânicas intactos, e edição de molduras Aseprite estritamente confinada aos 3 marcadores cobre nas coordenadas y=144, 158 e 172.
+CHANGED_FILES: none
+TESTS: none
+RISKS: 
+- Aprovação visual e estética do usuário ainda pendente (Root inspecionou os PNGs e arte de produção gerados via Aseprite com exit 0, mas o usuário ainda avaliará as cartas em jogo).
+- P2 no gerador auxiliar de prévia Lua (`generate_upgrade_cards.lua:488`): `topic:sub(1, 4) == "ATÉ "` compara 4 bytes com literal UTF-8 de 5 bytes; não afeta os 3 cards do estudo atual nem o runtime Godot (`upgrade_card.gd:237` usa `begins_with("Até ")` Unicode), mas falharia em suprimir realce em Lua caso uma carta com condição "Até" fosse adicionada ao array de prévia estática.
+NEXT_STEP: Apresentar o resultado e as prévias de estudo geradas ao usuário para validação visual e decisão de encerramento da frente.

@@ -1,0 +1,12 @@
+Pacote B R1a em revisão read-only — lendo briefing completo para veredito.
+STATUS: done
+SUMMARY: Revisão read-only incremento B R1a — sem P1 bloqueante no fluxo atual. UI 576x324/3x160x240/HBox gap12 Y60..300, ilustração 128x80 em 16,34, fonte local 84x105 com +/> , 7 IDs, oferta 1 nova+1 evolução sem duplicata, clique único com pause, E/Esc consumidos sem fechar, fórmulas via Catalog, ícones reais Aseprite, paleta 19 cores alpha 0/255. Deltas B corretos: null-guard health, build-status completo, range 0..5, tópicos Motor/Carga sem número fixo falso. A permanece fechada.
+FINDINGS:
+- P1: none no pacote atual. Não reaberto A por hipótese.
+- P2 cosmetic/geometry: scenes/ui/upgrade_card.tscn:427 Summary top 118 vs assets generation generate_upgrade_cards.lua:860 divider y=119 (overlap 1px); tscn Title/Summary/Topics x=8 w=144 vs integration_geometry.json:1218 x=20/12 w=128 e README interno linha 991-992 limite 21 glyphs vs scripts/ui/upgrade_card.gd:235,247 limite 24 (144px) — doc diz 21, código aceita 24.
+- P2 copy-higiene: resources/upgrades/motor_acelerado.tres static effect_summary "0,55 > 0,40 s" e resources/upgrades/carga_reativa.tres:561 "+2 dano após aparo" são rank-0; runtime usa scripts/progression/upgrade_catalog.gd:1371 effect_summary dinâmico, mas fallback direto à definition mostraria número fixo. Catalog dinamo scripts/progression/upgrade_catalog.gd:1399 "por parry" vs resources/topics "aparo" — inconsistência PT.
+- P2 robustez: scripts/ui/upgrade_card.gd:211 valida glyph end>atlas mas não exige 84x105; scripts/world/main.gd diff :514 lista completa BUILD com " | " sem truncate/wrap — ok com 4 salas, observar overflow com 7 IDs cheios; scripts/progression/enemy_level_config_resource.gd:535 range agora 0.0 permite escala zero — confirmar intencional; scripts/ui/upgrade_offer.gd:47 false se font_bundle inválido + MAIN CALL:1494 truncado no pacote — confirmar Main resume/unpause nesse ramo para não softlockar pausado.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Opus exato sem quota impede aprovação formal registrada; resíduo externo apply_patch citado no briefing fora do escopo — não tocar; preview/study não é screenshot Godot, runtime vem do Catalog.
+NEXT_STEP: Manter B R1a estável, alinhar doc geometria 12/20px e limite 21 vs 24 na próxima frente sem mudar HUD/fonte/geração/AI/colisões; seguir com revisores exigidos (Gemini/Grok/Muse) e exceção Opus só para upgrades básicos.

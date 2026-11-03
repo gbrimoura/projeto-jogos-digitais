@@ -1,0 +1,17 @@
+[
+  {
+    "file": "scripts/ui/hud/hud_root.gd",
+    "sha256": "31A15768A459F43885F75D5B3B11BE03D5697DA6892DF3CEC541EBCDD3628CA6",
+    "matches_frozen": true
+  },
+  {
+    "file": "scripts/ui/hud/run_hud_bridge.gd",
+    "sha256": "D4A69DBE10E4E7C37D16EDEDD9E92BCCBE88EE185D01FD1EB34FD1E7483B4C94",
+    "matches_frozen": true
+  },
+  {
+    "file": "scenes/ui/hud/hud_root.tscn",
+    "sha256": "EF8A3CD2488B2B867EFD0F7849881C3FAAE3BF656580E7BEFF5E2911C9866096",
+    "matches_frozen": true
+  }
+]

@@ -3,8 +3,7 @@ extends Node
 
 signal launch_accepted(spawn_position: Vector2, direction: Vector2)
 
-const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
-const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
 
 ## Dispara uma única bola por vez sem assumir responsabilidade pela locomoção.
 
@@ -190,13 +189,27 @@ func get_projectile_config_snapshot() -> ProjectileConfig:
 		return null
 	var derived_config := _base_projectile_config.duplicate(true) as ProjectileConfig
 	if _run_build != null:
-		if _run_build.has_upgrade(IMPACTO_REFORCADO_DEFINITION.upgrade_id):
-			derived_config.damage = IMPACTO_REFORCADO_DEFINITION.projectile_damage_override
-		if _run_build.has_upgrade(CARGA_REATIVA_DEFINITION.upgrade_id):
-			derived_config.reactive_charge_enabled = CARGA_REATIVA_DEFINITION.reactive_charge_enabled
-			derived_config.charged_damage_bonus = CARGA_REATIVA_DEFINITION.charged_damage_bonus
+		derived_config.impact_rank = _run_build.count_for(&"impacto_reforcado")
+		derived_config.charge_rank = _run_build.count_for(&"carga_reativa")
+		derived_config.pressure_rank = _run_build.count_for(&"ricochete_pressao")
+		var charge_definition := UpgradeCatalogScript.definition_for(&"carga_reativa")
+		derived_config.reactive_charge_enabled = derived_config.charge_rank > 0 \
+			and charge_definition != null and charge_definition.reactive_charge_enabled
+		derived_config.charged_damage_bonus = derived_config.charge_rank * (
+			charge_definition.charged_damage_bonus_per_rank if charge_definition != null else 0
+		)
+		derived_config.max_bounces += UpgradeCatalogScript.projectile_bounce_bonus(
+			_run_build.count_for(&"mola_retorno")
+		)
+		derived_config.lifetime += UpgradeCatalogScript.projectile_lifetime_bonus(
+			_run_build.count_for(&"mola_retorno")
+		)
 	# Run rewards derive from the already-upgraded copy; the base Resource stays unchanged.
 	derived_config.damage = maxi(roundi(float(derived_config.damage) * _run_damage_multiplier), 1)
+	if _run_build != null:
+		derived_config.speed *= UpgradeCatalogScript.projectile_speed_multiplier_for_rank(
+			_run_build.count_for(&"ajuste_velocidade_bola")
+		)
 	derived_config.speed *= _run_speed_multiplier
 	derived_config.collision_radius *= _run_radius_multiplier
 	return derived_config

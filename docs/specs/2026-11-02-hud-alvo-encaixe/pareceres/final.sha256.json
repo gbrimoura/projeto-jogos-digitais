@@ -1,0 +1,18 @@
+[
+  {
+    "Path": "scripts/ui/hud/target_panel.gd",
+    "SHA256": "BF1C2D2DD41C8DE5D0742BC0159FEB46408A4B3BC4C9AF7C48C56FC1A47838C2"
+  },
+  {
+    "Path": "scenes/ui/hud/target_panel.tscn",
+    "SHA256": "B65C959413E5D189ED54AE4961BF3CD2497080B63983080178F06E026E422E8E"
+  },
+  {
+    "Path": "scripts/ui/hud/hud_root.gd",
+    "SHA256": "7123F50B668B708AD63EDCBC7C01083F5CE1351DDD4C6A56D6C938D960A18C3D"
+  },
+  {
+    "Path": "scripts/ui/hud/run_hud_bridge.gd",
+    "SHA256": "E90DF55B9E95DA330649AF93F92096C1A27FA9C4E2D6F1700C75288DE614F6E8"
+  }
+]

@@ -1,0 +1,92 @@
+### STATUS
+**PASS (NO P1 / P2 BUGS DETECTED)**
+
+---
+
+### SUMMARY
+Comprehensive read-only implementation review performed on the frozen codebase packet (`lobby.gd`, `lobby_visual.gd`, `scenes/lobby.tscn`, `run_controller.gd`, `bitmap_text.gd`, `room_transition.gd`, and `project.godot`).
+
+All review criteria are fully satisfied with zero syntax, typing, lifecycle, pause ownership, or physics bugs:
+1. **Lobby & Elevator Lifecycle**: Automatic transition triggers strictly when the entire player capsule is enclosed inside the elevator cabin (`ELEVATOR_INTERIOR`) and grounded (`is_on_floor()`). If cabin loading fails, rearming requires a full exit before re-entering (`_must_exit_cabin_before_retry`).
+2. **Pause Ownership & Scene Change**: `RunController` strictly tracks owned pause state (`_result_pause_owned = not tree.paused`). Owned pause is released prior to scene change and restored if scene switching fails (`_restore_failed_lobby_return`). `Lobby` does not perform global unpause (`process_mode = Node.PROCESS_MODE_INHERIT`), ensuring clean encapsulation.
+3. **Z-Ordering & Overlay Stacking**: `RunResultOverlay` is assigned `layer = 90`, strictly positioned below `ManagedRoomTransitionFade` (`layer = 100`) and `ManagedRoomTechnicalError` (`layer = 200`).
+4. **Collision & Visual Alignment**: The visual floor top at $Y=560$ matches the physical floor boundary (`position.y = 604`, `size.y = 88`, top $= 604 - 44 = 560$). Boundaries at $32\text{ px}$ align with physical static bodies, and atlas column 3 (pipes) is avoided.
+5. **Camera & Display Scaling**: Camera fit zoom computes `minf(viewport.x / 1152.0, viewport.y / 648.0)` without global display mutation.
+
+---
+
+### CONCRETE FINDINGS & SOURCE EVIDENCE
+
+#### 1. Physics Enclosure, Grounding & Cab Rearm Lifecycle
+- **Evidence (`scripts/world/lobby.gd` L33-47, L103-107, L168-176):**
+  - Cabin trigger check requires grounding and full enclosure:
+    ```gdscript
+    if bool(_player.get("is_dead")) or not _player.is_on_floor():
+        return
+    if ELEVATOR_INTERIOR.encloses(player_bounds):
+        _begin_elevator_travel()
+    ```
+  - `_player_world_aabb()` accurately computes the axis-aligned bounding box from `collision_shape.shape.get_rect()` and `collision_shape.global_transform` (L74-95).
+  - On elevator scene load failure, `_must_exit_cabin_before_retry = true` latches until `not player_bounds.intersects(ELEVATOR_INTERIOR)` (L40-41), preventing immediate auto-looping without leaving the elevator cabin.
+
+#### 2. Pause Ownership & Transition Restoration
+- **Evidence (`scripts/world/run_controller.gd` L954-956, L1122-1137, L1148-1150):**
+  - Pause acquisition tracks ownership cleanly:
+    ```gdscript
+    _result_pause_owned = not tree.paused
+    if _result_pause_owned:
+        tree.paused = true
+    ```
+  - During return to lobby, owned pause is released immediately before `change_scene_to_file`:
+    ```gdscript
+    var pause_before_change: bool = tree.paused
+    var released_result_pause: bool = _result_pause_owned and tree.paused
+    if released_result_pause:
+        tree.paused = false
+    var change_error: int = tree.change_scene_to_file(LOBBY_SCENE_PATH)
+    ```
+  - If `change_scene_to_file` fails, `_restore_failed_lobby_return()` restores `tree.paused = pause_before_change`, restores `source_room.process_mode`, re-enables `_result_return_button`, and displays `"FALHA AO ABRIR O LOBBY"`.
+  - In `scripts/world/lobby.gd` L24, `Lobby._ready()` sets `process_mode = Node.PROCESS_MODE_INHERIT` without invoking `get_tree().paused = false`, honoring the design contract.
+
+#### 3. Overlay Layers & UI Separation
+- **Evidence (`scripts/world/run_controller.gd` L960, L1212, L1283):**
+  - `RunResultOverlay`: `layer = 90`
+  - `ManagedRoomTransitionFade`: `layer = 100`
+  - `ManagedRoomTechnicalError`: `layer = 200`
+  - The result overlay sits beneath both the transition fade and technical error overlays.
+  - Custom bitmap labels in `_add_result_bitmap_text()` set `mouse_filter = MOUSE_FILTER_IGNORE` (L1059, L1075), allowing input clicks on `"VOLTAR AO LOBBY"` to pass directly to the underlying `Button`.
+
+#### 4. Visual-to-Physical Geometry Alignment
+- **Evidence (`scenes/lobby.tscn` L355-366, L405-420; `scripts/world/lobby_visual.gd` L288-322):**
+  - Floor collision: center `(576, 604)`, size `(1152, 88)` $\implies$ top surface is $604 - 44 = 560.0$.
+  - Visual floor tiles draw from $Y=560$ downward (`Rect2(tile_x, 560, 32, 32)`).
+  - Left wall collision: center `(16, 324)`, width $32$ ($X \in [0, 32]$); Right wall: center `(1136, 324)`, width $32$ ($X \in [1120, 1152]$).
+  - Atlas tile indexing in `lobby_visual.gd` draws only `source_x = 0, 32, 64` (columns 0–2), avoiding column 3 (pipes).
+
+#### 5. Input & Keyboard Routing
+- **Evidence (`scripts/world/run_controller.gd` L1399-1412):**
+  - Key `'R'` cleanly discriminates legitimate run ends from technical crashes:
+    ```gdscript
+    if _legitimate_run_end and is_instance_valid(_result_overlay) and not is_instance_valid(_technical_error_layer):
+        get_viewport().set_input_as_handled()
+        _return_to_lobby()
+    elif not _legitimate_run_end:
+        get_viewport().set_input_as_handled()
+        _restart_run()
+    ```
+
+---
+
+### CHANGED_FILES: none
+### TESTS: none
+
+---
+
+### RISKS
+1. **Low (Asset Fallback)**: If `res://assets/ui/hud_caldeira_v1/export/font.json` or `font-atlas.png` are inaccessible, `HudBitmapText` gracefully sets `visible = false` and prints warnings rather than crashing; buttons and controls remain functional.
+2. **Low (Physics Timing)**: Grounding check `_player.is_on_floor()` requires at least one physics tick after scene initialization before elevator detection can trigger; initial player spawn at `(240, 560)` is grounded on the floor outside the cab, so this functions as intended.
+
+---
+
+### NEXT_STEP
+Implementation is verified and ready for execution. Unfreeze the implementation branch and run standard integration checks in Godot 4.

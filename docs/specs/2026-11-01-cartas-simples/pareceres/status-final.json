@@ -1,0 +1,12 @@
+{
+  "Luna": "gpt-6-luna xhigh; Fast/priority não confirmável",
+  "Gemini": "exit0 favorável",
+  "Grok": "exit0 sembloqueios; observaçõescosméticasavaliadas",
+  "Muse": "exit0 sembloqueios",
+  "Opus": "claude-opus-5-5-high Cursor exit1 quota até03/11/2026; revisão pendente",
+  "Aseprite": "produçãoexit0; inspeçãovisualdiretaPNG",
+  "Tests": "none",
+  "Godot": "nãoexecutado",
+  "ChangedScope": "arte/presentação; mecânicas/font/molduras preservadas",
+  "CommitPush": "none"
+}

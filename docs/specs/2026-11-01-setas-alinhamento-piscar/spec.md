@@ -1,0 +1,1 @@
+Critérios: LEFT/RIGHT centradas no vão; UP/DOWN mantidas; piscar lento só em saída disponível, fase não reinicia em configure repetida, editor estático; física e mudanças locais preservadas. Sem execução Godot/testes.

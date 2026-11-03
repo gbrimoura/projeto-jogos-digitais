@@ -1,0 +1,14 @@
+STATUS: done
+SUMMARY: Revisão READ-ONLY Godot 4.7 UI/layout do pacote estático (Root script/scene + Bridge header/escala + DIFF Bridge base->r2). Sem P1. Contrato aritmético confere: ref 960x540 => 1920x1080 scale2 root960x540, 1152x648 scale1, 1280x720 scale1, 4K scale4 root960x540. Clamp min 576x324 e `visible_origin.round()` presentes; cache gravado após transform; anchors/tamanhos/ready/setters/resizing coerentes; sem `:=`/inferência Variant nos trechos visíveis. Escopo preservado no visível (só escala/stage, sem ProjectSettings/física/lifecycle).
+FINDINGS:
+P1: none
+P2-1 — `hud_root.gd` `show_ball_gauge` sem setter: quebra padrão dos demais exports (`show_debug_details`, `module_pixel_scale`, posições). Troca runtime não propaga `set_enabled` nem `_apply_layout`; só `_ready` aplica uma vez.
+P2-2 — `hud_root.gd` `enabled` emite `enabled_changed` mas sem gating local (visibilidade/processo). Se Bridge não consome, é contrato morto.
+P2-3 — `hud_root.gd` Root->painéis via `.call("set_health/set_dash/set_target/clear_target/set_progress/set_text/set_enabled")` sem guarda `has_method`, enquanto Bridge->Root tem `has_method("set_available_stage_size")`. Frágil a rename de painel, sem checagem estática.
+P2-4 — `_effective_module_scale()` só checa horizontal player/target/room; ignora altura dash/gauge e sobreposição com footer e posições custom. Vertical sempre assume que `gap` resolve; sem clamp vertical.
+P2-5 — Scene `StatusText/BuildText` sem âncora bottom (só offsets 8,520,952,532); dependem 100% de `_apply_layout`. Se guard-null retornar cedo, ficam presos em 520 (espaço 960).
+P2-6 — Cache Bridge não observa `Root.size/Content` externo; edição manual no inspector não invalida até evento viewport.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Header Bridge truncado em `if _viewport != null:` — sem verificar conexão `size_changed`, hide legado, cache inimigos, bindings HP/dash/target/lifecycle/gates. Sem Root DIFF base->final, só FINAL; presunção de baseline preservado vem do DIFF Bridge + inspeção estática. Valores de escala são cálculo de contrato, não captura/runtime; sem alegação visual. `hide()` se `_font_ready==false` é fail-closed (HUD some se fonte falhar).
+NEXT_STEP: Manter decisão já autorizada; sem novo conceito visual nem testes. Enviar pacote ao Opus Cursor exato como previsto; quota/limite não conta como parecer.

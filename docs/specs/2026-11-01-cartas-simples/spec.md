@@ -1,0 +1,1 @@
+Aceite: sete imagens simples até6cores e silhuetasgrandes, textosdiretos+valoresnomeados, semjargões e semalterarqualquerefeito; molduras/fontes/IDs/ranks/layout/níveisintactos, previewvisível e integração nosmesmosassets. Semengine/testes; preservar dirty.

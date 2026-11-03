@@ -1,0 +1,14 @@
+STATUS: done
+SUMMARY: DELTA FINAL B R1a->R3 coerente e mínimo; sem P1. 3 arquivos conferem com correções descritas; sem alteração de assets/formulas/selection/ranks/níveis/Git.
+FINDINGS:
+- upgrade_card.gd font: `ResourceLoader.load(...as JSON).data` igual padrão HudBitmapText `metadata_json.data`; null-check + `TYPE_DICTIONARY` + fail-closed `valid:false` corretos; mantém métricas base, só troca atlas e append 2 glifos.
+- upgrade_card.gd summary `replace(";", "/")` 1:1 preserva `_wrap_text(24,2)`; `/` está na base, `;` sem glifo; valores numéricos seguem do Catalog, só delimitador muda.
+- main.gd BUILD `" | "`->`" / "` mesmo comprimento, `:`/`/`/`NV.` com glifos base; `|` removido.
+- upgrade_card.tscn StyleBoxEmpty nos 6 estados + `load_steps 3->4` correto; PNG/Frame segue único visual, `flat/focus/mouse_filter` preservados.
+- SummaryBackdrop `ColorRect #0C1B29` opaco em 8,118..152,142 =144x24 =2x12px, antes de Summary, `mouse_filter=2`; mascara réguas 119/138 sem cobrir Illustration(fim 114) nem Topics(início 146).
+- Badge 12,210..148,222 =136x12 centralizado em 204..228 (centro 216); 24 glyphs*6=144 e badge 136 cabem NOVO/NV.220 sem regenerar PNG.
+- FONTLOCAL: canvas 84=72+12, `+`72,2/`>`78,2 5x11 advance 6 dentro 84x105, integração retém base.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Baixo. Se JSON não importado como `JSON`, bundle inválido e carta falha fechada; backdrop opaco depende de faixa/frame estáveis.
+NEXT_STEP: Aprovar R3 sem regenerar PNG; manter Opus registrado/quota 03/11 sem substituição.

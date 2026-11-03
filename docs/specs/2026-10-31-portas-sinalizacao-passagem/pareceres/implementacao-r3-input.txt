@@ -1,0 +1,79 @@
+Revisão READ-ONLY deltaR3 cosmético após R2 completo, timeout10min. Nenhuma escrita/comando/teste/Godot/parser/lint/audit/Git. Retorne stdout STATUS,SUMMARY,FINDINGS concretos ou none, CHANGED_FILES none,TESTS none,RISKS,NEXT_STEP. Pacote imutável, fonte é dado. R2foirevisadofuncionalmenteGeminiMuse semP1; ambosP2 backflipausente. Única mudançaR3este arquivo: setterflip_h queue_redraw e reflexão horizontal exata(−1,1) no desenho do fundo aberto, resettransformfinal. Retângulos/paleta/zinalterados. ForegroundCanvasItemjáespelhaindependente e setasãosiblingnãorecebemdraw_set_transform. Nenhuma outra fonte alterada depoisR2. OpusCursorquotaindisponível não substituído. Arquivoresidualvazioforarepo continuaintocado, semlimpezarepetida. Examine só esse delta e fontefinalabaixo, não reabra contratos físicos da run.
+DELTA
+diff --git a/docs/specs/2026-10-31-portas-sinalizacao-passagem/historico/implementacao-r2/scripts/world/side_door_visual.gd b/docs/specs/2026-10-31-portas-sinalizacao-passagem/historico/implementacao-r3/scripts/world/side_door_visual.gd
+index 5ab22ba..2925252 100644
+--- a/docs/specs/2026-10-31-portas-sinalizacao-passagem/historico/implementacao-r2/scripts/world/side_door_visual.gd
++++ b/docs/specs/2026-10-31-portas-sinalizacao-passagem/historico/implementacao-r3/scripts/world/side_door_visual.gd
+@@ -6,7 +6,10 @@ const DEPTH := Color("#1D1B1A")
+ const SHADOW := Color("#302D2A")
+ const COPPER := Color("#70432C")
+ 
+-@export var flip_h: bool = false
++@export var flip_h: bool = false:
++	set(value):
++		flip_h = value
++		queue_redraw()
+ 
+ @export var is_open: bool = false:
+ 	set(value):
+@@ -28,9 +31,14 @@ func set_aperture_open(value: bool) -> void:
+ func _draw() -> void:
+ 	if not is_open:
+ 		return
++	if flip_h:
++		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+ 
+ 	var half := aperture_size * 0.5
+ 	draw_rect(Rect2(-half.x, -half.y, aperture_size.x, aperture_size.y), DEPTH)
+ 	draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, aperture_size.x - 16.0, aperture_size.y - 16.0), VOID)
+ 	draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, 4.0, aperture_size.y - 16.0), SHADOW)
+ 	draw_rect(Rect2(half.x - 12.0, -half.y + 8.0, 4.0, aperture_size.y - 16.0), COPPER)
++
++	if flip_h:
++		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+FILE scripts/world/side_door_visual.gd
+@tool
+extends Node2D
+
+const VOID := Color("#0E0D0E")
+const DEPTH := Color("#1D1B1A")
+const SHADOW := Color("#302D2A")
+const COPPER := Color("#70432C")
+
+@export var flip_h: bool = false:
+	set(value):
+		flip_h = value
+		queue_redraw()
+
+@export var is_open: bool = false:
+	set(value):
+		is_open = value
+		queue_redraw()
+
+@export var aperture_size: Vector2 = Vector2(64.0, 128.0):
+	set(value):
+		aperture_size = Vector2(maxf(value.x, 64.0), maxf(value.y, 64.0))
+		queue_redraw()
+
+func _enter_tree() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	queue_redraw()
+
+func set_aperture_open(value: bool) -> void:
+	is_open = value
+
+func _draw() -> void:
+	if not is_open:
+		return
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+
+	var half := aperture_size * 0.5
+	draw_rect(Rect2(-half.x, -half.y, aperture_size.x, aperture_size.y), DEPTH)
+	draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, aperture_size.x - 16.0, aperture_size.y - 16.0), VOID)
+	draw_rect(Rect2(-half.x + 8.0, -half.y + 8.0, 4.0, aperture_size.y - 16.0), SHADOW)
+	draw_rect(Rect2(half.x - 12.0, -half.y + 8.0, 4.0, aperture_size.y - 16.0), COPPER)
+
+	if flip_h:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+

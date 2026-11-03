@@ -1,0 +1,8 @@
+STATUS: done
+SUMMARY: Revisão estática delta R2 concluída com sucesso. Ambos os fixes corrigem de forma robusta e precisa as falhas identificadas em R1: (1) Em `UpgradeCard.configure`, a tipagem inferida `wrapped_topic := _wrap_topic(String(topic_variant))` é estável em Godot 4 (retorno `Array[Dictionary]`), e a guarda `wrapped_topic.is_empty()` com `return false` elimina o descarte silencioso (silent drop), assegurando falha precoce (fail-fast) em caso de tópico inválido ou falha de quebra; (2) Em Lua `topic_colors`, o uso do operador `#` (`#"ATÉ "` = 5 bytes UTF-8, `#"UMA VEZ"` = 7 bytes) resolve definitivamente a quebra de sequência de bytes multibyte do `sub(1, 4)` anterior, restabelecendo a equivalência semântica com o `begins_with` do GDScript.
+CHANGED_FILES: none
+TESTS: none
+RISKS: 
+- Sensibilidade a caixa (case-sensitivity) em Lua: a checagem compara diretamente contra literais maiúsculos (`"ATÉ "`, `"UMA VEZ"`). Se as strings de entrada em Lua não forem previamente normalizadas para maiúsculas e chegarem com capitalização de título como no GDScript (`"Até "`, `"Uma vez"`), o prefixo não casará. Se os dados já forem garantidamente em caixa alta, risco nulo.
+- Fail-fast no card: se qualquer tópico individual falhar na quebra e retornar vazio, todo o `UpgradeCard.configure` retornará `false`. O chamador deve tratar esse retorno sem deixar o card em estado suspenso na UI.
+NEXT_STEP: Prosseguir com a consolidação do pacote e integração dos artefatos estáveis no pipeline, sem necessidade de alterações adicionais de código ou layout.

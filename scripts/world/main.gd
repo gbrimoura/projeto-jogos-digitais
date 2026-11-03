@@ -1,14 +1,13 @@
 extends Node2D
 
-signal run_progression_ready
+signal run_progression_ready(transition_token: int)
 
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const RoomTransitionOverlayScript = preload("res://scripts/world/room_transition_overlay.gd")
 const RunBuild = preload("res://scripts/progression/run_build.gd")
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+const DEFAULT_ENEMY_LEVEL_CONFIG: EnemyLevelConfigResource = preload("res://resources/progression/enemy_levels.tres")
 const UpgradeOfferScene: PackedScene = preload("res://scenes/upgrade_offer.tscn")
-const IMPACTO_REFORCADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/impacto_reforcado.tres")
-const MOTOR_ACELERADO_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/motor_acelerado.tres")
-const CARGA_REATIVA_DEFINITION: UpgradeDefinitionResource = preload("res://resources/upgrades/carga_reativa.tres")
 const FALLBACK_PLAYER_SPAWN := Vector2(160.0, 560.0)
 const WORLD_LAYER_BIT_MASK: int = 1
 const AUTHORED_EDGE_MARGIN: float = 8.0
@@ -76,6 +75,7 @@ var _guard_quiet_remaining: float = 0.0
 var run_build: RunBuild = RunBuild.new()
 var _run_controller_managed: bool = false
 var _managed_room_descriptor: Dictionary = {}
+var _managed_enemy_level_config: EnemyLevelConfigResource
 var _managed_topology: RefCounted
 var _managed_transition_direction := Vector2i.RIGHT
 var _managed_run_build: RunBuild
@@ -95,12 +95,6 @@ var _authored_world_obstacles: Array[Dictionary] = []
 var _prepared_room_layout_seed: int = 0
 var _prepared_platform_rects: Dictionary = {}
 var _door_unlock_pending: bool = false
-
-var _upgrade_definitions: Array[UpgradeDefinitionResource] = [
-	IMPACTO_REFORCADO_DEFINITION,
-	MOTOR_ACELERADO_DEFINITION,
-	CARGA_REATIVA_DEFINITION,
-]
 
 func _enter_tree() -> void:
 	if authored_layout_enabled:
@@ -1148,6 +1142,8 @@ func _managed_descriptor_error(requested_seed: int, descriptor: Dictionary) -> S
 			return "descritor gerenciado sem campo obrigatório: %s" % String(key)
 	if typeof(descriptor["room_seed"]) != TYPE_INT or requested_seed == 0 or int(descriptor["room_seed"]) != requested_seed:
 		return "room_seed do descritor precisa ser inteiro não zero e coincidir com a seed solicitada"
+	if typeof(descriptor.get("enemy_level")) != TYPE_INT or int(descriptor.get("enemy_level", 0)) < 1:
+		return "enemy_level do descritor precisa ser inteiro positivo"
 	if typeof(descriptor["family"]) != TYPE_STRING_NAME:
 		return "family do descritor precisa ser StringName"
 	var family := StringName(descriptor["family"])
@@ -1178,12 +1174,19 @@ func _managed_descriptor_error(requested_seed: int, descriptor: Dictionary) -> S
 	return ""
 
 
-func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool, requested_seed: int = 0, room_descriptor: Dictionary = {}) -> bool:
+func configure_run_managed(
+	shared_build: RunBuild,
+	offer_build_upgrade: bool,
+	requested_seed: int = 0,
+	room_descriptor: Dictionary = {},
+	enemy_level_config: EnemyLevelConfigResource = DEFAULT_ENEMY_LEVEL_CONFIG
+) -> bool:
 	if is_inside_tree() or shared_build == null:
 		return false
 	if _run_controller_managed:
 		var same_request := _managed_room_descriptor == room_descriptor and _managed_run_build == shared_build \
-			and reward_enabled == offer_build_upgrade and room_layout_seed == requested_seed
+			and reward_enabled == offer_build_upgrade and room_layout_seed == requested_seed \
+			and _managed_enemy_level_config == enemy_level_config
 		return same_request and (not authored_layout_enabled or is_authored_layout_valid())
 	if _authored_layout_prepared:
 		return false
@@ -1192,16 +1195,44 @@ func configure_run_managed(shared_build: RunBuild, offer_build_upgrade: bool, re
 		return false
 	if room_descriptor.is_empty():
 		return _fail_authored_layout("descritor gerenciado ausente")
+	if enemy_level_config == null:
+		return _fail_authored_layout("configuração de nível de inimigos ausente")
 	var descriptor_error := _managed_descriptor_error(requested_seed, room_descriptor)
 	if not descriptor_error.is_empty():
 		return _fail_authored_layout(descriptor_error)
+	if not _configure_managed_enemy_levels(room_descriptor, enemy_level_config):
+		return false
 	_run_controller_managed = true
 	_managed_room_descriptor = room_descriptor.duplicate(true)
 	_managed_run_build = shared_build
+	_managed_enemy_level_config = enemy_level_config
 	reward_enabled = offer_build_upgrade
 	room_layout_seed = requested_seed
 	if authored_layout_enabled and not prepare_authored_layout():
 		return false
+	return true
+
+func _configure_managed_enemy_levels(
+	descriptor: Dictionary,
+	level_config: EnemyLevelConfigResource
+) -> bool:
+	var level := int(descriptor.get("enemy_level", 0))
+	if level < 1 or level_config == null:
+		return false
+	return _configure_enemy_level_subtree(self, level, level_config)
+
+func _configure_enemy_level_subtree(
+	parent: Node,
+	level: int,
+	level_config: EnemyLevelConfigResource
+) -> bool:
+	for child: Node in parent.get_children():
+		if child.has_method("configure_level") \
+			and not bool(child.call("configure_level", level, level_config)):
+			return false
+		if child.get_child_count() > 0 \
+			and not _configure_enemy_level_subtree(child, level, level_config):
+			return false
 	return true
 
 
@@ -1238,19 +1269,21 @@ func _ready() -> void:
 	else:
 		run_build = RunBuild.new()
 	if player != null:
+		var restore_health_snapshot := false
 		if not incoming_snapshot.is_empty() and player.health != null:
 			var restored_build := RunBuild.new()
 			if restored_build.replace_state(
 				incoming_snapshot.get("upgrade_ids"),
 				incoming_snapshot.get("counts_by_id")
 			):
-				var health_restored := player.health.restore_health_for_room_transition(
-					int(incoming_snapshot["hp_current"]),
-					int(incoming_snapshot["hp_max"])
-				)
-				if health_restored:
-					run_build = restored_build
+				run_build = restored_build
+				restore_health_snapshot = true
 		player.apply_run_build(run_build)
+		if restore_health_snapshot and player.health != null:
+			player.health.restore_health_for_room_transition(
+				int(incoming_snapshot["hp_current"]),
+				int(incoming_snapshot["hp_max"])
+			)
 
 	_upgrade_offer = UpgradeOfferScene.instantiate() as UpgradeOffer
 	if _upgrade_offer != null:
@@ -1367,6 +1400,9 @@ func _queue_post_flush_resolution() -> void:
 	call_deferred("_resolve_after_physics_flush")
 
 func _resolve_after_physics_flush() -> void:
+	if not is_inside_tree() or (_transition_in_progress and not _death_pending):
+		_post_flush_resolution_queued = false
+		return
 	if authored_layout_enabled and not is_authored_layout_valid():
 		_post_flush_resolution_queued = false
 		return
@@ -1396,7 +1432,7 @@ func _resolve_after_physics_flush() -> void:
 
 	if _upgrade_flow_state != UpgradeFlowState.VICTORY_PENDING or not combat_room.room_is_cleared:
 		return
-	if reward_enabled and run_build.total_count() == 0:
+	if reward_enabled:
 		_open_upgrade_offer()
 	else:
 		_release_exit_or_complete()
@@ -1409,9 +1445,26 @@ func _open_upgrade_offer() -> void:
 			_release_exit_or_complete()
 		return
 	_offered_upgrade_ids.clear()
-	for definition in _upgrade_definitions:
+	var snapshot_data := run_build.to_snapshot_data()
+	var ranks_by_id: Dictionary = snapshot_data.get("counts_by_id", {})
+	var room_seed := room_layout_seed
+	var room_ordinal := 1
+	if _run_controller_managed:
+		room_seed = int(_managed_room_descriptor.get("room_seed", room_seed))
+		room_ordinal = int(_managed_room_descriptor.get("enemy_level", 1))
+	var base_maximum_health := player.health.get_base_maximum_health() if player != null and player.health != null else 5
+	var offer_rows := UpgradeCatalogScript.build_offer(
+		ranks_by_id,
+		room_seed,
+		room_ordinal,
+		base_maximum_health
+	)
+	for row: Dictionary in offer_rows:
+		var definition: UpgradeDefinitionResource = row.get("definition") as UpgradeDefinitionResource
+		if definition == null:
+			continue
 		_offered_upgrade_ids.append(definition.upgrade_id)
-	if not _upgrade_offer.present_options(_upgrade_definitions):
+	if not _upgrade_offer.present_options(offer_rows, ranks_by_id, base_maximum_health):
 		_offered_upgrade_ids.clear()
 		_upgrade_flow_state = UpgradeFlowState.CANCELLED
 		push_error("Main: definições inválidas para a oferta.")
@@ -1427,13 +1480,16 @@ func _open_upgrade_offer() -> void:
 func _on_upgrade_selected(upgrade_id: StringName) -> void:
 	if _upgrade_flow_state != UpgradeFlowState.OFFER_OPEN:
 		return
-	if player == null or not is_instance_valid(player) or player.is_dead:
+	if player == null or not is_instance_valid(player) or player.health == null or player.is_dead:
 		return
 	if not _offered_upgrade_ids.has(upgrade_id):
 		return
 	if not RunBuild.is_known_upgrade_id(upgrade_id):
 		return
-	if run_build.count_for(upgrade_id) != 0 or run_build.total_count() >= RunBuild.MAX_UPGRADES:
+	var previous_rank := run_build.count_for(upgrade_id)
+	var base_maximum_health := player.health.get_base_maximum_health()
+	if not UpgradeCatalogScript.can_acquire(upgrade_id, previous_rank, base_maximum_health) \
+		or run_build.total_count() >= RunBuild.MAX_UPGRADES:
 		return
 
 	# State changes before the build and player configurations are mutated.
@@ -1441,7 +1497,7 @@ func _on_upgrade_selected(upgrade_id: StringName) -> void:
 	if not run_build.add_upgrade(upgrade_id):
 		_upgrade_flow_state = UpgradeFlowState.OFFER_OPEN
 		return
-	player.apply_run_build(run_build)
+	player.apply_run_build(run_build, upgrade_id, previous_rank)
 	_update_build_status()
 	_offered_upgrade_ids.clear()
 	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
@@ -1477,7 +1533,7 @@ func _notify_run_progression_ready() -> void:
 	if not _run_controller_managed or _run_progression_notified:
 		return
 	_run_progression_notified = true
-	run_progression_ready.emit()
+	run_progression_ready.emit(_transition_token)
 
 func _begin_input_guard() -> void:
 	_guard_active = true
@@ -1575,6 +1631,44 @@ func _rollback_managed_vertical_crossing(requested_player: Player, message: Stri
 		requested_player.velocity = Vector2.ZERO
 	if exit_door != null and is_instance_valid(exit_door):
 		exit_door.call("report_transition_failure", message)
+func get_managed_transition_token() -> int:
+	return _transition_token
+
+func recover_managed_transition_failure(expected_token: int, message: String) -> bool:
+	if not _run_controller_managed or expected_token != _transition_token \
+		or not is_inside_tree() or not _is_current_room_source():
+		return false
+	if player == null or not is_instance_valid(player) or player.is_dead \
+		or _transition_player != player or exit_door == null or not is_instance_valid(exit_door):
+		return false
+
+	_transition_token += 1
+	_door_request_pending = false
+	_transition_in_progress = false
+	_run_progression_notified = false
+	_restore_player_after_transition_failure()
+	player.reset_to_spawn(_managed_recovery_spawn())
+	player.velocity = Vector2.ZERO
+	exit_door.call("report_transition_failure", message)
+	_transition_player = null
+	_transition_source_scene = null
+	return true
+
+func _managed_recovery_spawn() -> Vector2:
+	var exit_dir: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+	var entry_dir: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+	var exit_offset := float(_managed_room_descriptor.get("exit_offset", 576.0))
+	if exit_dir == Vector2i(0, 1) and entry_dir != Vector2i(0, -1):
+		var safe_x := exit_offset + 176.0 if exit_offset < 576.0 else exit_offset - 176.0
+		return to_global(Vector2(safe_x, 560.0))
+	if exit_dir == Vector2i(0, -1):
+		return to_global(Vector2(exit_offset, 560.0))
+	if exit_dir == Vector2i(1, 0):
+		return to_global(Vector2(992.0, 560.0))
+	if exit_dir == Vector2i(-1, 0):
+		return to_global(Vector2(160.0, 560.0))
+	return _get_player_spawn_position()
+
 func _exit_crossing_validation_error(requested_player: Player) -> String:
 	if _transition_in_progress or _upgrade_flow_state != UpgradeFlowState.EXIT_RELEASED:
 		return "SAÍDA INDISPONÍVEL"
@@ -1719,13 +1813,12 @@ func _update_build_status() -> void:
 		label.text = "BUILD: VAZIA"
 		return
 
-	var upgrade_id := run_build.get_upgrade_ids()[0]
-	var display_name := ""
-	for definition in _upgrade_definitions:
-		if definition.upgrade_id == upgrade_id:
-			display_name = definition.title
-			break
-	label.text = "BUILD: %s" % display_name.to_upper()
+	var entries: Array[String] = []
+	for upgrade_id: StringName in run_build.get_upgrade_ids():
+		var definition: UpgradeDefinitionResource = UpgradeCatalogScript.definition_for(upgrade_id)
+		var display_name: String = definition.title.to_upper() if definition != null else String(upgrade_id).to_upper()
+		entries.append("%s NV.%d" % [display_name, run_build.count_for(upgrade_id)])
+	label.text = "BUILD: " + " / ".join(PackedStringArray(entries))
 
 func _get_player_spawn_position() -> Vector2:
 	var spawn_marker := get_node_or_null(player_spawn_marker_path) as Marker2D

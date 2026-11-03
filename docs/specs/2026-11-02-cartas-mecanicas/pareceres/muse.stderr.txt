@@ -1,0 +1,4 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/specs/2026-11-02-cartas-mecanicas/pareceres/review-input.txt

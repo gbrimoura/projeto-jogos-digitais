@@ -1,0 +1,12 @@
+# Revisões — carregamento explícito das cartas
+
+Préflight único de autenticação/catálogos registrado em preflight-0/1/2.json. Escritor gpt-6-luna xhigh; Fast/priority não confirmável nesta interface. Briefing prospectivo foi delimitado na delegação antes da escrita; baseline dos dois scripts capturada antes da edição, documentos materializados no handoff. Não se presume plano em arquivo anterior às alterações.
+
+Pacote inline imutável review-input.txt de20.688caracteres, hash em review-input.sha256.json. Inclui diff dos dois scripts, renderer/base/cena final e log existente do usuário. Root leu o cache apenas para diagnóstico: HudBitmapText/UpgradeCard presentes, UpgradeStatText ausente; nenhuma escrita em.godot. Cadeia de erros começa pela resolução do novo tipo, depois load_card_font_bundle e Maininvalidoffer.
+
+- Gemini3.8FlashHigh/AGYplan: exit0, sem bloqueio de tipo/ciclo. Conferiu Array/param/cast usando Scriptpreload e extends porpath. Observação sobre preloadbase 'sem uso' é imprecisa: HudBitmapTextScript já é usado em load_card_font_bundle. As referências globais HudBitmapText permanecem no código existente/cache válido, fora do erro e do escopo.
+- cursor-grok-4.6-xhigh-fast/Cursorplan: exit0 com parecer, sem P1 de tipo/ciclo; fonte de classe local corresponde aoExtResource da cena. Sugestão de executar cena não foi seguida por restriçãoAGENTS.
+- MuseSpark1.3Contributorxhigh/OpenCodeplan: exit0, semP1; membros/cores herdados e cadeia acíclica confirmados. Observação de referência fora do recorte conferida pelo root: nenhum uso global UpgradeStatText restante em upgrade_card.gd, sem alias duplicado.
+- claude-opus-5-5-high/Cursorplan: exit1ActionRequiredError por cota, renovação informada03/11/2026. Revisão obrigatória pendente; não substituída ou inventada.
+
+Root inspecionou fonte/diff/hashes. 27/27 arquivos do balanceamento anterior (excetoCard intencionalmente alterado) preservados porhash em balance-preservation.json; estado final dos dois scripts em final.sha256.json. SemGodot/import/testes/parser/linter/auditorias/simulações ou edição de cache/cenas/Main/Offer/font/arte. Semcommit/push ou mudança debranch. O log é anterior à correção, não representa teste de runtime depois do fix. Confirmação no próximo lançamento do jogo pelo usuário permanece necessária.

@@ -1,0 +1,15 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/README.md
+✱ Glob "docs/specs/**/pareceres/README.md" 50 matches
+✱ Grep "_wrap_topic|topic_colors|UpgradeCard" 81 matches
+→ Read scripts/ui/upgrade_card.gd
+→ Read docs/specs/2026-11-02-cartas-topicos-destaques/pareceres/README.md
+→ Read docs/specs/2026-11-02-cartas-topicos-destaques/pareceres/r2-delta-input.txt
+→ Read assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua [limit=80, offset=475]
+→ Read docs/specs/2026-11-02-cartas-topicos-destaques/pareceres/muse.stdout.txt
+→ Read docs/specs/2026-11-02-cartas-topicos-destaques/historico/r1/upgrade_card.gd [limit=100, offset=100]
+→ Read docs/specs/2026-11-02-cartas-topicos-destaques/historico/r1/generate_upgrade_cards.lua [limit=50, offset=484]
+→ Read docs/specs/2026-11-02-cartas-topicos-destaques/pareceres/review-input.txt [limit=30, offset=145]
+✱ Glob "docs/specs/2026-11-02-cartas-topicos-destaques/*" 3 matches

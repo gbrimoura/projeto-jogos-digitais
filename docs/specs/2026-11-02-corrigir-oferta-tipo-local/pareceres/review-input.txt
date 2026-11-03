@@ -1,0 +1,483 @@
+R1 FIX RESTRITO CARREGAMENTO DAS CARTAS, SOMENTE LEITURA. User não viu upgrades. Logexistenteproduzido pelo usuário: PRIMEIROERRO Could not find type UpgradeStatText emupgrade_card.gd tiposcasts/array; depoisfailedscriptload, UpgradeOffer._ready nonexistent load_card_font_bundle, Main invalidoffer e releaseexit. Cache .godot/global_script_class_cache.cfg observadoemleitura contémHudBitmapText/UpgradeCard eNÃOUpgradeStatText. Novo rendererexistefonte, cena o liga porpath. Fix2scripts: aliaslocalpreloadusadocomotipo ecasts eparentextentporpath, class_name ficaeditor. NÃOeditarcache/fontes/recursos/balanceamento/Main/Offer/Scene. SemGodot/testes/parser/linter/audits. Rootviufontediff, runtimeaindainconfirmado. VerificarGodot4.7preloadconstScriptastipoArray/params/casts, chainacyclic, inheritedmembers e cor, aliasnãoduplicado. Nãoexpandirparacacheglobalouremoverclass_name.
+DIFF scripts/ui/upgrade_card.gd
+diff --git a/docs/specs/2026-11-02-corrigir-oferta-tipo-local/historico/baseline/scripts/ui/upgrade_card.gd b/scripts/ui/upgrade_card.gd
+index 1f29f7d..69b24fb 100644
+--- a/docs/specs/2026-11-02-corrigir-oferta-tipo-local/historico/baseline/scripts/ui/upgrade_card.gd
++++ b/scripts/ui/upgrade_card.gd
+@@ -1,9 +1,10 @@
+ class_name UpgradeCard
+ extends Button
+ 
+ const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
++const UpgradeStatTextScript = preload("res://scripts/ui/upgrade_stat_text.gd")
+ const CARD_FONT_ATLAS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-atlas.png"
+ const CARD_FONT_ADDITIONS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-additions.json"
+ const FRAME_NORMAL: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_normal_160x240.png")
+ const FRAME_FOCUS: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_focus_160x240.png")
+ const FRAME_PRESSED: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_pressed_160x240.png")
+@@ -14,17 +15,17 @@ const TOPIC_CONTENT_WIDTH: int = 22
+ 
+ @onready var _frame: TextureRect = $Frame
+ @onready var _illustration: TextureRect = $Illustration
+ @onready var _title: HudBitmapText = $Title
+ @onready var _summary: HudBitmapText = $Summary
+-@onready var _topic_lines: Array[UpgradeStatText] = [
+-	$Topic0 as UpgradeStatText,
+-	$Topic1 as UpgradeStatText,
+-	$Topic2 as UpgradeStatText,
++@onready var _topic_lines: Array[UpgradeStatTextScript] = [
++	$Topic0 as UpgradeStatTextScript,
++	$Topic1 as UpgradeStatTextScript,
++	$Topic2 as UpgradeStatTextScript,
+ ]
+-@onready var _rank_status: UpgradeStatText = $RankStatus as UpgradeStatText
+-@onready var _rank_counter: UpgradeStatText = $RankCounter as UpgradeStatText
++@onready var _rank_status: UpgradeStatTextScript = $RankStatus as UpgradeStatTextScript
++@onready var _rank_counter: UpgradeStatTextScript = $RankCounter as UpgradeStatTextScript
+ 
+ var _hovered: bool = false
+ var _pressed_visual: bool = false
+ 
+ static var _cached_card_font_bundle: Dictionary = {}
+@@ -148,11 +149,11 @@ func _configure_text(control: HudBitmapText, value: String, font_bundle: Diction
+ 		return false
+ 	control.max_lines = lines
+ 	control.set_text(value)
+ 	return true
+ 
+-func _configure_topic_text(control: UpgradeStatText, value: String, colors: Array[Color], font_bundle: Dictionary) -> bool:
++func _configure_topic_text(control: UpgradeStatTextScript, value: String, colors: Array[Color], font_bundle: Dictionary) -> bool:
+ 	if control == null or not control.configure_font(font_bundle):
+ 		return false
+ 	control.max_lines = 1
+ 	control.set_colored_text(value, colors)
+ 	return true
+@@ -182,11 +183,11 @@ func _configure_rank_counter(rank_before: int, rank_after: int, rank_max: int, r
+ 		colors.append(TOPIC_VALUE_COLOR)
+ 	for _index in range(suffix.length()):
+ 		colors.append(TOPIC_TEXT_COLOR)
+ 	return _configure_footer_text(_rank_counter, value, colors, font_bundle)
+ 
+-func _configure_footer_text(control: UpgradeStatText, value: String, colors: Array[Color], font_bundle: Dictionary) -> bool:
++func _configure_footer_text(control: UpgradeStatTextScript, value: String, colors: Array[Color], font_bundle: Dictionary) -> bool:
+ 	if control == null or not control.configure_font(font_bundle):
+ 		return false
+ 	control.max_lines = 1
+ 	control.set_colored_text(value, colors)
+ 	return true
+DIFF scripts/ui/upgrade_stat_text.gd
+diff --git a/docs/specs/2026-11-02-corrigir-oferta-tipo-local/historico/baseline/scripts/ui/upgrade_stat_text.gd b/scripts/ui/upgrade_stat_text.gd
+index 2a2c196..ffef938 100644
+--- a/docs/specs/2026-11-02-corrigir-oferta-tipo-local/historico/baseline/scripts/ui/upgrade_stat_text.gd
++++ b/scripts/ui/upgrade_stat_text.gd
+@@ -1,7 +1,7 @@
+ class_name UpgradeStatText
+-extends HudBitmapText
++extends "res://scripts/ui/hud/bitmap_text.gd"
+ 
+ var _character_colors: Array[Color] = []
+ 
+ func set_colored_text(value: String, colors: Array[Color]) -> void:
+ 	_character_colors = colors.duplicate()
+FINAL scripts/ui/upgrade_stat_text.gd
+class_name UpgradeStatText
+extends "res://scripts/ui/hud/bitmap_text.gd"
+
+var _character_colors: Array[Color] = []
+
+func set_colored_text(value: String, colors: Array[Color]) -> void:
+	_character_colors = colors.duplicate()
+	text = value
+	queue_redraw()
+
+func _draw() -> void:
+	if _font_atlas == null or _glyphs.is_empty() or _advance <= 0 or _line_height <= 0:
+		return
+	var lines: Array[String] = _make_lines()
+	var character_offset := 0
+	for line_index: int in range(lines.size()):
+		var line: String = lines[line_index]
+		var line_x: float = 0.0
+		if center_text:
+			var line_width: int = line.length() * _advance
+			line_x = floorf((size.x - float(line_width)) * 0.5)
+		elif right_align:
+			var line_width: int = line.length() * _advance
+			line_x = floorf(size.x - float(line_width))
+		for char_index: int in range(line.length()):
+			var character: String = line.substr(char_index, 1)
+			var glyph_variant: Variant = _glyphs.get(character, null)
+			if glyph_variant == null:
+				if not _warned_missing_glyph:
+					push_warning("Fonte bitmap do HUD sem glifo para: %s" % character)
+					_warned_missing_glyph = true
+				glyph_variant = _glyphs.get(" ", {})
+			if typeof(glyph_variant) == TYPE_DICTIONARY:
+				var glyph_data: Dictionary = glyph_variant
+				var source_rect: Rect2i = glyph_data.get("rect", Rect2i())
+				var source := Rect2(Vector2(source_rect.position), Vector2(source_rect.size))
+				var destination := Rect2(
+					Vector2(line_x + float(char_index * _advance), float(line_index * _line_height)),
+					Vector2(source_rect.size)
+				)
+				var color := font_color
+				if character_offset < _character_colors.size():
+					color = _character_colors[character_offset]
+				draw_texture_rect_region(_font_atlas, destination, source, color)
+			character_offset += 1
+FINAL scripts/ui/hud/bitmap_text.gd
+class_name HudBitmapText
+extends Control
+
+const FONT_METADATA_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font.json"
+const FONT_ATLAS_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font-atlas.png"
+
+@export var text: String = "":
+	set(value):
+		if text == value:
+			return
+		text = value
+		queue_redraw()
+@export var font_color: Color = Color("E8D8B5"):
+	set(value):
+		if font_color == value:
+			return
+		font_color = value
+		queue_redraw()
+@export_range(1, 4, 1) var max_lines: int = 1
+@export var center_text: bool = false
+@export var right_align: bool = false
+
+var _font_atlas: Texture2D
+var _glyphs: Dictionary = {}
+var _advance: int = 6
+var _line_height: int = 12
+var _warned_missing_glyph: bool = false
+
+static func load_font_bundle() -> Dictionary:
+	if not ResourceLoader.exists(FONT_METADATA_PATH) or not ResourceLoader.exists(FONT_ATLAS_PATH):
+		return {"valid": false, "reason": "fonte bitmap do HUD ausente"}
+	var metadata_resource: Resource = ResourceLoader.load(FONT_METADATA_PATH)
+	var atlas_resource: Resource = ResourceLoader.load(FONT_ATLAS_PATH)
+	var metadata_json: JSON = metadata_resource as JSON
+	var font_atlas: Texture2D = atlas_resource as Texture2D
+	if metadata_json == null or font_atlas == null:
+		return {"valid": false, "reason": "metadados ou atlas da fonte bitmap inválidos"}
+	var raw_data: Variant = metadata_json.data
+	if typeof(raw_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "font.json não contém um objeto"}
+	var font_data: Dictionary = raw_data as Dictionary
+	var raw_glyphs: Variant = font_data.get("glyphs", null)
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "font.json não contém a lista de glifos"}
+	var glyphs: Dictionary = {}
+	var glyph_list: Array = raw_glyphs as Array
+	for glyph_variant: Variant in glyph_list:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant as Dictionary
+		var codepoint: int = int(glyph_data.get("codepoint", -1))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if codepoint < 0 or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant as Dictionary
+		var glyph_rect: Rect2i = Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > font_atlas.get_width() \
+			or glyph_rect.end.y > font_atlas.get_height():
+			continue
+		glyphs[String.chr(codepoint)] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 0)), 1),
+		}
+	var advance: int = int(font_data.get("advance", 0))
+	var line_height: int = int(font_data.get("line_height", 0))
+	if glyphs.is_empty() or advance <= 0 or line_height <= 0 or not glyphs.has(" "):
+		return {"valid": false, "reason": "métricas incompletas da fonte bitmap"}
+	return {"valid": true, "atlas": font_atlas, "glyphs": glyphs, "advance": advance, "line_height": line_height}
+
+func configure_font(bundle: Dictionary) -> bool:
+	if not bool(bundle.get("valid", false)):
+		return false
+	_font_atlas = bundle.get("atlas") as Texture2D
+	_glyphs = bundle.get("glyphs", {}) as Dictionary
+	_advance = int(bundle.get("advance", 6))
+	_line_height = int(bundle.get("line_height", 12))
+	var configured: bool = _font_atlas != null and not _glyphs.is_empty() and _advance > 0 and _line_height > 0
+	visible = configured
+	queue_redraw()
+	return configured
+
+func set_text(value: String) -> void:
+	text = value
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if _font_atlas == null:
+		configure_font(load_font_bundle())
+
+func _draw() -> void:
+	if _font_atlas == null or _glyphs.is_empty() or _advance <= 0 or _line_height <= 0:
+		return
+	var lines: Array[String] = _make_lines()
+	for line_index: int in range(lines.size()):
+		var line: String = lines[line_index]
+		var line_width: int = line.length() * _advance
+		var line_x: float = 0.0
+		if center_text:
+			line_x = floorf((size.x - float(line_width)) * 0.5)
+		elif right_align:
+			line_x = floorf(size.x - float(line_width))
+		for char_index: int in range(line.length()):
+			var character: String = line.substr(char_index, 1)
+			var glyph_variant: Variant = _glyphs.get(character, null)
+			if glyph_variant == null:
+				if not _warned_missing_glyph:
+					push_warning("Fonte bitmap do HUD sem glifo para: %s" % character)
+					_warned_missing_glyph = true
+				glyph_variant = _glyphs.get(" ", {})
+			if typeof(glyph_variant) != TYPE_DICTIONARY:
+				continue
+			var glyph_data: Dictionary = glyph_variant as Dictionary
+			var source_rect: Rect2i = glyph_data.get("rect", Rect2i())
+			var source: Rect2 = Rect2(Vector2(source_rect.position), Vector2(source_rect.size))
+			var destination: Rect2 = Rect2(
+				Vector2(line_x + float(char_index * _advance), float(line_index * _line_height)),
+				Vector2(source_rect.size)
+			)
+			draw_texture_rect_region(_font_atlas, destination, source, font_color)
+
+func _make_lines() -> Array[String]:
+	var result: Array[String] = []
+	var max_chars: int = int(floor(size.x / float(_advance)))
+	if max_chars <= 0:
+		return result
+	var source_lines: PackedStringArray = text.replace("—", "-").replace("–", "-").split("\n")
+	for source_line: String in source_lines:
+		var line: String = _normalize_line(source_line)
+		if line.length() > max_chars:
+			line = line.substr(0, max_chars)
+			if max_chars > 1 and not line.ends_with("-"):
+				line = line.substr(0, max_chars - 1) + "-"
+		result.append(line)
+		if result.size() >= max_lines:
+			break
+	return result
+
+func _normalize_line(value: String) -> String:
+	var normalized: String = ""
+	for index: int in range(value.length()):
+		var character: String = value.substr(index, 1)
+		var prior_character: String = value.substr(index - 1, 1) if index > 0 else ""
+		if character == "s" and prior_character >= "0" and prior_character <= "9":
+			normalized += "s"
+		else:
+			normalized += character.to_upper()
+	return normalized
+FINAL scenes/ui/upgrade_card.tscn
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/upgrade_card.gd" id="1_card"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="2_bitmap_text"]
+[ext_resource type="Script" path="res://scripts/ui/upgrade_stat_text.gd" id="3_stat_text"]
+
+[sub_resource type="StyleBoxEmpty" id="ButtonEmpty"]
+
+[node name="UpgradeCard" type="Button"]
+custom_minimum_size = Vector2(160, 240)
+layout_mode = 2
+focus_mode = 2
+mouse_filter = 0
+flat = true
+theme_override_styles/normal = SubResource("ButtonEmpty")
+theme_override_styles/hover = SubResource("ButtonEmpty")
+theme_override_styles/pressed = SubResource("ButtonEmpty")
+theme_override_styles/disabled = SubResource("ButtonEmpty")
+theme_override_styles/focus = SubResource("ButtonEmpty")
+theme_override_styles/hover_pressed = SubResource("ButtonEmpty")
+texture_filter = 1
+script = ExtResource("1_card")
+
+[node name="Frame" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Illustration" type="TextureRect" parent="."]
+offset_left = 16.0
+offset_top = 34.0
+offset_right = 144.0
+offset_bottom = 114.0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Title" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 152.0
+offset_bottom = 20.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.909804, 0.847059, 0.709804, 1)
+
+[node name="SummaryBackdrop" type="ColorRect" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+color = Color(0.047059, 0.105882, 0.160784, 1)
+
+[node name="Summary" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 118.0
+offset_right = 152.0
+offset_bottom = 142.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("2_bitmap_text")
+center_text = true
+max_lines = 2
+font_color = Color(0.321569, 0.729412, 0.780392, 1)
+
+[node name="Topic0" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 146.0
+offset_right = 152.0
+offset_bottom = 158.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic1" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 160.0
+offset_right = 152.0
+offset_bottom = 172.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="Topic2" type="Control" parent="."]
+offset_left = 8.0
+offset_top = 174.0
+offset_right = 152.0
+offset_bottom = 186.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+[node name="RankStatus" type="Control" parent="."]
+offset_left = 12.0
+offset_top = 205.0
+offset_right = 148.0
+offset_bottom = 217.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.321569, 0.729412, 0.780392, 1)
+
+[node name="RankCounter" type="Control" parent="."]
+offset_left = 12.0
+offset_top = 217.0
+offset_right = 148.0
+offset_bottom = 228.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("3_stat_text")
+center_text = true
+max_lines = 1
+font_color = Color(0.713725, 0.745098, 0.764706, 1)
+
+CARD FINAL PRELOADS/TYPES:
+class_name UpgradeCard
+extends Button
+
+const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const UpgradeStatTextScript = preload("res://scripts/ui/upgrade_stat_text.gd")
+const CARD_FONT_ATLAS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-atlas.png"
+const CARD_FONT_ADDITIONS_PATH: String = "res://assets/ui/upgrade_cards_v1/export/card-font-additions.json"
+const FRAME_NORMAL: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_normal_160x240.png")
+const FRAME_FOCUS: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_focus_160x240.png")
+const FRAME_PRESSED: Texture2D = preload("res://assets/ui/upgrade_cards_v1/export/frame_pressed_160x240.png")
+const TOPIC_TEXT_COLOR: Color = Color("B6BEC3")
+const TOPIC_DASH_COLOR: Color = Color("52BAC7")
+const TOPIC_VALUE_COLOR: Color = Color("D2A75C")
+const TOPIC_CONTENT_WIDTH: int = 22
+
+@onready var _frame: TextureRect = $Frame
+@onready var _illustration: TextureRect = $Illustration
+@onready var _title: HudBitmapText = $Title
+@onready var _summary: HudBitmapText = $Summary
+@onready var _topic_lines: Array[UpgradeStatTextScript] = [
+	$Topic0 as UpgradeStatTextScript,
+	$Topic1 as UpgradeStatTextScript,
+	$Topic2 as UpgradeStatTextScript,
+]
+@onready var _rank_status: UpgradeStatTextScript = $RankStatus as UpgradeStatTextScript
+@onready var _rank_counter: UpgradeStatTextScript = $RankCounter as UpgradeStatTextScript
+
+
+Offer existing _ready: _font_bundle = UpgradeCard.load_card_font_bundle(); cacheexistingCard+HudBitmapTexttemclasseglobal; errodeOfferera consequênciaCardparsefalhou. Main existing quando present_options false relatavaerro+liberasaída. AlterarMainmascarariafalha enãoéescopo. Preservar tudo.
+EXISTING USER LOG BEFORE:
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 616.92 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060 Ti
+
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:19)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:20)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:21)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:22)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:24)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:24)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:25)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:25)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:153)
+SCRIPT ERROR: Parse Error: Could not find type "UpgradeStatText" in the current scope.
+   at: GDScript::reload (res://scripts/ui/upgrade_card.gd:187)
+ERROR: Failed to load script "res://scripts/ui/upgrade_card.gd" with error "Parse error".
+   at: load (modules/gdscript/gdscript_resource_format.cpp:46)
+SCRIPT ERROR: Invalid call. Nonexistent function 'load_card_font_bundle' in base 'GDScript'.
+   at: UpgradeOffer._ready (res://scripts/ui/upgrade_offer.gd:23)
+   GDScript backtrace (most recent call first):
+       [0] _ready (res://scripts/ui/upgrade_offer.gd:23)
+       [1] _ready (res://scripts/world/main.gd:1290)
+       [2] _load_current_encounter (res://scripts/world/run_controller.gd:176)
+       [3] _ready (res://scripts/world/run_controller.gd:68)
+WARNING: TrainingTarget: nenhum percurso livre e útil de 8 px; o alvo permanecerá estacionário.
+   at: push_warning (core/variant/variant_utility.cpp:1033)

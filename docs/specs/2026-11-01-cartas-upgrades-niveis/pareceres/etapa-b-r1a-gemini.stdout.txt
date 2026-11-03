@@ -1,0 +1,21 @@
+STATUS: done
+SUMMARY: Revisão estática somente-leitura do Incremento B R1a concluída com sucesso a partir do pacote imutável. A integração de UI (`upgrade_offer.gd`, `upgrade_card.gd`, cenas `.tscn`), deltas em `main.gd` e `enemy_level_config_resource.gd`, recursos `.tres` com ícones Aseprite 128x80 e pipeline de fonte estendida (`+`, `>`) estão consistentes, sem bloqueios críticos (P1).
+
+FINDINGS:
+- NENHUM P1 IDENTIFICADO.
+- [P2/VALIDADO] scripts/ui/upgrade_card.gd:181-222: `load_card_font_bundle` valida integridade do atlas estendido (84x105) e limites de cada glifo (`+` em 72,2 e `>` em 78,2) contra `CARD_FONT_ATLAS_PATH` e `CARD_FONT_ADDITIONS_PATH`, retornando fallback seguro `{"valid": false}` caso leitura ou parsing falhem.
+- [P2/VALIDADO] scripts/ui/upgrade_card.gd:235-248: `_wrap_text` limita títulos e resumos a ≤24 caracteres por linha (144 px úteis) e rejeita palavras que estourem a largura ou contagem de linhas; compatível com as dimensões de `scenes/ui/upgrade_card.tscn` (offset_left=8.0, offset_right=152.0 = 144 px exatos para células 5x11 advance 6).
+- [P2/VALIDADO] scenes/ui/upgrade_card.tscn:425,437,448,481: Tints de fonte utilizam valores RGB normalizados exatos da paleta de 19 cores do HUD (`Title`/`Heading` cream `#E8D8B5`, `Summary` cyan `#52BAC7`, `Topics`/`Hint` silver `#B6BEC3`, `Badge` amber `#D2A75C`), preservando fidelidade sem AA ou vetores.
+- [P2/VALIDADO] scenes/ui/upgrade_card.tscn:387-482 & scenes/upgrade_offer.tscn:335-373: `mouse_filter` configurado corretamente (`Shade`=0 STOP, `Stage`/`Cards`=2 IGNORE, `UpgradeCard`=0 STOP, filhos visuais da carta=2 IGNORE), garantindo que eventos de mouse e clique atinjam o `Button` sem interceptação espúria por labels ou texturas.
+- [P2/VALIDADO] scripts/ui/upgrade_offer.gd:111-114: `_unhandled_key_input` consome ações `"interact"` e `&"ui_cancel"`, evitando abertura concorrente de menu de pausa ou interação com o cenário enquanto a seleção de cartas estiver ativa.
+- [P2/VALIDADO] scripts/ui/upgrade_offer.gd:116-122: `_selection_emitted` impede múltiplos cliques ou reentrâncias, desabilitando todos os cards imediatamente após a primeira emissão de `upgrade_selected`.
+- [P2/VALIDADO] scripts/world/main.gd:496: Adição da guarda `player.health == null` em `_on_upgrade_selected` evita crash ao conceder curas ou upgrades de vida máxima com jogador em estado inválido.
+- [P2/VALIDADO] scripts/world/main.gd:514-519: `_update_build_status` agora itera por todos os IDs em `run_build.get_upgrade_ids()`, exibindo múltiplos upgrades concatenados por `" | "` em vez de ler apenas o índice fixo 0.
+- [P2/VALIDADO] scripts/progression/enemy_level_config_resource.gd:536: Ajuste de `@export_range(0.0, 5.0, 0.01)` regulariza o valor padrão `0.12`, antes fora do range anterior `[1.0, 5.0]`.
+- [P2/VALIDADO] resources/upgrades/carga_reativa.tres:563 & resources/upgrades/motor_acelerado.tres:672: Remoção dos valores numéricos estáticos desatualizados dos tópicos (`+2 dano` e `Recarga 0,40 s`), mantendo descrições conceituais nos tópicos e transferindo valores antes/depois exclusivamente para o cálculo dinâmico de `effect_summary`.
+- [P2/OBSERVAÇÃO] scenes/ui/upgrade_card.tscn:438-469 vs assets/ui/upgrade_cards_v1/integration_geometry.json:969: No JSON de integração do estudo os tópicos estavam previstos em x=20 (largura 128), enquanto na cena Godot foram posicionados em x=8 (largura 144). O ajuste é coerente e necessário para suportar 24 glifos de 6 px (144 px) mantendo margem simétrica de 8 px em relação à carta de 160 px.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco impeditivo para a consolidação da etapa B. Caso o projeto seja empacotado para exportação, assegurar que arquivos `.json` de fontes (`card-font-additions.json`) estejam configurados nos filtros de exportação não-recurso do Godot (`*.json`).
+NEXT_STEP: Prosseguir com a consolidação dos demais pareceres de revisão da Etapa B R1a conforme o fluxo de orquestração do repositório.

@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Plano prospectivo aprovado — escopo mínimo coerente com autorização (remover labels Entrada/Saída, seta pixelada só em saída liberada, corrigir leitura de vão aberto sem tocar física/transição/fade); respeita Grok-4.6-exato sobre 4.7 local, não inventa regra de GDD, não exige teste/execução proibida.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: Limite visual em runtime declarado (só estática nesta etapa); confundir overlay técnico com label de mundo deve continuar evitado na implementação.
+NEXT_STEP: Congelar baseline e seguir para implementação única gpt-6-luna xhigh + revisões Gemini/Grok/Muse/Opus previstas.

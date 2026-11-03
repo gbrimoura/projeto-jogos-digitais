@@ -1,0 +1,10 @@
+STATUS: done
+SUMMARY: Delta R1->R4 fecha achados R1 sem regressão P1 textual. Paleta `spr:setPalette(p)`, pack 2/4/2, CONCEITO 74x15, clock pivô 11,11/raios 10,8,7, PRONTO sem tempo, timelines 17/9 com tags só-estudo, manifest com `timeline_sources` + `retained_exploratory_not_delivery` verificados no texto fornecido. 2x P2 editorial.
+FINDINGS:
+P1: none
+P2-1: README duplica parágrafo timeline — `source/clock-states.aseprite mede 24x24...` + `O playback dessas tags é apenas estudo...` aparece 2x seguidas. Editorial, sem efeito funcional.
+P2-2: README diz `CONCEITO é layer/asset separado` sem declarar 74x15 inline; dimensão só em `concept()`/log `CONCEPT_LABEL=74x15`/`layout.json alternative.concept_label`. Gap doc, sem efeito funcional.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Definições `A.targetPortrait/A.targetBar` fora do hunk visível — valores 222,14/258,28/261,31 confiados via relato `exit0`; margem direita `outer_margin_min 2` não tem assert no pack; `tag.data`/`newEmptyFrame/newTag` confiados via log sucesso; sem inspeção PNG/ASE.
+NEXT_STEP: Manter congelado; se editar, deduplicar parágrafo README e explicitar CONCEITO 74x15, sem mover/remover os 4 exploratórios excluídos do manifest.

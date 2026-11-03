@@ -1,0 +1,84 @@
+### Parecer Técnico — Revisão Estática Somente Leitura (IMPLEMENTAÇÃO R1 Final)
+
+A análise estática foi realizada sobre o pacote integral `impl-r1-input.txt` (1.611 linhas), cobrindo recursos, scripts de catálogo e progressão, consumidores em runtime (`player.gd`, `ball_launcher.gd`, `player_health.gd`, `upgrade_card.gd`), scripts e cenas dos inimigos (`training_target`, `rivet_worker`), além das fontes Lua do kit de cartas e especificações contratuais.
+
+---
+
+### Avaliação Detalhada dos Pontos Contratuais e Prioridades
+
+#### 1. Contratos de Tipagem e Compatibilidade Godot 4.7
+- **`UpgradeDefinitionResource`**: Campos novos (`reward_kind: StringName = &"core"`, `rank_cap`, `projectile_speed_multiplier_per_rank`, `dash_cooldown_reduction_per_rank`, `health_recovered_per_rank`) possuem tipagem estrita e faixas `@export_range` consistentes com o runtime.
+- **`UpgradeCatalog`**: Métodos estáticos utilizam `StringName`, conversões seguras via `Variant` para compatibilidade com chamadas dinâmicas e tipagem explícita de retorno (`Array[UpgradeDefinitionResource]`, `Array[StringName]`, `Array[Dictionary]`).
+- **`EnemyLevelConfigResource`**: Métodos `health_for_level`, `damage_for_level` e `cooldown_multiplier_for_level` utilizam funções nativas com guards de tipo e segurança contra divisão por zero (`maxi(damage_increase_every_levels, 1)`).
+
+#### 2. Sete Upgrades Principais (Core Cap 3 = 21 Níveis Totais)
+- Todos os 7 recursos `.tres` em `resources/upgrades/` estão parametrizados com `rank_cap = 3`:
+  - `impacto_reforcado`: Dano base 1 → 4 (+1/rank).
+  - `motor_acelerado`: `dash_cooldown_by_rank = PackedFloat32Array(0.48, 0.42, 0.36)` (base 0,55s mantida).
+  - `carga_reativa`: `reactive_charge_enabled = true`, bônus +2/rank no próximo acerto após rebate da própria bola (máximo +6).
+  - `ricochete_pressao`: Bônus +1/rank por parede com teto estrito de 2 paredes contabilizadas (máximo +6).
+  - `mola_retorno`: +1 rebote e +0,20s de duração por rank (máximo 6 rebotes e 2,80s).
+  - `dinamo_defesa`: Devolve 0,05s/rank de recarga restante por rebatida (máximo 0,15s), sem rearmar dash em voo.
+  - `chassi_reforcado`: +1 HP máximo e +1 de cura por rank (base 5 → 8 HP).
+- Progressão total dos 7 core exige exatamente 21 escolhas de sala para esgotamento completo.
+
+#### 3. Transição de Pool (Core → Pós-Build: Atributos / Manutenção) e Garantia de Oferta até Sala 220
+- **Segregação Estrita**: Em `UpgradeCatalog.build_offer`, enquanto houver qualquer upgrade core elegível (`new_candidates` ou `evolution_candidates` não vazios), opções de pós-build **nunca** são inseridas na seleção.
+- **Oferta de 1 a 3 opções**: Quando restam 1 ou 2 core elegíveis, o catálogo oferece apenas as opções restantes sem antecipar pós-build e sem gerar duplicatas.
+- **Transição Pós-Build**: Quando todos os 7 core atingem rank 3, a oferta abre o pool com `ajuste_velocidade_bola` (cap 10), `ajuste_recarga_dash` (cap 5) e `reparo_campo` (cap 220):
+  - Inicia com 3 opções;
+  - Reduz para 2 quando um atributo esgota;
+  - Reduz para 1 (`reparo_campo`) quando ambos atributos esgotam.
+- **Elegibilidade Contínua**: `reparo_campo` permanece elegível mesmo se a vida do robô estiver cheia (`full HP`), garantindo que até o início da sala 220 (219 aquisições prévias) haja sempre pelo menos 1 opção válida, eliminando falhas de oferta vazia.
+
+#### 4. Snapshots, Conhecimento de IDs e Idempotência de Cura
+- **Schema v1 Preservado**: Chaves de snapshot mantidas sem alteração estrutural.
+- **Validação Atômica (`RunBuild.replace_state`)**:
+  - Rejeita qualquer ID desconhecido ou tipo incorreto.
+  - Inicializa IDs ausentes de snapshots legados com 0 (compatibilidade direta com os 3 novos IDs).
+  - Rejeita integralmente qualquer estado salvo com ranks acima dos novos tetos (evitando clamping silencioso e exigindo reinício seguro de run desatualizada).
+- **Idempotência de Vida**:
+  - `PlayerHealth.apply_run_build` apenas processa cura quando `acquired_upgrade_id` for fornecido e o jogador estiver vivo (`current_health > 0`).
+  - Chamadas de restore/recovery de sala passam `acquired_upgrade_id` vazio (`&""`), recalculando apenas `maximum_health` e mantendo a vida atual invariante (sem cura duplicada ou reaplicada).
+  - Jogador morto não pode ser curado nem revivido.
+
+#### 5. Derivação de Configurações a Partir da Base e Preservação de Estado
+- **Projétil**: `BallLauncher.get_projectile_config_snapshot()` instancia um duplicado limpo de `_base_projectile_config` a cada chamada, derivando a velocidade com `projectile_speed_multiplier_for_rank(rank)` (bônus aditivo percentual `1.0 + 0.02 * rank`), sem acúmulo multiplicativo sobre estados transitórios.
+- **Movimento**: `Player.apply_run_build()` duplica `_base_movement_config`, calcula o cooldown com `dash_cooldown_with_adjustment(motor_rank, adjustment_rank)` (respeitando o piso de 0,31s) e delega a `movement_controller.update_config_preserving_state()`, sem recarregar dashes em andamento ou corromper cooldowns ativos.
+
+#### 6. Formatação Visual, Textos e Limites de Glifos (24 Prefix / 22 Conteúdo / Rodapé)
+- **Quebra de Tópicos**: Respeita `TOPIC_CONTENT_WIDTH = 22` mais 2 colunas para o prefixo (`- ` ou `  `), totalizando no máximo 24 glifos por linha e até 3 linhas por cartão.
+- **Rodapé de Manutenção**:
+  - Status exibe `MANUTENÇÃO` (10 glifos) em ciano/âmbar.
+  - Contador exibe texto dedicado `CURA ATÉ 1 VIDA` (15 glifos, inferior ao teto de 22) em cor âmbar, ocultando o contador numérico contábil `/ 220`.
+- **Atributos**: Exibem `AJUSTE` ou `AJUSTAR`, com sufixo `- MÁXIMO` ao atingir o rank limite, e contador no formato `NÍVEL x > y / z`.
+- **Estudos Lua**: O gerador exporta os estudos nativo e 3× para core e pós-build (`post-build-study`), validando a diagramação antes do runtime.
+
+#### 7. Inimigos: Bases, Fórmulas de Escala e Preservação de Combate
+- **Bases Alinhadas**: `max_health` e `_base_max_health` definidos como 6 para o Tranca-Lata e 4 para o Cospe-Rebite, tanto nos scripts GDScript quanto nas cenas `.tscn`.
+- **Escala de Vida**: `health_for_level` aplica `ceil(base * min(1.0 + 0.06 * (level - 1), 4.0))`, atingindo tetos máximos de 24 HP (Tranca) e 16 HP (Cospe) no nível 64.
+- **Escala de Dano e Cadência**:
+  - Dano base 1 com +1 a cada 16 níveis (limitado a +1 bônus: dano 1 dos níveis 1–16; dano 2 a partir do nível 17).
+  - Multiplicador de cadência reduz 0,01 por nível, travando no piso de 0,75 no nível 26.
+- **Preservação de IA e Combate**:
+  - Tranca-Lata mantém `windup_duration = 0.65`, `active_window = 0.14`, raio 140,0 e rotinas de patrulha/salto intactos.
+  - Cospe-Rebite mantém `windup_duration = 0.65`, `move_speed = 150.0`, recuo e telegraphs intactos.
+
+#### 8. Escopo e Enquadramento Técnico
+- As curvas de HP, dano e upgrades são explicitamente tratadas como hipóteses iniciais candidatas e não como dados empíricos de jogabilidade testada.
+- O subsistema de RL é documentado como ferramenta externa de avaliação para etapas futuras, sem inclusão de dependências no runtime ou alteração de IA dos inimigos.
+
+---
+
+### Conclusão
+
+Não foram encontrados defeitos impeditivos (P1) nem não conformidades funcionais graves (P2). Os contratos de tipagem, isolamento de cura, dimensionamento de textos, derivação de parâmetros e tolerância a snapshots estão íntegros e compatíveis com a especificação congelada.
+
+```text
+STATUS: done
+SUMMARY: Revisão estática R1 concluída sem apontamentos P1/P2. Contratos Godot 4.7 validados, 7 upgrades core travados em 3 níveis (21 totais), transição segura para pós-build (atributos cap 10/5 e manutenção cap 220), oferta garantida até sala 220 sem esgotamento, idempotência de cura e restauração de snapshots estrita, derivadas de configuração sem refill e curvas de inimigos parametrizadas preservando AI e windup.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Ausência de validação empírica em gameplay real das novas taxas de sobrevivência e tempo de combate (permanecem como parâmetros candidatos de hipótese inicial); snapshots em andamento com ranks legados acima de 3 serão rejeitados por contrato, requerendo início de nova run.
+NEXT_STEP: Consolidar pareceres dos demais revisores externos da rodada de implementação R1 para autorização e registro final.
+```

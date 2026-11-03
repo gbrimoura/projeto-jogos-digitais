@@ -1,0 +1,6 @@
+STATUS: ACCEPT FINAL DELTA - NO REMAINING CODE DEFECTS
+SUMMARY: `sprite:setPalette(pal)` is correct Aseprite 1.3.18.6 API, `Palette(20)+setColor(i-1)` correct; byte-identical 3 PNGs + unchanged GDScript = R1 holds. (1)20-lock scope new-only accepted, (2)floor y656/672 preexisting unchanged accepted, (3)bbox [21,7,23,50]=x,y,w,h -> inclusive 43,56, 120-32=88, 279-56=223, 223+56+1=280 correct, no origin bug, (4)no headless import demanded, (5)plaque hue = preserved legacy, no geometry diff.
+CHANGED_FILES: none
+TESTS: none
+RISKS: none actionable; residual only: no Godot/import/runtime run per user ban - pending normal Editor import/static review
+NEXT_STEP: static review / normal Editor open only

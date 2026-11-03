@@ -1,0 +1,30 @@
+[
+  {
+    "Path": "carga_reativa.tres",
+    "MechanicalLinesPreserved": true
+  },
+  {
+    "Path": "chassi_reforcado.tres",
+    "MechanicalLinesPreserved": true
+  },
+  {
+    "Path": "dinamo_defesa.tres",
+    "MechanicalLinesPreserved": true
+  },
+  {
+    "Path": "impacto_reforcado.tres",
+    "MechanicalLinesPreserved": true
+  },
+  {
+    "Path": "mola_retorno.tres",
+    "MechanicalLinesPreserved": true
+  },
+  {
+    "Path": "motor_acelerado.tres",
+    "MechanicalLinesPreserved": true
+  },
+  {
+    "Path": "ricochete_pressao.tres",
+    "MechanicalLinesPreserved": true
+  }
+]

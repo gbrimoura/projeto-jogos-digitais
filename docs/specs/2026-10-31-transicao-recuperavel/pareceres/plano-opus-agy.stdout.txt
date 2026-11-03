@@ -1,0 +1,70 @@
+STATUS: done
+
+SUMMARY: O plano vai na direção certa: preparar, validar e só depois substituir, sem confundir falha técnica com derrota, com retry explícito e recompensa idempotente. Ainda não dá para aprovar, porque faltam contratos concretos em seis pontos. (1) Como desfazer `_advance_stage`, incluindo o estado do RNG. (2) Como dividir `_advance_after_room` em uma fase de recompensa executada uma vez e uma fase de carga que pode ser repetida. (3) Que efeitos colaterais o `_ready` da candidata pode ter enquanto a sala antiga continua viva. (4) Como evitar que o gatilho da porta dispare sozinho no rollback. (5) Por que existe o `await process_frame` atual. (6) Onde fica a UI de erro, já que cenas não podem ser alteradas. Nada abaixo afirma qual guarda de layout ou seed causou a falha original.
+
+FINDINGS:
+
+**P1-1 — Desfazer `_advance_stage` sem contrato definido.** `_advance_stage` muda índice de estágio, família anterior, arrays de descritores e possivelmente multiplicadores antes da carga. "Preservar estágios/descritores/seed/família" não diz como. É preciso escolher uma de duas formas:
+- (a) calcular o próximo estágio numa estrutura temporária e só aplicar no commit; ou
+- (b) tirar um snapshot completo antes e restaurar em caso de falha.
+
+Se `_advance_stage` ou o gerador consumirem um `RandomNumberGenerator`, o snapshot precisa incluir `rng.state`/`seed`. Sem isso, o retry gera outra sala, o que é um reroll automático disfarçado e quebra o "repetir deterministicamente". Aceite estático: listar cada campo tocado por `_advance_stage` e mostrar a restauração de cada um.
+
+**P1-2 — Recompensa de chefe precisa de fases explícitas.** Hoje a recompensa é aplicada antes do fade, dentro de `_advance_after_room`. Se o retry chamar esse método de novo, a recompensa sai duplicada. O plano deve separar o fluxo em:
+- `_finalize_completed_room` (recompensa e escolha concedida, executado uma vez, com flag por estágio ou sala);
+- `_attempt_next_room_transaction` (repetível).
+
+O retry da porta entra só na segunda fase. Se a recompensa tiver escolha pela UI, a escolha concedida fica persistida e a UI não reabre. Os multiplicadores aplicados no avanço seguem a mesma regra (aplicar uma vez, no commit).
+
+**P1-3 — `current_room_instance` não pode ser `null` durante a transação.** Hoje o código anula `current_room_instance` antes de carregar. O plano deve manter `current_room_instance = source` até o commit, guardar a nova sala numa variável separada (por exemplo `_candidate_room`) e trocar as duas no mesmo passo. Qualquer código que leia `current_room_instance` (pausa, HUD, handler de `died`, Main) vê a fonte ou a candidata já confirmada, nunca `null` nem a candidata ainda em validação.
+
+**P1-4 — Efeitos colaterais do `_ready` da candidata com a fonte viva.** `PROCESS_MODE_DISABLED` não impede `_ready`, entrada em grupos, conexões com autoloads ou Main, nem `Camera2D` virar a câmera atual. Se o Player vive dentro da sala, ficam dois Players e duas PlayerHealth na árvore. Aí `get_first_node_in_group`, HUD ou câmera podem se ligar à candidata antes da validação, ou ficar presos nela depois do descarte.
+
+Contrato exigido:
+- a candidata não liga HUD, câmera nem os sinais de Main (`died`, conclusão, `progression`) antes do commit;
+- os handlers conferem `emitter == current_room_instance`;
+- na falha, usar `remove_child` + `queue_free` imediatamente, não apenas `queue_free`, para ela sair de grupos e buscas no mesmo frame;
+- a restauração de HP na candidata não pode emitir `died`. Por exemplo, o valor padrão ou intermediário não pode passar por ≤0, e nenhum `health_changed` intermediário chega ao HUD;
+- os modificadores de build que afetam HP máximo são aplicados antes de restaurar o HP, para que o clamp não altere o valor guardado.
+
+**P1-5 — O `await process_frame` atual pode existir por um motivo concreto.** Ele roda depois de `queue_free(old)` e antes de instanciar. Pode estar protegendo contra colisão de nomes no mesmo pai (renomeação automática quebra `get_node`), duplicata em grupo ou registro único em autoload. A transação mantém a fonte viva justamente nesse intervalo. Antes de implementar, o plano precisa auditar estaticamente o que esse await protege e tratar cada dependência. Não presumo a causa; é um risco direto da inversão de ordem.
+
+**P1-6 — Rollback pode disparar o retry sozinho.** Ao reativar a fonte (processo e física voltam, e corpos com `DISABLE_MODE_REMOVE` são reinseridos), o Player ainda está sobre o gatilho de saída. Pode haver `body_entered` imediato, retry automático e loop. O rollback precisa:
+- chamar `reset_to_spawn` ou mover para o ponto seguro fora do hatch DOWN antes de reativar;
+- só rearmar o latch de `report_transition_failure` depois de uma ação explícita (sair e entrar de novo, ou input).
+
+Aceite: nenhuma tentativa de carga sem input deliberado após a falha.
+
+**P1-7 — Falha técnica precisa de canal próprio, separado de `_fail_run`.** A falha transacional não pode passar por `_fail_run` nem marcar `_run_ended`. Inclusive a carga inicial sem fonte deve usar outro caminho (por exemplo um sinal `technical_failure(context)`), distinto do GameOver de derrota. O ramo de vitória do chefe final continua sendo avaliado antes de qualquer preparação de próximo estágio, e `died` continua no GameOver existente. Aceite: os dois caminhos são distinguíveis no código, e "Não foi possível continuar a run" não aparece no fluxo de erro técnico recuperável. Se aparecer, que seja uma decisão explícita do usuário.
+
+**P2-1 — UI de erro sem cena autorizada.** Cenas não podem ser alteradas. Se `main.gd` reaproveitar a cena de GameOver, o título de derrota continua aparecendo, o que é uma derrota falsa. É preciso definir: (a) painel criado por código em `main.gd`, com seed/andar/sala, Retry e Reiniciar run; ou (b) pedir autorização para alterar a cena. O caminho de "restart deliberado" precisa existir ou ser criado em `main.gd`.
+
+**P2-2 — Fade e pausa durante a falha.** O tween do fade precisa rodar com a árvore pausada ou com Main em `KEEP_ACTIVE`, para não deixar tela preta no rollback. Faltam duas definições: se o painel de erro fica sobre o fade ou se o fade volta antes; e se a pausa da árvore é restaurada só quando pertence à transação (sem despausar um menu de pausa aberto em paralelo).
+
+**P2-3 — Reentrância e cancelamento.** Usar um token de geração da transação, checado após cada `await`. Cobrir: retry acionado com a transação em andamento, saída para o menu durante o await e `is_instance_valid` da fonte e da candidata. `_transition_in_progress` e `_run_progression_notified` só são resetados pela transação que tem o token atual.
+
+**P2-4 — Reconexão do sinal one-shot.** Usar `is_connected` antes de reconectar `progression` com `CONNECT_ONE_SHOT`. Assim se evitam erro de conexão duplicada e handler executado duas vezes quando o commit seguinte também conecta.
+
+**P2-5 — Sala concluída retomada.** Ao reativar a fonte, ela não pode reemitir conclusão nem recompensa e precisa manter as portas abertas. É preciso verificar estaticamente que nada em `_ready` ou no `process` re-dispara isso.
+
+**P2-6 — Processo de revisão.** O AGENTS.md local confirma `grok-4.7-xhigh-fast`; o plano diz que a instrução global de Grok 4.6 prevalece. Registrar essa divergência no histórico, com a fonte da regra global e o ID realmente usado, para que o parecer não fique ambíguo.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- A revisão é estática e só usou o contexto que você colou. Não vi o código real de `_advance_stage`, `configure_run_managed`, PlayerHealth nem dos gatilhos de porta. Os riscos dos itens P1-4 e P1-5 dependem de detalhes não confirmados.
+- Um retry determinístico vai falhar de novo até alguém corrigir o gerador ou o layout fora deste escopo. A saída deliberada (reiniciar run) é obrigatória para o jogador não ficar preso.
+- Manter duas salas instanciadas ao mesmo tempo aumenta o uso de memória e o risco de interferência entre nós durante a transação.
+
+NEXT_STEP: Incorporar ao plano, antes de liberar o Luna:
+- a lista de campos e RNG do snapshot de `_advance_stage`;
+- a divisão de `_advance_after_room` em finalização e transação;
+- a variável `_candidate_room`, com sinais ligados só no commit;
+- a auditoria do `await process_frame`;
+- o rollback que reposiciona antes de rearmar a porta;
+- o canal de falha técnica separado de `_fail_run`;
+- a decisão sobre a UI de erro (painel por código ou autorização de cena).
+
+Depois disso, uma rodada curta com os mesmos revisores só nos trechos alterados.

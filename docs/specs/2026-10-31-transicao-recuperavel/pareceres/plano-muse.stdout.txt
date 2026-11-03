@@ -1,0 +1,14 @@
+STATUS: done
+SUMMARY: Plano transacional coerente com relato confirmado; distingue falha tecnica de died/vitoria final e evita derrota falsa sem afirmar causa de layout/seed desconhecida.
+FINDINGS:
+- P1-1 Snapshot antes de _advance_stage: _advance_stage muta familia anterior e arrays descritores. Se executar antes da validacao da candidata, falha deixa estado avancado. Exigir snapshot de stage_index/descritores/seed/familia antes de _advance_stage e restore integral na falha, ou diferir _advance_stage para pos-commit. Sem isso retry pula/duplica sala.
+- P1-2 Split pre-add vs pos-add pausado: contexto diz prepare_authored_layout antes de add_child, mas candidata precisa de add_child pausado para on_ready/PlayerHealth. Definir duas fases: validacao pre-add sem dependencia de on_ready, e validacao pos-add pausado. _fail_run/_run_ended nao pode disparar na falha pre-commit; criar caminho _fail_candidate distinto do GameOver derrota.
+- P1-3 Idempotencia recompensa chefe: recompensa aplicada em _advance_after_room antes do commit. Retry nao pode reentrar nesse caminho. Exigir flag rewarded verificada antes de conceder e preservar escolha ja concedida; falha nao pode revogar nem duplicar multiplicadores/recompensa.
+- P1-4 Rearme retry sem re-clear: sala origem ja concluida emitiu progression ONE_SHOT. Definir dono do rearme: reset _run_progression_notified/_transition_in_progress + reconexao one-shot + report_transition_failure/latchrearm da porta/retorno sem exigir nova limpeza. Sem isso softlock sem botao de tentativa.
+- P2-1 Isolamento HP/build: snapshot HP/build da fonte antes da tentativa; restore de HP da candidata nao pode sobrescrever fonte; sinais da candidata/antiga nao podem modificar HP nem encerrar sala errada; desconectar candidata antes do discard.
+- P2-2 Fade/pause/input: falha mid-fade com player locked KEEP_ACTIVE/process disabled exige unlock para retry, reset de fade para estado tentavel, e liberar somente pausa possuida; guardas apos await/cancelamento para nao vazar pause/fade.
+- P2-3 Falha inicial sem fonte: sem sala valida disponivel nao ha restore; exigir caminho erro tecnico com seed/andar/sala + restart deliberado, nunca died nem vitoria final; preservar died e vitoria final boss existentes.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Retry deterministico pode repetir mesma falha ate correcao externa; candidata add_child pausado ainda executa _ready com efeitos colaterais possiveis; conflito com reset_to_spawn vertical sem alterar HP se ponto seguro for DOWN hatch; log diagnostico pode cobrir combate se nao confinado ao estado de falha.
+NEXT_STEP: Refinar plano com snapshot/restore explicito, split validacao, _fail_candidate vs _fail_run, e rearme porta/latch; apos estabilizacao seguir para revisao Cursor exata read-only.

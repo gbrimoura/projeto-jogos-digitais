@@ -1,0 +1,9 @@
+Pacote runtime em revisão — lendo entrada imutável.
+Primeira parte lida; buscando restante do pacote.
+STATUS: done
+SUMMARY: Revisão estática read-only do delta recuperável em `main.gd` + `run_controller.gd` (pacote imutável, 3493 linhas). Fluxo origem-preservada/candidata-DISABLED→PAUSABLE, token, recover, pausa/fade, retry e recompensa idempotente está coerente. Sem P1/P2 concreto no escopo.
+FINDINGS: sem P1/P2 — Fato: sinal `run_progression_ready(token)` + `bind(room)` casa com `_on_room_progression_ready(token,room)`; `recover` valida token/is_inside_tree/is_current_source/player/porta antes de `token+=1`/destravar/respawn/report; `_resolve_after_physics_flush` preserva morte (`_death_pending`) e suprime resolução durante transição; candidata `DISABLED` fora da árvore, `free()` fora / `remove+queue_free()` dentro, `remove_child(source)+await frame` antes de `add_child(candidate)` com re-anexo em falha; pausa técnica vs transição mutuamente exclusivas, `VOLTAR` vs `retry initial` exclusivos, `_boss_reward_*` evita duplo-apply, morte/vitória final preservadas via early-return quando `_run_ended`. Tipos GDScript 4.7 e sombras nested: sem sombra relevante, ternário e `duplicate(true)` conforme padrão pré-existente. Hipótese (não fato, sem engine): spawn de recuperação pode intersectar alvo/patrulha em família específica; `fade` liberado sem fade-out no retorno; retry mesma seed refalha determinística — riscos, não bugs provados.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Qual layout/seed/guard falhou em 31/10 continua desconhecido; retry mesma seed pode repetir falha; `_discard_current_room`/`_fail_run` viraram quase-mortos com semântica antiga (`current=null`, sem `_disconnect`); corrotina em `await reward_chosen` depende de `cancel_offer` emitir.
+NEXT_STEP: Manter delta como está; investigar layout/seed/guard fora deste escopo sem inferir dano/HP.

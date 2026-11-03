@@ -1,0 +1,473 @@
+-- Lobby factory pixel-art kit. Hand-authored in native pixels; no raster post-processing.
+-- Run from repository root with the real Aseprite binary:
+--   Aseprite.exe -b --script-param "root=<repo>" --script "assets/environment/factory_v1/lobby_v1/source/generate_lobby.lua"
+-- Aseprite consumes parameters before --script. Runtime exports stay native 576x324 / 32x56.
+local params = app.params or {}
+local ROOT = params.root or "C:/Users/danie/Documents/ChatGPT/TEC - Jogos/projeto-jogos-digitais"
+local BASE = ROOT .. "/assets/environment/factory_v1/lobby_v1"
+local SRC = BASE .. "/source"
+local OUT = BASE .. "/export"
+local PRE = BASE .. "/preview"
+local BG_W, BG_H = 576, 324
+local DOOR_W, DOOR_H = 32, 56
+local pc = app.pixelColor
+
+-- Locked production palette: factory-floor1 plus the three already-approved accents.
+local HEX = {
+  "0E0D0E", "171719", "1D1B1A", "25292A", "302D2A", "353B3B", "433E39",
+  "4A2D21", "563829", "5B5249", "70432C", "756957", "925A36", "90816A",
+  "8F7059", "B78342", "D2A75C", "E8D8B5", "879198", "52BAC7"
+}
+local function rgba(h)
+  return pc.rgba(tonumber(h:sub(1,2),16), tonumber(h:sub(3,4),16), tonumber(h:sub(5,6),16), 255)
+end
+local C = {}
+for i,h in ipairs(HEX) do C[i] = rgba(h) end
+local K = {
+  ink=C[1], night=C[2], coal=C[3], wall=C[4], iron=C[5], iron2=C[6],
+  umber=C[7], rustDark=C[8], rust=C[9], steelDark=C[10], copper=C[11],
+  stone=C[12], oxide=C[13], paleStone=C[14], warmGray=C[15], brass=C[16],
+  amber=C[17], ivory=C[18], silver=C[19], cyan=C[20]
+}
+
+local function image(w,h) return Image(w,h) end
+local function pixel(img,x,y,c)
+  if x>=0 and y>=0 and x<img.width and y<img.height then img:drawPixel(x,y,c) end
+end
+local function rect(img,x,y,w,h,c)
+  if w<=0 or h<=0 then return end
+  local x0,y0=math.max(0,x),math.max(0,y)
+  local x1,y1=math.min(img.width-1,x+w-1),math.min(img.height-1,y+h-1)
+  for py=y0,y1 do for px=x0,x1 do img:drawPixel(px,py,c) end end
+end
+local function outline(img,x,y,w,h,c)
+  rect(img,x,y,w,1,c); rect(img,x,y+h-1,w,1,c)
+  rect(img,x,y,1,h,c); rect(img,x+w-1,y,1,h,c)
+end
+local function line(img,x0,y0,x1,y1,c)
+  local dx,dy=math.abs(x1-x0),math.abs(y1-y0)
+  local sx=x0<x1 and 1 or -1; local sy=y0<y1 and 1 or -1
+  local err=dx-dy
+  while true do
+    pixel(img,x0,y0,c)
+    if x0==x1 and y0==y1 then break end
+    local e=2*err
+    if e>-dy then err=err-dy; x0=x0+sx end
+    if e<dx then err=err+dx; y0=y0+sy end
+  end
+end
+local function bolt(img,x,y,c)
+  rect(img,x-1,y-1,3,3,K.ink)
+  pixel(img,x,y,c or K.paleStone)
+  pixel(img,x-1,y+1,K.umber)
+end
+local function bevelPanel(img,x,y,w,h,face,top,right,bottom,left)
+  rect(img,x,y,w,h,K.ink)
+  rect(img,x+1,y+1,w-2,h-2,face)
+  line(img,x+1,y+1,x+w-2,y+1,top or K.steelDark)
+  line(img,x+w-2,y+1,x+w-2,y+h-2,right or K.night)
+  line(img,x+1,y+h-2,x+w-2,y+h-2,bottom or K.umber)
+  line(img,x+1,y+1,x+1,y+h-2,left or K.stone)
+end
+local function pipeH(img,x1,x2,y,base)
+  rect(img,x1,y-3,x2-x1+1,7,K.ink)
+  rect(img,x1,y-2,x2-x1+1,5,K.steelDark)
+  rect(img,x1+1,y-1,x2-x1-1,3,base or K.copper)
+  rect(img,x1+2,y-1,x2-x1-3,1,K.brass)
+end
+local function pipeV(img,x,y1,y2,base)
+  rect(img,x-3,y1,7,y2-y1+1,K.ink)
+  rect(img,x-2,y1,5,y2-y1+1,K.steelDark)
+  rect(img,x-1,y1+1,3,y2-y1-1,base or K.copper)
+  rect(img,x-1,y1+2,1,y2-y1-3,K.brass)
+end
+local function flangeH(img,x,y)
+  rect(img,x-2,y-5,5,11,K.ink); rect(img,x-1,y-4,3,9,K.oxide)
+  rect(img,x-1,y-2,1,5,K.brass); pixel(img,x+1,y-2,K.paleStone)
+end
+local function flangeV(img,x,y)
+  rect(img,x-5,y-2,11,5,K.ink); rect(img,x-4,y-1,9,3,K.oxide)
+  rect(img,x-2,y-1,5,1,K.brass); pixel(img,x-2,y+1,K.paleStone)
+end
+local function window(img,x,y,w,h,lit)
+  -- Deep inset, stepped cast rim, narrow mullion and a dim amber glint.
+  rect(img,x-2,y-2,w+4,h+6,K.ink)
+  rect(img,x-1,y-1,w+2,h+4,K.steelDark)
+  rect(img,x,y,w,h,K.oxide)
+  rect(img,x+2,y+2,w-4,h-5,K.night)
+  rect(img,x+3,y+3,1,h-8,K.stone)
+  rect(img,x+math.floor(w/2),y+3,1,h-8,K.umber)
+  rect(img,x+3,y+math.floor(h*0.58),w-6,1,K.umber)
+  rect(img,x-1,y+h+1,w+2,2,K.iron)
+  pixel(img,x+w-4,y+4,lit and K.brass or K.rust)
+  if lit then pixel(img,x+w-3,y+4,K.amber) end
+end
+
+local L = {
+  silhouette=image(BG_W,BG_H), masonry=image(BG_W,BG_H), windows=image(BG_W,BG_H),
+  services=image(BG_W,BG_H), workbench=image(BG_W,BG_H), elevator=image(BG_W,BG_H)
+}
+
+-- A stepped skyline of connected service buildings; the lower 44 native rows stay empty.
+local S=L.silhouette
+-- Opaque night field matches the original lobby and avoids viewport clear-color leaks.
+rect(S,0,0,BG_W,280,K.ink)
+rect(S,0,183,218,97,K.night); rect(S,12,146,155,134,K.night)
+rect(S,25,123,130,157,K.night); rect(S,38,108,100,172,K.night)
+rect(S,166,157,184,123,K.night); rect(S,180,137,162,143,K.night)
+rect(S,198,125,131,155,K.night); rect(S,314,151,262,129,K.night)
+rect(S,325,117,251,163,K.night); rect(S,344,76,216,204,K.night)
+rect(S,370,48,180,232,K.night); rect(S,389,26,137,254,K.night)
+rect(S,402,18,111,262,K.night)
+-- Roof caps and chimney silhouettes are stepped rather than one flat skyline.
+rect(S,20,137,141,8,K.ink); rect(S,33,119,113,8,K.ink)
+rect(S,174,148,147,8,K.ink); rect(S,190,128,132,8,K.ink)
+rect(S,331,109,234,9,K.ink); rect(S,355,68,208,9,K.ink)
+rect(S,378,40,174,9,K.ink); rect(S,393,20,131,7,K.ink)
+rect(S,400,6,31,21,K.night); rect(S,397,3,37,4,K.umber)
+rect(S,402,1,27,2,K.stone); rect(S,405,0,21,1,K.oxide)
+rect(S,477,18,24,38,K.night); rect(S,473,15,32,4,K.iron)
+rect(S,481,11,16,4,K.steelDark)
+
+-- Facade planes, buttresses and restrained steel edge catches.
+local M=L.masonry
+rect(M,12,153,153,127,K.wall); rect(M,26,129,126,151,K.iron)
+rect(M,39,115,98,165,K.wall); rect(M,46,119,8,153,K.iron)
+rect(M,141,149,13,131,K.umber); rect(M,168,165,149,115,K.wall)
+rect(M,185,143,134,107,K.iron); rect(M,199,132,118,119,K.wall)
+rect(M,314,163,251,117,K.wall); rect(M,330,124,233,156,K.iron)
+rect(M,349,83,203,197,K.wall); rect(M,376,55,171,225,K.iron)
+rect(M,394,33,132,247,K.wall); rect(M,408,25,99,255,K.iron)
+-- Recessed seam lines and cap plates vary by bay; avoid repeated ornamental grids.
+rect(M,44,116,92,2,K.stone); rect(M,29,130,120,2,K.steelDark)
+rect(M,184,145,132,2,K.stone); rect(M,203,134,111,2,K.steelDark)
+rect(M,354,85,194,2,K.stone); rect(M,381,57,160,2,K.steelDark)
+rect(M,399,35,123,2,K.umber)
+rect(M,55,169,2,68,K.umber); rect(M,154,176,2,76,K.umber)
+rect(M,332,147,2,90,K.steelDark); rect(M,372,102,2,119,K.umber)
+rect(M,545,92,2,139,K.umber)
+-- Roofline ledges with broken top-right highlights and compact corner chips.
+rect(M,16,144,144,3,K.umber); rect(M,36,112,104,2,K.paleStone)
+rect(M,172,154,147,3,K.umber); rect(M,195,126,127,2,K.stone)
+rect(M,328,115,238,3,K.umber); rect(M,352,74,214,3,K.paleStone)
+rect(M,375,46,179,3,K.umber); rect(M,391,24,139,3,K.stone)
+rect(M,21,147,11,2,K.stone); rect(M,156,147,5,2,K.iron2)
+rect(M,182,157,13,2,K.stone); rect(M,319,151,6,2,K.iron2)
+rect(M,337,118,12,2,K.stone); rect(M,557,112,8,2,K.iron2)
+-- Faceted exterior braces are short and structural, not noisy decoration.
+line(M,163,178,174,167,K.steelDark); line(M,163,182,174,171,K.umber)
+line(M,320,157,331,146,K.steelDark); line(M,320,162,331,151,K.umber)
+line(M,344,122,353,113,K.steelDark); line(M,344,126,353,117,K.umber)
+line(M,539,78,550,67,K.steelDark); line(M,539,82,550,71,K.umber)
+-- A few asymmetrical rivets and chipped paint at plate corners.
+for _,p in ipairs({{43,121},{132,121},{178,160},{309,160},{337,121},{558,121},{384,52},{542,52},{401,31},{521,31}}) do
+  bolt(M,p[1],p[2],K.paleStone)
+end
+rect(M,148,195,3,2,K.rust); rect(M,151,193,2,2,K.stone)
+rect(M,324,201,3,2,K.rust); rect(M,329,198,2,2,K.stone)
+rect(M,550,174,3,2,K.rust); rect(M,553,171,2,2,K.umber)
+
+-- Inset glass bays: muted glass, warm dividers and only occasional lit panes.
+local W=L.windows
+window(W,55,145,17,30,true); window(W,91,145,17,30,false); window(W,124,145,17,30,false)
+window(W,208,158,18,32,false); window(W,249,158,18,32,true)
+window(W,378,87,18,31,true); window(W,420,87,18,31,false); window(W,463,87,18,31,false)
+window(W,378,137,18,31,false); window(W,420,137,18,31,true); window(W,463,137,18,31,false)
+window(W,515,144,17,29,false)
+-- Thin mullions and recessed shadow pockets give the glass depth without pipes across it.
+for _,p in ipairs({{55,145},{91,145},{124,145},{208,158},{249,158},{378,87},{420,87},{463,87},{378,137},{420,137},{463,137},{515,144}}) do
+  rect(W,p[1]-2,p[2]-2,2,3,K.iron2)
+end
+
+-- Connected service pipe runs stay on wall piers and clear every window opening.
+local P=L.services
+pipeH(P,151,189,203,K.copper); flangeV(P,170,203)
+pipeV(P,189,203,239,K.copper); flangeH(P,189,224)
+pipeH(P,189,216,239,K.copper); flangeV(P,211,239)
+pipeV(P,216,239,260,K.copper)
+pipeV(P,337,126,203,K.oxide); flangeH(P,337,145); flangeH(P,337,190)
+pipeH(P,337,363,126,K.oxide); flangeV(P,350,126)
+pipeV(P,552,73,208,K.copper); flangeH(P,552,119); flangeH(P,552,177)
+pipeH(P,530,552,73,K.copper); flangeV(P,536,73)
+pipeH(P,532,552,208,K.oxide); flangeV(P,536,208)
+-- Pipe brackets and three deliberate maintenance fittings.
+rect(P,334,157,7,2,K.iron2); rect(P,550,139,7,2,K.iron2)
+rect(P,334,192,7,2,K.iron2); rect(P,550,184,7,2,K.iron2)
+bevelPanel(P,294,199,18,30,K.ink,K.steelDark,K.night,K.umber,K.stone)
+rect(P,298,204,10,2,K.oxide); rect(P,298,210,7,2,K.brass)
+rect(P,298,217,10,5,K.iron); rect(P,300,219,2,1,K.amber)
+bolt(P,296,202,K.stone); bolt(P,309,225,K.umber)
+bevelPanel(P,522,190,21,18,K.night,K.stone,K.ink,K.umber,K.iron2)
+rect(P,526,194,9,2,K.oxide); rect(P,526,199,6,2,K.brass)
+rect(P,526,204,3,2,K.cyan) -- one tiny existing accent, well below focal luminance
+bolt(P,539,193,K.paleStone); bolt(P,539,205,K.umber)
+
+-- Compact workbench isolated from the spawn silhouette; strictly decorative.
+local B=L.workbench
+rect(B,70,251,42,5,K.ink); rect(B,72,249,38,3,K.steelDark)
+rect(B,74,249,32,1,K.stone); rect(B,76,252,28,2,K.umber)
+rect(B,74,254,5,21,K.iron); rect(B,77,255,2,19,K.stone)
+rect(B,102,254,5,21,K.iron); rect(B,102,255,2,19,K.umber)
+rect(B,72,275,9,3,K.ink); rect(B,100,275,9,3,K.ink)
+-- Small legible vise, screw and two distinct tools; no clutter across the top.
+rect(B,78,241,12,2,K.ink); rect(B,80,238,8,4,K.steelDark)
+rect(B,81,239,6,2,K.paleStone); rect(B,83,242,2,5,K.copper)
+rect(B,77,245,2,2,K.oxide); rect(B,89,245,2,2,K.oxide)
+line(B,93,245,97,240,K.iron2); line(B,94,246,98,241,K.umber)
+rect(B,97,239,3,3,K.brass); pixel(B,98,240,K.amber)
+rect(B,101,243,2,5,K.iron2); rect(B,100,241,4,2,K.stone)
+rect(B,73,248,2,1,K.amber); bolt(B,105,250,K.paleStone)
+
+-- Elevator alcove: thick brass-and-iron cheek plates frame an open, quiet glass bay.
+-- Static plaque field is kept plain under the original user's amber plaque/text node.
+local E=L.elevator
+rect(E,432,210,112,70,K.ink); rect(E,436,212,104,68,K.iron)
+rect(E,441,214,94,10,K.steelDark); rect(E,444,193,88,19,K.iron)
+rect(E,444,193,88,19,K.iron) -- reserved panel backing; dynamic amber frame/text remain over it
+-- Broad stepped lintel, bevels and short amber crown.
+rect(E,439,211,98,13,K.night); rect(E,442,212,92,9,K.copper)
+rect(E,445,213,86,5,K.iron); rect(E,448,213,80,2,K.paleStone)
+rect(E,436,214,6,10,K.stone); rect(E,534,214,6,10,K.umber)
+rect(E,440,220,10,3,K.oxide); rect(E,530,220,9,3,K.oxide)
+rect(E,453,220,70,4,K.steelDark); rect(E,458,219,60,2,K.brass)
+-- Side jambs are outside the clear aperture; no pipe crosses the glass.
+rect(E,438,223,18,54,K.umber); rect(E,440,225,13,50,K.copper)
+rect(E,442,226,8,46,K.stone); rect(E,450,228,6,43,K.iron2)
+rect(E,520,228,6,43,K.iron2); rect(E,526,226,8,46,K.stone)
+rect(E,534,225,3,50,K.umber); rect(E,527,225,8,50,K.copper)
+rect(E,438,223,4,4,K.paleStone); rect(E,534,223,4,4,K.paleStone)
+rect(E,440,272,15,5,K.brass); rect(E,441,273,13,2,K.paleStone)
+rect(E,521,272,15,5,K.brass); rect(E,522,273,13,2,K.paleStone)
+-- Back of the cabin is dark and unobstructed; small inner bevels stop before the glass.
+rect(E,456,224,64,56,K.night)
+rect(E,456,224,64,2,K.iron2); rect(E,456,224,2,50,K.steelDark)
+rect(E,518,224,2,50,K.umber)
+rect(E,459,226,1,45,K.stone); rect(E,516,226,1,45,K.steelDark)
+rect(E,456,276,64,4,K.iron); rect(E,456,276,64,1,K.brass)
+-- The threshold is a single controlled hazard band, not a platform.
+for x=458,516,8 do
+  pixel(E,x,278,K.ink); pixel(E,x+1,278,K.brass); pixel(E,x+2,278,K.brass)
+  pixel(E,x+3,278,K.ink); pixel(E,x+4,278,K.umber); pixel(E,x+5,278,K.umber)
+  pixel(E,x+6,278,K.ink); pixel(E,x+7,278,K.brass)
+end
+-- Exterior steam risers and clamps hug the outer cheeks only.
+pipeV(E,432,221,272,K.copper); flangeH(E,432,236); flangeH(E,432,257)
+pipeV(E,544,221,272,K.copper); flangeH(E,544,236); flangeH(E,544,257)
+rect(E,430,229,5,2,K.iron2); rect(E,541,247,6,2,K.iron2)
+rect(E,434,210,4,4,K.paleStone); rect(E,538,210,4,4,K.paleStone)
+bolt(E,443,230,K.paleStone); bolt(E,533,230,K.paleStone)
+bolt(E,443,260,K.umber); bolt(E,533,260,K.umber)
+-- Side plates: stepped corners and sparse warm rivets.
+rect(E,438,241,4,18,K.oxide); rect(E,534,241,4,18,K.oxide)
+rect(E,438,241,2,2,K.amber); rect(E,536,257,2,2,K.amber)
+line(E,440,265,450,275,K.brass); line(E,526,275,536,265,K.brass)
+rect(E,440,268,4,2,K.iron); rect(E,532,268,4,2,K.iron)
+
+local function composite(layers,w,h)
+  local dst=Image(w,h)
+  for _,item in ipairs(layers) do dst:drawImage(item.image,0,0) end
+  return dst
+end
+local function nearestScale(src,n)
+  local dst=Image(src.width*n,src.height*n)
+  for y=0,src.height-1 do for x=0,src.width-1 do
+    local v=src:getPixel(x,y)
+    for dy=0,n-1 do for dx=0,n-1 do dst:drawPixel(x*n+dx,y*n+dy,v) end end
+  end end
+  return dst
+end
+local function crop(src,x,y,w,h)
+  local dst=Image(w,h)
+  for py=0,h-1 do for px=0,w-1 do dst:drawPixel(px,py,src:getPixel(x+px,y+py)) end end
+  return dst
+end
+local function findBounds(img)
+  local minx,miny,maxx,maxy=img.width,img.height,-1,-1
+  for y=0,img.height-1 do for x=0,img.width-1 do
+    if pc.rgbaA(img:getPixel(x,y))>0 then
+      minx=math.min(minx,x); miny=math.min(miny,y); maxx=math.max(maxx,x); maxy=math.max(maxy,y)
+    end
+  end end
+  return minx,miny,maxx,maxy
+end
+local function makePalette(sprite)
+  local ok,pal=pcall(function()
+    local q=Palette(#HEX)
+    for i,h in ipairs(HEX) do
+      q:setColor(i-1,Color(tonumber(h:sub(1,2),16),tonumber(h:sub(3,4),16),tonumber(h:sub(5,6),16),255))
+    end
+    return q
+  end)
+  if ok then pcall(function() sprite.palette=pal end) end
+end
+local function saveLayered(path,layers,w,h)
+  local spr=Sprite(w,h)
+  while #spr.layers>1 do spr:deleteLayer(spr.layers[#spr.layers]) end
+  for i,item in ipairs(layers) do
+    local layer=i==1 and spr.layers[1] or spr:newLayer()
+    layer.name=item.name; layer.opacity=255
+    spr:newCel(layer,1).image=item.image
+  end
+  makePalette(spr)
+  spr:saveAs(path)
+end
+
+-- Doors are separate native source layers; left/right meeting edges get distinct highlights.
+local function makeDoor(isLeft)
+  local D=Image(DOOR_W,DOOR_H)
+  rect(D,0,0,32,56,K.ink); rect(D,1,1,30,54,K.iron)
+  rect(D,2,2,27,51,K.iron2); rect(D,3,3,24,47,K.iron)
+  rect(D,4,4,1,43,K.stone); rect(D,27,4,1,43,K.night)
+  rect(D,5,7,21,38,K.umber); rect(D,6,8,19,36,K.wall)
+  rect(D,7,9,1,33,K.steelDark); rect(D,23,9,1,33,K.iron2)
+  rect(D,8,11,14,1,K.stone); rect(D,8,12,14,1,K.iron2)
+  rect(D,8,15,14,25,K.iron); rect(D,9,16,12,22,K.wall)
+  rect(D,10,18,9,1,K.steelDark); rect(D,10,20,1,15,K.iron2)
+  rect(D,20,20,1,15,K.umber); rect(D,11,37,8,1,K.oxide)
+  -- A short service rib and recessed latch; no glass or glowing panel.
+  rect(D,4,20,2,17,K.oxide); rect(D,5,21,1,13,K.brass)
+  rect(D,24,17,3,12,K.steelDark); rect(D,24,19,2,7,K.umber)
+  pixel(D,25,22,K.amber)
+  -- Beveled top/right catches and restrained weld plates.
+  rect(D,3,3,21,1,K.silver); rect(D,24,4,1,39,K.steelDark)
+  rect(D,4,44,22,2,K.umber); rect(D,5,45,20,1,K.rust)
+  for _,p in ipairs({{5,6},{25,7},{5,41},{25,42},{7,48},{24,48}}) do
+    bolt(D,p[1],p[2],K.paleStone)
+  end
+  -- Bottom hazard marks use broad, readable blocks; no fine repeated texture.
+  rect(D,2,49,28,5,K.ink); rect(D,3,49,26,1,K.steelDark)
+  for x=3,27,8 do
+    local start=isLeft and x or (31-x-4)
+    line(D,start,53,start+4,49,K.brass)
+    pixel(D,start+3,53,K.umber); pixel(D,start+4,53,K.umber)
+  end
+  rect(D,1,54,30,1,K.ink)
+  -- Thick inner seam is warm metal; outer seam stays dark against the bay.
+  if isLeft then
+    rect(D,29,2,2,46,K.copper); rect(D,30,3,1,42,K.amber)
+    rect(D,1,2,1,46,K.steelDark)
+  else
+    rect(D,1,2,2,46,K.copper); rect(D,1,3,1,42,K.amber)
+    rect(D,30,2,1,46,K.steelDark)
+  end
+  return D
+end
+local doorLeft,doorRight=makeDoor(true),makeDoor(false)
+
+-- Editable Aseprite sources are the authoritative art; PNGs stay at native grid sizes.
+local bgLayers={
+  {name="01 Far factory silhouettes",image=L.silhouette},
+  {name="02 Cut stone and stepped rooflines",image=L.masonry},
+  {name="03 Recessed amber windows",image=L.windows},
+  {name="04 Connected pipes and service fittings",image=L.services},
+  {name="05 Low maintenance bench",image=L.workbench},
+  {name="06 Elevator surround and clear bay",image=L.elevator}
+}
+saveLayered(SRC.."/lobby-backdrop.aseprite",bgLayers,BG_W,BG_H)
+local backdrop=composite(bgLayers,BG_W,BG_H)
+backdrop:saveAs(OUT.."/lobby-backdrop-576x324.png")
+local doorLayers={{name="Left sliding panel 32x56",image=doorLeft},{name="Right sliding panel 32x56",image=doorRight}}
+saveLayered(SRC.."/elevator-doors.aseprite",doorLayers,DOOR_W,DOOR_H)
+doorLeft:saveAs(OUT.."/elevator-door-left-32x56.png")
+doorRight:saveAs(OUT.."/elevator-door-right-32x56.png")
+
+-- Static context studies only: original game atlas/player/font pixels, never remapped.
+local atlas=Image{fromFile=ROOT.."/assets/environment/factory_v1/tileset-fabrica-v1-atlas.png"}
+local playerAtlas=Image{fromFile=ROOT.."/assets/player/player-animations.png"}
+local player=crop(playerAtlas,0,0,64,64)
+local minx,miny,maxx,maxy=findBounds(player)
+local nativeX=120-math.floor((minx+maxx+1)/2)
+local nativeY=279-maxy -- bounding box lower edge lands at native y=280, world y=560.
+local context=Image(BG_W,BG_H)
+context:drawImage(backdrop,0,0)
+-- Existing floor atlas sampled 2:1 for this native-scale static composition preview.
+for tx=0,35 do
+  local sx=tx==0 and 0 or (tx==35 and 64 or 32)
+  for row=0,2 do
+    local sy=row==0 and 0 or (row==1 and 32 or 96)
+    for y=0,15 do for x=0,15 do
+      local destY=280+row*16+y
+      if destY<BG_H then context:drawPixel(tx*16+x,destY,atlas:getPixel(sx+x*2,sy+y*2)) end
+    end end
+  end
+end
+-- Keep the complete source frame, crop and pixel ratio intact in the study.
+context:drawImage(player,nativeX,nativeY)
+-- The two 32x56 door studies sit at the lobby's open-rest world positions / 2.
+context:drawImage(doorLeft,424,224); context:drawImage(doorRight,520,224)
+-- Preview-only counterpart of the existing amber plaque and three dynamic status lamps.
+rect(context,444,192,88,20,K.ink)
+rect(context,444,192,88,2,K.amber); rect(context,444,210,88,2,K.amber)
+rect(context,444,192,2,20,K.amber); rect(context,530,192,2,20,K.amber)
+for _,x in ipairs({464,484,504}) do
+  rect(context,x-4,214,8,8,K.ink); rect(context,x-2,216,4,4,K.amber)
+end
+-- The native composition keeps the plaque/lights but omits world-resolution HUD text.
+-- The 2x world study below draws the production glyphs at their exact logical size.
+context:saveAs(PRE.."/lobby-context-player-study-576x324.png")
+
+-- Context at the game's logical canvas: draw exact floor atlas tiles, doors, player frame,
+-- plaque geometry, status lamps and existing bitmap sign. This is a static art study only.
+local world=Image(1152,648)
+world:drawImage(nearestScale(backdrop,2),0,0)
+for tx=0,35 do
+  local sx=tx==0 and 0 or (tx==35 and 64 or 32)
+  for row=0,2 do
+    local sy=row==0 and 0 or (row==1 and 32 or 96)
+    local tileHeight=row==2 and 24 or 32
+    local tile=crop(atlas,sx,sy,32,tileHeight)
+    world:drawImage(tile,tx*32,560+row*32)
+  end
+end
+world:drawImage(nearestScale(player,2),nativeX*2,nativeY*2)
+world:drawImage(nearestScale(doorLeft,2),848,448)
+world:drawImage(nearestScale(doorRight,2),1040,448)
+rect(world,888,384,176,40,K.ink)
+rect(world,888,384,176,3,K.amber); rect(world,888,421,176,3,K.amber)
+rect(world,888,384,3,40,K.amber); rect(world,1061,384,3,40,K.amber)
+for _,x in ipairs({928,968,1008}) do
+  rect(world,x-7,428,14,14,K.ink); rect(world,x-4,431,8,8,K.amber)
+end
+local font=Image{fromFile=ROOT.."/assets/ui/hud_caldeira_v1/export/font-atlas.png"}
+local glyphs={
+ E={38,2},L={29,17},V={47,32},A={2,2},D={29,2},O={56,17},R={11,32},
+ [" "]={47,62},["/"]={56,62},N={47,17},["1"]={29,47},["0"]={20,47}
+}
+local sign="ELEVADOR / ANDAR 01"
+local labelX=896+math.floor((160-#sign*6)/2)
+for i=1,#sign do
+  local g=glyphs[sign:sub(i,i)]
+  if g then
+    for yy=0,10 do for xx=0,4 do
+      if pc.rgbaA(font:getPixel(g[1]+xx,g[2]+yy))>0 then
+        pixel(world,labelX+(i-1)*6+xx,388+yy,K.amber)
+      end
+    end end
+  end
+end
+world:saveAs(PRE.."/lobby-context-player-study-1152x648.png")
+local function nearestRatio(src,numer,denom)
+  local dw=src.width*numer/denom; local dh=src.height*numer/denom
+  local dst=Image(dw,dh)
+  for y=0,dh-1 do for x=0,dw-1 do
+    dst:drawPixel(x,y,src:getPixel(math.floor(x*denom/numer),math.floor(y*denom/numer)))
+  end end
+  return dst
+end
+nearestRatio(world,3,2):saveAs(PRE.."/lobby-context-player-study-1728x972.png")
+nearestScale(backdrop,2):saveAs(PRE.."/lobby-backdrop-2x.png")
+nearestScale(backdrop,3):saveAs(PRE.."/lobby-backdrop-3x.png")
+nearestScale(backdrop,2):saveAs(PRE.."/lobby-backdrop-2x.png")
+nearestScale(backdrop,3):saveAs(PRE.."/lobby-backdrop-3x.png")
+
+print("LOBBY_ART_OK")
+print("ASEPRITE_VERSION="..tostring(app.version or "unknown"))
+print("BACKDROP=576x324; DOOR=32x56; palette_budget=20; alpha=0/255")
+print("PLAYER_STUDY_SOURCE_FRAME=64x64; DRAW=64x64 native at ("..nativeX..","..nativeY..")")
+print("PLAYER_NONTRANSPARENT_BOUNDS="..minx..","..miny.."-"..maxx..","..maxy)
+print("PLAYER_BOTTOM_EDGE_NATIVE="..(nativeY+maxy+1).."; WORLD_AT_2X="..((nativeY+maxy+1)*2))
+
+
+
+
+

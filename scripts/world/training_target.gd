@@ -42,7 +42,7 @@ const SHOCKWAVE_VISUAL_DURATION: float = 0.175
 const SHOCKWAVE_RECOVERY_TAIL: float = 0.035
 
 @export var display_name: String = "Tranca-Lata"
-@export_range(1, 100, 1) var max_health: int = 3
+@export_range(1, 100, 1) var max_health: int = 6
 @export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
 @export_range(16.0, 400.0, 1.0) var attack_radius: float = 140.0
 @export var attack_center_offset: Vector2 = Vector2.ZERO
@@ -68,6 +68,11 @@ const SHOCKWAVE_RECOVERY_TAIL: float = 0.035
 @onready var _attack_dust: Node2D = $TrancaLataDust
 
 var health: int
+var enemy_level: int = 1
+var _level_base_captured: bool = false
+var _base_max_health: int = 6
+var _base_attack_damage: int = 1
+var _base_recovery_duration: float = 1.4
 var _flash_remaining: float = 0.0
 var _attack_state: AttackState = AttackState.IDLE
 var _state_remaining: float = 0.0
@@ -115,6 +120,23 @@ var _jump_source_top: float = 0.0
 var _jump_facing_direction: int = 1
 var _jump_escape_direction: int = 0
 var _decisions_suspended: bool = false
+
+func configure_level(level: int, level_config: EnemyLevelConfigResource) -> bool:
+	if is_inside_tree() or level < 1 or level_config == null:
+		return false
+	if not _level_base_captured:
+		_base_max_health = maxi(max_health, 1)
+		_base_attack_damage = maxi(attack_damage, 0)
+		_base_recovery_duration = maxf(recovery_duration, 0.05)
+		_level_base_captured = true
+	enemy_level = level
+	max_health = level_config.health_for_level(_base_max_health, level)
+	attack_damage = level_config.damage_for_level(_base_attack_damage, level)
+	recovery_duration = maxf(
+		_base_recovery_duration * level_config.cooldown_multiplier_for_level(level),
+		0.05
+	)
+	return true
 
 func _ready() -> void:
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING

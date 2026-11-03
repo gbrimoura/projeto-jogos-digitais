@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "CCFB6DE5C22E8CDFAA9AA4994C79B769F1E1A5704B019953B681791870E181F2",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\pareceres\\runtime-r1-input.txt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\historico\\runtime-r1\\main.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C80C0434B2E2D3E330C8903BE9CDB8C8D1B5F9C3EA9F010E48257DEEDE95D859",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\historico\\runtime-r1\\run_controller.gd"
+  }
+]

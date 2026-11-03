@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Revisão estática read-only concluída no pacote imutável `runtime-r1-input.txt` cobrindo o delta de transição técnica recuperável entre `main.gd` e `run_controller.gd`. O novo fluxo desacopla com segurança a sala concluída da árvore antes de anexar a candidata (evitando colisão de singletons globais como o primeiro Player do grupo), suporta rollback seguro de volta à sala de origem preservando HP e build, gerencia tokens de transição (`_transition_token`) em conformidade com GDScript 4.7, trata pausa e fade de forma idempotente e previne duplicação da tela/recompensa de chefe em caso de falha na sala seguinte.
+FINDINGS: none (nenhum bug P1/P2 real, quebra de contrato ou incompatibilidade de tipos GDScript 4.7 identificados no escopo avaliado)
+CHANGED_FILES: none
+TESTS: none
+RISKS: Nenhum risco crítico ou regressão P1/P2 no delta analisado. O tempo de fade e transição segue pausável conforme esperado pelo `RunController` (`Node.PROCESS_MODE_ALWAYS`), e as chamadas diferidas e de process_frame operam adequadamente com a árvore pausada.
+NEXT_STEP: Prosseguir com os pareceres dos demais revisores estáticos conforme o protocolo definido no repositório.

@@ -1,0 +1,15 @@
+STATUS: done
+SUMMARY: Plano/spec/referencias executaveis para kit HUD nativo Aseprite somente-arquivos-novos, sem integrar Godot. Escopo, grade 576x324/2x, paleta local, fills separados, clock cinza normalizado, fonte PT-BR, 9-slice e higiene de referencias corretos. Sem P1 bloqueante; P2 sao concretizacoes de manifest.
+FINDINGS:
+P1: none. Nao ha integracao Godot, alteracao de gameplay/cena/config/UID/Git, import de prancha ImageGen04 como textura, nem textura estrangeira no kit.
+P2-1 Executabilidade: concretizar comando no incremento: `root=<repo-abs>` + `--script assets/ui/hud_caldeira_v1/generate_hud.lua`, com aspas no binario `C:/Program Files (x86)/.../Aseprite.exe`. `<kit/...>` literal falharia. Registrar versao do Aseprite usada no manifest.
+P2-2 Retratos: manifest deve listar path-fonte de cada sprite real + crop rect 24x24 sem escala fracionaria. Spec exige mas nao lista IDs.
+P2-3 Fonte PT-BR: enumerar codepoints exatos: A-Z 0-9 espaco `/,:.-%` + acentos de `ACELERAÇÃO` e labels previstos [Ç Ã É etc]. Definir se minusculas fora de escopo e que labels de estudo sao maiusculas.
+P2-4 Dash 144x28 vertical apertado [icone 16 + clock 24 + linha 9px em 28px]: layout.json deve trazer rects interiores/margens e corte de fill; nao forcar texto para fora, registrar ajuste.
+P2-5 9-slice 24x24/canto 6px para paineis ate 144px: confinar rebites/parafusos aos 6px de canto, bordas retas esticaveis; manifest com margens/padding anti-bleed.
+P2-6 Clock 0..16: explicitar em Lua/manifest que eh normalizacao 0-100% placeholder de estudo, nao segundos/timing autoritativo; manter cinza, separado de âmbar/vermelho de vida.
+P2-7 Fills: trilho/fill separados, clipping inteiro por HP/max; interiores uteis documentados. Exemplos 3/5 e 2/3 sao amostras editaveis, nao regras de dano/vida.
+CHANGED_FILES: none
+TESTS: none — por AGENTS/proibicao expressa, sem Godot/parser/Aseprite/audit.
+RISKS: Oclusao futura por verticalidade/procedural nao eliminada por layout (8,8/8,44/216,8/484,8/484,44); escala futura 2x para 1152x648 e tratamento 1920x1080 pendentes; paleta local bloqueada nao eh final do GDD; drift de versao Aseprite sem pin; quota/saida vazia de revisores nao eh aprovacao.
+NEXT_STEP: Congelar paths/manifest-convencoes e delegar producao unica a GPT-6 Luna xhigh 30min somente em `assets/ui/hud_caldeira_v1/**`, depois revisoes frozen Gemini/Grok/Muse/Opus de implementacao.

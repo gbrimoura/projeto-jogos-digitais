@@ -1,0 +1,15 @@
+STATUS: done
+SUMMARY: Revisão estática somente-leitura da implementação de portas, sinalização direcional pixelada e ordenação de profundidade visual (Godot 4.7) concluída sobre o conjunto dos 7 arquivos e contextos fornecidos. O contrato físico de passagem (cápsula/gate/latch/set_deferred), a remoção de DoorLabels em Main/SecondRoom (índice 2 preservado), a lógica de estados (clear, busy, retry, terminal) e a geometria cardinal de setas (R2) estão íntegros e consistentes. Nenhum impeditivo bloqueante (P1) detectado; registrado um apontamento cosmético (P2) de assimetria no visual de fundo.
+
+FINDINGS:
+- P1: none.
+- P2: `scripts/world/side_door_visual.gd` (trigger: saída lateral voltada para a esquerda, `portal_direction == Vector2i(-1, 0)`). A propriedade `@export var flip_h: bool = false` é definida e alimentada por `exit_door.gd` (`_configure_visual_orientation`), mas não possui setter chamando `queue_redraw()` e seu método `_draw()` não aplica espelhamento horizontal (diferente de `door_foreground_visual.gd` que utiliza `draw_set_transform`). Como consequência, a cavidade traseira (`z = -1`) desenha a faixa `SHADOW` fixa à esquerda (`-half.x + 8.0`) e `COPPER` à direita (`half.x - 12.0`), mantendo a sombra no lado externo da parede em portas esquerdas em vez de espelhar para o vão interno. Não bloqueia passagem nem causa erro de runtime.
+
+CHANGED_FILES: none
+TESTS: none
+
+RISKS:
+- Ausência de espelhamento em `side_door_visual.gd` gera leve inconsistência visual de iluminação/sombra na cavidade da porta esquerda (`Vector2i(-1, 0)`), sem impacto funcional.
+- Arquivo residual vazio fora do repositório decorrente de falha de path prévia permanece preservado e fora do escopo de assets do Godot; não deve ser alvo de manipulações de limpeza que violem políticas de ambiente.
+
+NEXT_STEP: Submeter parecer formal ao registro da frente ativa e prosseguir com a solicitação da revisão complementar Claude Opus 5.5 High via Cursor Agent conforme orquestração estabelecida.

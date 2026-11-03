@@ -4,6 +4,7 @@ extends CharacterBody2D
 const ImpactSparkEffect = preload("res://scripts/projectile/impact_spark.gd")
 
 const CombatFeedbackScript = preload("res://scripts/feedback/combat_feedback.gd")
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
 
 enum ChargeState { INACTIVE, CHARGED, CONSUMED }
 
@@ -27,6 +28,7 @@ var _has_launched: bool = false
 var _has_finished: bool = false
 var _stop_sweep_requested: bool = false
 var _bounce_count: int = 0
+var _environmental_bounce_count: int = 0
 var _pending_motion: Vector2 = Vector2.ZERO
 var _damaged_targets_this_tick: Dictionary = {}
 var _racket_controller: Node
@@ -73,6 +75,7 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 	_stop_sweep_requested = false
 	_set_charge_state(ChargeState.INACTIVE)
 	_bounce_count = 0
+	_environmental_bounce_count = 0
 	_pending_motion = Vector2.ZERO
 	_parry_release_pending = true
 	if is_instance_valid(collision_shape):
@@ -211,6 +214,8 @@ func _physics_process(delta: float) -> void:
 		var impact_position := collision.get_position()
 		var impact_scene_root := get_tree().current_scene
 		var collider := collision.get_collider()
+		if not _is_damageable_collider(collider):
+			_environmental_bounce_count += 1
 		global_position += surface_normal * _config.collision_skin
 		_apply_impact_damage(collider, impact_position, impact_scene_root)
 		if _has_finished or _stop_sweep_requested:
@@ -303,9 +308,14 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
 
 	_damaged_targets_this_tick[target] = true
 	var was_charged := _charge_state == ChargeState.CHARGED
-	var damage_amount := _config.damage
-	if was_charged:
-		damage_amount += maxi(_config.charged_damage_bonus, 0)
+	var damage_amount := UpgradeCatalogScript.projectile_damage(
+		_config.damage,
+		_config.impact_rank,
+		_config.charge_rank,
+		was_charged and _config.reactive_charge_enabled,
+		_config.pressure_rank,
+		_environmental_bounce_count
+	)
 	var damage_result: Variant = target.call("take_damage", damage_amount, self)
 	var damage_was_accepted := typeof(damage_result) == TYPE_BOOL and bool(damage_result)
 	if not damage_was_accepted:

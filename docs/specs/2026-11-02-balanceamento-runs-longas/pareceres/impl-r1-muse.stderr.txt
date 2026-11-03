@@ -1,0 +1,15 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas
+→ Read docs/README.md
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/pareceres/impl-r1-input.txt [offset=1069]
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/plano.md
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/spec.md
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/registro.md
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/pareceres/README.md
+→ Read scripts/progression/upgrade_catalog.gd [limit=80]
+→ Read scripts/ui/upgrade_card.gd [limit=80, offset=120]
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/agente-avaliacao.md
+→ Read scripts/ui/upgrade_card.gd [limit=120]
+→ Read scripts/progression/upgrade_catalog.gd [limit=120, offset=76]

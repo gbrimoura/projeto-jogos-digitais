@@ -1,0 +1,33 @@
+Leitura do pacote imutável concluída. Segue o parecer somente-leitura, sem reabrir a Fase A e sem inspecionar o worktree mutável.
+
+STATUS: done
+SUMMARY: Incremento B R1a fecha o contrato de cartas 160x240 em palco 576x324, fonte local 84x105 com +/>, ícones Aseprite nos 7 IDs, present_options 1..3 + ranks + HP, clique único com pausa e guarda E/Esc. Sem P1 de fluxo atual. Três P2: faixa de resumo de 2 linhas cruzando a régua do frame; Button sem StyleBox vazio sobre os PNG de estado; BUILD concatenada sem corte.
+CHANGED_FILES: none
+TESTS: none
+
+FINDINGS:
+
+P1: none
+
+P2:
+- scripts/ui/upgrade_card.gd:93-95 e scenes/ui/upgrade_card.tscn:49-55 — Summary aceita 1..2 linhas em y=118..142 (h=24). O frame gerado em assets/ui/upgrade_cards_v1/source/generate_upgrade_cards.lua:860 desenha réguas em y=119 e y=138 (~19 px, 1 linha). scripts/progression/upgrade_catalog.gd:171 (`mola_retorno`: `"%d > %d ric.; %s > %s s"`) é o texto atual que passa de 24 caracteres quando os totais crescem, e a 2ª linha cruza a régua y=138.
+- scenes/ui/upgrade_card.tscn:6-13 — Button `flat` sem `theme_override_styles` vazios. O cromado de focus/hover/pressed do tema do projeto pode empilhar sobre FRAME_NORMAL/FOCUS/PRESSED (scripts/ui/upgrade_card.gd:166-174), fora do contrato “estados só PNG”.
+- scripts/world/main.gd:1817-1819 — `_update_build_status` junta todos os IDs em `"BUILD: " + " | ".join(...)` sem limite. Com 4 salas o texto já fica longo no Label da HUD; o P2 “só o 1º item” foi corrigido, mas a linha nova não cabe no slot compacto.
+
+Observações alinhadas ao briefing (não são P1/P2 de fluxo):
+- scripts/ui/upgrade_offer.gd:35-95 aceita 1..3 defs/rows, recalcula `UpgradeCatalog.card_preview`, recusa duplicata/tipo inválido/ícone ou fonte inválidos; Main passa 3 args (MAIN CALL).
+- Clique único `_selection_emitted` + `disabled` (upgrade_offer.gd:108-114); `PROCESS_MODE_WHEN_PAUSED`; E/Esc só consomem input (104-106); sem modal extra de boss nestes ficheiros.
+- HBox Cards y=60..300, separation=12 (upgrade_offer.tscn:51-57): 3×160+2×12=504, centro em x=36/208/380. Ilustração 128x80 em (16,34). Tópicos com prefixo "- " em x=8 → conteúdo em x=20, ≤24 glifos.
+- R1a Motor/Carga: topics sem número fixo (`motor_acelerado.tres` “Menor recarga do dash”; `carga_reativa.tres` “Rebata a própria bola” / “1 acerto carregado”). Summary before/after continua dinâmico no catálogo (`>` e `+` na fonte local).
+- Ícones reais nos 7 `.tres`; `configure` recusa `icon == null` (upgrade_card.gd:88-90). Atlas 84x105 e JSON + @ (72,2), > @ (78,2) batem com generate_card_font.lua e card-font-additions.json. HUD font.json/atlas não são alterados.
+- Delta A→B de `enemy_level_config_resource.gd:4` (`@export_range` 0.0..5.0, default 0.12) é a correção de range pedida; sem reabrir a fórmula de nível.
+- Preview/Lua/README (`NÍVEL MÁXIMO`, topics x=20 vs cena x=8) são estudo/metadado, não UI runtime. Resíduo externo de apply_patch fora do pacote; não é achado.
+
+RISKS:
+- Valores de `resources/projectile_config.tres` / `player_movement_config.tres` não vêm no pacote; o wrap de 2 linhas da Mola depende deles.
+- Glifos acentuados (ã/á/ó/é/í em títulos e tópicos) vêm do atlas HUD copiado; o pacote não inclui font.json da HUD. Root aprovou PNGs/estudo, não screenshot Godot.
+- size_flags default do Button no HBox (FILL sem EXPAND no Godot 4) preserva 160 px; um tema com SIZE_EXPAND esticaria as cartas.
+- Quota Opus exata impede aprovação por esse revisor; este parecer não substitui Opus.
+- Trilha de boss e `quality_audit` não estão neste pacote; não executados, conforme briefing/AGENTS.
+
+NEXT_STEP: Congelar B R1a sem cleanup do resíduo externo. Se houver correção, limitar a (1) encaixar Summary de 1 linha na faixa y=120..137 ou mover a régua y=138, (2) StyleBoxEmpty no Button, (3) truncar/priorizar a linha BUILD. Não reler Fase A nem rerodar Aseprite sem pedido. Não tratar este stdout como parecer Opus.

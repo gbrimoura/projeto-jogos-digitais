@@ -1,0 +1,15 @@
+STATUS: done
+SUMMARY: Adendo aprovado como detalhamento obrigatório antes do writer; P1 Tranca/Boss e HP resolvidos sem reabrir plano original.
+FINDINGS:
+- P1 Tranca não procede: evidência confirma `class_name TrainingTarget` em `scripts/world/training_target.gd` já permitido; vedado inventar `tranca*.gd`.
+- P2 Grok rejeitado corretamente: exigência global `cursor-grok-4.6-xhigh-fast` prevalece sobre `4.7` local; sem repetir preflight.
+- HP coerente: captura base no `ready` antes do build, `max=clampi(base+rank,1,100)`, cura só com aquisição explícita `delta>0`, sem cura em `apply` padrão/reapply/retry/nível, sem tocar invulnerabilidade, sem Heal com `HP<=0`, elegibilidade Chassi por máximo-base efetivo 100.
+- Boss coerente: exigir remoção explícita do bloco/chamada em `_advance_after_room 335..361`, Main gerenciado com `reward true` inclusive boss antes de travessia/vitória, sem bônus oculto/segundo modal; manter `_boss_reward*` sem uso aceito para reduzir delta.
+- RunBuild coerente: `MAX 220`, `add` por ID/cap, `replace_state` pré-valida `0..cap/soma<=220`, IDs positivos, commit atômico, ausentes=0, estranhos rejeitados, Catalog sem depender de RunBuild para evitar ciclo.
+- UI/Catálogo coerente: `<=24 glyphs`/linha, `-`/`+`/`>` compatíveis, dados em dados não em imagem, layout `576x324`/`Y60..300`/`X36/208/380` cabe, `fonts/HUD` somente leitura, FaseA sem preload inexistente, FaseB só `icon` em `*.tres` + única chamada `present_options` delimitada.
+- HUD Nível coerente: prefixo `NV{level}` com 5 glyphs para `NV220` dentro de 8 glyphs, sem crescer `144x40`/barra `14px`, escala antes de `add_child` + cache base obrigatórios.
+- Dano/RNG coerentes: fórmulas derivadas nunca acumuladas, contador ambiental só não-damageable, RNG oferta cacheado por instância mesmo ordinal, números provisórios mantidos.
+CHANGED_FILES: none
+TESTS: none
+RISKS: ordem ready PlayerHealth vs Main precisa ser garantida no writer; coerência runtime entre FaseA oferta antiga e FaseB `build/ranks` precisa de fronteira explícita para não deixar estado intermediário quebrado; campos mortos `_boss_reward*`/constantes legadas exigem vedação de uso futuro.
+NEXT_STEP: liberar writer respeitando limites de arquivos/API FaseA/B já delimitados, sem reabrir escopo hipotético.

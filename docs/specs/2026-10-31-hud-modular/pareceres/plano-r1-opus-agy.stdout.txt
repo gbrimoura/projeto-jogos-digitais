@@ -1,0 +1,101 @@
+STATUS: done
+
+SUMMARY: Revisei somente o pacote textual enviado. Não li o repositório, não alterei arquivos e não executei comandos. A arquitetura está bem delimitada: bridge isolada, raiz e componentes sem dependência de RunController, alterações em arquivos existentes limitadas a `run_root.tscn` e a um getter no MovementController, e vetos de execução respeitados. Mesmo assim, faltam contratos objetivos em cinco pontos que podem travar a Luna ou gerar regressão visual sem que a revisão estática perceba: detecção de troca/restauração de sala, disputa pela visibilidade dos nós legados, camadas e escala, estados do dash sem getters suficientes e inimigos que surgem depois. Recomendo aprovar com ajustes. O escopo e o visual aprovados ficam como estão; os ajustes apenas fecham esses contratos antes da escrita.
+
+FINDINGS:
+
+P1-1 — Gatilho de religação da sala sem contrato
+- O problema: o plano exige religar a HUD após a restauração por erro "mesmo que a referência do nó permaneça igual", mas proíbe editar RunController. Comparar a identidade de `current_room_instance` não detecta essa restauração.
+- Risco extra: durante a troca transacional, a sala antiga e a nova podem estar na árvore ao mesmo tempo.
+- O que definir antes da escrita:
+  - o gatilho, por exemplo os sinais `tree_exiting`/`tree_entered` da sala, ou o par identidade + `is_inside_tree()` verificado a cada frame;
+  - um token de geração interno da bridge que invalide callbacks antigos;
+  - a regra de que só a sala igual a `current_room_instance` e dentro da árvore é ligada;
+  - a ordem do teardown: desconectar, limpar o cache e restaurar a visibilidade antes de religar.
+
+P1-2 — Disputa pela visibilidade dos nós legados
+- O problema: a bridge oculta HealthFrame/HealthFill/NameLabel e as Labels de status, mas os scripts de inimigo e de sala, que não podem ser editados, podem reescrever `visible` (ao levar dano, ao trocar de onda, ao esconder um label vazio). Isso causa pisca-pisca e HUD duplicada.
+- Risco extra: "restaurar a visibilidade guardada" pode devolver um estado antigo que o próprio legado já mudou.
+- O que definir antes da escrita:
+  - a Luna verifica, na leitura inicial, quem escreve `visible` nesses nós;
+  - um mecanismo fixo de ocultação: reaplicar a cada frame enquanto a HUD estiver ligada, ou usar um canal que o legado não toca (por exemplo `modulate.a`, se o legado nunca o usa);
+  - no teardown, restaurar só o que a bridge alterou.
+
+P1-3 — Ocultar um container legado esconde os filhos
+- O problema: diagnósticos técnicos e o overlay de derrota/recompensa precisam continuar visíveis. Se estiverem dentro do mesmo container do HUD antigo, ocultar o pai esconde tudo.
+- O que definir antes da escrita:
+  - uma lista nominal dos nós que serão ocultados (nunca um container pai sem antes verificar seus filhos);
+  - o `layer` do CanvasLayer novo, numericamente abaixo das camadas de overlay e diagnóstico;
+  - `MOUSE_FILTER_IGNORE` também na raiz e em todos os containers de tela cheia, para não bloquear os botões de recompensa.
+
+P1-4 — Escala inteira pode virar escala dupla
+- O problema: "escala inteira que caiba no viewport, sem mudar o stretch global" é ambíguo. Se o projeto já usa stretch `viewport`/`canvas_items` com base 576×324, a raiz não deve escalar de novo. Se não usa, precisa calcular a escala.
+- O que definir antes da escrita:
+  - a regra: escala = floor(min(tamanho_visível / 576×324)), mínimo 1, aplicada somente quando o stretch global não já entrega a grade nativa;
+  - a recomputação em `get_viewport().size_changed`, com desconexão no `_exit_tree`;
+  - posição final arredondada depois da escala.
+
+P1-5 — Getters do dash insuficientes para os quatro estados
+- O problema: o escopo refinado autoriza só um getter da duração efetiva do cooldown. Os estados ACTIVE, COOLDOWN, pronto e indisponível/desabilitado, mais os segundos restantes, podem exigir tempo restante, `is_dashing`, `can_dash` e chão/desabilitado.
+- Risco: se isso não for público hoje, a Luna fica bloqueada ou lê campos privados `_timer`/`_config` pela bridge, quebrando o encapsulamento.
+- O que definir antes da escrita:
+  - na leitura inicial, listar quais desses dados já são públicos;
+  - autorizar explicitamente getters puros adicionais (somente leitura, sem efeito colateral) em `movement_controller.gd`;
+  - deixar a bridge proibida de ler campos com `_`.
+
+P1-6 — Inimigos que surgem depois
+- O problema: o cache de inimigos por subtree não cobre inimigos instanciados em ondas depois da ligação. Eles ficariam sem alvo e com a barra legada visível.
+- O que definir antes da escrita:
+  - escutar `child_entered_tree` recursivamente na sala, ou `SceneTree.node_added` filtrado por `room.is_ancestor_of(node)`;
+  - a remoção via `tree_exiting`;
+  - tudo desconectado no teardown.
+
+P2-1 — Contratos de dados ainda abertos
+- Ponto da mira: a fonte é `get_global_mouse_position()` do canvas da sala, a API de mira do Player ou a câmera? Precisa ser decidido.
+- Predicado de "vivo": campo de vida > 0 ou flag de morte, `is_instance_valid`, ainda não liberado (`is_queued_for_deletion`), dentro da árvore.
+- Origem de HP e nome do alvo: propriedades do inimigo, não o texto do NameLabel.
+- Desempate estável: instance_id ou histerese em pixels, para o painel não piscar entre dois inimigos equidistantes.
+
+P2-2 — Contador de salas
+- Se não houver um total real, exibir só o andar/sala atual, sem inventar total.
+- Nunca usar os valores de exemplo 3/5 e 4/6 como padrão; o valor inicial é vazio/oculto.
+
+P2-3 — HP em pixels inteiros
+- Fixar a fórmula: clamp(cur, 0, max); max ≤ 0 deixa o fill oculto; largura = floor(largura_útil × cur/max).
+- Decidir se cur > 0 garante pelo menos 1 px.
+- Texto atual/máximo com inteiros, ou regra de arredondamento explícita para valores fracionários.
+
+P2-4 — Texto do dash
+- Formato dos segundos: ceil ou uma casa decimal; separador PT-BR com vírgula.
+- Precedência quando can_dash é falso mas o cooldown está zerado: mostrar "indisponível", nunca "PRONTO".
+
+P2-5 — Fonte bitmap
+- Glyph ausente (acentos PT-BR, caixa): definir substituto ou espaço, com aviso uma única vez.
+- Metadata ausente: não desenhar e usar o canal legado, sem crash.
+- Carregamento do JSON: usar `load()` como recurso JSON (ou outro formato importado) em vez de FileAccess cru, para evitar falha no fluxo de importação/export.
+
+P2-6 — Filtro nearest sem tocar no kit
+- Aplicar `texture_filter = NEAREST` nos CanvasItems novos.
+- Não alterar os `.import` dos PNGs do kit, já que isso conta como mudar os assets originais. Se o import atual for incompatível, registrar como pendência em vez de mudar.
+
+P2-7 — BallGauge
+- Oculto por padrão, sem fonte de dados ligada nesta rodada.
+- Não ler velocidade nem desenhar valor de exemplo.
+
+P2-8 — process_mode
+- Explicitar o comportamento com a árvore pausada (overlay de recompensa ou derrota): HUD congelada (herdada) ou `ALWAYS`.
+- Garantir que a bridge não religue durante a pausa com uma sala obsoleta.
+
+P2-9 — Governança
+- O preflight cita `cursor-grok-4.6-xhigh-fast`, mas o AGENTS exige o identificador confirmado `grok-4.7-xhigh-fast`. Registrar com evidência a fonte da precedência global, ou executar com o 4.7, para não haver substituição silenciosa.
+- A pasta ativa `docs/specs/<nome>/` não está nomeada no pacote; registrar o caminho exato.
+
+CHANGED_FILES: none
+
+TESTS: none (revisão estática do texto, conforme veto do usuário)
+
+RISKS:
+- Esta revisão não verificou o código real (escopo "somente este pacote"). Os itens P1-2, P1-3, P1-4 e P1-5 dependem do que o legado faz de fato e precisam ser confirmados na leitura inicial da Luna.
+- Sem execução, problemas de pisca-pisca de visibilidade, ordem de camadas, escala dupla e recorte de pixels só aparecem em runtime. O handoff deve declarar isso explicitamente.
+
+NEXT_STEP: Incorporar ao plano os contratos P1-1 a P1-6 (gatilho e token de geração, lista nominal de ocultação com mecanismo fixo, layers e mouse filter, regra de escala, getters do dash autorizados, escuta de inimigos novos) e as decisões P2. Depois liberar a escrita única da Luna, com a leitura inicial confirmando os pontos que dependem do legado antes de produzir código.

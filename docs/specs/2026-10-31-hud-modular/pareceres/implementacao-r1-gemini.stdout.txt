@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Revisão estática READ-ONLY concluída sobre o pacote congelado da implementação R1 do HUD modular Caldeira v1. A arquitetura respeita rigorosamente os contratos R2 e R3: nós novos em scripts/ui/hud e scenes/ui/hud, inclusão não intrusiva em run_root.tscn, getter puro get_dash_cooldown_duration() em MovementController sem vazamento de escopo, mascaramento reversível de labels legados com preservação de fallback e overlays, ciclo de vida com tokens e unbind limpo em tree_exiting/pause, renderização de fonte bitmap com fallback seguro e cálculo de escala inteira compensando o stretch transform no CanvasLayer. Nenhum erro de sintaxe ou violação de contrato Godot 4.7 detectado.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: Ausência física dos assets atlas/json de fonte ou texturas em runtime ativa degradação graciosa para HUD legado via fallback; rooms sem a hierarquia padrão CombatRoom/HUD ou Player impedem o binding do HUD modular, mantendo o fallback legado ativo sem interromper a execução.
+NEXT_STEP: Prosseguir com a consolidação das revisões R1 dos demais revisores e autorizar aplicação se os pareceres forem convergentes.

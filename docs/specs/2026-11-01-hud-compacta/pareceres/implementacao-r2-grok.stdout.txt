@@ -1,0 +1,13 @@
+STATUS: done
+
+SUMMARY: Revisão estática Godot 4.7 de UI/layout do pacote R2 (Root script, Root scene, Bridge header + escala + DIFF completo base→final). Contrato de compactação, âncoras, setters, cache, resize, `call` e tipagem fecham sem P1/P2 concretos. Correções R2 (`scale_reference_size` mínimo 576×324 no setter e na fórmula; `final_origin = visible_origin.round()`) estão no texto. Sem escrita, engine, parser, lint, Git ou medição visual.
+
+FINDINGS: none
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: Cálculos de contrato (não captura): 1920×1080 / ref 960×540 → `fit` 2, `final_pixel_scale` 2, root `floor(1920/2)×floor(1080/2)=960×540`; 1152×648 → scale 1, root 1152×648; 1280×720 → scale 1, root 1280×720; 4K 3840×2160 → scale 4, root 960×540. Em 960×540 e `module_pixel_scale` 1 as fórmulas reproduzem vida (8,8), dash (8,52), alvo x 408, salas x 868. `floor` em tamanho ímpar deixa resto à direita/baixo; o contrato pede origem preservada+round, não recentrar canvas 576. Abaixo de 576×324 a raiz clampa o mínimo e pode recortar. `set_available_stage_size` não testa `is_node_ready()`, mas `_apply_layout` anula `@onready` nulos e a Bridge só sincroniza no `_ready` do pai (filho já pronto) / `_process` / resize. Painéis filhos (fora das 3 fontes de escrita) são `layout_mode` 3 com 144×40 / 84×36 / 84×77, alinhados aos fallbacks; HP/dash/salas nascem ocultos no packed e só `show()` nos setters já existentes.
+
+NEXT_STEP: Seguir com Opus Cursor `claude-opus-5-5-high` exato; quota ou stdout vazio não conta como parecer. Sem correção de layout neste lote.

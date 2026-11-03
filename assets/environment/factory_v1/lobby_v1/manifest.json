@@ -1,0 +1,384 @@
+{
+  "kit": "factory_v1_lobby_pixel_art_v1",
+  "aseprite_version": "1.3.18.6",
+  "native_canvas": {
+    "backdrop": {
+      "width_px": 576,
+      "height_px": 324
+    },
+    "door": {
+      "width_px": 32,
+      "height_px": 56
+    }
+  },
+  "logical_canvas": {
+    "width_px": 1152,
+    "height_px": 648,
+    "scale": 2,
+    "filter": "nearest"
+  },
+  "transparency": {
+    "allowed_alpha": [
+      0,
+      255
+    ],
+    "backdrop_fully_transparent_from_native_y": 280,
+    "world_floor_top_y": 560
+  },
+  "palette": {
+    "factory_17": [
+      "#0E0D0E",
+      "#171719",
+      "#1D1B1A",
+      "#25292A",
+      "#302D2A",
+      "#353B3B",
+      "#433E39",
+      "#4A2D21",
+      "#563829",
+      "#5B5249",
+      "#70432C",
+      "#756957",
+      "#925A36",
+      "#90816A",
+      "#8F7059",
+      "#B78342",
+      "#D2A75C"
+    ],
+    "existing_accents_max_3": [
+      "#E8D8B5",
+      "#879198",
+      "#52BAC7"
+    ],
+    "max_colors": 20,
+    "accent_usage": "cyan used only as a single distant instrument LED",
+    "scope": "new_runtime_exports_only",
+    "excludes_from_this_lock": [
+      "legacy amber plaque and dynamic status lamps",
+      "existing factory floor atlas",
+      "original player sprite",
+      "context-study previews"
+    ]
+  },
+  "runtime_exports": [
+    {
+      "file": "export/lobby-backdrop-576x324.png",
+      "native_size": [
+        576,
+        324
+      ],
+      "draw_destination_world": [
+        0,
+        0,
+        1152,
+        648
+      ],
+      "opaque_bounds": "authored scene above y=280 native; transparent for y>=280"
+    },
+    {
+      "file": "export/elevator-door-left-32x56.png",
+      "native_size": [
+        32,
+        56
+      ],
+      "draw_size_world": [
+        64,
+        112
+      ],
+      "open_position_world": [
+        848,
+        448
+      ],
+      "closed_position_world": [
+        912,
+        448
+      ]
+    },
+    {
+      "file": "export/elevator-door-right-32x56.png",
+      "native_size": [
+        32,
+        56
+      ],
+      "draw_size_world": [
+        64,
+        112
+      ],
+      "open_position_world": [
+        1040,
+        448
+      ],
+      "closed_position_world": [
+        976,
+        448
+      ]
+    }
+  ],
+  "composition_regions_world": {
+    "workbench": "x≈144..224; low, visual only; vise and two tools",
+    "factory_tower": "x≈650..1152; roof steps/chimneys/windows; subdued midground",
+    "elevator_inner_reference": [
+      912,
+      448,
+      128,
+      112
+    ],
+    "user_amber_plaque": [
+      888,
+      384,
+      176,
+      40
+    ],
+    "elevator_sign_node": [
+      896,
+      388
+    ],
+    "amber_lamp_centers_x": [
+      928,
+      968,
+      1008
+    ],
+    "floor_top_y": 560
+  },
+  "source_player_study": {
+    "source": "assets/player/player-animations.png",
+    "frame0_crop": [
+      0,
+      0,
+      64,
+      64
+    ],
+    "draw_size_native": [
+      64,
+      64
+    ],
+    "draw_origin_native": [
+      88,
+      223
+    ],
+    "nontransparent_bounds_in_crop": [
+      21,
+      7,
+      23,
+      50
+    ],
+    "foot_lower_edge_native_y": 280,
+    "corresponding_world_y": 560,
+    "note": "Study-only: original pixels unchanged; not runtime capture.",
+    "bounds_encoding": "x,y,width,height",
+    "inclusive_bounds": {
+      "x": 21,
+      "y": 7,
+      "right": 43,
+      "bottom": 56
+    }
+  },
+  "sources": [
+    "source/generate_lobby.lua",
+    "source/lobby-backdrop.aseprite",
+    "source/elevator-doors.aseprite"
+  ],
+  "previews": [
+    "preview/lobby-context-player-study-576x324.png",
+    "preview/lobby-context-player-study-1152x648.png",
+    "preview/lobby-context-player-study-1728x972.png",
+    "preview/lobby-backdrop-2x.png",
+    "preview/lobby-backdrop-3x.png"
+  ],
+  "authoring": "Aseprite Lua; integer pixel placement; no raster postprocessing or noise generation.",
+  "runtime_integration": "Integrated only in scripts/world/lobby_visual.gd through normal Texture2D preload dependencies and nearest 2x draw destinations after root visual approval; static review pending; no Godot/import/runtime validation run.",
+  "tests": [],
+  "sha256": {
+    "source/generate_lobby.lua": "b6ab606600db23907c0b47805af48c085212791cec74dd50988471a7e6ee3fad",
+    "source/lobby-backdrop.aseprite": "c7a904678e824031c17bee83464a4661340289fe3b0f4727c8743b1476b5921c",
+    "source/elevator-doors.aseprite": "9522b1171d00432caedd6ff0f705f4eb180aec59f444f753d128e7640e87caec",
+    "source/aseprite-production-r3.stdout.log": "260bb13c906d6288bd70b30db355a7611c6c589e7eaa14d2bc950c07cb182476",
+    "source/aseprite-production-r3.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "source/aseprite-production-r3.exit-code.txt": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+    "export/lobby-backdrop-576x324.png": "9e5526b357d96df5ad789a2167971bdbed5acf13a9d1dac14fedde35a2bcb777",
+    "export/elevator-door-left-32x56.png": "46724c0fa69c492db08fe05969b457213e0b8158ca75d61a573710a6e70a5ace",
+    "export/elevator-door-right-32x56.png": "c6e792425f4b91467116e0a0f6ea9705dd7dcd5f488bce7c1aaff0da1d2ae16a",
+    "preview/lobby-context-player-study-576x324.png": "835a70a510d6ecf2013c5a5ccaf4db02f706007dd2bfcdf4f9cdd81ad0ba8498",
+    "preview/lobby-context-player-study-1152x648.png": "da3df787fd567fcece87948110204d12cd24bb94016efa7a508426a5ef1249d0",
+    "preview/lobby-context-player-study-1728x972.png": "6e9f400d41f37974f8f5d3dc6e8ccae5c09d3a8a57cacdf9142a4935fb0ce5d7",
+    "preview/lobby-backdrop-2x.png": "14448550336925b5c8e00ebabfb852eb18b4e0d71210ecfa8eb4e790ecb942a5",
+    "preview/lobby-backdrop-3x.png": "d7e98d78d95aee2aeab44f948b28b9a623d3f2fd147e1c256997fff545ff83d5"
+  },
+  "revision": "R3 editable Aseprite palette",
+  "regions_native": {
+    "backdrop_opaque_rect": [
+      0,
+      0,
+      576,
+      280
+    ],
+    "backdrop_transparent_from_y": 280,
+    "left_and_center_masonry_bounds": [
+      0,
+      108,
+      370,
+      172
+    ],
+    "tower_bounds": [
+      314,
+      0,
+      262,
+      280
+    ],
+    "workbench": [
+      70,
+      238,
+      42,
+      40
+    ],
+    "elevator_surround": [
+      432,
+      210,
+      112,
+      70
+    ],
+    "elevator_clear_opening": [
+      456,
+      224,
+      64,
+      56
+    ],
+    "sign_backing_reserved": [
+      444,
+      193,
+      88,
+      19
+    ],
+    "inset_windows": [
+      [
+        55,
+        145,
+        17,
+        30
+      ],
+      [
+        91,
+        145,
+        17,
+        30
+      ],
+      [
+        124,
+        145,
+        17,
+        30
+      ],
+      [
+        208,
+        158,
+        18,
+        32
+      ],
+      [
+        249,
+        158,
+        18,
+        32
+      ],
+      [
+        378,
+        87,
+        18,
+        31
+      ],
+      [
+        420,
+        87,
+        18,
+        31
+      ],
+      [
+        463,
+        87,
+        18,
+        31
+      ],
+      [
+        378,
+        137,
+        18,
+        31
+      ],
+      [
+        420,
+        137,
+        18,
+        31
+      ],
+      [
+        463,
+        137,
+        18,
+        31
+      ],
+      [
+        515,
+        144,
+        17,
+        29
+      ]
+    ],
+    "service_routes": "Connected pipes stay on wall piers/exterior; clear all inset glass and cabin opening."
+  },
+  "production_runs": [
+    {
+      "revision": "R1",
+      "exit_code": 0,
+      "archived_under": "history/r1-before-opaque-base/",
+      "note": "First approved art preview; superseded because transparent sky depended on viewport clear color."
+    },
+    {
+      "revision": "R2",
+      "aseprite_version": "1.3.18.6",
+      "exit_code": 0,
+      "archived_under": "history/r3-before-setPalette/",
+      "note": "Opaque night base; current runtime PNG hashes were later proven unchanged in R3."
+    },
+    {
+      "revision": "R3",
+      "aseprite_version": "1.3.18.6",
+      "exit_code": 0,
+      "stdout": "source/aseprite-production-r3.stdout.log",
+      "stderr": "source/aseprite-production-r3.stderr.log",
+      "note": "Direct sprite:setPalette(pal), duplicate no-op draws/saves removed; all three runtime PNG SHA-256 values are unchanged."
+    }
+  ],
+  "integration_file_sha256": {
+    "scripts/world/lobby_visual.gd": "38bd010937abac0d859f10afa9e6d63941ced8222143157b245cc61852339f40",
+    "scenes/lobby.tscn": "fc4e064d66a9702ef07556fe2008d20044708dd5e2cd0ee605691283b820cb10"
+  },
+  "history": {
+    "r1": "history/r1-before-opaque-base/",
+    "r2_before_preload": "history/r2-before-preload/scripts/world/lobby_visual.gd",
+    "r3_before_setpalette": "history/r3-before-setPalette/"
+  },
+  "preview_context": {
+    "world_size_px": [
+      1152,
+      648
+    ],
+    "clip_rect_world": [
+      0,
+      0,
+      1152,
+      648
+    ],
+    "note": "Static preview is clipped to the reference canvas; existing draw_rect floor overdraw beyond y=648 is outside the viewport and remains unchanged."
+  },
+  "legacy_overdraw_baseline": {
+    "floor_last_draw_y": 624,
+    "floor_tile_height": 32,
+    "viewport_bottom_y": 648,
+    "changed": false
+  },
+  "hash_comparison_before_after_r3": {
+    "elevator-door-left-32x56.png": "46724c0fa69c492db08fe05969b457213e0b8158ca75d61a573710a6e70a5ace",
+    "elevator-door-right-32x56.png": "c6e792425f4b91467116e0a0f6ea9705dd7dcd5f488bce7c1aaff0da1d2ae16a",
+    "lobby-backdrop-576x324.png": "9e5526b357d96df5ad789a2167971bdbed5acf13a9d1dac14fedde35a2bcb777"
+  }
+}

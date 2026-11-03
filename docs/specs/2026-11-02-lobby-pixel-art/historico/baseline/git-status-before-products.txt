@@ -1,0 +1,86 @@
+## corrigir-sprites-salas-plataformas
+ M addons/godot-git-plugin/THIRDPARTY.md
+ M docs/README.md
+ M project.godot
+ M resources/upgrades/carga_reativa.tres
+ M resources/upgrades/impacto_reforcado.tres
+ M resources/upgrades/motor_acelerado.tres
+ M run_root.tscn
+ M scenes/exit_door.tscn
+ M scenes/main.tscn
+ M scenes/rivet_worker.tscn
+ M scenes/second_room.tscn
+ M scenes/training_target.tscn
+ M scenes/upgrade_offer.tscn
+ M scripts/enemy/rivet_worker.gd
+ M scripts/player/ball_launcher.gd
+ M scripts/player/movement_controller.gd
+ M scripts/player/player.gd
+ M scripts/player/player_health.gd
+ M scripts/player/racket_controller.gd
+ M scripts/progression/run_build.gd
+ M scripts/progression/upgrade_definition_resource.gd
+ M scripts/projectile/projectile_config.gd
+ M scripts/projectile/ricochet_ball.gd
+ M scripts/ui/upgrade_offer.gd
+ M scripts/world/exit_door.gd
+ M scripts/world/main.gd
+ M scripts/world/room_layout_generator.gd
+ M scripts/world/run_controller.gd
+ M scripts/world/side_door_visual.gd
+ M scripts/world/training_target.gd
+?? Godot/
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF3b7df52.TMP
+?? addons/godot-git-plugin/windows/~libgit_plugin.windows.editor.x86_64.dll~RF565732f.TMP
+?? assets/ui/
+?? docs/specs/2026-10-31-hud-aseprite/
+?? docs/specs/2026-10-31-hud-modular/
+?? docs/specs/2026-10-31-portas-sinalizacao-passagem/
+?? docs/specs/2026-10-31-transicao-recuperavel/
+?? docs/specs/2026-11-01-cartas-simples/
+?? docs/specs/2026-11-01-cartas-upgrades-niveis/
+?? docs/specs/2026-11-01-corrigir-array-gerador/
+?? docs/specs/2026-11-01-hud-compacta/
+?? docs/specs/2026-11-01-setas-alinhamento-piscar/
+?? docs/specs/2026-11-01-valley-rota-recuperacao/
+?? docs/specs/2026-11-02-balanceamento-runs-longas/
+?? docs/specs/2026-11-02-cartas-contador-nivel/
+?? docs/specs/2026-11-02-cartas-integracao-textos/
+?? docs/specs/2026-11-02-cartas-mecanicas/
+?? docs/specs/2026-11-02-cartas-topicos-destaques/
+?? docs/specs/2026-11-02-corrigir-oferta-tipo-local/
+?? docs/specs/2026-11-02-dez-salas-andar/
+?? docs/specs/2026-11-02-hud-alvo-encaixe/
+?? docs/specs/2026-11-02-lobby-elevador/
+?? docs/specs/2026-11-02-lobby-pixel-art/
+?? docs/specs/2026-11-02-prismas-textos-cartas/
+?? resources/progression/
+?? resources/upgrades/ajuste_recarga_dash.tres
+?? resources/upgrades/ajuste_velocidade_bola.tres
+?? resources/upgrades/chassi_reforcado.tres
+?? resources/upgrades/dinamo_defesa.tres
+?? resources/upgrades/mola_retorno.tres
+?? resources/upgrades/reparo_campo.tres
+?? resources/upgrades/ricochete_pressao.tres
+?? scenes/lobby.tscn
+?? scenes/ui/
+?? scripts/progression/enemy_level_config_resource.gd
+?? scripts/progression/enemy_level_config_resource.gd.uid
+?? scripts/progression/upgrade_catalog.gd
+?? scripts/progression/upgrade_catalog.gd.uid
+?? scripts/ui/hud/
+?? scripts/ui/upgrade_card.gd
+?? scripts/ui/upgrade_card.gd.uid
+?? scripts/ui/upgrade_rank_prisms.gd
+?? scripts/ui/upgrade_rank_prisms.gd.uid
+?? scripts/ui/upgrade_stat_text.gd
+?? scripts/ui/upgrade_stat_text.gd.uid
+?? scripts/world/door_foreground_visual.gd
+?? scripts/world/door_foreground_visual.gd.uid
+?? scripts/world/exit_direction_indicator.gd
+?? scripts/world/exit_direction_indicator.gd.uid
+?? scripts/world/lobby.gd
+?? scripts/world/lobby_visual.gd
+?? scripts/world/managed_room_topology.gd.uid
+?? scripts/world/room_run_layout.gd.uid

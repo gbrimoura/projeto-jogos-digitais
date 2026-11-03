@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/carga_reativa_128x80.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_definition")
+icon = ExtResource("2_icon")
+upgrade_id = &"carga_reativa"
+title = "Carga Reativa"
+description = "Rebata sua bola para carregá-la."
+effect_summary = "Carrega o próximo acerto"
+effect_topics = PackedStringArray("Dano extra: +2", "No próximo acerto")
+reactive_charge_enabled = true
+charged_damage_bonus = 2
+rank_cap = 220
+charged_damage_bonus_per_rank = 2

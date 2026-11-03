@@ -1,0 +1,10 @@
+STATUS: done
+SUMMARY: Fix 2-scripts válido no recorte inline. `upgrade_card.gd` remove dependência do global `UpgradeStatText` usando `const UpgradeStatTextScript=preload(...)` como tipo em `Array[]`, params e `as`; `upgrade_stat_text.gd` troca `extends HudBitmapText` por `extends "res://scripts/ui/hud/bitmap_text.gd"`. Cadeia acíclica: Card->{Bitmap,Stat}, Stat->Bitmap, Bitmap->Control. `class_name` mantido só para editor, sem duplicar alias. Causa do log/cache coerente: parse de Card falhou primeiro, depois `load_card_font_bundle` inexistente em Offer e falha em Main. Sem P1 bloqueador no escopo inline.
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- P1: nenhum bloqueador concreto no inline. Sintaxe `Array[AliasPreload]`, param `func f(c: Alias)` e `$N as Alias` é forma válida Godot 4.7 para Script preload; paths literais conferem; membros herdados usados por `_draw`/`configure` existem no FINAL inline (`_font_atlas/_glyphs/_advance/_line_height/_make_lines/center_text/right_align/font_color/size`); cores/`Array[Color]` intocados.
+- P2: recorte inline mantém `_title/_summary/_configure_text` com global `HudBitmapText` enquanto `HudBitmapTextScript` existe; não bloqueia porque cache observado contém `HudBitmapText`, e tscn liga tudo por path. Não alterar agora.
+- P2: cobertura restrita aos hunks/FINAL inline; eventual referência global `UpgradeStatText` fora do diff não verificável aqui; Offer inline citado só chama `UpgradeCard.load_card_font_bundle`, preservado.
+- Runtime ainda inconfirmado; fonte diff vista, sem reabrir balanceamento/layout/reward e sem tocar cache.
+NEXT_STEP: Manter estado congelado e aguardar sinal de runtime do usuário; sem ação de escrita.

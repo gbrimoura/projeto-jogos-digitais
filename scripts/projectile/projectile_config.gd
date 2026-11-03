@@ -13,7 +13,7 @@ var collision_radius: float = 8.0
 @export_range(0.0, 80.0, 0.5)
 var spawn_offset: float = 48.0
 
-@export_range(0, 3, 1)
+@export_range(0, 6, 1)
 var max_bounces: int = 3
 
 @export_range(1, 100, 1)
@@ -23,6 +23,11 @@ var damage: int = 1
 @export var reactive_charge_enabled: bool = false
 @export_range(0, 100, 1)
 var charged_damage_bonus: int = 0
+
+## Rank data is filled into each launch snapshot by BallLauncher.
+var impact_rank: int = 0
+var charge_rank: int = 0
+var pressure_rank: int = 0
 
 ## World (layer 1) plus Damageable (layer 4).
 @export_flags_2d_physics

@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Plano R2 fecha riscos concretos R1 no nível de plano; sem bloqueador, sem mecânica nova, pronto para implementar no escopo autorizado.
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS: Validação só documental, sem Godot/testes; fallback fonte-atlas preserva legado; pausa/overlay layer=1 exige hide obrigatório; layout fino fica para implementação sem violar invariantes.
+NEXT_STEP: Autorizar implementação só em scripts/ui/hud/**, scenes/ui/hud/**, run_root.tscn e getter puro MovementController.

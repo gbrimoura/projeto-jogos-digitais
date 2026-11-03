@@ -1,0 +1,12 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/README.md
+→ Read docs/specs/2026-11-01-cartas-simples/pareceres/r2-input.txt
+✱ Glob "**/*" in docs/specs/2026-11-01-cartas-simples · 100 matches
+→ Read docs/specs/2026-11-01-cartas-simples/plano.md
+→ Read docs/specs/2026-11-01-cartas-simples/spec.md
+→ Read docs/specs/2026-11-01-cartas-simples/pareceres/README.md
+→ Read docs/specs/2026-11-01-cartas-simples/historico/r2/scripts/progression/upgrade_catalog.gd
+→ Read docs/specs/2026-11-01-cartas-simples/historico/r2/scripts/ui/upgrade_card.gd
+→ Read docs/specs/2026-11-01-cartas-simples/historico/base/scripts/progression/upgrade_catalog.gd

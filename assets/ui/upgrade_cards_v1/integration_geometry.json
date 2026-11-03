@@ -1,0 +1,10 @@
+{
+  "card_size":{"w":160,"h":240},
+  "illustration":{"x":16,"y":34,"w":128,"h":80,"transparent":true,"draw_order":"after_frame"},
+  "text":{"title":{"x":8,"y":8,"w":144,"h":12},"summary":{"x":8,"y":121,"w":144,"h":12},"topics":[{"x":20,"y":144,"w":128,"h":12},{"x":20,"y":158,"w":128,"h":12},{"x":20,"y":172,"w":128,"h":12}],"badge":{"x":12,"y":204,"w":136,"h":24}},
+  "font":{"base_bundle":"assets/ui/hud_caldeira_v1/export/font.json","base_atlas":"assets/ui/hud_caldeira_v1/export/font-atlas.png","replacement_atlas":"assets/ui/upgrade_cards_v1/export/card-font-atlas.png","additions":"assets/ui/upgrade_cards_v1/export/card-font-additions.json","metrics":{"cell":{"w":5,"h":11},"advance":6,"line_height":12,"baseline_from_top_zero_based":8,"canvas":{"w":84,"h":105}},"integration":"Load the base font bundle, replace its atlas path, append additions.glyphs and call configure_font(bundle) on HudBitmapText."},
+  "preview":{"canvas":{"w":576,"h":324},"cards":[{"x":36,"y":60},{"x":208,"y":60},{"x":380,"y":60}]},
+  "palette_source":"assets/ui/hud_caldeira_v1/export/palette.json",
+  "font_source":"assets/ui/hud_caldeira_v1/export/font.json",
+  "font_atlas":"assets/ui/hud_caldeira_v1/export/font-atlas.png"
+}

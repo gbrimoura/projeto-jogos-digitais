@@ -1,0 +1,32 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "BDE5B4A7E52DB1705C349FCE118D0A3DBEF0DD82E969E27701F5056DBA3C20D7",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\hud-conceitos\\01-painel-caldeira-revisao-02.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "65974FF9D2341B5E02A597297D21723342F63800531840878F134BE2BCBA93B4",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\hud-conceitos\\01-painel-caldeira-revisao-03.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "14F51D2EC77E567759E8C5D851DF3CF0F3ADF0CA28A86B74205229440B9EDFA9",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\hud-conceitos\\01-painel-caldeira-revisao-04.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "B164131E092160B216295823F436F9B593C5B2B4F9C8515EC2E55ED86CA27A10",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\hud-conceitos\\01-painel-caldeira.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "D613F222C0C77D58AE3D2A495992C1BD03AA029BF25CE9B9E89315D3120BB311",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\hud-conceitos\\02-placas-manutencao.png"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "C87F2BD333291998371EDFF2C62957E5D9B12BA0EB3A4FC923064853F294BB49",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-10-31-transicao-recuperavel\\hud-conceitos\\03-modulos-oficina.png"
+  }
+]

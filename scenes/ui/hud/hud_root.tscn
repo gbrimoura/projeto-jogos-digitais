@@ -1,0 +1,65 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud/hud_root.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/player_health_panel.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/dash_panel.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/target_panel.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/room_progress_panel.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/ball_gauge_panel.tscn" id="6"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="7"]
+
+[node name="HudRoot" type="Control"]
+custom_minimum_size = Vector2(576, 324)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 960.0
+offset_bottom = 540.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("1")
+
+[node name="Content" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PlayerHealth" parent="Content" instance=ExtResource("2")]
+position = Vector2(8, 8)
+
+[node name="Dash" parent="Content" instance=ExtResource("3")]
+position = Vector2(8, 52)
+
+[node name="Target" parent="Content" instance=ExtResource("4")]
+visible = false
+position = Vector2(408, 8)
+
+[node name="RoomProgress" parent="Content" instance=ExtResource("5")]
+position = Vector2(868, 8)
+
+[node name="BallGauge" parent="Content" instance=ExtResource("6")]
+visible = false
+position = Vector2(868, 48)
+
+[node name="StatusText" type="Control" parent="Content"]
+offset_left = 8.0
+offset_top = 520.0
+offset_right = 952.0
+offset_bottom = 532.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")
+max_lines = 1
+
+[node name="BuildText" type="Control" parent="Content"]
+visible = false
+offset_left = 8.0
+offset_top = 520.0
+offset_right = 952.0
+offset_bottom = 532.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("7")

@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Delta numérico de Carga (+2/rank no próximo acerto após parry da própria bola, cap +6) aprovado como hipótese válida de balanceamento. A modelagem resolve a dominância estrita que ocorreria com +1 condicional frente a Impacto (+1 permanente irrestrito), preserva o limiar de não-oneshot em early game (Dano 1 + 2 = 3 vs Worker HP 4 e Tranca HP 6 na sala 1) e mantém o pico de combo consistente (Impacto 3 [4] + Carga 3 [6] + Pressão 3 [6] = 16 no primeiro acerto, 10 subsequente). Todas as invariantes congeladas (offers 1..3, serviço, pós-build 7 core cap 3, escalonamento ceil(base * min(1 + 0.06*(n-1), 4)), caps de motor/speed/cooldown e orçamento 220) permanecem preservadas e compatíveis.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Pico de dano 16 em burst máximo na build final pode trivializar inimigos básicos em salas avançadas caso o player encadeie parries com consistência; sem taxa de vitória alegada no escopo desta hipótese.
+NEXT_STEP: Consolidar o delta no plano de balanceamento e avançar para implementação via subagente conforme fluxo do repositório.

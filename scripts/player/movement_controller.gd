@@ -36,10 +36,29 @@ var dash_cooldown_remaining: float:
 	get:
 		return _dash_cooldown_timer
 
+func get_dash_cooldown_duration() -> float:
+	if _config == null:
+		return 0.0
+	return maxf(_config.dash_cooldown, 0.0)
+
 func configure(body: CharacterBody2D, config: MovementConfig) -> void:
 	_body = body
 	_config = config
 	_air_dashes_remaining = _config.max_air_dashes
+
+## Refreshes derived build values without resetting an in-flight movement state.
+func update_config_preserving_state(config: MovementConfig) -> void:
+	if config == null:
+		return
+	_config = config
+
+func reduce_dash_cooldown_remaining(seconds: float) -> float:
+	if _dash_state != DashState.COOLDOWN or seconds <= 0.0:
+		return _dash_cooldown_timer
+	_dash_cooldown_timer = maxf(_dash_cooldown_timer - seconds, 0.0)
+	if _dash_cooldown_timer <= 0.0:
+		_dash_state = DashState.READY
+	return _dash_cooldown_timer
 
 func physics_step(
 	input_axis: float,

@@ -2,11 +2,12 @@
 
 [ext_resource type="Script" uid="uid://c0iyae0gy1p7m" path="res://scripts/world/run_controller.gd" id="1_15b2t"]
 [ext_resource type="PackedScene" uid="uid://dlgvrryxeujdh" path="res://scenes/main.tscn" id="2_aqf68"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/run_hud_bridge.tscn" id="3_hud"]
 
 [node name="RunRoot" type="Node2D" unique_id=367920003]
 script = ExtResource("1_15b2t")
 floors_per_run = 1
-common_rooms_per_floor = 3
+common_rooms_per_floor = 10
 common_room_scene = ExtResource("2_aqf68")
 boss_room_scene = ExtResource("2_aqf68")
 
@@ -43,3 +44,5 @@ offset_bottom = 72.0
 theme_override_colors/font_color = Color(0.85, 0.9, 0.94, 1)
 theme_override_font_sizes/font_size = 16
 text = "PREPARANDO ENCONTRO"
+
+[node name="ModularHud" parent="." instance=ExtResource("3_hud")]

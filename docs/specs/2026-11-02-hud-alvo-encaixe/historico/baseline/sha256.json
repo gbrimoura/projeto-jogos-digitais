@@ -1,0 +1,22 @@
+[
+  {
+    "path": "docs/README.md",
+    "sha256": "8A615E180A4851EED9BF2AD9EF2ECD4403D1947B8324661EDA05335307CB9665"
+  },
+  {
+    "path": "scripts/ui/hud/target_panel.gd",
+    "sha256": "85623F83AA5DBAB67082B44D04AEADE4D9B8EEAE803C012CB864D5330D2A9E2B"
+  },
+  {
+    "path": "scripts/ui/hud/hud_root.gd",
+    "sha256": "31A15768A459F43885F75D5B3B11BE03D5697DA6892DF3CEC541EBCDD3628CA6"
+  },
+  {
+    "path": "scripts/ui/hud/run_hud_bridge.gd",
+    "sha256": "86B79D1035CE6CEA5B822FCB72D4374201607B096E5E13B05D2DA54C539A8460"
+  },
+  {
+    "path": "scenes/ui/hud/target_panel.tscn",
+    "sha256": "C1AA0FF343A6EAC418D094130ECF64537F2BCFD66B0B1C088AD0891166F92F9B"
+  }
+]

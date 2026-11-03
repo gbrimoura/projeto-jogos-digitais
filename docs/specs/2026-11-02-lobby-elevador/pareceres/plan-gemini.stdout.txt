@@ -1,0 +1,26 @@
+STATUS: REVIEWED (AWAITING USER GO)
+
+SUMMARY:
+Plano prospectivo e especificações revisados em modo estritamente somente leitura, sem execução de ferramentas, edição de arquivos, Godot ou testes. Os refinamentos de raiz no final do plano têm precedência total sobre a prosa anterior:
+1. **Controle de Pausa:** [`RunController`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd) é o responsável exclusivo por despausar a árvore (`get_tree().paused = false`) imediatamente antes de disparar a troca de cena para o lobby. Se a troca falhar, restaura a pausa e mantém o resumo. [`lobby.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/lobby.gd) **não** deve despausar arbitrariamente a árvore em `_ready()`.
+2. **Histerese e Rearme do Elevador:** Em caso de falha de carregamento do elevador, a trava de viagem não rearma imediatamente; o rearme exige que o Player saia completamente da cabine e entre novamente antes de aceitar novo disparo.
+3. **Limite de 5 Arquivos:** Autorizado o quinto arquivo opcional [`lobby_visual.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/lobby_visual.gd) exclusivamente para desenho/ambientação (sem estado de run, seed ou economia). Totalizando: [`project.godot`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/project.godot), [`scenes/lobby.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scenes/lobby.tscn), [`lobby.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/lobby.gd), [`run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd) e opcionalmente [`lobby_visual.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/lobby_visual.gd).
+4. **Enquadramento e Viewport:** Manter resolução e stretch intactos em [`project.godot`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/project.godot); a câmera e limites do pátio devem acomodar o viewport fullscreen mantendo colisoes, porta e spawn contidos e renderização nearest.
+5. **Preservação de Baseline:** Backup byte a byte e SHA-256 de [`project.godot`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/project.godot) e [`run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd) antes de qualquer alteração de produto.
+
+CHANGED_FILES:none
+
+TESTS:none
+
+RISKS:
+1. **Janela de Unpause no Teardown da Run:** Como `change_scene_to_file` é postergado pelo Godot até o final do frame, despausar a árvore em [`run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd) antes da chamada pode permitir 1 tick de processamento nos nós da run antes da sua destruição.
+   - *Lacuna de Contrato:* [`run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd) deve garantir que os nós de gameplay (ou o Player e projéteis da run) estejam desativados ou desconectados de input antes de soltar a pausa. Caso a troca falhe síncronamente, restaurar `get_tree().paused = true`.
+2. **Injeção do Painel de Resumo sem Editar `run_root.tscn`:** O arquivo [`scenes/run_root.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scenes/run_root.tscn) está fora do escopo de edição (teto de 5 arquivos).
+   - *Lacuna de Contrato:* O painel de resumo com botão "VOLTAR AO LOBBY" e captura da tecla R deve ser montado dinamicamente via código em [`run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd), garantindo que seu `process_mode` seja `PROCESS_MODE_ALWAYS` para receber inputs enquanto a árvore estiver pausada.
+3. **Desambiguação da Tecla R (Término Real vs. Painel Técnico):** O atalho R não pode invocar o retorno ao lobby se o jogo estiver no painel de erro técnico/retry de geração.
+   - *Lacuna de Contrato:* O handler de entrada de R em [`run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd) deve checar explicitamente se o estado é de término legítimo (`_run_ended` por morte real ou vitória) e ignorar completamente o comando quando em recuperação técnica (`_is_technical_error` / `_restart_run`).
+4. **Máquina de Estados de Rearme da Cabine no Lobby:**
+   - *Lacuna de Contrato:* [`lobby.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/lobby.gd) precisa de uma flag `_must_exit_cabin_before_rearm`. Em caso de falha de carregamento de [`run_root.tscn`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scenes/run_root.tscn), essa flag torna-se `true`. A checagem de contenção permanecerá bloqueada até que a bounding box do Player saia integralmente do retângulo da cabine, momento em que a flag é limpa, rearmando o elevador.
+
+NEXT_STEP:
+Aguardar autorização/GO explícito do usuário. Após o GO, realizar backup byte a byte e registrar os hashes SHA-256 de [`project.godot`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/project.godot) e [`scripts/world/run_controller.gd`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/world/run_controller.gd), checar a ausência dos novos arquivos e iniciar a implementação em escritor único respeitando o teto de 5 arquivos.

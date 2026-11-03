@@ -1,0 +1,112 @@
+### STATUS
+**REVIEW_COMPLETE_WITH_FINDINGS**
+
+---
+
+### SUMMARY
+A complete read-only implementation and stability review was performed across the provided card presentation files:
+- [upgrade_rank_prisms.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_rank_prisms.gd)
+- [upgrade_stat_text.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_stat_text.gd)
+- [upgrade_card.tscn](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scenes/ui/upgrade_card.tscn)
+- [upgrade_card.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd)
+
+#### Visual & Architectural Assessment
+1. **Prism Level Cap Visual**:
+   - [upgrade_rank_prisms.gd](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_rank_prisms.gd#L28-L55) strictly supports caps of `3`, `5`, and `10` via `_slots_for_maximum()`.
+   - `reward_kind == &"recovery"` cleanly executes `_hide_prisms()` and returns `true`.
+   - Slot dimensions (`PRISM_WIDTH = 8`, `PRISM_HEIGHT = 10`, `PRISM_GAP = 3`) yield total widths of `30px` (cap 3), `52px` (cap 5), and `107px` (cap 10), centering comfortably inside the `136px` allocated width of node `RankPrisms` (`offset_left=12.0`, `offset_right=148.0` in `upgrade_card.tscn`).
+2. **Detailed Effect Text & Bullet Removal**:
+   - In `_make_topic_line()`, legacy yellow square bullets were replaced with a cyan dash prefix `"- "` (`TOPIC_DASH_COLOR = Color("52BAC7")`) for the initial line, and an indent `"  "` (`TOPIC_TEXT_COLOR = Color("B6BEC3")`) for wrapped continuation lines.
+   - Values/numbers are highlighted in gold (`TOPIC_VALUE_COLOR = Color("D2A75C")`).
+3. **Typed Array Fix Analysis**:
+   - The reported runtime warning (`Array generic assigned to Array[Color] in _make_topic_line`) originated from ternary untyped array initialization (`var colors: Array[Color] = [A, B] if first_line else [B, B]`).
+   - `_make_topic_line()` was corrected to initialize a typed `Array[Color] = []` and append explicitly. However, a residual instance of the exact same defect was identified in `_wrap_topic()`.
+
+---
+
+### P1 / P2 DIAGNOSIS (EXACT SOURCE EVIDENCE)
+
+#### [P1] Untyped Array Reassignment in `_wrap_topic`
+* **File & Lines**: [scripts/ui/upgrade_card.gd:206, 214](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L206-L214)
+* **Source Evidence**:
+  ```gdscript
+  var content_colors: Array[Color] = []
+  ...
+  if needs_space and content.length() + 1 + word.length() > TOPIC_CONTENT_WIDTH:
+      result.append(_make_topic_line(content, content_colors, result.is_empty()))
+      content = word
+      content_colors = [] # <-- REASSIGNS UNTYPED ARRAY TO Array[Color]
+  ```
+* **Impact**: In Godot 4 GDScript, `[]` is a generic `Array` (`Array[Variant]`). Assigning `[]` to `content_colors: Array[Color]` re-triggers the exact engine warning/error logged for `_make_topic_line`: `Trying to assign an array of type 'Array' to a variable of type 'Array[Color]'`.
+* **Fix**: Replace `content_colors = []` with `content_colors.clear()`.
+
+#### [P1] Silent Card Configuration Failure on Detailed Topics Exceeding 3 Lines
+* **File & Lines**: [scripts/ui/upgrade_card.gd:186-187](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L186-L187) and [scenes/ui/upgrade_card.tscn:86-114](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scenes/ui/upgrade_card.tscn#L86-L114)
+* **Source Evidence**:
+  ```gdscript
+  if topic_lines.is_empty() or topic_lines.size() > _topic_lines.size():
+      return false
+  ```
+* **Impact**: Scene `upgrade_card.tscn` defines exactly three topic line controls (`Topic0`, `Topic1`, `Topic2`), making `_topic_lines.size() == 3`. `TOPIC_CONTENT_WIDTH` is constrained to `22` characters. If an upgrade card has detailed effect text spanning across multiple topics or wrapping into 4 lines total, `configure()` aborts completely and returns `false`. This causes the upgrade card to fail to generate on offer screens.
+
+#### [P1] Pre-emptive Failure for Recovery Rewards Missing Rank Status
+* **File & Lines**: [scripts/ui/upgrade_card.gd:204](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L204)
+* **Source Evidence**:
+  ```gdscript
+  if rank_before < 0 or rank_after <= rank_before or rank_max < rank_after or rank_status.is_empty():
+      return false
+  if not _configure_rank_status(rank_status, rank_is_maximum, font_bundle):
+      return false
+  if not _configure_rank_counter(rank_before, rank_after, rank_max, reward_kind, font_bundle):
+      return false
+  ```
+* **Impact**: Although [upgrade_rank_prisms.gd:29-31](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_rank_prisms.gd#L29-L31) and `_configure_rank_counter()` handle `reward_kind == &"recovery"`, line 204 executes prior to these checks. If a recovery offer does not provide `rank_status` (or if dummy progression metadata is missing), `rank_status.is_empty()` evaluates to `true` and drops the card.
+
+#### [P2] Incomplete Stat Unit Coloring in Number Parser
+* **File & Lines**: [scripts/ui/upgrade_card.gd:268-278](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L268-L278)
+* **Source Evidence**:
+  ```gdscript
+  while number_end < value.length():
+      var character := value.substr(number_end, 1)
+      if _is_digit(character) or character == "," or character == ".":
+          number_end += 1
+      else:
+          break
+  ...
+  if number_end < value.length() and value.substr(number_end, 1).to_lower() == "s":
+      number_end += 1
+  ```
+* **Impact**: While trailing second symbols (`"s"`) are included in `TOPIC_VALUE_COLOR`, percentage signs (`"%"`) and multipliers (`"x"`) are ignored. For stats like `"+15% de Dano"`, `+15` is colored gold while `%` falls back to `TOPIC_TEXT_COLOR`.
+
+#### [P2] Multi-line Color Offset Desynchronization in `UpgradeStatText`
+* **File & Lines**: [scripts/ui/upgrade_stat_text.gd:30, 53-56](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_stat_text.gd#L30-L56)
+* **Source Evidence**:
+  ```gdscript
+  var lines: Array[String] = _make_lines()
+  var character_offset := 0
+  ...
+  if character_offset < _character_colors.size():
+      color = _character_colors[character_offset]
+  ```
+* **Impact**: `_make_lines()` strips `\n` newline delimiters. If `UpgradeStatText` is ever used with multi-line strings, `character_offset` advances without accounting for the stripped newline characters in `_character_colors`, resulting in an index shift on subsequent lines. (Currently mitigated because `max_lines = 1` is enforced across all card topic lines).
+
+---
+
+### CHANGED_FILES:none
+
+### TESTS:none
+
+---
+
+### RISKS
+1. **Engine Typed Array Warning / Error**: `content_colors = []` at [scripts/ui/upgrade_card.gd:214](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L214) can trigger GDScript type errors under strict compilation or typed array validation settings.
+2. **Card Rejection Cascade**: Restoring verbose or multi-line detailed descriptions without either expanding `_topic_lines` beyond 3 nodes or implementing line clamping will cause `configure()` to return `false`, causing cards to vanish from upgrade selection.
+3. **Hardcoded Cap Inflexibility**: Caps other than 3, 5, or 10 result in `_slots_for_maximum` returning 0, which suppresses prism rendering entirely.
+
+---
+
+### NEXT_STEP
+When permitted to edit files:
+1. In [scripts/ui/upgrade_card.gd:214](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L214), change `content_colors = []` to `content_colors.clear()`.
+2. In [scripts/ui/upgrade_card.gd:204](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L204), bypass the `rank_status.is_empty()` check when `reward_kind == &"recovery"`.
+3. In [scripts/ui/upgrade_card.gd:186](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/scripts/ui/upgrade_card.gd#L186), add text truncation or dynamic line allocation up to `_topic_lines.size()` instead of rejecting the entire card when wrapped topics exceed 3 lines.

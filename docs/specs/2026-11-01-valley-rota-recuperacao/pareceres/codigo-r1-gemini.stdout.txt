@@ -1,0 +1,9 @@
+STATUS: done
+SUMMARY: Revisão R1 aprovada sem apontamentos bloqueantes. As alterações em `room_layout_generator.gd` corrigem a acessibilidade do canônico valley e dos candidatos aleatórios abrindo os corredores laterais (gaps 80..96, inner tops 448.0 e centros canônicos em 216/456/696/936), preservando o contrato de BFS/física, primary0/fallback1, simetria de espelhamento e chamadas RNG para isolamento das demais famílias. Em `run_hud_bridge.gd`, a validação prévia de instâncias via `is_instance_valid` e verificação de tipo antes de qualquer cast (`as Node`/`as CanvasItem`) elimina com precisão o erro "Trying to cast a freed object" nos 5 pontos de acesso de caches (`_unbind_room`, `_update_target`, `_ensure_legacy_hidden`, `_restore_visibility_for_subtree` e `_restore_legacy_visibility`).
+FINDINGS: none
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Redução intencional da variabilidade vertical das plataformas internas (1 e 2) da família `valley` fixadas em 448.0 e gaps restritos a [80, 96], necessária para assegurar a geometria desimpedida dos corredores de salto sob a física estrita sem flexibilizar o validador.
+- Limpeza preguiçosa de nós liberados em `_enemy_cache` e `_visibility_before`: referências a objetos liberados persistem nos dicionários até a próxima iteração das funções de varredura/restauração, onde são removidas com segurança via `.erase()`.
+NEXT_STEP: Prosseguir com a integração das alterações R1 no workspace e solicitar a rodada de revisões complementares conforme a governança.

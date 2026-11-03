@@ -1,0 +1,48 @@
+STATUS: done
+
+SUMMARY: O plano está bem delimitado e é coerente com o pedido. Ele trata de três coisas: remover as labels, mostrar a seta só quando a saída pode ser atravessada e corrigir a profundidade da porta aberta. Deixa protegidos a física, os gates, o token, o fade, o lock/retry, o Main, o RunController e o HUD. Há uma lacuna que bloqueia: falta definir a ordem de desenho (z_index e ordem na árvore) da camada de fundo do alçapão em relação ao piso e ao Player. Essa é a parte central da correção. Há também cinco lacunas menores de contrato. Não li fontes nem executei nada; avaliei apenas o pacote enviado.
+
+FINDINGS:
+
+- **P1 — Falta definir o z da camada de fundo do vão vertical.** A causa que a Luna diagnosticou é o SideDoorVisual vertical inteiro em z_index 1. A correção proposta põe o fundo atrás do ator e deixa a moldura na frente. O plano, porém, não diz em que z nem em que posição da árvore fica a camada de fundo em relação ao FloorVisual e ao Player.
+  - O z_index 1 provavelmente existe justamente para desenhar o hatch por cima do piso. Se o FloorVisual pinta toda a faixa a partir de y560, sem deixar buraco, baixar o fundo para z ≤ Player esconde o poço sob o piso.
+  - Se Player e piso têm o mesmo z, não sobra nenhum inteiro entre os dois. Aí o resultado depende da ordem na árvore, e essa ordem é definida por código protegido (topology/RunController, nas portas managed) ou pela ordem dos nós em main.tscn/second_room.tscn, onde só se pode mexer na Label.
+  - Correção pedida: antes de escrever, a Luna deve registrar:
+    - o z_index e o z_as_relative do Player, do FloorVisual e da raiz da porta;
+    - a ordem na árvore da porta managed e da standalone;
+    - se o piso deixa um vão em 604/256×96.
+  - Com isso, fixar no contrato os z exatos: fundo/poço com z menor que o do Player e maior que o do piso (ou igual a ele, com ordem garantida); moldura e lábios com z maior que o do Player, cobrindo só as bordas.
+  - Se não existir esse espaço sem tocar em arquivos protegidos, a regra "delimitar antes" deve disparar e parar o trabalho. Não se deve compensar mexendo no Player ou no collider.
+
+- **P2 — Faltam os pontos que reavaliam a seta.** "Reaparecer após falha recuperável" depende de `_update_presentation` (ou do novo setter) ser chamado em todas as mudanças de estado. O plano deve listar esses pontos:
+  - sala limpa;
+  - `_transition_busy` passando a true;
+  - `_transition_busy` voltando a false no caminho de falha/retry;
+  - `_terminal_complete`;
+  - papel/direção definidos pelo managed.
+  - Também deve exigir que a chamada seja idempotente e não rearme o crossing nem altere a ordem dos `set_deferred`/sinais.
+
+- **P2 — Pode haver leitores de `DoorLabel.text`.** O plano preserva o nó, mas esvazia o texto. Antes de escrever, a Luna deve buscar quem lê DoorLabel/text/"SAÍDA"/"ENTRADA" em scripts e testes existentes e listar o que achar. Se algum teste ou script verifica essas strings, delimitar antes. Testes não serão executados, mas não se deve quebrá-los sem registro.
+
+- **P2 — O canal para o StatusLabel em standalone está subespecificado.** Faltam três definições:
+  1. Como o nó é encontrado: NodePath exportado ou caminho relativo fixo, com `get_node_or_null`, sem busca global.
+  2. Se a mensagem sobrescreve status que a CombatRoom atualiza continuamente, e quem limpa a mensagem depois de um retry com sucesso.
+  3. O fallback quando não há StatusLabel: manter o `push_warning`/log existente, para a falha não ficar invisível.
+  - Também convém confirmar que o StatusLabel não faz parte do HUD protegido.
+
+- **P2 — Variantes cardinais sem matriz de rotação.** "Transform cardinal inteiro" ainda permite `draw_set_transform` com PI/2, e `cos(PI/2)` em float sai como cerca de 6e-17, o que pode errar um pixel. Recomendo gerar os retângulos de cada direção por troca e sinal de coordenadas (x↔y, ±), em inteiros. Para LEFT/RIGHT, a direção deve ser resolvida uma única vez no espaço local, já considerando se o flip_h do SideDoorVisual é feito por `scale.x=-1` ou por um parâmetro de desenho.
+
+- **P2 — Texto superado sem marcação.** A seção "Recorte autorizado" e a spec ("Causa final e arquivos permitidos serão registrados após…") não incluem `scenes/exit_door.tscn` nem o canal StatusLabel, que só aparecem no contrato fechado. Marcar no plano que o contrato prevalece, ou atualizar a spec com o contrato antes de implementar, para o implementador não ler dois escopos diferentes.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- Sem execução, o critério "fundo atrás do ator" não pode ser comprovado visualmente; fica como limite declarado.
+- `show_exit_indicator` deve ser false por padrão, para não mudar outros usos do SideDoorVisual (entradas e decoração).
+- O arredondamento em pixel inteiro depende de stretch e câmera (engineconfig, protegido). Posições inteiras não garantem pixel perfeito se houver escala fracionária.
+- Nas portas laterais, só a soleira foi tratada. Se o vão lateral também cobrir o Player, o P1 vale para elas.
+- A variante UP (arte em 16, perto do teto) pode ficar sem espaço para a seta dentro da sala. A posição deve ser conferida contra o limite do teto.
+
+NEXT_STEP: Integrar ao contrato o diagnóstico de z/ordem do P1 e os pontos dos P2 (lista de chamadas, busca por leitores de DoorLabel, contrato do StatusLabel, variantes sem rotação, alinhamento da spec). Uma rodada curta de reconfirmação basta, sem nova revisão completa se a mudança não for substantiva. Depois, liberar o implementador gpt-6-luna xhigh no escopo de escrita exclusivo.

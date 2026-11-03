@@ -9,7 +9,7 @@ signal defeated
 enum AttackState { APPROACH, WINDUP, RECOVERY, RETREAT }
 
 @export var display_name: String = "Cospe-Rebite"
-@export_range(1, 100, 1) var max_health: int = 3
+@export_range(1, 100, 1) var max_health: int = 4
 @export_range(0.0, 1.0, 0.01) var flash_duration: float = 0.12
 @export_range(1.0, 400.0, 1.0) var move_speed: float = 150.0
 @export_range(0.0, 400.0, 1.0) var patrol_speed: float = 90.0
@@ -48,6 +48,11 @@ const POSITION_EPSILON: float = 3.0
 
 var _warning_visual: Node2D
 var health: int
+var enemy_level: int = 1
+var _level_base_captured: bool = false
+var _base_max_health: int = 4
+var _base_rivet_damage: int = 1
+var _base_minimum_shot_interval: float = 2.6
 var _player: Node2D
 var _state: AttackState = AttackState.APPROACH
 var _locked_direction: Vector2 = Vector2.RIGHT
@@ -74,6 +79,23 @@ var _ground_query: PhysicsRayQueryParameters2D
 var _rivet_shape: CircleShape2D
 var _rivet_query: PhysicsShapeQueryParameters2D
 var _locked_muzzle_position: Vector2 = Vector2.ZERO
+
+func configure_level(level: int, level_config: EnemyLevelConfigResource) -> bool:
+	if is_inside_tree() or level < 1 or level_config == null:
+		return false
+	if not _level_base_captured:
+		_base_max_health = maxi(max_health, 1)
+		_base_rivet_damage = maxi(rivet_damage, 0)
+		_base_minimum_shot_interval = maxf(minimum_shot_interval, 0.1)
+		_level_base_captured = true
+	enemy_level = level
+	max_health = level_config.health_for_level(_base_max_health, level)
+	rivet_damage = level_config.damage_for_level(_base_rivet_damage, level)
+	minimum_shot_interval = maxf(
+		_base_minimum_shot_interval * level_config.cooldown_multiplier_for_level(level),
+		0.1
+	)
+	return true
 
 func _ready() -> void:
 	health = maxi(max_health, 1)

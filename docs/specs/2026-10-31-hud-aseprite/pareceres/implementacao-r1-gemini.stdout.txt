@@ -1,0 +1,31 @@
+STATUS: done
+SUMMARY: Revisão de implementação READ-ONLY concluída a partir do pacote estático imutável (`implementacao-r1-input.txt`), sem execução de engine, ferramentas ou leitura de workspace vivo. Além de confirmar os 3 pontos de R1 já triados pelo Root, foram identificados 2 defeitos graves (P1) de posicionamento no overlay principal do alvo (sobreposição física da barra com o retrato e desalinhamento vertical) e 2 inconsistências (P2) de padding de atlas e dimensões de metadados.
+
+FINDINGS:
+- [P1] `source/generate_hud.lua:428` | trigger: `add("Target bar frame",bf,250,28); add("Target fill sample 4 of 6",crop(tfill,0,0,60,8),253,31)`
+  A barra e o preenchimento do alvo são inseridos na composição principal (`build()`) em x=250 e x=253. Como o retrato do Tranca-Lata (32×28) inicia em x=222 e termina em x=254, a barra sobrepõe fisicamente o retrato em 4 px. Além disso, conflita diretamente com a tabela interna `A` (`targetBar={x=258,...}` na linha 414), com `export/layout.json` (`target_bar_frame: x=258`, `target_fill_sample: x=261`), com a prévia `compact` (onde é colada em x=258/261 na linha 452) e com o texto do alvo ("TRANCA-LATA" em x=258 e "4/6" alinhado a x=354).
+
+- [P1] `source/generate_hud.lua:428` | trigger: `add("Target portrait - source crop",portraits[2].image,222,16)`
+  O retrato do alvo é posicionado em y=16 na composição principal (`build()`). Em um painel de altura 40 px em y=8, o retrato de 28 px de altura deve ficar em y=14 para manter a margem simétrica de 6 px do 9-slice (8 + 6 = 14; 14 + 28 = 42; 48 - 42 = 6). Em y=16, o retrato fica com 8 px de margem superior e 4 px inferior (violando o inset de 6 px) e diverge tanto de `export/layout.json` (`target_portrait: y=14` na linha 503) quanto da tabela `A` (linha 413) e da prévia `compact` (offset +6 na linha 452).
+
+- [P2] `source/generate_hud.lua:381` | trigger: `local atlas=img(maxW,y+row+2)` na função `pack(items,maxW)`
+  Os elementos são dispostos em `p.y = y + 2` (com `y` iniciando em 2), fazendo com que a base do elemento mais alto termine na linha de pixel `y + 2 + row - 1` = `y + row + 1`. Como o atlas é instanciado com altura `y + row + 2` (índices 0 a `y + row + 1`), a última linha de pixels do elemento coincide exatamente com a última linha da imagem, resultando em 0 px de respiro na margem inferior do atlas. Isso viola a garantia contratual de 2 px de padding periférico transparente (`"padding": 2`). A altura correta do atlas deve ser `y + row + 4`.
+
+- [P2] `source/generate_hud.lua:301, 341, 502, 514` | trigger: `concept()` gerado com 58×13, salvo como `label-conceito-74x15.png` e documentado em `layout.json` como `{"w":74,"h":15}`
+  O asset é gerado proceduralmente com 58×13 px e registrado com esse tamanho em `components.json`. Contudo, o arquivo recebe o nome `label-conceito-74x15.png` e `layout.json` registra o retângulo como `{"w":74,"h":15}` (baseado no limite máximo contratual "até 74×15"), gerando discrepância dimensional de 16 px na largura entre o layout e o sprite real.
+
+- [R1 / Root #1] `source/generate_hud.lua:331` | trigger: `text(readyPreview,50,8,"DASH 0,3s",K.cream); text(readyPreview,50,20,"PRONTO",K.silver)`
+  A prévia `dash-ready-state-432x120.png` combina o estado "PRONTO" com a exibição de recarga ativa residual "DASH 0,3s", gerando ambiguidade visual sobre se 0,3s representa tempo restante ou duração máxima.
+
+- [R1 / Root #2] `source/generate_hud.lua:515` | trigger: `"notes":[..., "RECARREGANDO uses 13 glyphs (78 px); its text field is 78 px."]`
+  A nota em `layout.json` afirma que "RECARREGANDO" possui 13 glifos (78 px), quando na verdade tem 12 glifos (72 px a avanço 6). O campo de 78 px acomoda o texto, mas a contagem documentada é imprecisa.
+
+- [R1 / Root #3] `README.md:75` | trigger: `Os .aseprite devem ser abertos no Aseprite para ajustes de pixels e layers; execute o gerador novamente para regenerar exports e previews derivados.`
+  O README sugere que o usuário edite os `.aseprite` e reexecute o script Lua para atualizar exports, mas o script gera os `.aseprite` proceduralmente do zero (`saveLayered`) e sobrescreve os arquivos sem carregar alterações manuais, destruindo edições prévias.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- A sobreposição de 4 px no módulo Alvo contamina os arquivos de composição (`hud-composition.aseprite` e `hud-overlay-576.png`/`1152`/`1728`), gerando arte corrompida para avaliações visuais.
+- A ausência de padding na base de `components-atlas.png` e `portraits-atlas.png` pode causar artefatos visuais (bleeding) caso coordenadas UV de amostragem fiquem no limite inferior da textura.
+NEXT_STEP: Incorporar os ajustes no delta R2 do gerador `generate_hud.lua`: corrigir para x=258 e y=14 nas linhas do módulo Alvo na função `build()`, corrigir a fórmula de altura do `pack()` para `y+row+4`, alinhar dimensões de `concept_label` em `layout.json`, e tratar os 3 pontos de R1 documentados pelo Root.

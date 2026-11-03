@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+upgrade_id = &"ricochete_pressao"
+title = "Ricochete de Pressão"
+description = "A bola ganha força ao rebater em paredes."
+effect_summary = "+1 dano por ricochete"
+effect_topics = PackedStringArray("+1 dano por parede", "Máximo: 3 paredes")
+rank_cap = 3
+environmental_bounce_damage_per_rank = 1
+environmental_bounce_damage_count_cap = 3

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "scripts/world/main.gd",
+    "sha256": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66"
+  },
+  {
+    "file": "scripts/world/run_controller.gd",
+    "sha256": "E5B451693AEFDAFD09A6EE9293C33FEB6FB678559DF5496DB996D2849BD4C114"
+  },
+  {
+    "file": "scripts/world/combat_room.gd",
+    "sha256": "87F8FB4CC6F920554EC3DD6C3B101327963C54EF60F6FB5262B574A97784B003"
+  },
+  {
+    "file": "scripts/player/movement_controller.gd",
+    "sha256": "59C8987F01C769C40F6657E09BC6E69A1EEB6FEFE98220D84F15D6C9A9F6E6EC"
+  },
+  {
+    "file": "scripts/world/training_target.gd",
+    "sha256": "64770EFB0053901302948D9A585F6BD42E108208A214BAEFC3E7B5885C42880F"
+  },
+  {
+    "file": "scripts/enemy/rivet_worker.gd",
+    "sha256": "56A72953CCEAEAFB811AE30D81435E5FD79AC8600FB16C27207229D0A4138D0C"
+  },
+  {
+    "file": "scenes/main.tscn",
+    "sha256": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905"
+  },
+  {
+    "file": "scenes/second_room.tscn",
+    "sha256": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0"
+  },
+  {
+    "file": "run_root.tscn",
+    "sha256": "B04067D9C02C3B3A2E80653C9FBB1187AEE82D27A41BF67E95DB9FF29318CD50"
+  },
+  {
+    "file": "project.godot",
+    "sha256": "42A90285FEACC10034CBD02D270B66A48A88E33AC33F570A6CFB67329D9C5FF1"
+  }
+]

@@ -1,0 +1,118 @@
+Leitura do pacote imutável concluída. Segue o parecer R2 somente-leitura.
+
+```text
+STATUS: done
+SUMMARY: R2 atende o recorte de apresentação mais simples: Summary usa description humana 1–2 linhas/24 glyphs, card_topics alimenta 1–2 ganhos sem hífen, badge NOVO/EVOLUIR: NÍVEL n cabe no orçamento 22, totais vs delta batem o briefing, gerador é art-only 64×40→128×80. Dois desalinhamentos concretos: Motor (espaço/cópia rank 1) e rótulo RIC. no contato.
+CHANGED_FILES: none
+TESTS: none
+
+FINDINGS:
+1. [médio] scripts/progression/upgrade_catalog.gd (card_topics, ramo &"motor_acelerado") vs resources/upgrades/motor_acelerado.tres
+   - Helper canônico: "Dash pronto em %ss" → "Dash pronto em 0,4s" (sem espaço; decimais dependem de _format_decimal, não presente no pacote).
+   - .tres effect_summary/effect_topics: "Dash pronto em 0,4 s" (espaço antes de s; um decimal).
+   - UI primária passa por card_preview→card_topics; fallback/recurso e cópia estática de rank 1 não são iguais. Irmãos Mola/Dínamo já usam "0,35s"/"-0,15s" sem espaço. Viola “preview/cópia NEW rank 1 continua igual” para Motor.
+
+2. [baixo] SOURCE GENERATOR make_contact, entrada ricochete_pressao
+   - Rótulo "RIC. DE PRESSAO" usa o token proibido "ric." e cai acentos (PRESSAO, IMPACTO REFORCADO).
+   - Contato não é o body da carta; preview das 3 cartas está limpo (sem aparo/parry/hit/HP/rank/cap/ric.).
+   - Briefing de texto principal aplica-se às cartas; este rótulo só falha se o contato contar como copy.
+
+3. [ok, conferido] Descrições 7 × wrap 24/2 — nenhuma cancela oferta
+   - impacto: "A bola causa mais dano." = 23 / 1 linha
+   - motor: "Seu dash fica pronto" (20) + "mais rápido." (12)
+   - carga: "Rebata sua bola para" (20) + "causar mais dano." (17)
+   - pressão: "A bola ganha dano ao" (20) + "bater nas paredes." (18)
+   - mola: "A bola dura mais tempo" (22) + "e rebate mais vezes." (20)
+   - dínamo: "Rebater adianta a" (17) + "recarga do dash." (16)
+   - chassi: "Aumenta sua vida máxima" (23) + "e recupera vida." (16)
+   - Sem parry/aparo/hit/HP/rank/cap/ric. no description/topics/summary novos.
+
+4. [ok] Semântica numérica em card_topics
+   - Impacto/Mola: rank_gain * per_rank (delta).
+   - Chassi: mini(..., 100) atual vs próximo, health_gain efetivo + acquisition_heal.
+   - Motor: dash_cooldown_for_rank(next_rank) (cooldown nova).
+   - Carga: next_rank * charged_damage_bonus_per_rank (total).
+   - Pressão: next_rank * environmental_bounce_damage_per_rank + cap (total/parede).
+   - Dínamo: next_rank * dash_cooldown_refund_per_rank (total, não delta 0,15 no nv.2).
+   - effect_summary legado ainda é calculado no dict; UI lê description. Diff não altera funções de efeito.
+
+5. [ok] scripts/ui/upgrade_card.gd configure
+   - Summary: row.description / definition.description; wrap 24/2; exige 1 ou 2 linhas.
+   - Tópicos: sem prefixo "- "; aceita 1..N até _topic_lines (hífen extra '- +1' removido).
+   - Impacto e Motor com 1 tópico deixam de falhar o configure (antes size < 2 cancelava).
+
+6. [ok] Badge
+   - "NOVO" (4) / "EVOLUIR: NÍVEL %d" (16 com 1 dígito, 18 com 220) ≤ 22 glyphs / 136 px @ advance 6.
+
+7. [ok] Gerador art-only
+   - Escreve PNG/ASE 64×40→scale2 128×80,```text
+STATUS: done
+SUMMARY: R2 cumpre o recorte de apresentação mais simples: Summary usa description humana 1–2 linhas/24 glyphs, card_topics alimenta 1–2 ganhos sem hífen, badge NOVO/EVOLUIR: NÍVEL n cabe em 22 glyphs, totais vs delta batem o briefing, gerador é art-only 64×40→128×80 com backdrop 144×24 antes de y118/130. Dois desalinhamentos concretos: Motor (.tres vs helper) e rótulo RIC. no contato. Sem edição/execução nesta revisão.
+CHANGED_FILES: none
+TESTS: none
+
+FINDINGS:
+1. [médio] scripts/progression/upgrade_catalog.gd card_topics ramo &"motor_acelerado" vs resources/upgrades/motor_acelerado.tres
+   Helper canônico: "Dash pronto em %ss" % _format_decimal(...) → "Dash pronto em 0,4s" ou "0,40s" (espaço ausente; casas dependem de _format_decimal, ausente no recorte do diff).
+   .tres effect_summary/effect_topics: "Dash pronto em 0,4 s" (espaço antes de s; um decimal).
+   UI primária é card_preview→card_topics; fallback do recurso e cópia estática de rank 1 não são iguais. Mola/Dínamo já usam "0,35s"/"-0,15s" sem espaço. Viola igualdade de preview/cópia NEW rank 1 para Motor.
+
+2. [baixo] SOURCE GENERATOR make_contact, rótulo ricochete_pressao
+   Texto "RIC. DE PRESSAO" usa o token proibido "ric." e perde acentos (PRESSAO; também IMPACTO REFORCADO / CHASSI REFORCADO).
+   Contato não é o body da carta. Preview das 3 cartas (carga/mola/dínamo) está limpo: sem parry/aparo/hit/HP/rank/cap/ric.
+   Só falha se o contato contar como texto principal.
+
+3. [ok] Sete descriptions × wrap 24/2 — nenhuma cancela oferta
+   impacto: "A bola causa mais dano." = 23 / 1 linha
+   motor: "Seu dash fica pronto" (20) + "mais rápido." (12)
+   carga: "Rebata sua bola para" (20) + "causar mais dano." (17)
+   pressão: "A bola ganha dano ao" (20) + "bater nas paredes." (18)
+   mola: "A bola dura mais tempo" (22) + "e rebate mais vezes." (20)
+   dínamo: "Rebater adianta a" (17) + "recarga do dash." (16)
+   chassi: "Aumenta sua vida máxima" (23) + "e recupera vida." (16)
+   Sem parry/aparo/hit/HP/rank/cap/ric. em description/topics/summary novos.
+
+4. [ok] Semântica numérica em card_topics
+   Impacto/Mola: rank_gain * per_rank (delta de aquisição).
+   Chassi: mini(..., 100) atual vs próximo; health_gain efetivo + acquisition_heal.
+   Motor: dash_cooldown_for_rank(next_rank) (cooldown nova).
+   Carga: next_rank * charged_damage_bonus_per_rank (total).
+   Pressão: next_rank * environmental_bounce_damage_per_rank + cap (total/parede).
+   Dínamo: next_rank * dash_cooldown_refund_per_rank (total, não delta 0,15 no nv.2).
+   effect_summary legado ainda entra no dict; UI lê description. Diff não altera funções de efeito.
+
+5. [ok] scripts/ui/upgrade_card.gd configure
+   Summary: row.description / definition.description; wrap 24/2; exige 1 ou 2 linhas.
+   Tópicos: sem prefixo "- "; aceita 1..N até _topic_lines (hífen extra "- +1" removido).
+   Impacto e Motor com 1 tópico deixam de falhar configure (antes size < 2 cancelava).
+   Tópicos atuais cabem em 1 linha/24; máximo 2 linhas no card.
+
+6. [ok] Badge
+   "NOVO" (4). "EVOLUIR: NÍVEL %d" = 16 com 1 dígito, 18 com 220. Ambos ≤ 22 glyphs / 136 px @ advance 6.
+
+7. [ok] Gerador art-only
+   Escreve PNG/ASE das 7 ilustrações (64×40, scale2 128×80), study, contato e manifest.
+   Não escreve frames nem atlas: lê frame_*_160x240.png e card-font-atlas.png.
+   Preview: rect(x+8, y+118, 144, 24, navy) no mesmo retângulo antes de desc y118/130.
+   Study declara ESTUDO VISUAL, não screenshot Godot.
+   Paleta 19 travada; alpha assert [0,255]; cores/ícone: impacto 4, motor 5, carga 4, pressão 5, mola 4, dínamo 6 (teto), chassi 4.
+
+8. [ok] Preview das 3 cartas rank 1 = cópia dos .tres
+   Carga: DANO EXTRA: +2 / VALE PARA 1 ACERTO
+   Mola: +1 REBOTE DA BOLA / +0,35S DE DURAÇÃO
+   Dínamo: RECARGA: -0,15S / UMA VEZ POR REBATIDA
+   Quebras de description no study batem o wrap Godot das 3 descriptions.
+
+9. [residual] Pacote não inclui _format_decimal / dash_cooldown_for_rank / acquisition_heal
+   Diff de upgrade_catalog.gd corta em static func effect_summary. Formato exato de 0.4 (0,4 vs 0,40) não é verificável aqui. Briefing afirma funções de efeito inalteradas.
+
+RISKS:
+- Motor rank 1 na UI (card_topics) pode divergir do .tres e de qualquer texto de estudo futuro se _format_decimal não omitir zero e/ou não inserir espaço.
+- Pressão/mola/dínamo ainda são 2 formas + sinal; Root viu contato e aprovou direção — risco só se o critério "1 objeto + 1 sinal" for reaberto.
+- Contato com "RIC." pode reaparecer se o sheet for tratado como copy.
+- Fallback configure(row.topics ausente) ainda lê effect_topics estáticos de rank 1; caminho card_preview está correto.
+- Logs simple-production / snapshot base não estão neste pacote; não auditados.
+
+NEXT_STEP:
+Corrigir só a cópia do Motor para uma forma única ("Dash pronto em 0,4s" no .tres e no helper). Opcional: trocar "RIC. DE PRESSAO" no contato por "RICOCHETE PRESSAO" ou equivalente sem "ric.". Não reabrir frames/fonte/cenas/gameplay/níveis.
+```

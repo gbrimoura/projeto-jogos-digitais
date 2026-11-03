@@ -1,0 +1,16 @@
+Pacote A R1 em revisão — lendo o diff integral em modo somente-leitura.
+STATUS: done
+SUMMARY: Etapa A R1 conforme contratos — catálogo 7 IDs, ranks atômicos, oferta 1-nova+1-evolução determinística, 1 upgrade/sala inclusive boss sem second-modal, níveis `1+(floor-1)*(common+1)+(room-1)` fora-da-árvore, efeitos e HP/dash/parry/ricochete/Mola/Motor/Impacto/Carga/Pressão/Chassi como briefing. Nenhum P1 bloqueante; adapter UI antiga e ícones null deliberados.
+FINDINGS:
+- P2 robustez `scripts/world/main.gd:483` — `player.health.get_base_maximum_health()` sem fallback null, enquanto `_open_upgrade_offer:448` usa `if player!=null and health!=null else 5`. Falha só se `health==null`, improvável; sugerir mesmo ternary.
+- P2 display `scripts/world/main.gd:509-522` — `_update_build_status` mostra só `get_upgrade_ids()[0]` + `NV.rank`. Correto p/ adapter antiga, incompleto na era multi-rank 220; B deve listar todos.
+- P2 validação `scripts/progression/run_build.gd:101-102` — `max_rank_for(id)` usa `base=5` default; Chassi `100-base` diverge se base futura ≠5. Hoje base=5 (`player_health.gd:725`), sem impacto.
+- P2 sentinel `scripts/progression/upgrade_definition_resource.gd:184` — `dash_cooldown_override -1→0.0`; nenhum código usa sentinel (catálogo usa `dash_cooldown_by_rank`), só compat `.tres`; ok, sem ação.
+- OBS `scripts/projectile/ricochet_ball.gd:1032-1033,1012` — `_environmental_bounce_count` só wall não-damageable, zera em `launch`, sem reset em parry (preserva histórico/lifetime como contrato). Correto, não exigir reset.
+- OBS `scripts/enemy/training_target.gd:1112-1127` + `rivet_worker.gd:1177-1192` — base capturada uma vez, `configure_level` fora-da-árvore, `_ready:health=max` escalado, sem heal em combate. Correto, não exigir cura/reset.
+- OBS `resources/upgrades/*.tres:1353,1375,1397,1713,1730,1746,1760` + `upgrade_catalog.gd:1450-1462,1584-1603` — caps 220/3/95, Carga aditiva `2*rank`, Pressão `rank*min(env,3)`, Mola +1/+0.35, Motor .40/.32/.26, Chassi +1max/current só aquisição cap100 com `can_acquire/card_preview/build_offer` removendo ganho-zero. Correto.
+- OBS `scripts/progression/enemy_level_config_resource.gd:1676-1686` — `ceil(base*(1+.12*(lv-1)))`, `base+min(floor((lv-1)/10),2)`, `max(.65,1-.015*(lv-1))`. Correto.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Teto 220 nunca atingido em run real 1×4 atual; `build_offer=[]` nesse caso cancela oferta e libera saída sem softlock. Foco `grab_focus` e `hide()` extras em `upgrade_offer.gd:1313-1322` são só adapter; UI B fará arte final.
+NEXT_STEP: Aprovar A R1 como dados/fluxo; seguir para B (ícones/arte/UI) sem re-revisar estes contratos.

@@ -1,0 +1,98 @@
+[
+  {
+    "Path": "scripts/progression/upgrade_catalog.gd",
+    "Hash": "94EA4E370DA04345F8156F2609D73FF07D3E5046A38D5BF25E922B54D23B6EAF"
+  },
+  {
+    "Path": "scripts/ui/upgrade_card.gd",
+    "Hash": "B0B8DB2B2AA6C874C331686B3C4086259099ACE03C960E4AE4C8D364C8E033ED"
+  },
+  {
+    "Path": "resources/upgrades/carga_reativa.tres",
+    "Hash": "BE58103D8BDDEBF0D34C77DBA2581497801945BDDE0CF15AAB496EF623C9913C"
+  },
+  {
+    "Path": "resources/upgrades/chassi_reforcado.tres",
+    "Hash": "FFC5923073105DCA844D35C24EDC80987D093E4BE6CEDEF9F76CAA527F7A2E43"
+  },
+  {
+    "Path": "resources/upgrades/dinamo_defesa.tres",
+    "Hash": "EB60C6A72BC41954B596C9C99FA95AC7C43409A99F68DF63DAC116B1ADF7A181"
+  },
+  {
+    "Path": "resources/upgrades/impacto_reforcado.tres",
+    "Hash": "6196B16CD8C0059589CC3987FD9393A84324AF59591490C85998F6DA4A3A5DAC"
+  },
+  {
+    "Path": "resources/upgrades/mola_retorno.tres",
+    "Hash": "C89EA3B182696785AC5EB3FD9F36F11732025101357A051F1B3643DAF28F2538"
+  },
+  {
+    "Path": "resources/upgrades/motor_acelerado.tres",
+    "Hash": "BCD37A90978DA81D979FD9DA0CD78956F5481E6C13C538F84E72BC96783549BD"
+  },
+  {
+    "Path": "resources/upgrades/ricochete_pressao.tres",
+    "Hash": "6BC9DB7244121BA01B17CB1BD24AB625F5207AF6F1DCF53FFEC1EC47121BB6E2"
+  },
+  {
+    "Path": "scripts/progression/run_build.gd",
+    "Hash": "FEB1D8898E0AFD680486AF1171BE946DBD42BD8B57367223855A6A8DE3B3E6A1"
+  },
+  {
+    "Path": "scripts/progression/enemy_level_config_resource.gd",
+    "Hash": "45F76DEA03EE22419C034A65531B3DC4D436D819CC034A4CB0FE70F48300AB99"
+  },
+  {
+    "Path": "resources/progression/enemy_levels.tres",
+    "Hash": "38A6F22C7054B499B16D194CC9545AB4105F55342D722ACABC63F863C5F85373"
+  },
+  {
+    "Path": "scripts/world/main.gd",
+    "Hash": "B50BCF3BC5E42621604C46E673817E8B93ADE834C7CADA329859A7E0339596FE"
+  },
+  {
+    "Path": "scripts/world/run_controller.gd",
+    "Hash": "5959E2668F8B1E51B3B7FC712CE679BCB1B5D84D920C110E36051B574B38A28D"
+  },
+  {
+    "Path": "scripts/projectile/ricochet_ball.gd",
+    "Hash": "2350DA702E0EA4F17A0B145BFD7C561467E3D9E6B63BDE43279B3B15B4B1D4D2"
+  },
+  {
+    "Path": "scripts/player/player.gd",
+    "Hash": "4941361E5B11E0582DD2C1804C9CEF7B3528122129039D2031F8746EC8E6951C"
+  },
+  {
+    "Path": "scripts/ui/upgrade_offer.gd",
+    "Hash": "B3BAF504DB2086D4476BCA573D0C35F190054F34AA49225264F39FB252A0F425"
+  },
+  {
+    "Path": "scenes/ui/upgrade_card.tscn",
+    "Hash": "BF596D403556A1C9036DCAEC595CE069C1DAFBADBA657B333B9B5C33EDDFB764"
+  },
+  {
+    "Path": "scenes/upgrade_offer.tscn",
+    "Hash": "70879C22CC34DE08AB8E4B09651AA75323B51B5C2A115A35EECD60134CF117D8"
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/export/frame_normal_160x240.png",
+    "Hash": "E49C6E7E4A9C9F80082D25863D7D44F2A4B0336883050EB4A0D3F4E07D61AA69"
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/export/frame_focus_160x240.png",
+    "Hash": "51BCB363C9F59EC343CC10D01C9542FABBFF3E49CCFAC5AC0ABE0F1132B1D632"
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/export/frame_pressed_160x240.png",
+    "Hash": "2105BDBD0BCF3D6CCBC434D5D03A39FD9046B95FB544FF8D93F8E55B6F0B9DC2"
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/export/card-font-atlas.png",
+    "Hash": "3660D14BD96CE7E20FBCF290300755DDBFFCF079ED7A79CCAA3514107D0A99C3"
+  },
+  {
+    "Path": "assets/ui/upgrade_cards_v1/export/card-font-additions.json",
+    "Hash": "EB27C39D756A1C3E8A63B60DD204FAED1C3EBBC7733221CC1C30193A40F19D57"
+  }
+]

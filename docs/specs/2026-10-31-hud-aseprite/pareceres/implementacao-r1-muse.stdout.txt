@@ -1,0 +1,14 @@
+Pacote R1 em análise — conferindo contrato, Lua e metadados em modo somente-leitura.
+STATUS: done
+SUMMARY: Kit HUD nativo coerente com contrato v1 — 17 clocks, 9 agulhas, fonte 56 glyphs 5x11/adv6/baseline8, 9-slice 6px, fills 54/60px, paleta 18+mask, crops sem resample. Confirmo 3 deltas R1 do header + 3 achados P1/P2 novos só por leitura de texto, sem visão de imagens/engine.
+FINDINGS:
+- P2 PRONTO+0,3s incoerente — ARQUIVO source/generate_hud.lua input:330-331 trigger `paste(readyPreview,clocks[1]...) + text "DASH 0,3s" + "PRONTO"` com `clocks[1]`=index0 ready_empty. Pronto deveria ser vazio/sem tempo nonzero; quebra "sem segundos embutidos".
+- P2 RECARREGANDO 13 glyphs errado — ARQUIVO export/layout.json via source/generate_hud.lua input:513-514 trigger `"RECARREGANDO uses 13 glyphs (78 px)"` mas `len=12`, 12*6=72px. Campo 78px faz fit com 6px folga; total 122px citado só fecha com erro, correto seria 116px em 132px inset.
+- P2 README overwrite — ARQUIVO README.md input:75 trigger `"execute o gerador novamente para regenerar"` após editar ASE, mas `saveLayered` input:388-396,400-402,406,409,444,447 redesenha/sobrescreve .aseprite do zero; edição perdida.
+- P1 Target overlap/build≠metadata — ARQUIVO source/generate_hud.lua input:413-414 `A targetPortrait 222,14 / targetBar 258,28` vs input:429 `add portrait 222,16 + bar 250,28 + fill 253,31`. Metadata 258 dá gap4 (254→258) e y14 encaixa inset 14..42; build 250 sobrepõe retrato 32px em 4px x e estoura 2px y (44>42). Layout.json input:503-504 confirma 222,14/258,28.
+- P2 Conceito tamanho/nome — ARQUIVO source/generate_hud.lua input:301-304 `concept 58x13` vs input:341 `label-conceito-74x15.png` vs layout input:502 conceito 489,110,74x15. `até74x15` permite menor, mas filename sugere 74x15 e native_rect será 58x13.
+- P2 Atlas padding irregular — ARQUIVO source/generate_hud.lua input:373-384 `pack` trigger `x+im.width+4` (gap4 x) vs `y+row+2` (gap2 y), `atlas height=y+row+2` borda inferior 0, topo/esq 4px. Viola "padding 2px ao redor" uniforme; `atlas_rect` tight sem padding está certo, mas bordas/gap vertical não garantem 2px/lado.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Build alternativo herda mesmo overlap target; manifest lista 11 previews mas gera extras (candidates/overlay nativos) sem índice; pivô clock 11,11 vs centro amostrado 11.5,11.5 pode dar drift 0.5px se reusado para rotação futura.
+NEXT_STEP: Aplicar delta R2: corrigir preview PRONTO, nota 12 glyphs/72px, README workflow sem overwrite, alinhar build target para 222,14/258,28/261,31, renomear label ou ajustar para 74x15, uniformizar pack para gap4/borda2.

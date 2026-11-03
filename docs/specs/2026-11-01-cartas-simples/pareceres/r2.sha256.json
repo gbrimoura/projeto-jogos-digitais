@@ -1,0 +1,47 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "893842F712E9C335C0608E7BEDF002F78504BF8C49010C80CD55A2376ED18E70",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\upgrade_catalog.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "211211A6DEBF5A607113D2454DEBFFF0EAA5D8126125A603FEEA05EEF2335C61",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\ui\\upgrade_card.gd"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "AEE2DD70674881345A60E65997299E71ACFBE8719CE4E25294CC05C79AA4BCCE",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\carga_reativa.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "74304FF68DB24012BACB145762BC0C1B49D1F12AF650C0003E71EF4192525863",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\chassi_reforcado.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "87321E1F629E2E3C5BA0DC43D93E96E9D5E8733CB97F195384B608A548168B81",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\dinamo_defesa.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "84E3DA63E670F925E15BE4C721B631B1332D3D49A9E1B13A53A87FFD544C6EC9",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\impacto_reforcado.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "DBE2E0E76DD38A817986EE9C93ADBB8A5302B0033189DB68494D6E361A24BE5A",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\mola_retorno.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "F9A2242252B20F20907E20D5FCB1831F1BA7E10D08F65DA8652D3733D2ECFC73",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\motor_acelerado.tres"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "0A9204EA1938318A1ECC3A6AF345CB883313BF670110C84D0FF802343C825A15",
+    "Path": "C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ricochete_pressao.tres"
+  }
+]

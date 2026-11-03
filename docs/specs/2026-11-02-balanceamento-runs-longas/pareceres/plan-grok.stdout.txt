@@ -1,0 +1,19 @@
+STATUS: done
+SUMMARY: Plano implementável se as emendas P1 abaixo forem tratadas como contrato do incremento (hipótese revisável, não GDD). Recorte, 7 cores×3, 1 escolha/sala, pós-build só após cores, cura só na aquisição, rejeição integral de snapshot inválido e exclusão de RL/treino nesta frente estão coerentes. Não inventar slots/economia/raridade/duração final. Números (HP 6/4, caps 3/10/5, 0.31s, 220) continuam hipótese.
+CHANGED_FILES: none
+TESTS: none
+
+P1 — obrigatório no plano antes do escritor
+- Oferta: 1 escolha por oferta já existente (até 3 cartas), 1 aquisição por sala, no timing atual de Main; não ramificar Main nem usar “oferta inválida → saída” como esgotamento. Orçamento técnico = máximo exportado atual (20*(10+1)=220), parâmetro ajustável, não nível de carta nem duração GDD. Na sala/config 220 ainda há oferta; a run acaba depois da 220ª escolha. Run 4 salas não alcança pós-build — aceito; não aumentar a run.
+- Catálogo: cores elegíveis enquanto rank<3; pós-build só quando nenhum dos 7 IDs core é elegível. Depois: velocidade cap10, dash cap5, manutenção sempre elegível até o orçamento. UI deve aceitar 1 carta. Jamais esvaziar oferta antes da última sala da config.
+- Snapshot/cura: max de Chassi = base+rank (idempotente). Cura de Chassi e manutenção só em acquisition_heal, nunca em apply_run_build/restore. Contagem de manutenção é cap/elegibilidade, não replay de HP. HP atual não enche no restore. Se HP<=0, cura=0 (não revive). Cura cheio=0 e mesmo assim consome a escolha. IDs novos ausentes → 0. Rank antigo > teto novo → rejeitar o snapshot inteiro, sem clamp; reiniciar a run. Sem save novo.
+- Derivados: velocidade = base_canônica * (1+0.02*rank) uma vez, depois a duplicação/sweep atual; não multiplicar configs. Dash = cooldown do Motor (tabela 0.48/0.42/0.36; senão 0.55) − 0.01*rank_ajuste, mínimo 0.31 só com Motor3+ajuste5 (único combo pós-build). Dínamo ≤ recarga restante, teto 0.15, não restaura dash ativo/aéreo.
+- UI: prefixo ≤24 (`AJUSTE` ou `AJUSTAR` — um, no vocabulário atual; `MANUTENÇÃO`). Rodapé ≤22 (`n/max` 10 ou 5; manutenção `CURA ATÉ 1 VIDA`, sem n/220).
+- Carga: extra = +1 por rank no próximo dano aceito após rebater a própria bola (rank1=+1, não +2). Pressão: 2 paredes, bônus até 6. Mola: +1 rebote e +0.20s/rank até 6 e 2.80s — bases = valores atuais dos .tres, não inventar. Cadência inimiga não altera windup 0.65 / active 0.14. Nível inimigo = fonte já usada pelo perfil; defaults scripts+cenas iguais ao resource.
+- Fora: RL, treino, plugin, testes/engine, arte, geração, portas, controles, run_root.
+
+P2 — concreto, não inflar escopo
+- Pós-220/heal farm vs dano inimigo só +1 e HP cap 4x é desconhecido; não promete curva longa. Uma carta só no fim. Campos novos no Resource com default para os 7 .tres. Motor/Dínamo/ajuste não gravar CD já reembolsado. Prévia Aseprite opcional; sem arte nova.
+
+RISKS: Hipótese não jogada; 4 salas nunca exercita pós-build; snapshot com HP derivado hoje curaria no restore se o split evento/derivado falhar; 220 copiado na UI/max_rank da manutenção quebraria o rodapé; clamp silencioso de ranks antigos corrompe o contrato; cadência aplicada no windup quebra leitura; escritor mexer em Main/RL/run size sai do recorte. GDD segue com slots/economia/raridade pendentes.
+NEXT_STEP: Incorporar as emendas P1 no plano (sem entregas extras). Seguir a rodada Gemini/Muse/Opus-AGY se ainda faltarem. Só então Luna xhigh no estado dirty atual, mesma branch, docs da pasta do plano, freeze e revisões de incremento. RL fica fase seguinte, investigação, sem instalar/treinar.

@@ -1,0 +1,122 @@
+[
+  {
+    "Path": "scripts/progression/run_build.gd",
+    "Hash": "0E7426DEA962E22CAF3AED7B9F304B7E8698C463124FC0A2441D46A4B1632F2E"
+  },
+  {
+    "Path": "scripts/progression/upgrade_definition_resource.gd",
+    "Hash": "3B2A639D0E16A246632CC313D59C61B610CC4F3B7CAF23053EF056D2619DD8EB"
+  },
+  {
+    "Path": "scripts/world/main.gd",
+    "Hash": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66"
+  },
+  {
+    "Path": "scripts/world/run_controller.gd",
+    "Hash": "E5B451693AEFDAFD09A6EE9293C33FEB6FB678559DF5496DB996D2849BD4C114"
+  },
+  {
+    "Path": "scripts/player/player.gd",
+    "Hash": "E294502C526A80601B27C620EAC1B9301FEFA5E4A523496454DE8F39B62E2520"
+  },
+  {
+    "Path": "scripts/player/player_health.gd",
+    "Hash": "1127F2E826C2DCFB04C6D9AD121B3802FA9504428FD4D3E6F6D727B299B8EE8E"
+  },
+  {
+    "Path": "scripts/player/ball_launcher.gd",
+    "Hash": "6564DB2D247601BD1D9261736B66E96131AD68E9AB37DEAFAF3AB035772B8D7B"
+  },
+  {
+    "Path": "scripts/player/racket_controller.gd",
+    "Hash": "0A8944B8ABCEC3FEB236BAA7CC0E6E79366D4D7767F31368796F83E4361FD045"
+  },
+  {
+    "Path": "scripts/player/movement_controller.gd",
+    "Hash": "E0773813DAD5BB424F412F7A58050D5E5CFE5DDB94640AEF574F96533CC1EAF9"
+  },
+  {
+    "Path": "scripts/projectile/projectile_config.gd",
+    "Hash": "24D68B5825A49A03F9E755E3925FA1B3DD20D660A52CD66E95AC807EF3CFE1C9"
+  },
+  {
+    "Path": "scripts/projectile/ricochet_ball.gd",
+    "Hash": "809CCB4D2FE9B875BF31137FEFF1176784BAB17DBA959E345A05EDD806CD71FC"
+  },
+  {
+    "Path": "scripts/world/training_target.gd",
+    "Hash": "64770EFB0053901302948D9A585F6BD42E108208A214BAEFC3E7B5885C42880F"
+  },
+  {
+    "Path": "scripts/enemy/rivet_worker.gd",
+    "Hash": "56A72953CCEAEAFB811AE30D81435E5FD79AC8600FB16C27207229D0A4138D0C"
+  },
+  {
+    "Path": "scripts/ui/hud/run_hud_bridge.gd",
+    "Hash": "30769F09527F2F765DE03A2E9D693883CCAFB66D538128941916FFAD7E1EC364"
+  },
+  {
+    "Path": "scripts/ui/hud/target_panel.gd",
+    "Hash": "85623F83AA5DBAB67082B44D04AEADE4D9B8EEAE803C012CB864D5330D2A9E2B"
+  },
+  {
+    "Path": "scripts/ui/hud/hud_root.gd",
+    "Hash": "31A15768A459F43885F75D5B3B11BE03D5697DA6892DF3CEC541EBCDD3628CA6"
+  },
+  {
+    "Path": "scenes/ui/hud/target_panel.tscn",
+    "Hash": "C1AA0FF343A6EAC418D094130ECF64537F2BCFD66B0B1C088AD0891166F92F9B"
+  },
+  {
+    "Path": "scripts/ui/upgrade_offer.gd",
+    "Hash": "4DD7D9006A72E72731F6B36BD48A67DC3DFF1C32227B0C450ECFE4E97B49A216"
+  },
+  {
+    "Path": "scenes/upgrade_offer.tscn",
+    "Hash": "CFCE4F62C7916B2999F7A290E69746A46904AD14D5B25E192467B6B745419AE2"
+  },
+  {
+    "Path": "resources/upgrades/carga_reativa.tres",
+    "Hash": "105C9E7405C122F1F58BEBCB23CBEA7AEC4073748AA249A434E0B5E416351ACC"
+  },
+  {
+    "Path": "resources/upgrades/impacto_reforcado.tres",
+    "Hash": "ED1DB3CD44780521148401850C3DA45CAD294D08707E4FACCC3ADE5C7A88CCD7"
+  },
+  {
+    "Path": "resources/upgrades/motor_acelerado.tres",
+    "Hash": "2C1C9C1CA1A58592F14EC684CF788D9FA0588A8FA96F9A3FB2813B9089B40640"
+  },
+  {
+    "Path": "scripts/world/room_layout_generator.gd",
+    "Hash": "A921663F683B17D219E7EFB9243A454A135B48DF753E4A3F763BAC764D5A3759"
+  },
+  {
+    "Path": "scripts/world/exit_door.gd",
+    "Hash": "120A5CC9B1A9B3F36F28D349CD8306F29AF3C5C1AB0EAC93D8DE177F7D828AF7"
+  },
+  {
+    "Path": "scripts/world/exit_direction_indicator.gd",
+    "Hash": "FA1C52B548B19671854AEF363B20E14734819CCE021B452ECF16D8C8104AE701"
+  },
+  {
+    "Path": "scripts/world/room_transition.gd",
+    "Hash": "2A0EDA364FAEEEEE7BA06B349A8F1AEAF37407F3C29907543E52B8D075A08461"
+  },
+  {
+    "Path": "scripts/world/room_run_layout.gd",
+    "Hash": "89B2453C198AFC1A661C6E290401CE3D5369D37FFE120AD4D238BB7806673D9E"
+  },
+  {
+    "Path": "project.godot",
+    "Hash": "42A90285FEACC10034CBD02D270B66A48A88E33AC33F570A6CFB67329D9C5FF1"
+  },
+  {
+    "Path": "run_root.tscn",
+    "Hash": "4646D010359F459F4681D9726FB397F61CA06D950228A283EEBD81D7A54F70B5"
+  },
+  {
+    "Path": "scripts/ui/hud/bitmap_text.gd",
+    "Hash": "74178A45A2087B27C7AE2A9876AFE859F047FA1A0F9A8F241F83B85BCC57B7E5"
+  }
+]

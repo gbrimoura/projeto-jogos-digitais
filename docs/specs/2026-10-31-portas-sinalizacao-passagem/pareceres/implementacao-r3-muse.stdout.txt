@@ -1,0 +1,9 @@
+```text
+STATUS: done
+SUMMARY: Delta R3 cosmético aprovado — fecha P2 backflip ausente sem regressão funcional; espelhamento horizontal exato do fundo aberto + queue_redraw no setter flip_h.
+FINDINGS: none — (1) setter flip_h = value + queue_redraw segue padrão existente de is_open/aperture_size, sem recursão em Godot 4; (2) draw_set_transform(ZERO,0,(-1,1)) antes dos 4 draw_rect centrados em -half preserva bounds externos e troca exata SHADOW esquerda [-half.x+8,w4] <-> COPPER direita [half.x-12,w4]; (3) reset final para (ZERO,0,ONE) só se flip_h, e early-return se !is_open não deixa estado vazado; (4) retângulos/paleta/z inalterados no diff; (5) draw_set_transform afeta só este CanvasItem, não siblings — setas sibling e ForegroundCanvasItem independente preservados como declarado; (6) clamp aperture >=64 mantém w-16>=48, sem size negativo sob escala -1.
+CHANGED_FILES: none
+TESTS: none
+RISKS: nenhum P1/P2 residual neste arquivo; risco cosmético mínimo restrito a assimetria intencional SHADOW vs COPPER agora espelhada — comportamento esperado de flip.
+NEXT_STEP: promover R3 como estado estável final desta frente; sem nova revisão recursiva deste delta.
+```

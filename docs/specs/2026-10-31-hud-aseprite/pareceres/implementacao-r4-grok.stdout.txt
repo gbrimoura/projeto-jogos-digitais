@@ -1,0 +1,18 @@
+Revisão só do pacote imutável `historico/kit-r4` e do delta R1→R4. Sem PNG/ASE, sem workspace vivo, sem engine.
+
+STATUS: done
+
+SUMMARY: Os 8 achados R1 fecham no texto do delta R2–R4. `build()` passa a colar o alvo via `A` em 222,14 / 258,28 / 261,31, alinhado ao crop 32×28 e a `layout.json`. Preview PRONTO é `DASH`+`PRONTO`; notes de `RECARREGANDO` passam a 12 glyphs / 72 advance / 71 ink / campo 78; README distingue Save Copy/Export de rerun do gerador; `pack()` fica start 2 / place exact / gap 4 / fundo +2 (atlas 512×160); `CONCEITO` é 74×15; clock unifica pivô 11,11 e raios 10/8/7; ASE de clock/agulha viram timelines 17/9 com tags de estudo; paleta usa `spr:setPalette(p)`. Sem P1. P2 só editorial: parágrafo de timeline repetido no README.
+
+FINDINGS:
+P1 none
+
+P2 README.md seção "Grade, cores e elementos" — o bloco que descreve `source/clock-states.aseprite` 24×24 / 17 frames / tag `clock_remaining_normalized_study` e `source/gauge-needle-states.aseprite` 37×20 / 9 frames / tag `gauge_needle_normalized_study`, mais a frase de playback só estudo, está copiado duas vezes seguidas. O conteúdo é o mesmo do Lua/manifest; não reabre R1.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: Pacote textual (Lua, JSON, README, logs 1.3.18.6 com `HUD_GENERATION_OK`, stderr/error Lua vazios); sem PNG/ASE não há prova visual de anel/ponteiro/9-slice/alpha. O varrimento do ponteiro (`a=elapsed*2π−π/2`) não mudou em relação a R1: frame 0 e 16 ficam às 12; com `elapsed=1−i/16` os passos intermediários andam 12→9→6→3. Quatro exploratórios continuam fora do manifest, sem pedido de remoção. `padding:2` no JSON antigo convive com `inter_region_gap:4`; `atlas_rect` absoluto evita UV errado. Parecer Opus Cursor segue indisponível e não foi substituído. Godot/runtime fora de escopo.
+
+NEXT_STEP: Aceitar kit-r4 como fechamento R1; persistir este parecer. Deduplicar o parágrafo do README só se quiser polish documental. Não rerodar o gerador só por isso; não mover/apagar os quatro exploratórios; não tocar em sprites/main/run_controller.

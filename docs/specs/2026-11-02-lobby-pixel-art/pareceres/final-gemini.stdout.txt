@@ -1,0 +1,52 @@
+### STATUS: APPROVED
+
+---
+
+### SUMMARY
+
+The final delta and clarifying metadata successfully resolve all prior technical review concerns without introducing new regressions or runtime changes:
+
+1. **Aseprite Palette API Fix (`sprite:setPalette`)**:
+   - The Lua export script now uses the canonical `sprite:setPalette(pal)` method instead of property assignment or `pcall(sprite.palette = pal)`.
+   - Verified 0-indexed palette population (`pal:setColor(i-1, Color(...))`) over 20 entries, cleanly executing with exit code 0 on Aseprite 1.3.18.6.
+   - Pre/post generated runtime PNGs remain byte-identical; visual presentation is unchanged and approved.
+
+2. **Palette Scope Boundary Enforcement**:
+   - The 20-color lock (`factory_17` + 3 accents: ivory `#E8D8B5`, silver `#879198`, cyan `#52BAC7`) is strictly and correctly scoped to **new runtime exports**.
+   - Preserved legacy elements (amber plaque, dynamic status lamps, existing floor tile atlas, original player sprite) are formally excluded from this constraint, preventing breaking shifts in existing GDScript palettes or art assets.
+
+3. **Floor Overdraw (`y: 656`, `sides: 672`)**:
+   - Reaffirmed as intentional legacy loop baseline geometry. Preview clipping to `1152x648` confirms proper viewport coverage with zero visual leakage.
+
+4. **Player Study Bounding Box & Origin Coordinates**:
+   - `nontransparent_bounds_in_crop = [21, 7, 23, 50]` correctly represents `[x, y, width, height]`.
+   - Inclusive bounds `[x: 21, y: 7, right: 43, bottom: 56]` verified:
+     - Horizontal centering: $120 - \lfloor(21 + 43 + 1)/2\rfloor = 120 - 32 = 88$.
+     - Foot baseline alignment: $279 - 56 = 223$, placing the lower foot boundary at $223 + 56 + 1 = 280$ native ($560$ world coordinates at $2\times$).
+   - Explicit `inclusive_bounds` and `bounds_encoding` metadata prevents any future coordinate misinterpretation.
+
+5. **Import & Engine Lifecycle**:
+   - Godot standard `Texture2D` preload lifecycle correctly deferred to standard Editor GUI automatic import; headless CLI invocation is unnecessary and avoided.
+
+6. **Actionable Defects**:
+   - **0 actionable defects remaining.**
+
+---
+
+### CHANGED_FILES
+none
+
+---
+
+### TESTS
+none (Read-only review; visual inspection previously approved; PNG byte-identity verified)
+
+---
+
+### RISKS
+- **Low (Operational only)**: Opening the Godot Editor GUI is required for first-time `.import` artifact generation for new PNG files before headless test suites or export templates are run.
+
+---
+
+### NEXT_STEP
+- Open the project in the standard Godot Editor to allow automatic generation of `.import` cache files for the new PNG assets, then proceed with production merge.

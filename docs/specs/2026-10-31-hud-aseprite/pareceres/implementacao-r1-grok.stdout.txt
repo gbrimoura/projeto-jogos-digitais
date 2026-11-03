@@ -1,0 +1,30 @@
+Revisão concluída só com o texto do pacote; sem imagens, Aseprite, Godot, Git ou escrita.
+
+STATUS: done
+
+SUMMARY: Kit nativo HUD fecha geração 1.3.18.6 e o contrato nas peças/fonte/relógio/gauge, mas a composição do alvo ainda usa geometria de retrato 24×24 (barra/fill e Y), em conflito com o crop 32×28 autorizado e com o próprio layout.json. Os 3 deltas R1 que o root já marcou para R2 confirmam-se no texto; há P2 extras de metadados/atlas/docs.
+
+FINDINGS:
+P1 source/generate_hud.lua:428-429 / layout.json default_layout.target_* — `build()` cola o retrato Tranca-Lata em (222,16) e a barra/fill em (250,28)/(253,31). O crop autorizado é 32×28: interior 132×28 exige (222,14) + gap 4 + barra (258,28). Em (222,16) o retrato termina em y=44 e invade 2 px da margem inferior (inset acaba em y=42); a barra em x=250 sobrepõe 4 px do retrato (x=222–253). A tabela morta `A` (411-415) e o compacto (452-453) já usam 258/261 e y de inset; overlay, context e `hud-composition.aseprite` saem do `build()`. Sobras da era 24×24 (222+24+4=250). Não vi PNG; o defeito é de coordenadas.
+
+P2 preview/dash-ready-state (lua 330-331) — estado PRONTO usa `clocks[1]` (índice 0, vazio) com texto `DASH 0,3s`. Amostra de pronto com tempo ≠ 0. Delta R2 já visto pelo root.
+
+P2 export/layout.json notes / lua 515 — `RECARREGANDO uses 13 glyphs (78 px)`. A string tem 12 glyphs (72 px no advance 6). O campo 78 px ainda cabe; metadado errado. Delta R2 do root.
+
+P2 README.md:75 — manda reabrir `.aseprite` e rerodar o gerador para “regenerar exports”. O Lua faz `saveLayered` em todos os ASE de source e redesenha fonte/peças; a segunda corrida apaga edição manual. Delta R2 do root.
+
+P2 source/generate_hud.lua:301-304,341 / export/components.json concept_label — peça real `img(58,13)`, `native_rect` 58×13, ficheiro e slot `label-conceito-74x15` / layout 74×15. “Até 74×15” permite menor; o nome e o rect de layout afirmam o máximo, não o bitmap.
+
+P2 source/generate_hud.lua:373-381 pack() — `atlas=img(maxW,y+row+2)` com sprite em `(y+2)`. A última linha cola no fundo do atlas (0 px). Contrato pede 2 px transparentes em volta. Atlas de componentes 512×154 e o de retratos ficam curtos na base; o atlas da fonte (célula 9×15) não tem este buraco.
+
+P2 source/generate_hud.lua:262-267 clock() — amostragem no centro do pixel está certa; raios 10.4 / 8.4 / 7 quebram “raio inteiro consistente”. Ponteiro/pivô em (11,11) vs preenchimento em (11.5,11.5). Sem visão de frame, não afirmo cobertura errada.
+
+P2 source/generate_hud.lua:389-409 / contrato Metadados+Relógio — PNG por estado e sheet existem; os ASE de clock/agulha são um frame com layers, sem tags/frames de animação (`sheet/ASEtags`).
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS: Pacote é só texto (contrato, Lua, JSON, README, stdout 1.3.18.6, stderr vazio); sem PNG/ASE/.gdignore não há paleta/crop/9-slice/alpha visuais nem confirmação de ignore. 4 exploratórios fora do manifest ficam como o header mandou. `A` morto vs `build()` é a origem do P1 e pode repetir se R2 só editar JSON. Integração Godot fora de escopo.
+
+NEXT_STEP: No delta R2, alinhar `build()` ao packing 32×28 já escrito em `A`/layout/compacto (retrato 222,14; barra 258,28; fill 261,31); corrigir preview PRONTO sem 0,3s; notes 12 glyphs; README (ASE editável ≠ rerun que sobrescreve); opcional filename/native do CONCEITO, `pack()` +2 px na base, raios inteiros do clock e tags ASE. Não mexer nos exploratórios bloqueados.

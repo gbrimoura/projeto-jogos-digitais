@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: Delta R1→R2 aprovado no escopo estrito: guarda anti-reentrância correta, preserva fluxo initial_load/retry mesmo destino/seed, GDScript 4.7 válido. Sem P1/P2 concreto. Não aprova R1 global.
+FINDINGS: Guarda `not is_valid(layer) or is_valid(current_room) or _run_ended or _restart or source!=null` bloqueia 2º callback obsoleto pós-sucesso por `layer==null` + `current_room válido`; falha mantém `layer válido + current inválido + source null` permitindo retry; `source!=null` preserva separação initial vs transição; `_dismiss=null` síncrono neutraliza `queue_free` fim-frame; `duplicate(true)/floor_plan/_load_current_encounter` inalterados, mesmo seed/destino; sintaxe `or`+`\`+`is_instance_valid` válida 4.7. P1/P2: none.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Duplo-clique físico rápido em falha-falha pode engatilhar 2ª tentativa imediata mesmo destino/seed sem loop — baixo, intencional; sem mudança Main/resto Controller por diff dado.
+NEXT_STEP: Principal avalia e integra R2 se aceitar; manter exigências de revisores por etapa.

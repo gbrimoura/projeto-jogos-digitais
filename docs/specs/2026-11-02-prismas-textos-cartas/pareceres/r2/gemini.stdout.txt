@@ -1,0 +1,48 @@
+### STATUS
+**APPROVED (READY / NO BLOCKERS)**
+
+---
+
+### SUMMARY
+Final read-only delta review of the supplied GDScript implementations ([`_configure_footer_text`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/src/ui/upgrade_card.gd#L1-L6), [`_wrap_topic`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/src/ui/upgrade_card.gd#L7-L38), [`_make_topic_line`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/src/ui/upgrade_card.gd#L39-L46)), `PRISMS_FINAL` ([`RankPrisms`](file:///C:/Users/danie/Documents/ChatGPT/TEC%20-%20Jogos/src/ui/rank_prisms.gd)), `CATALOG_CURRENT_CONTRACT`, and Lua preview generation:
+
+1. **Array[Color] Typing & Cleanup**:
+   - The ternary `Array[Color]` typing issue is resolved using explicit `Array[Color]` instantiation and typed `append` / `append_array`.
+   - The conservative transition from `content_colors = []` to `content_colors.clear()` preserves buffer re-use across word wraps without altering semantics or asserting prior literal reassignment breakage.
+
+2. **Hypotheticals & Contract Alignment**:
+   - **Topic Line Budget**: All 10 upgrade definitions in the catalog yield 1–2 topics spanning at most 3 wrapped lines within the 24-glyph limit (`assert(topic_line_index > 0 and topic_line_index <= 3)` verified).
+   - **Recovery Card Status**: Contract verified; `reward_kind == &"recovery"` unconditionally sets `rank_status = "MANUTENÇÃO"` (and suppresses `- MÁXIMO`).
+   - **Footer Text Height**: `control.max_lines = 1` is strictly set prior to applying colored text.
+   - **Coloring**: Number-only gold styling is preserved, with unit/percent characters permitted in gray/text palette.
+
+3. **Prism UI & Lua Preview Parity**:
+   - **Geometry**: The 8×10 px prism outline, facets, highlight, and shadow pixel rectangles in GDScript `_draw_prism` match Lua `draw_prism` 1:1.
+   - **Palette**: Owned ranks use Cyan (`#52BAC7`), offered next rank uses Amber (`#D2A75C`), and empty slots use Navy (`#0C1B29`) with Steel outline (`#59636B`).
+   - **Slot Rules**: Supported slot counts are strictly 3, 5, and 10. Unsupported maximums hide prisms (`_slot_count = 0`), falling back to numeric counters only. Recovery hides prisms.
+   - **Geometry & Coordinates**:
+     - Card base: 160×240.
+     - Topics Backdrop: `x8..152`, `y143..187` (44px height).
+     - Topic Text Rows: `y = 146, 160, 174` (14px baseline delta).
+     - Rank Prisms: `x12..148`, `y190..202` (12px height, vertically and horizontally centered).
+     - Status Label: `y = 205`.
+     - Counter / Footer Label: `y = 217`.
+     - Non-interactive presentation nodes set to ignore mouse filter.
+   - **Rendering Quality**: `draw_rect` with antialiasing disabled (`antialiased = false`) prevents fractional edge blur. Aseprite generation exited with 0, and manual inspection confirmed clean visuals with no missing-asset/yellow artifacts.
+
+---
+
+### CHANGED_FILES:none
+
+### TESTS:none
+
+---
+
+### RISKS
+- **Future Catalog Expansions**: Any future upgrade topics exceeding 24 characters or 3 wrapped lines will require manual abbreviation to avoid clipping the 44px backdrop.
+- **Non-Standard Maximums**: Any future upgrades with `rank_max` outside `{3, 5, 10}` will automatically hide prisms and display numeric-only indicators by design.
+
+---
+
+### NEXT_STEP
+Proceed with final commit and integration. No further code edits or review iterations required.

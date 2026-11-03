@@ -1,0 +1,42 @@
+[
+  {
+    "file": "scripts/world/exit_door.gd",
+    "sha256": "1597E925CE14677C8BC717646C63075A6F859DD444F15E54A0DF57D3652546A1"
+  },
+  {
+    "file": "scripts/world/side_door_visual.gd",
+    "sha256": "DFBA90D0D1A938C4B98E11138B5FFCC922AED1F26303BD5FDA1B6E1BCA0388B2"
+  },
+  {
+    "file": "scenes/exit_door.tscn",
+    "sha256": "B3EFBA83E11E213B573ADD3422F8AB77722FCB61CE753DFE23CF6695A135F0D6"
+  },
+  {
+    "file": "scenes/main.tscn",
+    "sha256": "2C61F8DA7BE60CEB2820E92777E065FBA1DCD613BF9996CE659D50D302EA3905"
+  },
+  {
+    "file": "scenes/second_room.tscn",
+    "sha256": "0F37A203AED3552F934F5B04E7CCE006B01B0370D583F9E6E4307B224ACD13A0"
+  },
+  {
+    "file": "scripts/world/main.gd",
+    "sha256": "1993E6544E913030B907D355E6884673CD6E7E46240C19E1B14527E68D2C9A66"
+  },
+  {
+    "file": "scripts/world/run_controller.gd",
+    "sha256": "E5B451693AEFDAFD09A6EE9293C33FEB6FB678559DF5496DB996D2849BD4C114"
+  },
+  {
+    "file": "scripts/world/managed_room_topology.gd",
+    "sha256": "5AB58333FA18C55DED1589ADA1CE50B7754CD8F178B42989FBF0A3A614D892CA"
+  },
+  {
+    "file": "scripts/player/movement_controller.gd",
+    "sha256": "E0773813DAD5BB424F412F7A58050D5E5CFE5DDB94640AEF574F96533CC1EAF9"
+  },
+  {
+    "file": "run_root.tscn",
+    "sha256": "4646D010359F459F4681D9726FB397F61CA06D950228A283EEBD81D7A54F70B5"
+  }
+]

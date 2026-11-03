@@ -1,0 +1,40 @@
+STATUS: done
+
+SUMMARY: Revisei só os 3 itens, sem ferramentas e sem abrir arquivos. Os três P1 de Opus estão resolvidos no mérito. O cabimento do dash fecha nas duas dimensões, a cedilha cabe sem colidir com a linha seguinte e o preview usa escala inteira. Sobra 1 P1 de redação no item da fonte, que se corrige com uma frase.
+
+**Item 1, cabimento do dash (sem P1)**
+- **Largura:** 144 − 2×6 = 132. A conta 16 + 4 + 24 + 4 + 72 = 120 dá 12px de folga. RECARREGANDO tem 12 caracteres × 6 = 72 de avanço (71 de tinta), dentro da coluna de texto. "DASH 0,3s" ocupa cerca de 54px.
+- **Altura:** 40 − 12 = 28. Relógio 24 ≤ 28, e duas linhas de 12 = 24 ≤ 28.
+- **Coordenadas sem sobreposição:**
+  - Player vai de y8 a y44; o dash vai de y48 a y88.
+  - Salas vão de y8 a y44 (x484 a 568). O instrumento vai de y48 a y108.
+  - Margem direita de 8px.
+  - Instrumento: interior 72×48 comporta 24 de labels + 21 de dial = 45. Um dial semicircular de raio 18 dá 37 de largura × 19 de altura, mais 2px para o pivô.
+- **Salas:** interior 72×24 recebe duas linhas de 12. ÁREA LIMPA tem 59px.
+
+**Item 2, fonte com cedilha**
+- **Métrica fecha:** acento nas linhas 0–1, corpo de 7 linhas em 2–8 com baseline 8, cedilha em 9–10. Com lineheight 12, a cedilha da linha 1 (9–10) e um acento na linha 2 (12–13) ficam separados por uma linha vazia, sem colisão. ACELERAÇÃO tem 59px, dentro de 72.
+- **P1 remanescente (redação):** o texto R2 ainda traz "glyphbounds5x9, linha10" sem revogação explícita. Além disso, a frase "Fontes/retratos, relógio e fill seguem R2 explícito" pode ser lida como "a fonte segue R2", e não "os arquivos de origem dos retratos". Nessa leitura, o writer voltaria à célula 5×9 e perderia a cedilha.
+  - Correção: declarar que as métricas da fonte do R2.1 (célula 5×11, baseline 8, lineheight 12, advance 6) substituem as do R2. Trocar "Fontes/retratos" por "arquivos-fonte dos retratos".
+
+**Item 3, escala do preview (sem P1)**
+- Tirar 1 pixel a cada 2 de um contexto montado em blocos 2× recupera cada pixel de origem exatamente uma vez, mesmo com blocos em deslocamento ímpar.
+- 1728×972 é 3× de 576×324, então a escala é inteira.
+- A ressalva de não afirmar ajuste para 1920×1080 está presente.
+
+FINDINGS:
+- **P1 (textual, item 2):** contradição entre as métricas da fonte do R2 e do R2.1, agravada pela ambiguidade de "Fontes" (fonte tipográfica ou arquivo de origem). Correção: a frase de precedência e a troca de termo descritas acima.
+- Itens 1 e 3: nenhum P1.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS (abaixo de P1):
+- **Painel player/alvo:** o interior tem 132×24. Uma linha de label (célula de 11) mais o trilho de 14 dá 25 e estoura 1px se o limite for a célula. Pelo limite da tinta, sem acentos, dá 7 + 1 + 14 = 22 e cabe. Convém documentar no layout.json que o posicionamento usa a tinta para labels sem acento. Isso vale para VIDA, 999/999, TRANCA-LATA e COSPE-REBITE.
+- **Baseline 8:** precisa estar definido no font.json como o índice da última linha de tinta do corpo, e não como o "base" do BMFont, que seria 9. Senão um importador futuro desloca o texto 1px.
+- **Vírgula:** "0,3s" exige vírgula. Confirmar que "/,:.-%" inclui a vírgula como glifo, e não como separador da lista.
+- **Til e circunflexo:** em 2px sem linha vazia acima da maiúscula, encostam no topo da letra. É escolha de arte do autor, sem cortar o acento.
+- **Item 3:** detalhes de 1px, se houver, no contexto em 1152 se perdem na redução. A escala dos inimigos no mundo não foi conferida, mas não afeta os retratos, que são recortes nativos. Tudo isso foi lido, não executado no motor.
+
+NEXT_STEP: aplicar a correção de redação da fonte e anotar os dois riscos de métrica (tinta versus célula e definição do baseline) no contrato. Depois liberar o writer Luna na ordem 1 a 6, sem nova rodada de revisão do plano por essa mudança de texto.

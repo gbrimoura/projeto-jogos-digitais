@@ -1,0 +1,9 @@
+
+> plan · muse-spark-1.3-contributor
+
+→ Read docs/README.md
+✱ Glob "docs/specs/**/plano.md" 62 matches
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/plano.md
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/pareceres/README.md
+✱ Glob "docs/specs/2026-11-02-balanceamento-runs-longas/*" 2 matches
+→ Read docs/specs/2026-11-02-balanceamento-runs-longas/spec.md

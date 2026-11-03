@@ -1,0 +1,39 @@
+STATUS: done
+
+SUMMARY: O contrato R2 resolve bem os riscos centrais da R1: sem mutação de `current_*` antes do commit, fonte preservada até o commit, nenhuma coexistência de salas durante o `_ready` da candidata, latch de recompensa e nenhum `await` no commit. Ainda faltam algumas garantias. A principal é que a reanexação da fonte só foi checada para um `_enter_tree` idempotente; os outros ganchos da subárvore não foram verificados. Também falta dizer de onde a candidata tira os dados do próximo estágio antes do commit. Revisei só o texto, sem ler arquivos. Os achados abaixo são lacunas de contrato, não defeitos comprovados.
+
+FINDINGS:
+
+- **P1-1 — A candidata pode ler `current_*` desatualizado.** Como `current_floor/room/descriptors/last_family` só mudam no commit, `configure_run_managed`, o `_ready` da sala e dos inimigos, os multiplicadores por andar, a seed da sala, o HUD e qualquer getter do Controller lidos na pré-adição ou pós-adição veriam ainda o estágio da fonte. O contrato deve exigir que tudo o que a candidata usa venha só da proposta (Dictionary). Também deve listar, por leitura, todo acesso a `current_*` ou a getters do Controller feito a partir da candidata. Sem isso, o commit pode efetivar uma sala configurada com andar, multiplicador ou seed errados.
+- **P1-2 — A segurança da reanexação cobre só um gancho.** O plano confirma apenas o `_enter_tree` idempotente. Remover e reanexar a fonte também dispara, em toda a subárvore (Player, se estiver dentro da sala, portas, CombatRoom, inimigos, pickups):
+  - `_exit_tree`/`_enter_tree`, `NOTIFICATION_EXIT_TREE`/`NOTIFICATION_ENTER_TREE`;
+  - conexões `tree_exiting`/`tree_exited`/`tree_entered`. Por exemplo, uma contagem de inimigos via `tree_exited` pode reemitir a conclusão da sala.
+
+  É preciso inventariar esses ganchos. Enquanto a transição estiver pendente, os handlers devem ignorar progressão, conclusão e morte vindas da fonte, além da checagem `room == current_room_instance`, que a fonte ainda satisfaz.
+- **P1-3 — A reanexação pode disparar progressão sozinha.** Se porta ou hatch usam `Area2D` com `body_entered` e o Player ainda está sobrepondo o gatilho, reanexar a sala zera o estado de sobreposição e pode gerar um novo `body_entered` no próximo passo de física. Isso contraria "nunca emitir progression automaticamente". O contrato deve fixar a ordem: reposicionar o Player e zerar a velocidade antes de reanexar e despausar. O latch deve ignorar entradas até observar uma saída confirmada, ou um cruzamento deliberado medido por posição.
+- **P2-1 — Momento do snapshot de HP/build e caminho sem fonte válida.**
+  - O snapshot deve ser feito depois da recompensa e antes do `remove_child`. Com a fonte destacada, buscas por grupo (`player`) não encontram mais o Player dela.
+  - Falta definir o que acontece se a fonte ficar inválida após o `await`. Proposta: manter a proposta pendente e o snapshot, abrir o painel sem origem, e fazer o retry carregar o destino pendente sem reabrir a recompensa.
+  - Falta dizer se "mesmo descriptor" significa o destino ou a origem.
+- **P2-2 — Reconexão ONE_SHOT.** Guardar a mesma instância de `Callable` (com binds) para `connect`/`disconnect`/`is_connected`. Proteger com `is_connected`, porque a falha pode acontecer antes de o one-shot ser consumido (carga inicial, retry pelo painel) e uma conexão duplicada gera erro.
+- **P2-3 — Janela do `await process_frame`.**
+  - O fade precisa estar opaco antes do `remove_child`; caso contrário, aparece um quadro renderizado sem sala.
+  - Após o `await`: usar um token ou contador de geração da transição e checar fonte válida, run não encerrada nem reiniciada e painel não aberto.
+  - Saída de grupos e da física por `remove_child` costuma ser síncrona. Vale justificar o `await` ou removê-lo para eliminar a janela; não afirmo comportamento do engine sem execução.
+- **P2-4 — Efeitos colaterais e trabalho adiado da candidata.**
+  - `call_deferred`/`await` no `_ready` (CombatRoom, inimigos) podem rodar depois da validação síncrona ou depois do descarte. Validar só pós-condições observáveis e proteger o caso fora da árvore.
+  - Efeitos fora da subárvore (Main, HUD, autoloads, áudio, posição do Player compartilhado) precisam entrar no inventário de rollback.
+  - Filhos com `PROCESS_MODE_ALWAYS` continuam processando mesmo com a raiz `DISABLED`.
+- **P2-5 — Proposta realmente isolada.** Separar `_prepare_current_floor_plan` numa função pura, que nunca seja chamada sobre os arrays vivos. Usar `duplicate(true)` se os descritores tiverem Dictionaries/Arrays aninhados e incluir `last_family` e a chave do latch de recompensa (andar/sala concluída) na proposta. Esse latch só avança no commit e só zera no restart deliberado.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- Comportamentos do engine (sinais de `Area2D` ao reentrar, física pausada, Tween ligado a nó fora da árvore) não foram verificados por execução, já que testes estão proibidos.
+- Não confirmei se o Player fica dentro da sala ou no Main. P1-3 e P2-1 estão escritos de forma condicional por isso.
+- Um erro de layout determinístico continua a cada retry, como o plano já admite.
+- Projéteis ou nós da fonte criados fora do `room_container` continuam na árvore durante a transição. É um risco a confirmar, não uma regressão provada.
+
+NEXT_STEP: O agente principal registra esta saída e incorpora P1-1 a P1-3 como cláusulas R2.1 do contrato, que são mudança substantiva. P1-1 a P1-3 voltam aos revisores correspondentes antes de a Luna implementar. P2-1 a P2-5 podem entrar como checklist de aceite estático para a revisão pós-implementação. Não criei artefato de plano porque o pedido foi explicitamente sem arquivos.

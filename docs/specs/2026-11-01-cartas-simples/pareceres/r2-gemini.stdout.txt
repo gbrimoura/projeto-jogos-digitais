@@ -1,0 +1,45 @@
+STATUS: done
+SUMMARY: Revisão estática R2 concluída com aprovação técnica integral do pacote imutável (diffs de apresentação, 7 recursos .tres e script gerador de arte Aseprite). As simplificações visuais e textuais cumprem estritamente o briefing de "MAIS SIMPLES", mantendo as mecânicas, IDs, stats e caps inalterados, preservando molduras/fontes/cenas e eliminando termos técnicos/jargões.
+
+FINDINGS:
+1. `scripts/progression/upgrade_catalog.gd`:
+   - Linha 20: Badge de evolução atualizado de `"NV.%d > %d"` para `"EVOLUIR: NÍVEL %d" % next_rank` (ou `"NOVO"` para rank 0). Em rank máximo 220, `"EVOLUIR: NÍVEL 220"` totaliza 18 glifos, respeitando com folga a largura de 136 px / 22 glifos.
+   - Linhas 36-91 (`card_topics`): Novo helper isolado e determinístico que calcula tópicos dinamicamente por ID:
+     - `impacto_reforcado`: Semântica de delta (`+%d de dano na bola`), 1 linha;
+     - `motor_acelerado`: Semântica de novo tempo absoluto (`Dash pronto em %ss`), 1 linha;
+     - `carga_reativa`: Semântica de bônus total (`Dano extra: +%d`), 2 linhas;
+     - `ricochete_pressao`: Semântica de dano total acumulado por parede (`Cada parede: +%d dano`), 2 linhas;
+     - `mola_retorno`: Semântica de delta com tratamento correto de singular/plural (`rebote`/`rebotes`), 2 linhas;
+     - `dinamo_defesa`: Semântica de reembolso total acumulado (`Recarga: -%ss`), 2 linhas, evitando o erro de delta fixo em níveis superiores;
+     - `chassi_reforcado`: Semântica de delta com saturação explícita em 100 de vida máxima (`mini(base + rank * per_rank, 100)`), 2 linhas.
+   - Linha 31: `card_preview` passa a consumir `card_topics`, mantendo `effect_summary` legado para compatibilidade sem uso na interface primária.
+
+2. `scripts/ui/upgrade_card.gd`:
+   - Linhas 111-118: `_summary` passa a exibir o texto humano de `description` (máximo 2 linhas, 24 caracteres) em vez de `effect_summary`. A validação `summary_lines.size() != 1 and summary_lines.size() != 2` garante rejeição caso o texto extrapole o layout.
+   - Linha 124: Removido o prefixo forçado `"- "` (`wrapped_topic := _wrap_text(String(topic_variant), 24, 3)`), eliminando o padrão visual redundante `"- +1"`.
+   - Linha 128: Condição de tópicos relaxada de `< 2` para `topic_lines.is_empty()`, viabilizando cartas com 1 tópico limpo (`impacto_reforcado` e `motor_acelerado`) até 3 linhas sem quebrar a configuração da carta.
+
+3. Recursos `resources/upgrades/*.tres`:
+   - Todos os 7 arquivos tiveram descrições e resumos simplificados, substituindo termos técnicos ("aparo", "HP", "integridade", "ric.") por termos diretos e acessíveis ("rebater", "vida", "bola dura mais tempo").
+   - Todas as descrições cabem em 1 ou 2 linhas de até 24 caracteres na função `_wrap_text`:
+     - `carga_reativa`: 2 linhas ("Rebata sua bola para" [20] / "causar mais dano." [17])
+     - `chassi_reforcado`: 2 linhas ("Aumenta sua vida máxima" [23] / "e recupera vida." [16])
+     - `dinamo_defesa`: 2 linhas ("Rebater adianta a" [17] / "recarga do dash." [15])
+     - `impacto_reforcado`: 1 linha ("A bola causa mais dano." [23])
+     - `mola_retorno`: 2 linhas ("A bola dura mais tempo" [22] / "e rebate mais vezes." [20])
+     - `motor_acelerado`: 2 linhas ("Seu dash fica pronto mais" [24] / "rápido." [7])
+     - `ricochete_pressao`: 2 linhas ("A bola ganha dano ao" [20] / "bater nas paredes." [18])
+
+4. Script Gerador Aseprite (`SOURCE GENERATOR`):
+   - Estritamente "art-only": não reescreve molduras (`frame_*.png`) nem atlas de fonte (`card-font-atlas.png`), apenas lê os existentes.
+   - Paleta travada em 19 cores com validação estrita de ordem e canal alfa `[0, 255]`.
+   - 7 ícones gerados na grade nativa de 64x40 com 3 camadas organizadas (outlines, flat color, signal) e exportados em escala inteira 2x (128x80), respeitando o limite de até 6 cores por ícone e silhuetas nítidas de 1 objeto + 1 sinal.
+   - Estudo de apresentação (`make_preview`) e folha de contato (`make_contact`) adicionam fundo opaco navy no retângulo de sumário (`144x24`), refletindo fielmente a máscara da cena de UI.
+
+CHANGED_FILES: none
+TESTS: none
+RISKS:
+- Pequena divergência cosmética de espaçamento entre `resources/upgrades/motor_acelerado.tres` (`"Dash pronto em 0,4 s"`, com espaço) e a geração dinâmica de `upgrade_catalog.gd` (`"Dash pronto em %ss"`, sem espaço). Não afeta a renderização nem excede limites de caracteres (ambos <= 24 caracteres).
+- Caso testes de regressão existentes dependam da string exata retornada anteriormente por `effect_summary` ou do prefixo `"- "` nos tópicos da UI, estes poderão precisar de atualização para validar o novo padrão simplificado.
+
+NEXT_STEP: Prosseguir com a aplicação das alterações R2 no workspace e geração dos assets gráficos correspondentes via pipeline Aseprite, mantendo o congelamento documental e a orquestração do plano.

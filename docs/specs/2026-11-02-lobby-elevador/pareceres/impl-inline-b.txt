@@ -1,0 +1,572 @@
+READ ONLY authorized source INLINE. Prior fileattachment review auto-rejected external_directory read; do NOT retry tools/files, do not edit/test/execute. All changed relevant code provided below. Timeout5min. ScopeB current RunController changed terminal UI+return and unchanged dependenciessnippets. Sceneproject starts Lobby; ScopeA separate review covers newlobby+elevator+newrunload. TrueDeath/victory result90; existingfade100/técnico200. Bitmaptext2xwrappercenter; title/roomReached/HP/upgradescurrentcount; buttonandR -> lobby onlylegitend, norepeatdouble; disablecurrentroom, clearRoomTransition, fade whilepaused, unpauseONLYownresultpause beforeScenechange and restoreerror. Existingretrytechnical &_restart_run mustremain. Actual1floor10common+boss, main_sceneONLYprojectdiff. Check parse/API/current contracts, actionableP1/P2. Return STATUS SUMMARY CHANGED_FILES:none TESTS:none RISKS NEXT_STEP.
+extends Node2D
+
+const RunBuild = preload("res://scripts/progression/run_build.gd")
+const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const RoomRunLayout = preload("res://scripts/world/room_run_layout.gd")
+const DEFAULT_ENEMY_LEVEL_CONFIG: EnemyLevelConfigResource = preload("res://resources/progression/enemy_levels.tres")
+const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const LOBBY_SCENE_PATH: String = "res://scenes/lobby.tscn"
+
+@export_range(1, 20) var floors_per_run: int = 8
+@export_range(1, 10) var common_rooms_per_floor: int = 10
+@export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0
+@export var common_room_scene: PackedScene
+@export var boss_room_scene: PackedScene
+@export var run_seed: int = 0
+@export var randomize_run_seed: bool = true
+@export var enemy_level_config: EnemyLevelConfigResource = DEFAULT_ENEMY_LEVEL_CONFIG
+
+@onready var room_container: Node2D = $RoomContainer
+@onready var progress_label: Label = $HUD/ProgressLabel
+@onready var status_label: Label = $HUD/StatusLabel
+
+var current_floor: int = 1
+var current_room: int = 1
+var current_room_instance: Node
+var transition_pending: bool = false
+var _run_ended: bool = false
+var _legitimate_run_end: bool = false
+var _returning_to_lobby: bool = false
+var _result_pause_owned: bool = false
+var _result_overlay: CanvasLayer
+var _result_return_button: Button
+var _result_error_text: Control
+var _damage_multiplier: float = 1.0
+var _speed_multiplier: float = 1.0
+var _radius_multiplier: float = 1.0
+var _run_player_health: int = -1
+var _run_player_max_health: int = -1
+var _run_build: RunBuild = RunBuild.new()
+var _active_reward_screen: Node
+var _owned_reward_pause: bool = false
+var _owned_transition_pause: bool = false
+var _restart_in_progress: bool = false
+var _transition_fade_layer: CanvasLayer
+var _transition_fade_rect: ColorRect
+var _resolved_run_seed: int = 0
+var _floor_room_descriptors: Array[Dictionary] = []
+var _last_room_family: StringName = &""
+var _room_signal_connections: Dictionary = {}
+var _pending_stage_proposal: Dictionary = {}
+var _pending_stage_source: Node
+var _technical_error_layer: CanvasLayer
+var _technical_error_source: Node
+var _technical_retry_kind: StringName = &""
+var _technical_retry_proposal: Dictionary = {}
+func _show_victory_screen() -> void:
+	_legitimate_run_end = true
+	_show_run_summary(true, "")
+
+func _show_game_over_screen(message_text: String = "O robô ficou sem energia.") -> void:
+	if message_text != "O robô ficou sem energia.":
+		_legitimate_run_end = false
+		_show_legacy_game_over_screen(message_text)
+		return
+	_legitimate_run_end = true
+	_show_run_summary(false, "ROBO SEM ENERGIA")
+
+func _show_run_summary(is_victory: bool, cause_text: String) -> void:
+	if is_instance_valid(_result_overlay):
+		return
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		return
+	_result_pause_owned = not tree.paused
+	if _result_pause_owned:
+		tree.paused = true
+
+	var overlay: CanvasLayer = CanvasLayer.new()
+	overlay.name = "RunResultOverlay"
+	overlay.layer = 90
+	overlay.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(overlay)
+	_result_overlay = overlay
+
+	var backdrop: ColorRect = ColorRect.new()
+	backdrop.name = "Backdrop"
+	backdrop.color = Color(0.031, 0.055, 0.078, 0.96)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.add_child(backdrop)
+
+	var center: CenterContainer = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.add_child(center)
+
+	var panel: PanelContainer = PanelContainer.new()
+	panel.name = "ResultPanel"
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var panel_width: float = minf(720.0, maxf(240.0, viewport_size.x - 32.0))
+	var panel_height: float = minf(360.0, maxf(220.0, viewport_size.y - 32.0))
+	panel.custom_minimum_size = Vector2(panel_width, panel_height)
+	var panel_style: StyleBoxFlat = StyleBoxFlat.new()
+	panel_style.bg_color = Color("#0C1B29")
+	panel_style.border_color = Color("#D2A75C") if is_victory else Color("#B84B42")
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(0)
+	panel_style.content_margin_left = 24
+	panel_style.content_margin_right = 24
+	panel_style.content_margin_top = 18
+	panel_style.content_margin_bottom = 18
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var content: VBoxContainer = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 8)
+	panel.add_child(content)
+
+	var title_text: String = "RUN CONCLUIDA" if is_victory else "FIM DA RUN"
+	var title_color: Color = Color("#D2A75C") if is_victory else Color("#E86B69")
+	_add_result_bitmap_text(content, "Title", title_text, title_color, 36.0)
+
+	var position_text: String = "CHEGOU AO ANDAR %02d, SALA %02d" % [current_floor, current_room]
+	_add_result_bitmap_text(content, "ReachedPosition", position_text, Color("#E8D8B5"), 28.0)
+
+	var acquisition_count: int = _run_build.total_count() if _run_build != null else 0
+	var health_text: String = "HP %d/%d    UPGRADES %d" % [
+		maxi(_run_player_health, 0),
+		maxi(_run_player_max_health, 0),
+		acquisition_count,
+	]
+	_add_result_bitmap_text(content, "RunState", health_text, Color("#B6BEC3"), 24.0)
+	if not cause_text.is_empty():
+		_add_result_bitmap_text(content, "Cause", cause_text, Color("#E8D8B5"), 24.0)
+
+	_result_error_text = _add_result_bitmap_text(content, "ReturnError", "", Color("#E86B69"), 24.0)
+	_result_error_text.visible = false
+
+	var return_button: Button = Button.new()
+	return_button.name = "ReturnToLobby"
+	return_button.text = ""
+	return_button.custom_minimum_size = Vector2(minf(panel_width - 48.0, 360.0), 52.0)
+	return_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return_button.focus_mode = Control.FOCUS_ALL
+	var button_normal: StyleBoxFlat = StyleBoxFlat.new()
+	button_normal.bg_color = Color("#203E50")
+	button_normal.border_color = Color("#879198")
+	button_normal.set_border_width_all(2)
+	button_normal.set_corner_radius_all(0)
+	var button_hover: StyleBoxFlat = button_normal.duplicate() as StyleBoxFlat
+	button_hover.bg_color = Color("#353B3B")
+	button_hover.border_color = Color("#D2A75C")
+	var button_pressed: StyleBoxFlat = button_normal.duplicate() as StyleBoxFlat
+	button_pressed.bg_color = Color("#142C40")
+	button_pressed.border_color = Color("#E8D8B5")
+	return_button.add_theme_stylebox_override("normal", button_normal)
+	return_button.add_theme_stylebox_override("hover", button_hover)
+	return_button.add_theme_stylebox_override("pressed", button_pressed)
+	return_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	content.add_child(return_button)
+	_result_return_button = return_button
+	return_button.pressed.connect(_return_to_lobby)
+	_add_result_bitmap_text(
+		return_button,
+		"Text",
+		"VOLTAR AO LOBBY",
+		Color("#E8D8B5"),
+		24.0
+	)
+
+func _add_result_bitmap_text(
+	parent: Node,
+	node_name: String,
+	value: String,
+	font_color: Color,
+	minimum_height: float
+) -> Control:
+	var frame: Control = Control.new()
+	frame.name = node_name + "Frame"
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.custom_minimum_size = Vector2(0.0, minimum_height)
+	if parent is Container:
+		frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	else:
+		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	parent.add_child(frame)
+
+	var label: Control = Control.new()
+	label.name = node_name
+	label.set_script(HudBitmapTextScript)
+	label.set("text", value)
+	label.set("font_color", font_color)
+	label.set("center_text", true)
+	label.set("max_lines", 1)
+	label.scale = Vector2(2.0, 2.0)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(label)
+	frame.resized.connect(Callable(self, "_layout_result_bitmap_text").bind(frame, label))
+	_layout_result_bitmap_text(frame, label)
+	return label
+
+func _layout_result_bitmap_text(frame: Control, label: Control) -> void:
+	if not is_instance_valid(frame) or not is_instance_valid(label):
+		return
+	label.size = Vector2(frame.size.x * 0.5, 12.0)
+	label.position = Vector2(0.0, floorf((frame.size.y - 22.0) * 0.5))
+
+
+func _return_to_lobby() -> void:
+	if not _run_ended or not _legitimate_run_end or _returning_to_lobby \
+		or is_instance_valid(_technical_error_layer) or not is_instance_valid(_result_overlay):
+		return
+	_returning_to_lobby = true
+	if is_instance_valid(_result_return_button):
+		_result_return_button.disabled = true
+	if is_instance_valid(_result_error_text):
+		_result_error_text.visible = false
+
+	var source_room: Node = current_room_instance
+	var source_process_mode: int = Node.PROCESS_MODE_INHERIT
+	var source_process_mode_saved: bool = false
+	if source_room != null and is_instance_valid(source_room):
+		source_process_mode = source_room.process_mode
+		source_room.process_mode = Node.PROCESS_MODE_DISABLED
+		source_process_mode_saved = true
+
+	RoomTransition.clear_pending_snapshot()
+	await _fade_managed_transition_to(1.0, 0.18)
+
+	if not _run_ended or not _legitimate_run_end or is_instance_valid(_technical_error_layer):
+		if source_process_mode_saved and is_instance_valid(source_room):
+			source_room.process_mode = source_process_mode
+		_returning_to_lobby = false
+		if is_instance_valid(_result_return_button):
+			_result_return_button.disabled = false
+		_hide_managed_transition_fade()
+		return
+
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		_restore_failed_lobby_return(source_room, source_process_mode, source_process_mode_saved, false, false)
+		return
+	var pause_before_change: bool = tree.paused
+	var released_result_pause: bool = _result_pause_owned and tree.paused
+	if released_result_pause:
+		tree.paused = false
+	RoomTransition.clear_pending_snapshot()
+	var change_error: int = tree.change_scene_to_file(LOBBY_SCENE_PATH)
+	if change_error == OK:
+		_result_pause_owned = false
+		return
+	_restore_failed_lobby_return(
+		source_room,
+		source_process_mode,
+		source_process_mode_saved,
+		released_result_pause,
+		pause_before_change
+	)
+
+func _restore_failed_lobby_return(
+	source_room: Node,
+	source_process_mode: int,
+	source_process_mode_saved: bool,
+	restore_pause: bool,
+	pause_before_change: bool
+) -> void:
+	if source_process_mode_saved and source_room != null and is_instance_valid(source_room):
+		source_room.process_mode = source_process_mode
+	var tree: SceneTree = get_tree()
+	if restore_pause and tree != null:
+		tree.paused = pause_before_change
+	_returning_to_lobby = false
+	if is_instance_valid(_result_return_button):
+		_result_return_button.disabled = false
+	if is_instance_valid(_result_error_text):
+		_result_error_text.call("set_text", "FALHA AO ABRIR O LOBBY")
+		_result_error_text.visible = true
+	_hide_managed_transition_fade()
+
+
+func _ensure_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_layer) and is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_layer = CanvasLayer.new()
+	_transition_fade_layer.name = "ManagedRoomTransitionFade"
+	_transition_fade_layer.layer = 100
+	_transition_fade_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_transition_fade_layer)
+	_transition_fade_rect = ColorRect.new()
+	_transition_fade_rect.name = "Fade"
+	_transition_fade_rect.color = Color(0.0, 0.0, 0.0, 0.0)
+	_transition_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_transition_fade_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_transition_fade_layer.add_child(_transition_fade_rect)
+
+func _fade_managed_transition_to(target_alpha: float, duration: float) -> void:
+	_ensure_transition_fade()
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	_transition_fade_rect.show()
+	var start_alpha := _transition_fade_rect.color.a
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	tween.tween_method(_set_managed_fade_alpha, start_alpha, target_alpha, duration)
+	await tween.finished
+
+func _set_managed_fade_alpha(alpha: float) -> void:
+	if not is_instance_valid(_transition_fade_rect):
+		return
+	var tint := _transition_fade_rect.color
+	tint.a = clampf(alpha, 0.0, 1.0)
+	_transition_fade_rect.color = tint
+
+func _finish_managed_transition(release_owned_pause: bool) -> void:
+	if is_instance_valid(_transition_fade_layer):
+		_transition_fade_layer.queue_free()
+	_transition_fade_layer = null
+	_transition_fade_rect = null
+	if release_owned_pause and not _run_ended and _owned_transition_pause and get_tree().paused:
+		get_tree().paused = false
+	_owned_transition_pause = false
+
+func _hide_managed_transition_fade() -> void:
+	if is_instance_valid(_transition_fade_rect):
+		_set_managed_fade_alpha(0.0)
+		_transition_fade_rect.hide()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not _run_ended or _returning_to_lobby or not event is InputEventKey:
+		return
+	var key_event: InputEventKey = event as InputEventKey
+	if not key_event.pressed or key_event.echo or key_event.keycode != KEY_R:
+		return
+	if _legitimate_run_end and is_instance_valid(_result_overlay) \
+		and not is_instance_valid(_technical_error_layer):
+		get_viewport().set_input_as_handled()
+		_return_to_lobby()
+	elif not _legitimate_run_end:
+		get_viewport().set_input_as_handled()
+		_restart_run()
+
+func _restart_run() -> void:
+	if (not _run_ended and not is_instance_valid(_technical_error_layer)) or _restart_in_progress:
+		return
+	_restart_in_progress = true
+	_dismiss_technical_error()
+	_technical_error_pause_owned = false
+	_finish_managed_transition(false)
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+func _on_room_player_died(room: Node) -> void:
+	if room != current_room_instance or _run_ended:
+		return
+	_run_ended = true
+	transition_pending = true
+	_dismiss_technical_error()
+	_technical_error_pause_owned = false
+	_finish_managed_transition(false)
+	if is_instance_valid(_active_reward_screen) and _active_reward_screen.has_method("cancel_offer"):
+		_active_reward_screen.call("cancel_offer")
+	call_deferred("_present_game_over_after_physics")
+
+func _present_game_over_after_physics() -> void:
+	_close_owned_reward_pause()
+	if _run_ended:
+		_show_game_over_screen()
+
+func _close_owned_reward_pause() -> void:
+	if _owned_reward_pause and not _run_ended and get_tree().paused:
+		get_tree().paused = false
+	_owned_reward_pause = false
+
+
+BITMAP_TEXT_BASE_UNCHANGED
+class_name HudBitmapText
+extends Control
+
+const FONT_METADATA_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font.json"
+const FONT_ATLAS_PATH: String = "res://assets/ui/hud_caldeira_v1/export/font-atlas.png"
+
+@export var text: String = "":
+	set(value):
+		if text == value:
+			return
+		text = value
+		queue_redraw()
+@export var font_color: Color = Color("E8D8B5"):
+	set(value):
+		if font_color == value:
+			return
+		font_color = value
+		queue_redraw()
+@export_range(1, 4, 1) var max_lines: int = 1
+@export var center_text: bool = false
+@export var right_align: bool = false
+
+var _font_atlas: Texture2D
+var _glyphs: Dictionary = {}
+var _advance: int = 6
+var _line_height: int = 12
+var _warned_missing_glyph: bool = false
+
+static func load_font_bundle() -> Dictionary:
+	if not ResourceLoader.exists(FONT_METADATA_PATH) or not ResourceLoader.exists(FONT_ATLAS_PATH):
+		return {"valid": false, "reason": "fonte bitmap do HUD ausente"}
+	var metadata_resource: Resource = ResourceLoader.load(FONT_METADATA_PATH)
+	var atlas_resource: Resource = ResourceLoader.load(FONT_ATLAS_PATH)
+	var metadata_json: JSON = metadata_resource as JSON
+	var font_atlas: Texture2D = atlas_resource as Texture2D
+	if metadata_json == null or font_atlas == null:
+		return {"valid": false, "reason": "metadados ou atlas da fonte bitmap inválidos"}
+	var raw_data: Variant = metadata_json.data
+	if typeof(raw_data) != TYPE_DICTIONARY:
+		return {"valid": false, "reason": "font.json não contém um objeto"}
+	var font_data: Dictionary = raw_data as Dictionary
+	var raw_glyphs: Variant = font_data.get("glyphs", null)
+	if typeof(raw_glyphs) != TYPE_ARRAY:
+		return {"valid": false, "reason": "font.json não contém a lista de glifos"}
+	var glyphs: Dictionary = {}
+	var glyph_list: Array = raw_glyphs as Array
+	for glyph_variant: Variant in glyph_list:
+		if typeof(glyph_variant) != TYPE_DICTIONARY:
+			continue
+		var glyph_data: Dictionary = glyph_variant as Dictionary
+		var codepoint: int = int(glyph_data.get("codepoint", -1))
+		var rect_variant: Variant = glyph_data.get("rect", null)
+		if codepoint < 0 or typeof(rect_variant) != TYPE_DICTIONARY:
+			continue
+		var rect_data: Dictionary = rect_variant as Dictionary
+		var glyph_rect: Rect2i = Rect2i(
+			int(rect_data.get("x", -1)),
+			int(rect_data.get("y", -1)),
+			int(rect_data.get("w", 0)),
+			int(rect_data.get("h", 0))
+		)
+		if glyph_rect.position.x < 0 or glyph_rect.position.y < 0 \
+			or glyph_rect.size.x <= 0 or glyph_rect.size.y <= 0 \
+			or glyph_rect.end.x > font_atlas.get_width() \
+			or glyph_rect.end.y > font_atlas.get_height():
+			continue
+		glyphs[String.chr(codepoint)] = {
+			"rect": glyph_rect,
+			"advance": maxi(int(glyph_data.get("advance", 0)), 1),
+		}
+	var advance: int = int(font_data.get("advance", 0))
+	var line_height: int = int(font_data.get("line_height", 0))
+	if glyphs.is_empty() or advance <= 0 or line_height <= 0 or not glyphs.has(" "):
+		return {"valid": false, "reason": "métricas incompletas da fonte bitmap"}
+	return {"valid": true, "atlas": font_atlas, "glyphs": glyphs, "advance": advance, "line_height": line_height}
+
+func configure_font(bundle: Dictionary) -> bool:
+	if not bool(bundle.get("valid", false)):
+		return false
+	_font_atlas = bundle.get("atlas") as Texture2D
+	_glyphs = bundle.get("glyphs", {}) as Dictionary
+	_advance = int(bundle.get("advance", 6))
+	_line_height = int(bundle.get("line_height", 12))
+	var configured: bool = _font_atlas != null and not _glyphs.is_empty() and _advance > 0 and _line_height > 0
+	visible = configured
+	queue_redraw()
+	return configured
+
+func set_text(value: String) -> void:
+	text = value
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if _font_atlas == null:
+		configure_font(load_font_bundle())
+
+func _draw() -> void:
+	if _font_atlas == null or _glyphs.is_empty() or _advance <= 0 or _line_height <= 0:
+		return
+	var lines: Array[String] = _make_lines()
+	for line_index: int in range(lines.size()):
+		var line: String = lines[line_index]
+		var line_width: int = line.length() * _advance
+		var line_x: float = 0.0
+		if center_text:
+			line_x = floorf((size.x - float(line_width)) * 0.5)
+		elif right_align:
+			line_x = floorf(size.x - float(line_width))
+		for char_index: int in range(line.length()):
+			var character: String = line.substr(char_index, 1)
+			var glyph_variant: Variant = _glyphs.get(character, null)
+			if glyph_variant == null:
+				if not _warned_missing_glyph:
+					push_warning("Fonte bitmap do HUD sem glifo para: %s" % character)
+					_warned_missing_glyph = true
+				glyph_variant = _glyphs.get(" ", {})
+			if typeof(glyph_variant) != TYPE_DICTIONARY:
+				continue
+			var glyph_data: Dictionary = glyph_variant as Dictionary
+			var source_rect: Rect2i = glyph_data.get("rect", Rect2i())
+			var source: Rect2 = Rect2(Vector2(source_rect.position), Vector2(source_rect.size))
+			var destination: Rect2 = Rect2(
+				Vector2(line_x + float(char_index * _advance), float(line_index * _line_height)),
+				Vector2(source_rect.size)
+			)
+			draw_texture_rect_region(_font_atlas, destination, source, font_color)
+
+func _make_lines() -> Array[String]:
+	var result: Array[String] = []
+	var max_chars: int = int(floor(size.x / float(_advance)))
+	if max_chars <= 0:
+		return result
+	var source_lines: PackedStringArray = text.replace("—", "-").replace("–", "-").split("\n")
+	for source_line: String in source_lines:
+		var line: String = _normalize_line(source_line)
+		if line.length() > max_chars:
+			line = line.substr(0, max_chars)
+			if max_chars > 1 and not line.ends_with("-"):
+				line = line.substr(0, max_chars - 1) + "-"
+		result.append(line)
+		if result.size() >= max_lines:
+			break
+	return result
+
+func _normalize_line(value: String) -> String:
+	var normalized: String = ""
+	for index: int in range(value.length()):
+		var character: String = value.substr(index, 1)
+		var prior_character: String = value.substr(index - 1, 1) if index > 0 else ""
+		if character == "s" and prior_character >= "0" and prior_character <= "9":
+			normalized += "s"
+		else:
+			normalized += character.to_upper()
+	return normalized
+RUNBUILD_COUNT
+class_name RunBuild
+extends RefCounted
+
+## Estado temporário da run. Snapshots usam somente Strings, ints, Arrays e
+## Dictionaries; efeitos e limites pertencem ao catálogo.
+
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+const IMPACTO_REFORCADO: StringName = &"impacto_reforcado"
+const MOTOR_ACELERADO: StringName = &"motor_acelerado"
+const CARGA_REATIVA: StringName = &"carga_reativa"
+const MAX_UPGRADES: int = UpgradeCatalogScript.MAX_RUN_ACQUISITIONS
+
+var _counts_by_id: Dictionary = {}
+
+func _init() -> void:
+	_clear_counts()
+
+func add_upgrade(upgrade_id: StringName) -> bool:
+	var current_rank := count_for(upgrade_id)
+	if total_count() >= MAX_UPGRADES or not UpgradeCatalogScript.can_acquire(upgrade_id, current_rank):
+		return false
+	_counts_by_id[upgrade_id] = current_rank + 1
+	return true
+
+func has_upgrade(upgrade_id: StringName) -> bool:
+	return count_for(upgrade_id) > 0
+
+func count_for(upgrade_id: StringName) -> int:
+	return int(_counts_by_id.get(upgrade_id, 0)) if is_known_upgrade_id(upgrade_id) else 0
+
+func total_count() -> int:
+	return UpgradeCatalogScript.total_rank_count(_counts_by_id)
+
+func get_upgrade_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for upgrade_id in known_upgrade_ids():
+		if count_for(upgrade_id) > 0:
+			result.append(upgrade_id)
+	return result
+

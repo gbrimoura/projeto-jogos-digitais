@@ -1,0 +1,42 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 616.92 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060 Ti
+
+WARNING: TrainingTarget: nenhum percurso livre e útil de 8 px; o alvo permanecerá estacionário.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _warn_patrol_once (res://scripts/world/training_target.gd:1479)
+       [1] _bind_patrol_support (res://scripts/world/training_target.gd:1446)
+       [2] _try_bind_landing (res://scripts/world/training_target.gd:1014)
+       [3] _advance_airborne (res://scripts/world/training_target.gd:901)
+       [4] _physics_process (res://scripts/world/training_target.gd:204)
+ERROR: Main: layout autoral inválido — layout candidato da família valley falhou (suporte primário não tem arco ou queda segura a partir do spawn); fallback canônico também falhou (suporte primário não tem arco ou queda segura a partir do spawn)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _fail_authored_layout (res://scripts/world/main.gd:310)
+       [1] prepare_authored_layout (res://scripts/world/main.gd:256)
+       [2] configure_run_managed (res://scripts/world/main.gd:1203)
+       [3] _prepare_room_candidate (res://scripts/world/run_controller.gd:207)
+       [4] _advance_after_room (res://scripts/world/run_controller.gd:398)
+       [5] _fade_managed_transition_to (res://scripts/world/run_controller.gd:633)
+ERROR: Main: layout autoral inválido — layout candidato da família valley falhou (suporte primário não tem arco ou queda segura a partir do spawn); fallback canônico também falhou (suporte primário não tem arco ou queda segura a partir do spawn)
+   at: push_error (core/variant/variant_utility.cpp:1023)
+   GDScript backtrace (most recent call first):
+       [0] _fail_authored_layout (res://scripts/world/main.gd:310)
+       [1] prepare_authored_layout (res://scripts/world/main.gd:256)
+       [2] configure_run_managed (res://scripts/world/main.gd:1203)
+       [3] _prepare_room_candidate (res://scripts/world/run_controller.gd:207)
+       [4] _advance_after_room (res://scripts/world/run_controller.gd:398)
+       [5] _fade_managed_transition_to (res://scripts/world/run_controller.gd:633)
+WARNING: TrainingTarget: nenhum percurso livre e útil de 8 px; o alvo permanecerá estacionário.
+   at: push_warning (core/variant/variant_utility.cpp:1033)
+   GDScript backtrace (most recent call first):
+       [0] _warn_patrol_once (res://scripts/world/training_target.gd:1479)
+       [1] _bind_patrol_support (res://scripts/world/training_target.gd:1446)
+       [2] _try_bind_landing (res://scripts/world/training_target.gd:1014)
+       [3] _advance_airborne (res://scripts/world/training_target.gd:901)
+       [4] _physics_process (res://scripts/world/training_target.gd:204)
+SCRIPT ERROR: Trying to cast a freed object.
+   at: _restore_legacy_visibility (res://scripts/ui/hud/run_hud_bridge.gd:428)
+   GDScript backtrace (most recent call first):
+       [0] _restore_legacy_visibility (res://scripts/ui/hud/run_hud_bridge.gd:428)
+       [1] _process (res://scripts/ui/hud/run_hud_bridge.gd:79)

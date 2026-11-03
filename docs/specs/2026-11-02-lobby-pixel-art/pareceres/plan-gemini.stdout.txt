@@ -1,0 +1,46 @@
+### STATUS
+**APPROVED / VALIDATED**
+
+The prospective pixel-art plan and specification for the factory lobby are technically sound, visually coherent, and strictly bounded. The principal refinement correctly resolves runtime resolution discrepancies by enforcing native asset exports drawn at 2× nearest filter.
+
+---
+
+### SUMMARY
+
+1. **Resolution & Scaling Architecture (Principal Override Applied):**
+   - **Backdrop:** Native canvas `576×324` px exported to `export/lobby-backdrop-576x324.png`. Rendered at destination `1152×648` px (scale 2×, nearest neighbor).
+   - **Elevator Doors:** Left and right panels authored at native `32×56` px (`export/elevator-door-left-32x56.png` and `elevator-door-right-32x56.png`). Rendered at destination `64×112` px (scale 2×, nearest neighbor).
+   - Upscaled 2× / 3× versions remain strictly confined to `preview/` for static review.
+
+2. **Integration & Visual Boundaries:**
+   - **Floor & Seam Transparency:** Native backdrop has 100% alpha transparency for all pixels at $y \ge 280$ (corresponding to logical world coordinates $y \ge 560$). World floor collision and rendering via the existing tile/atlas remain untouched.
+   - **Protected Signage & Indicators:** 
+     - User amber plaque at `Rect2(888, 384, 176, 40)` and bitmap `ElevatorSign` at `(896, 388)` preserved without visual occlusion.
+     - Indicator lights at logical centers $x \in \{928, 968, 1008\}, y \approx 428$ maintain dynamic rendering driven by `amber_lights_on`.
+   - **Cab Bounds & Door Travel:** Cab clearance window `Rect2(912, 448, 128, 112)` kept free of structural obstructions. Door animation travel ($x = 848 \to 912$ left, $x = 1040 \to 976$ right at $y = 448$) preserved identically.
+   - **Palette & Alpha Locks:** Binary alpha ($0$ or $255$ only; no partial blending). Strict palette ceiling of 20 colors (17 baseline factory colors + up to 3 authorized accents: `#E8D8B5`, `#879198`, `#52BAC7`).
+
+3. **Public API & Contract Preservation in `lobby_visual.gd`:**
+   - Properties preserved: `visual_layer`, `door_closed_fraction`, `amber_lights_on`.
+   - Methods preserved: `set_door_closed_fraction(value)`, `set_amber_lights_on(value)`.
+   - `scenes/lobby.tscn` remains frozen; physics, camera, player, collisions, and gameplay logic remain completely isolated.
+
+---
+
+### CHANGED_FILES: none
+
+### TESTS: none
+
+---
+
+### RISKS
+
+1. **Draw Layering Occlusion:** If `lobby_visual.gd` draws the backdrop after the sign/indicator calls, dynamic UI elements could be hidden. Layer 0 draw sequence must explicitly place backdrop texture first, followed by amber plaque, bitmap text, and indicator rects.
+2. **Sub-pixel Shifting / Edge Artifacts:** Non-integer camera positions or fractional offsets could induce jitter with nearest sampling; all destination rects in `_draw()` must remain strictly cast to integer world coordinates.
+3. **Palette Bleed in Aseprite Scripting:** Procedural Lua generation could inadvertently produce color ramps or semi-transparent anti-aliased edge pixels if blend modes or opacity filters are applied without strict thresholding.
+
+---
+
+### NEXT_STEP
+
+Execute Aseprite production in `assets/environment/factory_v1/lobby_v1/` (`source/generate_lobby.lua`, `.aseprite` sources, native exports, manifest, README, previews), visually verify the preview render, and integrate the native texture draw calls directly into `scripts/world/lobby_visual.gd`.

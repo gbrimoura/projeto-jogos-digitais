@@ -1,0 +1,11 @@
+STATUS: done
+SUMMARY: Plano aprovado com escopo mínimo correto. Mantém primary0/fallback1 e validador integral; geometria gap80/88/96+top448 resolve colisão 56px/underside sem enfraquecer checks; HUD valida Variant crua antes de `as`.
+FINDINGS:
+- P1: none. Grafo Floor->apoio1->ala0 confirmado por `_managed_reachable_supports`; trocar primary para 1 seria mascarar erro. Gap80 é mínimo matemático: edge-gap 80 - (64+14)=2px de folga inicial independente de widths; 48..72 sobrepõe. Top448 dá rise112 margem16 vs apex128; 440/432 dá margem8/0 e falha passo16. Canônico [216,456,696,936] w160 gaps80 bounds136..1016 grade8 espelho1152-x->[936,696,456,216] preserva índice proximal. Random só valley `48+randi(0,6)*8` -> `80+randi(0,2)*8`; outras famílias intactas.
+- P2-1: Explicitar consumo dummy RNG jitter 1/2 para preservar contagem: manter `randi_range(-2,2)` e sobrescrever top=448 depois, não remover chamada.
+- P2-2: Divergência processo: plano cita `cursor-grok-4.6-xhigh-fast` prevalece sobre 4.7 local; AGENTS exige `grok-4.7-xhigh-fast`. Resolver em preflight único `agent --list-models`, sem assumir prevalência.
+- P2-3: HUD: aplicar `if not is_instance_valid(node_variant): erase; continue` antes de qualquer `as CanvasItem/Node` em `_restore_legacy_visibility`, `_restore_visibility_for_subtree`, `_ensure_legacy_hidden`, e só em `_unbind_room`/`_update_target` se mesmo padrão existir. `keys()` é cópia, erase seguro. Não criar WeakRef/ID.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Sem runtime por proibição AGENTS; demonstração manual passos14/15/34-35 não substitui runtime seed4162699858/3353966537. Folga 2px + tolerância overlap0.01 sensível a float; gaps maiores deslocam média para fora, pode aumentar retry mas validador rejeita. RNG dummy se mal implementado dessincroniza run.
+NEXT_STEP: Congelar baseline dirty, preflight único, revisões somente-leitura Gemini3.8High/AGY, Grok/Cursor, Muse1.3/OpenCode xhigh + Opus, depois writer único 15min nos 2 arquivos/regiões.

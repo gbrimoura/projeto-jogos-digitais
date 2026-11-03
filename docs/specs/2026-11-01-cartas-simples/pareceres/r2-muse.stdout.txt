@@ -1,0 +1,13 @@
+Revisão R2 somente-leitura — conferindo apresentação e textos sem alterar o workspace.
+Faltam plano e pareceres para concluir a revisão — lendo os documentos do plano ativo.
+STATUS: done
+SUMMARY: R2 final confere com briefing MAIS SIMPLES: 7 icones refeitos 64x40->128x80 art-only, copy humana 1-2 linhas sem jargao, card_topics com TOTAL corrigido para Carga/Pressao/Dinamo, wrap 24/2+3 e badge NOVO/EVOLUIR sem engine/testes. Sem P1/P2 bloqueante.
+FINDINGS:
+- scripts/progression/upgrade_catalog.gd:130 rank_label "EVOLUIR: NIVEL %d" OK <=18 glyphs <22; 140 topics=card_topics OK; 145-199 card_topics novo OK: 157-158 Impacto delta rank_gain*per_rank, 160-162 Motor nova cooldown dash_cooldown_for_rank(next_rank), 163-168 Carga TOTAL next_rank*bonus2, 169-174 Pressao TOTAL next_rank*bonus1+cap, 175-182 Mola delta rank_gain, 183-188 Dinamo TOTAL next_rank*.15, 189-198 Chassi delta efetivo mini100 + acquisition_heal. effect_summary 201-238 inalterado vs base 145-182, projectile_damage/dash_cooldown/dash_refund/bounce/lifetime/maximum/acquisition_heal 241-299 identicos base 185-243. Legacy com "por parry/HP/ric." permanece mas nao e UI primaria, permitido.
+- scripts/ui/upgrade_card.gd:94-98 Summary usa description 24,2 exige 1..2 linhas OK; 106 remove "- " OK; 109 permite 1..3 linhas OK; resto fontes/molduras/cenas intacto.
+- resources/upgrades/*.tres: somente description/effect_summary/effect_topics, sem stat/cap/icon: carga_reativa.tres:151-152, chassi_reforcado.tres:172-174, dinamo_defesa.tres:193-195, impacto_reforcado.tres:214-215, mola_retorno.tres:235-236, motor_acelerado.tres:256-257, ricochete_pressao.tres:277-278. Todas descricoes 23-24 chars 1-2 linhas por _wrap_text, topicos 14-22 chars 1 linha, sem parry/aparo/hit/HP/rank/cap/ric. Observacao menor: motor_acelerado.tres:257 "0,4 s" com espaco vs catalog:161 "0,4s" sem espaco, sem impacto pois card_topics sobrepoe.
+- SOURCE GENERATOR 283-668: 308-333 lock_palette 19 cores + alpha[0,255], 429-444 make_art 64x40 scale2 128x80 3 layers, 446-513 7 desenhos 1objeto+1sinal 4-6 cores cada (dinamo 6 no limite), 515-529 load_font so leitura sem escrita frames/fontes, 578-630 make_preview com 616 rect 144x24 navy antes 618-619 y118/130 + assert 24 glyphs, 632-660 contact 7, 664-666 manifest art-only. Mesmos PNG/ASE paths.
+CHANGED_FILES: none
+TESTS: none
+RISKS: legacy effect_summary ainda tem jargao se outro caminho usar direto; badge sem validacao de 22 glyphs mas valores atuais 4/17-18 cabem; _wrap_text length vs glyphs acentuados sem impacto atual; preview e ESTUDO nao screenshot Godot.
+NEXT_STEP: Congelar R2 e seguir para revisores restantes do conjunto.

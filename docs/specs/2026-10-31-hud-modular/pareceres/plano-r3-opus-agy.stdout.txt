@@ -1,0 +1,33 @@
+STATUS: done
+
+SUMMARY: A decisão R3 está correta e corrige um erro real da R2. O projeto não define `viewport_width/height`, então o tamanho base fica no padrão de 1152×648. Em 1920×1080, o stretch `canvas_items` com aspecto `keep` é 5/3. Pela fórmula da R2, `get_visible_rect().size` é 1152×648 e a escala local seria 2. O pixel final ficaria em 2×5/3 ≈ 3,33, ou seja, sem pixel inteiro. Na R3 a conta fica: o retângulo final é 1920×1080, então s = floor(min(3,33; 3,33)) = 3. A escala local é 3/(5/3) = 1,8 e a origem final é (96, 54). O Godot aplica o stretch ao transform global do canvas, e isso afeta todos os CanvasLayers. Por isso, aplicar a inversa compensa de fato. Com escala final exata de 3, cada texel cobre 3 centros de pixel. O nearest fica estável mesmo com ruído de ponto flutuante: a folga mínima é de cerca de 0,17 texel. Os riscos concretos da R1/R2 foram fechados: escala, fonte opcional sem preload, ordem dos overlays, progresso, elegibilidade, máquina de estados do dash e retratos. Nada impede seguir. Ficam 3 achados P2.
+
+FINDINGS:
+- **P1:** none.
+- **P2-1. Onde aplicar a inversa:** o arredondamento de Controls pode desfazer a origem arredondada.
+  - O `gui/common/snap_controls_to_pixels` vem ativo por padrão (`true`). Com ele, `Control` arredonda a própria `position` no espaço do pai, ou seja, no espaço lógico, não no final.
+  - Se a inversa for aplicada como `position`/`scale` da raiz `Control`, a origem local (57,6; 32,4) vira (58; 32). No espaço final isso dá (96,67; 53,33), e a garantia de "origem final arredondada" se perde.
+  - Em 5/3 o efeito é só um deslocamento menor que 1 px. Mas outros fatores de stretch podem pôr a fronteira dos texels perto do centro dos pixels, e aí surgem colunas de 2 ou 4 px.
+  - Correção sem ProjectSettings: aplicar a inversa no `CanvasLayer.transform` (offset/scale do layer não passam por esse arredondamento). A raiz `Control` fica em (0,0) com escala 1. Isso não muda o fato de o CanvasLayer ser fixo e sem câmera (`follow_viewport` desligado).
+- **P2-2. Quando recalcular:** depender só de `size_changed` deixa casos de borda. Exemplos: mudança de `content_scale_factor` e a ordem entre a atualização do stretch e a emissão do sinal.
+  - Como a bridge já roda `_process` com modo ALWAYS, basta guardar `(get_visible_rect(), get_stretch_transform())` em cache e recompor quando o valor mudar. É barato e determinístico.
+  - Calcular a escala por eixo (`s/stretch.x`, `s/stretch.y`) a partir do transform, sem fixar 1,8 no código. Assim o aspecto `ignore` (stretch não uniforme) também funciona.
+- **P2-3. Um frame com a HUD sobre o overlay:** se o overlay e `paused = true` acontecerem depois do `_process` da bridge no mesmo frame, a HUD pode ficar visível nesse frame. Os dois estão no layer 1, então a ordem entre eles não é garantida.
+  - O `SceneTree.set_pause` propaga `NOTIFICATION_PAUSED` de forma síncrona para os nós que podem ser pausados.
+  - Um nó auxiliar filho com modo PAUSABLE/INHERIT, que esconde só o conteúdo interno ao receber essa notificação, fecha o caso no mesmo instante.
+  - Não mexe em gameplay nem restaura o HUD legado.
+
+CHANGED_FILES: none
+
+TESTS: none
+
+RISKS:
+- **Mensagens durante a pausa:** a HUD esconde o conteúdo e os Labels legados continuam ocultos. Qualquer mensagem que exista só em `HUD/StatusLabel` durante Victory/GameOver/reward fica invisível. A leitura informada diz que esses overlays têm texto próprio; vale confirmar esse ponto na implementação.
+- **Progresso no chefe:** quando `is_boss` for verdadeiro, a apresentação não deve mostrar `room_index/room_total`, senão aparece algo como "4/3".
+- **Retratos:** o mapeamento Tranca/Cospe → retrato deve usar classe ou script, não o texto de `display_name`.
+- **Versão do Godot:** confirmar que a versão do projeto expõe `Viewport.get_stretch_transform()`. O comportamento não depende da frase citada da documentação, e sim da composição stretch × canvas.
+- **Export:** confirmar que `font.json` entra no pacote como recurso JSON, porque `load` é reconhecido pelo loader. Ausência ou invalidade já levam ao fallback legado.
+- **Telas pequenas:** abaixo de 576×324 finais há corte (`min1` documentado).
+- **Mundo × HUD:** o mundo continua no stretch fracionário de 5/3. O pixel da HUD (3 px) e o pixel do mundo terão tamanhos visuais diferentes. Isso é esperado pela decisão, não é defeito.
+
+NEXT_STEP: Incorporar P2-1 a P2-3 como notas de implementação, mantendo os contratos da R3. Depois disso, o implementador `gpt-6-luna` `xhigh` pode seguir sem nova rodada de plano. Pela regra do repositório, as revisões por incremento continuam valendo.

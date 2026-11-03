@@ -1,0 +1,6 @@
+STATUS: done
+SUMMARY: Omissão R1 resolvida — previews com 6 pareados core2/post2/contacts2, rank_footer core NOVO/EVOLUIR + attrs AJUSTE/AJUSTAR 10/5 + recovery MANUTENÇÃO/CURA ATÉ 1 VIDA sem contador, notes cobrem study pareado/contacts intactos/clean_frames só markers.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Byte-identidade Lua/JSON e snapshot R1 preservado não verificáveis inline; PNG inalterado/sem rerender por declaração.
+NEXT_STEP: Congelar payload e seguir etapa.

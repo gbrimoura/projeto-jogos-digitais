@@ -1,0 +1,12 @@
+# Pareceres — contador de nível
+
+Préflight único de autenticação/catálogos com modelos exatos em preflight-0/1/2.json. Implementador gpt-6-luna xhigh; Fast/priority não selecionável. Pacote inline imutável review-input.txt de 21.143 caracteres; hash em review-input.sha256.json. Revisões somente leitura, sem ferramentas/engine/testes, limite delimitado de seis minutos.
+
+- Gemini 3.8 Flash (High), AGY plan: exit 0, favorável sem bloqueios. Conferiu cap derivado do helper, metadados, contador atual>ofertado/máximo, três casos do estudo, cores e geometria horizontal/vertical.
+- Grok cursor-grok-4.6-xhigh-fast, Cursor plan (exato global): exit 0, parecer recebido, sem P1. Observações sobre altura 11px e metadados: glyph real tem 11px, termina em y227 dentro da borda y228, portanto sem overflow; root inspecionou PNG. README e manifest foram conferidos pelo principal e já descrevem as duas linhas. Não há leitor adicional de rank_label no código além do fallback local da carta. rank_is_maximum é calculado no mesmo card_preview que fornece os ranks, garantindo coerência no fluxo real. Não se introduziram novos asserts/arquitetura por hipótese de dados externos não usados.
+- Muse Spark 1.3 Contributor xhigh, OpenCode plan: exit 0, sem bloqueio. Conferiu tipos, limites/casos máximos, preview e preservação. Mesmas observações cosméticas avaliadas acima, sem mudança adicional necessária.
+- Claude Opus claude-opus-5-5-high, Cursor plan: exit 1, ActionRequiredError por cota, renovação informada 03/11/2026. Revisão obrigatória ainda pendente. Não substituído nem registrado como aprovação.
+
+Root viu os PNGs finais, sem presumir aceite estético do usuário. Primeiro estudo tinha os textos do rodapé sobre os tópicos; foi corrigido antes do congelamento para y205/y217. A produção Aseprite foi realizada com preview_only=true e sem clean_frames, com PNGs atualizados diretamente inspecionados; stdout/stderr ficaram vazios e código de saída não foi capturado, portanto não se afirma exit 0. Logs vazios foram preservados, sem nova produção redundante.
+
+Preservação por hash: renderer local e 3 PNGs/fonte ASE de moldura 5/5 intactos em protected-preservation.json. Catalog antes/depois da única função de apresentação alterada permanecem exatos em catalog-preservation.json. Recursos/caps/efeitos/oferta e fontes/ícones preservados. Estado final em final-sha256.csv. Sem Godot/import/testes/parser/linter/auditoria/simulação, commit/push ou mudança de branch.

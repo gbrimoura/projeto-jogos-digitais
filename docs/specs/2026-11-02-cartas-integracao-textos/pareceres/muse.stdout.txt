@@ -1,0 +1,21 @@
+Revisão somente-leitura em curso — conferindo copy, limites bitmap e preview_only.
+Vou conferir os arquivos congelados contra o pacote anexado.
+Copy base conferida — agora valido mecânica, glifos e limites.
+Mecânica e layout validados — agora confiro cobertura de glifos.
+```text
+STATUS: done
+SUMMARY: Revisão somente-leitura do pacote R1 final — sem engine/testes/audits/alterações.
+Escopo OK: só card_preview/card_topics/effect_summary em upgrade_catalog.gd, title/description/effect_* em 7x .tres, 2 strings em upgrade_offer.gd, copy/montagem/preview_only em generate_upgrade_cards.lua + 2 previews. IDs, icon paths 7/7, rank_cap 220/3/95 e numéricos intactos.
+Fidelidade mecânica OK: impacto 1+rank*1; motor 0,55/0,4/0,32/0,26 via dash_cooldown_for_rank; carga rank*2 + flag; pressão rank*1 cap 3; mola 3+rank / 2,2+0,35rank; dínamo rank*0,15; chassi 5+rank cap100 + cura rank-delta. Preview NOVO Carga / rank2 Mola 4>5 2,55>2,9 / rank2 Dínamo 0,15>0,3 confere com helpers. Semântica carga/próximo-acerto, dínamo/1x-por-rebatida, chassi/cura-na-escolha explícitas.
+Bounds bitmap OK: descrições 1-2 linhas <=24, tópicos 1-2 linhas <=24 total <=3, badge NOVO 4 / EVOLUIR:NÍVEL n max 18/22. Limites checados no pior caso: impacto 220>221=24, carga +438>+440=23, chassi cura +1=24 exato. Glifos OK após _normalize_line: A-Z 0-9 espaço /,:.- +> s-minúsculo-pós-dígito + ÁÀÂÃÉÊÍÓÔÕÚÇ — todos existem em font.json + card-font-additions.json. Heading runtime ESCOLHA UMA MELHORIA / UMA ESCOLHA POR SALA igual ao preview.
+preview_only OK: branch carrega 7 PNG 128x80 com assert, pula make_art/make_contact/manifest, só escreve preview/upgrade-cards-study. Não reexporta arte.
+Tipos GDScript 4.7 OK: card_preview->Dictionary, card_topics->PackedStringArray, effect_summary->String, maxi/mini, String.join, _format_decimal com vírgula.
+P1: nenhum bloqueador concreto encontrado.
+P2-1: preview usa S maiúsculo em 0,35S/2,55S/0,15S, runtime normaliza para s minúsculo pós-dígito — mesmo advance, sem overflow, mas divergência visual preview x runtime.
+P2-2: inconsistência evoluir: carga mantém + nos dois lados +2>+4, pressão dropa + 1>2; dínamo troca rótulo NOVO Recarga-do-dash: por EVOLUIR Redução: para caber em 24 — intencional, mas quebra continuidade.
+P2-3: Lua só asserta tópicos <=24; falta assert desc <=24 e badge <=22.
+CHANGED_FILES: none
+TESTS: none — proibido por escopo (sem Godot/imports/parser/linter/auditoria/simulação)
+RISKS: larguras reais Title/Summary/Topic0-2/Badge na cena upgrade_card.tscn não verificadas sem engine — assume 24*6/22*6; truncate com - pode mascarar overflow; chassi cura 24 exato sem folga; efeito float 2,9s depende de %.2f+trim; usuário ainda não aprovou PNG.
+NEXT_STEP: aguardar aprovação visual do usuário; se aceitar P2s como estão, congelar e seguir para preflight/revisões obrigatórias; se não, corrigir S/s e asserts e re-gerar só preview_only via Aseprite.
+```

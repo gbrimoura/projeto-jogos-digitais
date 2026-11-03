@@ -1,0 +1,10 @@
+STATUS: done
+SUMMARY: Plano e especificação da HUD nativa no Aseprite aprovados para implementação. O plano isola estritamente os novos arquivos em `assets/ui/hud_caldeira_v1/**`, preserva a integridade do Godot e arquivos existentes, adota proporção geométrica nativa exata (576x324, metade de 1152x648), garante desacoplamento de 9-slice com cantos de 6px preservando rebites, separa fills contínuos por razão e contempla fonte bitmap PT-BR e referências visuais sem importar texturas de terceiros.
+FINDINGS:
+- P1: none
+- P2: Registrar no manifesto/JSON a convenção de estados do relógio radial de cooldown (passo 0..16: definir se 0 indica carga vazia ou completa, iniciando às 12h em sentido horário), prevenindo ambiguidades em futura integração com `TextureProgressBar`.
+- P2: Garantir que os diacríticos na fonte bitmap 5x7 (acentos de "ACELERAÇÃO", etc.) usem o espaço vertical adicional da entrelinha (altura de linha 9) sem empurrar o baseline de caracteres não acentuados.
+CHANGED_FILES: none
+TESTS: none
+RISKS: Escala final para 1920x1080 demandará estratégia de escala/integer scaling na integração Godot futura; layout procedural vertical pode demandar pequenos ajustes de padding após testes em runtime (fora do escopo atual).
+NEXT_STEP: Liberar o implementador GPT-6 Luna (xhigh) para criar o script Lua gerador e exportar o kit completo em `assets/ui/hud_caldeira_v1/**`.

@@ -21,7 +21,7 @@ motion_mode = 1
 z_index = 1
 script = ExtResource("1_training_target")
 display_name = "Tranca-Lata"
-max_health = 3
+max_health = 6
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_training_target")

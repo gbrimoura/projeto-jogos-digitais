@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1_definition"]
+
+[resource]
+script = ExtResource("1_definition")
+upgrade_id = &"impacto_reforcado"
+title = "Impacto Reforçado"
+description = "A bola atinge mais forte."
+effect_summary = "+1 dano base por nível"
+effect_topics = PackedStringArray("Dano base +1", "Afeta todo acerto")
+projectile_damage_override = 2
+rank_cap = 220
+projectile_damage_per_rank = 1
