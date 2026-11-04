@@ -90,7 +90,7 @@ static func _build_managed_entries(
 	if is_roof:
 		var portal_x := entry_offset if entry_dir == Vector2i(0, -1) else exit_offset
 		var horizontal_sign := -1.0 if portal_x == 248.0 else 1.0
-		var allowed_steps: Array[int] = [64, 72, 80] if family == &"roof_five" else [80, 88, 96, 104, 112]
+		var allowed_steps: Array = [64, 72, 80] if family == &"roof_five" else [80, 88, 96, 104, 112]
 		var rises: Array[int] = []
 		for _tries in 40:
 			rises.clear()

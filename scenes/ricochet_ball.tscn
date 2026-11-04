@@ -11,15 +11,14 @@ collision_layer = 4
 collision_mask = 9
 motion_mode = 1
 script = ExtResource("1_ricochet_ball")
-is_parryable = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=655038491]
 shape = SubResource("CircleShape2D_ricochet_ball")
 
-[node name="ChargeVisual" type="Line2D" parent="."]
+[node name="ChargeVisual" type="Line2D" parent="." unique_id=279924785]
 visible = false
 z_index = 1
 points = PackedVector2Array(0, -13, 9.19239, -9.19239, 13, 0, 9.19239, 9.19239, 0, 13, -9.19239, 9.19239, -13, 0, -9.19239, -9.19239, 0, -13)
+closed = true
 width = 2.5
 default_color = Color(0.4, 0.91, 0.81, 0.95)
-closed = true

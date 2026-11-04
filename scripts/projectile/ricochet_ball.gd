@@ -241,6 +241,7 @@ func _physics_process(delta: float) -> void:
 		_finish("lifetime")
 
 func _get_parry_hit(motion: Vector2, frame_elapsed: float, segment_duration: float) -> Dictionary:
+	
 	if not is_parryable or _parry_release_pending:
 		return {}
 	var controller := _find_racket_controller()
