@@ -65,6 +65,7 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 		return
 
 	_config = config
+	_config.lifetime = 5.0 # alteração temporária dps a gente vê a duração do projétil
 	var launch_direction := direction.normalized()
 	if launch_direction.is_zero_approx():
 		launch_direction = Vector2.RIGHT
@@ -174,6 +175,9 @@ func _physics_process(delta: float) -> void:
 				)
 				_arm_reactive_charge()
 				_notify_parry_success(_last_parry_swing_id)
+				_bounce_count -= 1
+				print(_bounce_count)
+				#print("PARRY | ricochetes: ", _bounce_count, "/", _config.max_bounces, " | vida restante: ", snappedf(_lifetime_remaining, 0.01))
 				if _has_finished or _stop_sweep_requested:
 					return
 				_pending_motion = Vector2.ZERO
