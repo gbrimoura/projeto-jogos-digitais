@@ -248,7 +248,7 @@ static func card_topics(
 			var next_refund: float = dash_refund_seconds(next_rank)
 			var refund_topic: String
 			if current_rank == 0:
-				refund_topic = "Recarga do dash: -%ss" % _format_decimal(next_refund - current_refund)
+				refund_topic = "Dash: -%ss" % _format_decimal(next_refund - current_refund)
 			else:
 				refund_topic = "Redução: %ss > %ss" % [
 					_format_decimal(current_refund),

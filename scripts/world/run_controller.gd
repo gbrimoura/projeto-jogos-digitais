@@ -1337,7 +1337,7 @@ func _retry_initial_load() -> void:
 	var retry_kind: StringName = _technical_retry_kind
 	var retry_proposal: Dictionary = _technical_retry_proposal.duplicate(true)
 	_dismiss_technical_error()
-	if retry_kind == &"floor_plan":
+	if retry_kind == &"floor_plan" or _floor_room_descriptors.is_empty():
 		if not _prepare_current_floor_plan():
 			_present_technical_error(_initial_floor_plan_error, {}, null, &"floor_plan", true)
 			return
