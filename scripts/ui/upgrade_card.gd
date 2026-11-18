@@ -1,6 +1,7 @@
 class_name UpgradeCard
 extends Button
 
+const RarityCatalog = preload("res://scripts/progression/shop_item_catalog.gd")
 const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
 const UpgradeStatTextScript = preload("res://scripts/ui/upgrade_stat_text.gd")
 const UpgradeRankPrismsScript = preload("res://scripts/ui/upgrade_rank_prisms.gd")
@@ -15,6 +16,7 @@ const TOPIC_VALUE_COLOR: Color = Color("D2A75C")
 const TOPIC_CONTENT_WIDTH: int = 22
 
 @onready var _frame: TextureRect = $Frame
+@onready var _upgrade_rarity: HudBitmapText = $UpgradeRarity
 @onready var _illustration: TextureRect = $Illustration
 @onready var _title: HudBitmapText = $Title
 @onready var _summary: HudBitmapText = $Summary
@@ -144,6 +146,10 @@ func configure(row: Dictionary, font_bundle: Dictionary) -> bool:
 		return false
 	if not _rank_prisms.configure_rank(rank_before, rank_after, rank_max, reward_kind):
 		return false
+	var rarity := definition.rarity
+	if not _configure_text(_upgrade_rarity, RarityCatalog.rarity_label(rarity), font_bundle, 1):
+		return false
+	_upgrade_rarity.font_color = RarityCatalog.rarity_color(rarity)
 	_illustration.texture = illustration
 	_illustration.show()
 	return true

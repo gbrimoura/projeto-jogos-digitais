@@ -9,6 +9,8 @@ const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.
 const ShopItemCatalogScript = preload("res://scripts/progression/shop_item_catalog.gd")
 const DEFAULT_ENEMY_LEVEL_CONFIG: EnemyLevelConfigResource = preload("res://resources/progression/enemy_levels.tres")
 const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const SHOP_REFRESH_LIMIT: int = 3
+const SHOP_REFRESH_PRICE_STEP: int = 2
 const LOBBY_SCENE_PATH: String = "res://scenes/lobby.tscn"
 
 @export_range(1, 20) var floors_per_run: int = 8
@@ -16,15 +18,15 @@ const LOBBY_SCENE_PATH: String = "res://scenes/lobby.tscn"
 ## Frequência de loja provisória e configurável; o GDD deixa o ritmo final pendente.
 @export var shop_after_combat_rooms: Array[int] = [3, 7]
 ## Preço-base de protótipo, ajustável para testes; não é regra final da economia.
-@export_range(0, 999, 1) var shop_base_price: int = 20
+@export_range(0, 999, 1) var shop_base_price: int = 6
 @export var shop_rank_surcharge_enabled: bool = true
 ## Sobretaxa provisória por nível já adquirido; o GDD deixa custos pendentes.
-@export_range(0, 100, 1) var shop_rank_surcharge_per_rank: int = 5
+@export_range(0, 100, 1) var shop_rank_surcharge_per_rank: int = 2
 ## Sobretaxas provisorias por raridade; ajuste no Inspector enquanto a economia esta pendente.
-@export_range(0, 999, 1) var shop_uncommon_surcharge: int = 5
-@export_range(0, 999, 1) var shop_rare_surcharge: int = 10
-@export_range(0, 999, 1) var shop_epic_surcharge: int = 20
-@export_range(0, 999, 1) var shop_legendary_surcharge: int = 30
+@export_range(0, 999, 1) var shop_uncommon_surcharge: int = 2
+@export_range(0, 999, 1) var shop_rare_surcharge: int = 4
+@export_range(0, 999, 1) var shop_epic_surcharge: int = 7
+@export_range(0, 999, 1) var shop_legendary_surcharge: int = 10
 @export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0
 @export var common_room_scene: PackedScene
 @export var boss_room_scene: PackedScene
@@ -65,6 +67,7 @@ var _resolved_run_seed: int = 0
 var _floor_room_descriptors: Array[Dictionary] = []
 var _last_room_family: StringName = &""
 var _shop_visit_room_id: int = 0
+var _shop_refresh_count: int = 0
 var _shop_offer_rows: Array[Dictionary] = []
 var _owned_shop_pause: bool = false
 var _shop_pause_room_id: int = 0
@@ -284,6 +287,10 @@ func _stage_proposal(floor_index: int, stage_index: int, descriptors: Array[Dict
 			"last_family": last_family,
 		}
 	var destination_descriptor: Dictionary = descriptors[descriptor_index].duplicate(true)
+	var next_index := descriptor_index + 1
+	destination_descriptor["next_stage_is_shop"] = (
+		next_index < descriptors.size() and descriptors[next_index].get("room_kind") == &"shop"
+	)
 	var combat_room_index: int = _combat_room_index_for_stage(descriptors, stage_index)
 	return {
 		"valid": true,
@@ -408,31 +415,36 @@ func _close_shop_offer_for_room(room: Node, force_resume: bool = false) -> void:
 	close_shop_for_room(room, force_resume)
 
 func _ensure_shop_visit(room: Node) -> void:
-	if not _is_shop_room(room):
+	if not _is_shop_room(room) or _shop_visit_room_id == room.get_instance_id():
 		return
-	var room_id: int = room.get_instance_id()
-	if _shop_visit_room_id == room_id:
-		return
-	_shop_visit_room_id = 0
-	_shop_offer_rows.clear()
+	_shop_refresh_count = 0
+	_shop_offer_rows = _generate_shop_stock(room)
+	_shop_visit_room_id = room.get_instance_id()
+
+func _generate_shop_stock(room: Node, refresh_number: int = 0, attempt: int = 0) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
 	var descriptor_index: int = current_stage_index - 1
 	if descriptor_index < 0 or descriptor_index >= _floor_room_descriptors.size():
-		return
+		return []
 	var shop_descriptor: Dictionary = _floor_room_descriptors[descriptor_index]
 	var shop_seed: int = int(shop_descriptor.get("room_seed", 0))
+	if shop_seed == 0:
+		return []
+	if refresh_number > 0:
+		shop_seed = (hash([shop_seed, refresh_number, attempt, 0x5245524F]) & 0x7FFFFFFF) + 1
 	var stages_per_floor: int = common_rooms_per_floor + shop_after_combat_rooms.size() + 1
 	var offer_ordinal: int = (current_floor - 1) * stages_per_floor + current_stage_index
 	var room_player: Player = _find_player(room)
-	if shop_seed == 0 or room_player == null or room_player.health == null or room_player.is_dead:
-		return
+	if room_player == null or room_player.health == null or room_player.is_dead:
+		return []
 	var snapshot_variant: Variant = _run_build.to_snapshot_data()
 	if typeof(snapshot_variant) != TYPE_DICTIONARY:
-		return
+		return []
 	var snapshot_data: Dictionary = snapshot_variant
 	var ranks_variant: Variant = snapshot_data.get("counts_by_id", {})
 	var item_levels_variant: Variant = snapshot_data.get("item_levels_by_id", {})
 	if typeof(ranks_variant) != TYPE_DICTIONARY or typeof(item_levels_variant) != TYPE_DICTIONARY:
-		return
+		return []
 	var ranks_by_id: Dictionary = ranks_variant
 	var item_levels_by_id: Dictionary = item_levels_variant
 	var offers: Array[Dictionary] = UpgradeCatalogScript.build_offer(
@@ -450,10 +462,10 @@ func _ensure_shop_visit(room: Node) -> void:
 		if definition == null:
 			continue
 		var rank: int = int(row.get("rank_before", 0))
-		var price: int = maxi(shop_base_price, 0)
+		var price: int = maxi(shop_base_price, 0) + _shop_item_rarity_surcharge(definition.rarity)
 		if shop_rank_surcharge_enabled:
 			price += maxi(rank, 0) * maxi(shop_rank_surcharge_per_rank, 0)
-		_shop_offer_rows.append({
+		rows.append({
 			"kind": &"upgrade",
 			"offer_id": definition.upgrade_id,
 			"upgrade_id": definition.upgrade_id,
@@ -465,7 +477,7 @@ func _ensure_shop_visit(room: Node) -> void:
 		var item_id: StringName = StringName(item_offer.get("item_id", &""))
 		var rarity: int = int(item_offer.get("rarity", -1))
 		var item_price: int = maxi(shop_base_price, 0) + _shop_item_rarity_surcharge(rarity)
-		_shop_offer_rows.append({
+		rows.append({
 			"kind": &"item",
 			"offer_id": item_id,
 			"item_id": item_id,
@@ -473,16 +485,64 @@ func _ensure_shop_visit(room: Node) -> void:
 			"price": item_price,
 			"purchased": false,
 		})
-	_shop_visit_room_id = room_id
+	return rows
+
+func _shop_refresh_price(refresh_count: int) -> int:
+	return (refresh_count + 1) * SHOP_REFRESH_PRICE_STEP if refresh_count < SHOP_REFRESH_LIMIT else -1
+
+func _shop_state(rows: Array[Dictionary], balance: int, refresh_count: int) -> Dictionary:
+	return {
+		"offers": rows.duplicate(true),
+		"scrap": balance,
+		"refresh_price": _shop_refresh_price(refresh_count),
+	}
 
 func get_shop_offer_state(room: Node) -> Dictionary:
 	if not is_shop_room_active(room):
 		return {}
 	_ensure_shop_visit(room)
-	var offers: Array[Dictionary] = []
-	for offer: Dictionary in _shop_offer_rows:
-		offers.append(offer.duplicate(true))
-	return {"offers": offers, "scrap": temporary_scrap}
+	return _shop_state(_shop_offer_rows, temporary_scrap, _shop_refresh_count)
+
+func _can_change_shop_stock(room: Node) -> bool:
+	return (
+		is_shop_room_active(room) and not transition_pending and not _restart_in_progress
+		and not is_instance_valid(_technical_error_layer) and not is_instance_valid(_transition_fade_layer)
+		and _shop_visit_room_id == room.get_instance_id() and _owned_shop_pause
+		and _shop_pause_room_id == room.get_instance_id() and get_tree().paused
+	)
+
+func _stock_signature(rows: Array[Dictionary]) -> Array[String]:
+	var keys: Array[String] = []
+	for offer: Dictionary in rows:
+		var row: Dictionary = offer["row"]
+		keys.append("%s:%s:%d" % [offer["kind"], offer["offer_id"], int(row.get("rank_before", 0))])
+	keys.sort()
+	return keys
+
+func refresh_shop_stock(room: Node, expected_price: int, present_stock: Callable) -> bool:
+	if not _can_change_shop_stock(room) or not present_stock.is_valid():
+		return false
+	var price := _shop_refresh_price(_shop_refresh_count)
+	if price < 0 or expected_price != price or temporary_scrap < price:
+		return false
+	var room_player := _find_player(room)
+	if room_player == null or room_player.health == null or room_player.is_dead:
+		return false
+	var current_signature := _stock_signature(_shop_offer_rows)
+	var next_count := _shop_refresh_count + 1
+	for attempt in 8:
+		var replacement := _generate_shop_stock(room, next_count, attempt)
+		if replacement.is_empty() or _stock_signature(replacement) == current_signature:
+			continue
+		var preview := _shop_state(replacement, temporary_scrap - price, next_count)
+		if not bool(present_stock.call(preview)):
+			return false
+		_shop_refresh_count = next_count
+		_shop_offer_rows = replacement
+		temporary_scrap -= price
+		temporary_scrap_changed.emit(temporary_scrap, -price)
+		return true
+	return false
 
 func _shop_item_rarity_surcharge(rarity: int) -> int:
 	match rarity:
@@ -494,12 +554,7 @@ func _shop_item_rarity_surcharge(rarity: int) -> int:
 	return 0
 
 func purchase_shop_offer(room: Node, offer_index: int, offer_id: StringName, expected_price: int) -> bool:
-	if (
-		not is_shop_room_active(room) or transition_pending or _restart_in_progress
-		or is_instance_valid(_technical_error_layer) or is_instance_valid(_transition_fade_layer)
-		or _shop_visit_room_id != room.get_instance_id() or not _owned_shop_pause
-		or _shop_pause_room_id != room.get_instance_id() or not get_tree().paused
-	):
+	if not _can_change_shop_stock(room):
 		return false
 	if offer_index < 0 or offer_index >= _shop_offer_rows.size():
 		return false

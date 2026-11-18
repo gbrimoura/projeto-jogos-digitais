@@ -7,6 +7,7 @@
 script = ExtResource("1_definition")
 icon = ExtResource("2_icon")
 upgrade_id = &"dinamo_defesa"
+rarity = 1
 title = "Dínamo de Defesa"
 description = "Aparada aceita reduz a recarga do dash."
 effect_summary = "Reduz a recarga uma vez por rebatida bem-sucedida"

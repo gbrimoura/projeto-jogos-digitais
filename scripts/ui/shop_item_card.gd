@@ -2,6 +2,7 @@ class_name ShopItemCard
 extends UpgradeCard
 
 const ShopItemCatalogScript = preload("res://scripts/progression/shop_item_catalog.gd")
+const ELEMENT_ICON_DIR := "res://assets/ui/upgrade_cards_v1/export/"
 const CUSTOM_ITEM_ICON_DIRECTORY: String = "res://assets/shop/items/"
 
 @onready var _rarity_chip: ColorRect = $RarityChip
@@ -64,12 +65,16 @@ func configure_item(row: Dictionary, font_bundle: Dictionary) -> bool:
 	_rarity_chip.color = rarity_color
 	_rarity_label.font_color = rarity_color
 	_rarity_label.max_lines = 1
-	_rarity_label.set_text(ShopItemCatalogScript.rarity_label(int(rarity)))
+	_rarity_label.set_text("%s / %s" % [ShopItemCatalogScript.rarity_label(int(rarity)), String(row.get("family", ""))])
 	_illustration.texture = _build_item_icon(item_id)
 	_illustration.show()
 	return true
 
 func _build_item_icon(item_id: StringName) -> Texture2D:
+	if item_id == &"camara_termica":
+		return load(ELEMENT_ICON_DIR + "bola_incandescente_128x80.png") as Texture2D
+	if item_id == &"nucleo_indutor":
+		return load(ELEMENT_ICON_DIR + "bola_magnetica_128x80.png") as Texture2D
 	var custom_icon_path := _custom_item_icon_path(item_id)
 	if not custom_icon_path.is_empty() and ResourceLoader.exists(custom_icon_path):
 		var custom_icon := load(custom_icon_path) as Texture2D

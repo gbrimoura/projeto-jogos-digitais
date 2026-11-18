@@ -8,21 +8,21 @@
 script = ExtResource("2_script")
 
 [node name="RarityChip" type="ColorRect" parent="."]
-offset_left = 48.0
+offset_left = 10.0
 offset_top = 23.0
-offset_right = 56.0
+offset_right = 18.0
 offset_bottom = 31.0
 mouse_filter = 2
 color = Color(0.823529, 0.654902, 0.360784, 1)
 
 [node name="RarityLabel" type="Control" parent="."]
-offset_left = 60.0
+offset_left = 22.0
 offset_top = 22.0
-offset_right = 100.0
+offset_right = 152.0
 offset_bottom = 32.0
 mouse_filter = 2
 texture_filter = 1
 script = ExtResource("3_bitmap_text")
-center_text = true
+center_text = false
 max_lines = 1
 font_color = Color(0.823529, 0.654902, 0.360784, 1)

@@ -22,6 +22,21 @@ signal bounced(bounce_index: int, impact_position: Vector2, surface_normal: Vect
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var _charge_visual: Line2D = $ChargeVisual
 
+const HEAT_SAMPLE_INTERVAL: float = 0.04
+const HEAT_TOUCH_RADIUS: float = 24.0
+const FORGE_RADIUS: float = 92.0
+const MAGNET_RANGE: float = 175.0
+
+var fragment_scene: PackedScene
+var _heat_points: Array[Vector2] = []
+var _heat_ages: Array[float] = []
+var _heat_targets: Dictionary = {}
+var _heat_sample_delay: float = 0.0
+var _forge_used: bool = false
+var _forge_flash: float = 0.0
+var _forge_center: Vector2
+var _accelerated_trail: Array[Vector2] = []
+
 var _config: ProjectileConfig
 var _lifetime_remaining: float = 0.0
 var _has_launched: bool = false
@@ -54,6 +69,9 @@ func _ready() -> void:
 	_set_charge_state(_charge_state)
 
 func _process(delta: float) -> void:
+	if _forge_flash > 0.0:
+		_forge_flash = maxf(_forge_flash - delta, 0.0)
+		queue_redraw()
 	if _charge_state != ChargeState.CHARGED or not is_instance_valid(_charge_visual):
 		return
 	_charge_pulse_elapsed += delta
@@ -68,7 +86,6 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 		return
 
 	_config = config
-	_config.lifetime = 5.0 # alteração temporária dps a gente vê a duração do projétil
 	var launch_direction := direction.normalized()
 	if launch_direction.is_zero_approx():
 		launch_direction = Vector2.RIGHT
@@ -90,6 +107,13 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 	_apply_collision_radius()
 	queue_redraw()
 
+func get_flight_speed_ratio() -> float:
+	if _config == null or _is_returning or _has_finished or _stop_sweep_requested or _config.speed <= 0.0:
+		return 0.0
+	if _config.environmental_bounce_speed_bonus_per_bounce <= 0.0 and _config.parry_speed_bonus_per_success <= 0.0:
+		return 0.0
+	return velocity.length() / _config.speed
+
 func set_return_target(target: Node2D) -> void:
 	_return_target = target
 
@@ -97,7 +121,13 @@ func set_return_target(target: Node2D) -> void:
 func _start_returning() -> void:
 	if _has_finished or _is_returning:
 		return
+	if _config.is_fragment:
+		_finish("fragment_spent")
+		return
 	_is_returning = true
+	_heat_points.clear()
+	_heat_ages.clear()
+	_accelerated_trail.clear()
 	velocity = Vector2.ZERO
 	_pending_motion = Vector2.ZERO
 	if is_instance_valid(collision_shape):
@@ -114,6 +144,9 @@ func _return_to_player(delta: float) -> void:
 	var capture_distance := maxf(_projectile_radius() + 8.0, 14.0)
 	if global_position.distance_to(destination) <= capture_distance:
 		global_position = destination
+		for child in get_children():
+			if child is RicochetBall and not child.is_queued_for_deletion():
+				return
 		_finish("returned")
 		return
 
@@ -128,6 +161,9 @@ func cancel() -> void:
 ## changing collision state or ending the node inside an external callback.
 func request_stop_sweep() -> void:
 	_stop_sweep_requested = true
+	for child in get_children():
+		if child is RicochetBall:
+			child.request_stop_sweep()
 
 func _physics_process(delta: float) -> void:
 	if not _has_launched or _has_finished or _stop_sweep_requested:
@@ -138,6 +174,9 @@ func _physics_process(delta: float) -> void:
 		return
 	_damaged_targets_this_tick.clear()
 	_update_parry_release_lock()
+	_update_upgrade_effects(delta)
+	if _has_finished or _stop_sweep_requested:
+		return
 
 	var motion_delta := minf(delta, maxf(_lifetime_remaining, 0.0))
 	var expires_after_motion := _lifetime_remaining <= delta
@@ -235,6 +274,8 @@ func _physics_process(delta: float) -> void:
 			return
 		if is_environmental_bounce:
 			_enqueue_wall_spark(impact_scene_root, impact_position)
+			if _config.splits_on_wall and _environmental_bounce_count == 1:
+				_spawn_fragments(surface_normal)
 		bounced.emit(_bounce_count, impact_position, surface_normal)
 		if _has_finished or _stop_sweep_requested:
 			return
@@ -273,6 +314,8 @@ func _current_projectile_speed() -> float:
 
 func _record_environmental_bounce() -> void:
 	_environmental_bounce_count += 1
+	if _environmental_bounce_count == 1:
+		_accelerated_trail.clear()
 	if _config == null:
 		return
 	var speed_cap := maxf(_config.max_environmental_bounce_speed_multiplier, 1.0)
@@ -379,6 +422,135 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
 	CombatFeedbackScript.enqueue(feedback_scene_root, impact_position, effect_kind)
 	if was_charged and _charge_state == ChargeState.CHARGED:
 		_set_charge_state(ChargeState.CONSUMED)
+	if _config.has_forge and not _forge_used and _environmental_bounce_count > 0 and not _stop_sweep_requested:
+		_trigger_forge(impact_position, target)
+
+func _update_upgrade_effects(delta: float) -> void:
+	if _config.environmental_bounce_speed_bonus_per_bounce > 0.0:
+		_accelerated_trail.append(global_position)
+		if _accelerated_trail.size() > 8:
+			_accelerated_trail.pop_front()
+		queue_redraw()
+	if _config.heat_rank > 0:
+		_update_heat_trail(delta)
+	if _config.magnet_rank > 0 and _environmental_bounce_count > 0:
+		_steer_toward_enemy(delta)
+
+func _update_heat_trail(delta: float) -> void:
+	for index in range(_heat_ages.size() - 1, -1, -1):
+		_heat_ages[index] -= delta
+		if _heat_ages[index] <= 0.0:
+			_heat_ages.remove_at(index)
+			_heat_points.remove_at(index)
+	queue_redraw()
+	_heat_sample_delay -= delta
+	if _heat_sample_delay > 0.0:
+		return
+	_heat_sample_delay = HEAT_SAMPLE_INTERVAL
+	var extra_duration := 0.25 if _config.heat_rank > 1 and _last_parry_swing_id >= 0 else 0.0
+	_heat_points.append(global_position)
+	_heat_ages.append(0.32 + extra_duration)
+	for node in get_tree().get_nodes_in_group(&"combat_enemy"):
+		var enemy := node as Node2D
+		if not _can_affect_enemy(enemy) or _heat_targets.has(enemy.get_instance_id()):
+			continue
+		for point in _heat_points:
+			var center := _enemy_center(enemy)
+			if center.distance_squared_to(point) <= HEAT_TOUCH_RADIUS * HEAT_TOUCH_RADIUS and _has_clear_path(point, center):
+				_apply_heat_damage.call_deferred(weakref(enemy))
+				break
+
+func _apply_heat_damage(target_ref: WeakRef) -> void:
+	if _has_finished or _stop_sweep_requested or _is_returning:
+		return
+	var enemy := target_ref.get_ref() as Node2D
+	if not _can_affect_enemy(enemy) or _damaged_targets_this_tick.has(enemy):
+		return
+	var id := enemy.get_instance_id()
+	if _heat_targets.has(id):
+		return
+	var accepted: Variant = enemy.call("take_damage", 1, self)
+	if accepted is bool and accepted:
+		_heat_targets[id] = true
+
+func _steer_toward_enemy(delta: float) -> void:
+	if velocity.is_zero_approx() or not _pending_motion.is_zero_approx():
+		return
+	var forward := velocity.normalized()
+	var closest := MAGNET_RANGE * MAGNET_RANGE
+	var target_offset := Vector2.ZERO
+	for node in get_tree().get_nodes_in_group(&"combat_enemy"):
+		var enemy := node as Node2D
+		if not _can_affect_enemy(enemy):
+			continue
+		var center := _enemy_center(enemy)
+		var offset := center - global_position
+		var distance := offset.length_squared()
+		if distance >= closest or forward.dot(offset.normalized()) < 0.35:
+			continue
+		if not _has_clear_path(global_position, center):
+			continue
+		target_offset = offset
+		closest = distance
+	if not target_offset.is_zero_approx():
+		var turn_rate := 0.85 if _config.magnet_rank == 1 else 1.4
+		var turn := clampf(forward.angle_to(target_offset), -turn_rate * delta, turn_rate * delta)
+		velocity = velocity.rotated(turn)
+
+func _trigger_forge(center: Vector2, direct_target: Node) -> void:
+	_forge_used = true
+	_forge_flash = 0.24
+	_forge_center = center
+	queue_redraw()
+	for node in get_tree().get_nodes_in_group(&"combat_enemy"):
+		var enemy := node as Node2D
+		if enemy == direct_target or not _can_affect_enemy(enemy):
+			continue
+		var target_center := _enemy_center(enemy)
+		if center.distance_squared_to(target_center) <= FORGE_RADIUS * FORGE_RADIUS and _has_clear_path(center, target_center):
+			enemy.call("take_damage", 2, self)
+		if _stop_sweep_requested:
+			return
+
+func _can_affect_enemy(enemy: Node2D) -> bool:
+	return (
+		is_instance_valid(enemy) and not enemy.is_queued_for_deletion()
+		and enemy.is_in_group(&"damageable") and enemy.has_method("take_damage")
+	)
+
+func _enemy_center(enemy: Node2D) -> Vector2:
+	var shape := enemy.get_node_or_null("CollisionShape2D") as CollisionShape2D
+	return shape.global_position if shape != null else enemy.global_position
+
+func _has_clear_path(origin: Vector2, destination: Vector2) -> bool:
+	var query := PhysicsRayQueryParameters2D.create(origin, destination, 1)
+	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+func _spawn_fragments(normal: Vector2) -> void:
+	if fragment_scene == null or velocity.is_zero_approx():
+		return
+	for spread in [-0.4, 0.4]:
+		var direction := velocity.normalized().rotated(float(spread))
+		if direction.dot(normal) <= 0.0:
+			direction = (direction.slide(normal) + normal * 0.15).normalized()
+		var fragment := fragment_scene.instantiate() as RicochetBall
+		if fragment == null:
+			continue
+		var config := ProjectileConfig.new()
+		config.speed = velocity.length() * 0.8
+		config.lifetime = 0.45
+		config.collision_radius = minf(_config.collision_radius * 0.5, 4.0)
+		config.damage = 1
+		config.max_bounces = 1
+		config.is_fragment = true
+		config.collision_mask = _config.collision_mask
+		fragment.collision_layer = 0
+		fragment.collision_mask = config.collision_mask
+		fragment.is_parryable = false
+		fragment.top_level = true
+		fragment.position = global_position
+		add_child(fragment)
+		fragment.launch(direction, config)
 
 func _enqueue_wall_spark(scene_root: Node, impact_position: Vector2) -> void:
 	if not is_instance_valid(scene_root) or scene_root.is_queued_for_deletion():
@@ -422,18 +594,36 @@ func _finish(reason: String) -> void:
 	if _has_finished:
 		return
 	_has_finished = true
+	request_stop_sweep()
 	if _charge_state == ChargeState.CHARGED:
 		_set_charge_state(ChargeState.CONSUMED)
 	finished.emit(reason)
 	queue_free()
 
 func _draw() -> void:
+	for index in _heat_points.size():
+		var point := to_local(_heat_points[index]).snapped(Vector2(2.0, 2.0))
+		var extent := 4.0 if _heat_ages[index] > 0.16 else 2.0
+		draw_rect(Rect2(point - Vector2.ONE * extent, Vector2.ONE * extent * 2.0), Color("#e96d35"))
+	if _environmental_bounce_speed_multiplier > 1.0:
+		var streak_size := minf(2.0 + (_environmental_bounce_speed_multiplier - 1.0) * 10.0, 7.0)
+		for point in _accelerated_trail:
+			draw_rect(Rect2(to_local(point).snapped(Vector2(2.0, 2.0)), Vector2(streak_size, 2.0)), Color("#f7d762"))
+	if _forge_flash > 0.0:
+		draw_arc(to_local(_forge_center), lerpf(FORGE_RADIUS, 14.0, _forge_flash / 0.24), 0.0, TAU, 32, Color("#f58ac1"), 3.0)
 	var visual_radius := 8.0
 	if _config != null:
 		visual_radius = _config.collision_radius
 	var fill_color := Color("#f0b35b") if is_parryable else Color("#b88ce0")
 	var rim_color := Color("#ffdf9a") if is_parryable else Color("#e0c5ff")
 
+	if _config != null:
+		if _config.has_forge:
+			fill_color = Color("#f58ac1")
+		elif _config.heat_rank > 0:
+			fill_color = Color("#f47b3d")
+		elif _config.magnet_rank > 0:
+			fill_color = Color("#63dfe9")
 	draw_circle(Vector2.ZERO, visual_radius + 2.0, Color("#101722"))
 	draw_circle(Vector2.ZERO, visual_radius, fill_color)
 	draw_arc(Vector2.ZERO, visual_radius, 0.0, TAU, 24, rim_color, 1.5, true)

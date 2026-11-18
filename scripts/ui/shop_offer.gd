@@ -10,6 +10,10 @@ const ShopItemCatalogScript = preload("res://scripts/progression/shop_item_catal
 const STAGE_SIZE: Vector2 = Vector2(576.0, 324.0)
 
 @onready var _stage: Control = $Stage
+@onready var _close_button: Button = $Stage/CloseShop
+@onready var _refresh_button: Button = $Stage/RefreshShop
+@onready var _portrait: TextureRect = $Stage/VendorPortrait
+@onready var _greeting: HudBitmapText = $Stage/VendorGreeting
 @onready var _heading: HudBitmapText = $Stage/Heading
 @onready var _hint: HudBitmapText = $Stage/Hint
 @onready var _cards_row: HBoxContainer = $Stage/Cards
@@ -26,15 +30,20 @@ var _font_bundle: Dictionary = {}
 var _rows: Array[Dictionary] = []
 var _cards: Array[UpgradeCard] = []
 var _open: bool = false
+var _has_greeted: bool = false
+var _refresh_price: int = -1
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	layer = 40
+	_close_button.pressed.connect(_on_close_pressed)
+	_refresh_button.pressed.connect(_on_refresh_pressed)
 	set_process_unhandled_key_input(false)
 	_font_bundle = UpgradeCard.load_card_font_bundle()
 	if bool(_font_bundle.get("valid", false)):
 		_heading.configure_font(_font_bundle)
 		_hint.configure_font(_font_bundle)
+		_greeting.configure_font(_font_bundle)
 	for price_label in _price_labels:
 		if bool(_font_bundle.get("valid", false)):
 			price_label.configure_font(_font_bundle)
@@ -85,30 +94,34 @@ func present(controller: Node, room: Node, player: Node, state: Dictionary) -> b
 			return false
 		next_rows.append(offer.duplicate(true))
 		next_ids.append(offer_id)
+	# Configure in a hidden staging node so failed refreshes preserve the current cards.
+	var staging := Control.new()
+	staging.hide()
+	_stage.add_child(staging)
+	var next_cards: Array[UpgradeCard] = []
+	for offer: Dictionary in next_rows:
+		var row: Dictionary = offer["row"]
+		var kind := StringName(offer["kind"])
+		var scene := ShopItemCardScene if kind == &"item" else UpgradeCardScene
+		var card := scene.instantiate() as UpgradeCard
+		if card == null:
+			staging.queue_free()
+			return false
+		staging.add_child(card)
+		var configured := bool(card.call("configure_item", row, _font_bundle)) if kind == &"item" else card.configure(row, _font_bundle)
+		if not configured:
+			staging.queue_free()
+			return false
+		next_cards.append(card)
 	_controller = controller
 	_room = room
 	_player = player
 	_rows = next_rows
 	_clear_cards()
-	for index in range(_rows.size()):
+	for index in next_cards.size():
+		var card: UpgradeCard = next_cards[index]
 		var offer: Dictionary = _rows[index]
-		var row: Dictionary = offer.get("row", {})
-		var kind: StringName = StringName(offer.get("kind", &"upgrade"))
-		var card: UpgradeCard
-		if kind == &"item":
-			card = ShopItemCardScene.instantiate() as UpgradeCard
-		else:
-			card = UpgradeCardScene.instantiate() as UpgradeCard
-		if card == null:
-			_clear_cards()
-			return false
-		_cards_row.add_child(card)
-		var configured := bool(card.call("configure_item", row, _font_bundle)) if kind == &"item" 			else card.configure(row, _font_bundle)
-		if not configured:
-			_cards_row.remove_child(card)
-			card.queue_free()
-			_clear_cards()
-			return false
+		card.reparent(_cards_row, false)
 		card.pressed.connect(_on_card_pressed.bind(index))
 		card.disabled = bool(offer.get("purchased", false))
 		_cards.append(card)
@@ -118,17 +131,42 @@ func present(controller: Node, room: Node, player: Node, state: Dictionary) -> b
 		price_label.show()
 	for index in range(_rows.size(), _price_labels.size()):
 		_price_labels[index].hide()
+	staging.queue_free()
+	_refresh_price = int(state.get("refresh_price", -1))
+	_refresh_button.disabled = _refresh_price < 0
+	_refresh_button.text = "RENOVAR  %d SUCATAS" % _refresh_price if _refresh_price >= 0 else "LIMITE ATINGIDO"
 	_set_balance(int(state.get("scrap", 0)))
-	_hint.set_text("ESTOQUE ESGOTADO - E/ESC PARA FECHAR" if _rows.is_empty() else "ESCOLHA UMA MELHORIA E SIGA SUBINDO")
+	_hint.set_text("ESTOQUE ESGOTADO" if _rows.is_empty() else "ESCOLHA UMA PEÇA")
+	_set_vendor_line("OLÁ DE NOVO. TEM PEÇAS NO BALCÃO." if _has_greeted else "BEM-VINDO. DÁ UMA OLHADA NAS PEÇAS.", 1)
+	_has_greeted = true
 	_open = true
 	set_process_unhandled_key_input(true)
 	show()
 	_layout_stage()
+	_close_button.grab_focus()
 	for card in _cards:
 		if not card.disabled:
 			card.grab_focus()
 			break
 	return true
+func _on_refresh_pressed() -> void:
+	if not _open or _refresh_price < 0 or not is_instance_valid(_controller):
+		return
+	if int(_controller.get("temporary_scrap")) < _refresh_price:
+		_hint.set_text("SEM SUCATA PARA RENOVAR")
+		return
+	if bool(_controller.call("refresh_shop_stock", _room, _refresh_price, _present_refreshed_stock)):
+		_hint.set_text("ESTOQUE RENOVADO")
+		_set_vendor_line("CHEGARAM OUTRAS PEÇAS.", 2)
+	else:
+		_hint.set_text("SEM NOVO ESTOQUE. NADA COBRADO.")
+
+func _present_refreshed_stock(state: Dictionary) -> bool:
+	return present(_controller, _room, _player, state)
+
+func _on_close_pressed() -> void:
+	close_offer()
+
 func close_offer(emit_closed: bool = true) -> void:
 	if not _open and not visible:
 		return
@@ -156,7 +194,6 @@ func _on_card_pressed(index: int) -> void:
 		return
 	var offer: Dictionary = _rows[index]
 	var offer_id: StringName = StringName(offer.get("offer_id", offer.get("upgrade_id", &"")))
-	var offer_kind: StringName = StringName(offer.get("kind", &"upgrade"))
 	var price: int = int(offer.get("price", -1))
 	var purchased: bool = bool(_controller.call("purchase_shop_offer", _room, index, offer_id, price))
 	if purchased:
@@ -169,15 +206,24 @@ func _on_card_pressed(index: int) -> void:
 			var refreshed: Dictionary = refreshed_variant
 			current_scrap = int(refreshed.get("scrap", current_scrap))
 		_set_balance(current_scrap)
-		_hint.set_text("ITEM ADICIONADO" if offer_kind == &"item" else "MELHORIA ADICIONADA")
+		_hint.set_text("COMPRA REALIZADA")
+		_set_vendor_line("VALEU PELA COMPRA. BOA SORTE NA SUBIDA.", 2)
 		return
 	var current_scrap: int = int(_controller.get("temporary_scrap"))
 	if current_scrap < price:
-		_hint.set_text("SUCATA INSUFICIENTE")
+		var missing := price - current_scrap
+		_hint.set_text("FALTA 1 SUCATA" if missing == 1 else "FALTAM %d SUCATAS" % missing)
+		_set_vendor_line("GUARDO A PEÇA ATÉ VOCÊ VOLTAR.", 4)
 	else:
 		_hint.set_text("OFERTA INDISPONÍVEL")
+func _set_vendor_line(line: String, frame: int) -> void:
+	_greeting.set_text(line)
+	var atlas := _portrait.texture as AtlasTexture
+	if atlas != null:
+		atlas.region = Rect2(frame * 64, 0, 64, 64)
+
 func _set_balance(value: int) -> void:
-	_heading.set_text("LOJA - SUCATA %d" % maxi(value, 0))
+	_heading.set_text("LOJA DE SUCATA   /   SALDO %d" % maxi(value, 0))
 
 func _clear_cards() -> void:
 	_cards.clear()

@@ -35,10 +35,15 @@ var charged_damage_bonus: int = 0
 var impact_rank: int = 0
 var charge_rank: int = 0
 var pressure_rank: int = 0
+var heat_rank: int = 0
+var magnet_rank: int = 0
+var has_forge: bool = false
+var splits_on_wall: bool = false
+var is_fragment: bool = false
 
-## World (layer 1) plus Damageable (layer 4).
+## World (1), Damageable (8), and Destructible (32).
 @export_flags_2d_physics
-var collision_mask: int = 9
+var collision_mask: int = 41
 
 @export_range(0.0, 4.0, 0.1)
 var collision_skin: float = 1.0

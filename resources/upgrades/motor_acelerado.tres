@@ -7,6 +7,7 @@
 script = ExtResource("1_definition")
 icon = ExtResource("2_icon")
 upgrade_id = &"motor_acelerado"
+rarity = 1
 title = "Motor Acelerado"
 description = "Recarga menor e tiro no dash mais rápido."
 effect_summary = "Recarga menor e mais velocidade ao disparar no dash"

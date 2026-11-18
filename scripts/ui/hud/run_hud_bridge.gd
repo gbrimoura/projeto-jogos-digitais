@@ -306,6 +306,8 @@ func _update_presentation() -> void:
 		_hud.call("set_dash", state, remaining, duration)
 	else:
 		_hud.call("set_dash", &"UNAVAILABLE", 0.0, 0.0)
+	var launcher := _player.get("ball_launcher") as BallLauncher
+	_hud.call("set_flight_speed_ratio", launcher.get_flight_speed_ratio() if is_instance_valid(launcher) else 0.0)
 	var status_value: String = _read_status_text()
 	var counter_value: String = _read_counter_text()
 	var seed_value: String = _read_seed_text()

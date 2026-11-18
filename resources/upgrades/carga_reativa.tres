@@ -7,6 +7,7 @@
 script = ExtResource("1_definition")
 icon = ExtResource("2_icon")
 upgrade_id = &"carga_reativa"
+rarity = 2
 title = "Carga Reativa"
 description = "Rebata a bola e reforce o próximo acerto."
 effect_summary = "Aparada carrega o próximo acerto e soma ao dano extra"

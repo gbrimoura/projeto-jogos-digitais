@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/bola_incandescente_128x80.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+icon = ExtResource("2")
+upgrade_id = &"bola_incandescente"
+rarity = 1
+title = "Bola Incandescente"
+description = "Deixa calor no caminho."
+effect_topics = PackedStringArray("Rastro queima inimigos", "1 dano por inimigo")
+rank_cap = 2

@@ -29,7 +29,8 @@ var _swing_id: int = 0
 var _last_rewarded_swing_id: int = -1
 var _dash_cooldown_refund: float = 0.0
 var _rhythm_coil_level: int = 0
-var _rhythm_coil_used_this_room: bool = false
+var _rhythm_coil_uses: int = 0
+var _rhythm_coil_use_limit: int = 1
 var _active: bool = false
 var _swing_duration: float = 0.0
 var _active_remaining: float = 0.0
@@ -171,16 +172,19 @@ func register_parry_success(swing_id: int) -> void:
 		if _dash_cooldown_refund > 0.0 \
 			and movement != null and movement.has_method("reduce_dash_cooldown_remaining"):
 			movement.call("reduce_dash_cooldown_remaining", _dash_cooldown_refund)
-		if _rhythm_coil_level > 0 and not _rhythm_coil_used_this_room \
+		if _rhythm_coil_level > 0 and _rhythm_coil_uses < _rhythm_coil_use_limit \
 			and player_body != null and not player_body.is_on_floor() \
-			and movement != null and movement.has_method("restore_air_dashes"):
-			_rhythm_coil_used_this_room = true
-			movement.call("restore_air_dashes", 1)
+			and movement is MovementController:
+			var controller := movement as MovementController
+			var previous_charges := int(controller.get_status().get("air_dashes_remaining", 0))
+			if controller.restore_air_dashes(1) > previous_charges:
+				_rhythm_coil_uses += 1
 	_update_feedback()
 
 func apply_run_build(build: RunBuild) -> void:
 	var rank := build.count_for(&"dinamo_defesa") if build != null else 0
 	_rhythm_coil_level = build.item_level_for(&"bobina_ritmo") if build != null else 0
+	_rhythm_coil_use_limit = 2 if build != null and build.item_level_for(&"mola_salto") > 0 else 1
 	_dash_cooldown_refund = UpgradeCatalogScript.dash_refund_seconds(rank)
 	arc_degrees = _base_arc_degrees + 8.0 * float(build.item_level_for(&"punho_guarda") if build != null else 0)
 

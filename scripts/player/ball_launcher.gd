@@ -26,6 +26,9 @@ var _catraca_scrap_registered: bool = false
 var _spawn_shape: CircleShape2D
 var _spawn_query: PhysicsShapeQueryParameters2D
 
+func get_flight_speed_ratio() -> float:
+	return _active_ball.get_flight_speed_ratio() if is_instance_valid(_active_ball) else 0.0
+
 func configure(
 	player: Node2D,
 	aim_controller: AimController,
@@ -69,11 +72,14 @@ func try_launch(triggered: bool) -> bool:
 	var rolamento_bonus_available := _run_build != null and _run_build.has_rolamento_livre_damage_pending()
 	if rolamento_bonus_available:
 		launch_config.damage += ShopItemCatalogScript.ROLLING_NEXT_SHOT_DAMAGE_BONUS
+		if _run_build.item_level_for(&"catraca_sucata") > 0:
+			launch_config.damage += 1
 
 	ball.collision_mask = launch_config.collision_mask
 	_projectile_parent.add_child(ball)
 	_active_ball = ball
 	ball.finished.connect(_on_ball_finished.bind(ball))
+	ball.fragment_scene = projectile_scene
 	ball.set_return_target(_shot_origin)
 	ball.global_position = spawn_position
 	ball.launch(direction, launch_config)
@@ -228,8 +234,18 @@ func get_projectile_config_snapshot() -> ProjectileConfig:
 		derived_config.environmental_bounce_speed_bonus_per_bounce = ShopItemCatalogScript.TURBINE_BOUNCE_SPEED_BONUS_PER_LEVEL * float(turbine_level)
 		derived_config.max_environmental_bounce_speed_multiplier = 1.0 + ShopItemCatalogScript.TURBINE_BOUNCE_SPEED_MAX_BONUS if turbine_level > 0 else 1.0
 		var guard_level := _run_build.item_level_for(&"punho_guarda")
+		if turbine_level > 0 and guard_level > 0:
+			derived_config.max_environmental_bounce_speed_multiplier += 0.16
 		derived_config.parry_speed_bonus_per_success = ShopItemCatalogScript.guard_parry_speed_bonus_per_success(guard_level)
 		derived_config.max_parry_speed_multiplier = 1.0 + ShopItemCatalogScript.GUARD_PARRY_SPEED_MAX_BONUS if guard_level > 0 else 1.0
+		derived_config.heat_rank = _run_build.count_for(&"bola_incandescente")
+		derived_config.magnet_rank = _run_build.count_for(&"bola_magnetica")
+		var has_thermal := _run_build.item_level_for(&"camara_termica") > 0
+		var has_inductor := _run_build.item_level_for(&"nucleo_indutor") > 0
+		derived_config.heat_rank = maxi(derived_config.heat_rank, int(has_thermal))
+		derived_config.magnet_rank = maxi(derived_config.magnet_rank, int(has_inductor))
+		derived_config.has_forge = _run_build.has_upgrade(&"forja_magnetica") or (has_thermal and has_inductor)
+		derived_config.splits_on_wall = _run_build.has_upgrade(&"bola_fragmentaria")
 		derived_config.impact_rank = _run_build.count_for(&"impacto_reforcado")
 		derived_config.charge_rank = _run_build.count_for(&"carga_reativa")
 		derived_config.pressure_rank = _run_build.count_for(&"ricochete_pressao")

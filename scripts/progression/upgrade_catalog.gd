@@ -5,6 +5,7 @@ extends RefCounted
 ## This file intentionally does not preload or reference RunBuild.
 
 const MAX_RUN_ACQUISITIONS: int = 220
+const UPGRADE_RARITY_WEIGHTS: Array[int] = [12, 9, 6, 3, 1]
 const BASE_PROJECTILE_CONFIG: ProjectileConfig = preload("res://resources/projectile_config.tres")
 const BASE_MOVEMENT_CONFIG: MovementConfig = preload("res://resources/player_movement_config.tres")
 
@@ -19,6 +20,10 @@ static var _definitions: Array[UpgradeDefinitionResource] = [
 	preload("res://resources/upgrades/ajuste_velocidade_bola.tres"),
 	preload("res://resources/upgrades/ajuste_recarga_dash.tres"),
 	preload("res://resources/upgrades/reparo_campo.tres"),
+	preload("res://resources/upgrades/bola_incandescente.tres"),
+	preload("res://resources/upgrades/bola_magnetica.tres"),
+	preload("res://resources/upgrades/forja_magnetica.tres"),
+	preload("res://resources/upgrades/bola_fragmentaria.tres"),
 ]
 
 
@@ -66,6 +71,12 @@ static func can_acquire(upgrade_id: Variant, current_rank: int, base_maximum_hea
 		and current_rank < max_rank_for(upgrade_id, base_maximum_health)
 
 
+static func prerequisites_met(upgrade_id: StringName, ranks: Dictionary) -> bool:
+	if upgrade_id != &"forja_magnetica":
+		return true
+	return _rank_for(ranks, &"bola_incandescente") > 0 and _rank_for(ranks, &"bola_magnetica") > 0
+
+
 static func total_rank_count(ranks_by_id: Dictionary) -> int:
 	var total: int = 0
 	for upgrade_id in known_upgrade_ids():
@@ -83,6 +94,7 @@ static func build_offer(
 	if total_rank_count(ranks_by_id) >= MAX_RUN_ACQUISITIONS:
 		return result
 
+	var fusion: UpgradeDefinitionResource
 	var new_candidates: Array[UpgradeDefinitionResource] = []
 	var evolution_candidates: Array[UpgradeDefinitionResource] = []
 	var post_build_candidates: Array[UpgradeDefinitionResource] = []
@@ -91,6 +103,11 @@ static func build_offer(
 			continue
 		var rank := _rank_for(ranks_by_id, definition.upgrade_id)
 		if not can_acquire(definition.upgrade_id, rank, base_maximum_health):
+			continue
+		if not prerequisites_met(definition.upgrade_id, ranks_by_id):
+			continue
+		if definition.upgrade_id == &"forja_magnetica":
+			fusion = definition
 			continue
 		if definition.reward_kind == &"core":
 			if rank == 0:
@@ -103,7 +120,9 @@ static func build_offer(
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _offer_seed(room_seed, room_ordinal)
 	var selected_definitions: Array[UpgradeDefinitionResource] = []
-	if not new_candidates.is_empty() or not evolution_candidates.is_empty():
+	if fusion != null:
+		selected_definitions.append(fusion)
+	if fusion != null or not new_candidates.is_empty() or not evolution_candidates.is_empty():
 		if not new_candidates.is_empty() and not evolution_candidates.is_empty():
 			selected_definitions.append(_take_random(new_candidates, rng))
 			selected_definitions.append(_take_random(evolution_candidates, rng))
@@ -117,8 +136,11 @@ static func build_offer(
 				remaining.append(definition)
 		while selected_definitions.size() < 3 and not remaining.is_empty():
 			selected_definitions.append(_take_random(remaining, rng))
-	else:
-		selected_definitions.append_array(post_build_candidates)
+	if new_candidates.is_empty() and evolution_candidates.is_empty():
+		for definition in post_build_candidates:
+			if selected_definitions.size() >= 3:
+				break
+			selected_definitions.append(definition)
 
 	for definition in selected_definitions:
 		var current_rank := _rank_for(ranks_by_id, definition.upgrade_id)
@@ -151,6 +173,7 @@ static func card_preview(
 		"title": definition.title,
 		"description": definition.description,
 		"reward_kind": definition.reward_kind,
+		"rarity": definition.rarity,
 		"rank_before": current_rank,
 		"rank_after": next_rank,
 		"rank_max": rank_max,
@@ -222,7 +245,7 @@ static func card_topics(
 			return PackedStringArray([
 				pressure_topic,
 				"Até %d paredes por bola" % definition.environmental_bounce_damage_count_cap,
-				"Foco bank-shot",
+				"Tiro de ricochete",
 			])
 		&"mola_retorno":
 			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(current_rank)
@@ -236,12 +259,12 @@ static func card_topics(
 				return PackedStringArray([
 					"+%d %s da bola" % [bounce_gain, bounce_label],
 					"+%ss de duração" % _format_decimal(duration_gain),
-					"Mais bank-shots",
+					"Mais ricochetes",
 				])
 			return PackedStringArray([
 				"Rebotes: %d > %d" % [current_bounces, next_bounces],
 				"Duração: %ss > %ss" % [_format_decimal(current_lifetime), _format_decimal(next_lifetime)],
-				"Mais bank-shots",
+				"Mais ricochetes",
 			])
 		&"dinamo_defesa":
 			var current_refund: float = dash_refund_seconds(current_rank)
@@ -290,6 +313,12 @@ static func card_topics(
 			])
 		&"reparo_campo":
 			return PackedStringArray(["Cura: até 1 de vida", "Aplicada nesta escolha"])
+		&"bola_incandescente":
+			if current_rank > 0:
+				return PackedStringArray(["Após rebater a bola", "Rastro dura +0,25s"])
+		&"bola_magnetica":
+			if current_rank > 0:
+				return PackedStringArray(["Curva mais fechada", "Após bater na parede"])
 	return definition.effect_topics.duplicate()
 
 
@@ -394,8 +423,15 @@ static func _rank_for(ranks_by_id: Dictionary, upgrade_id: StringName) -> int:
 
 
 static func _take_random(candidates: Array[UpgradeDefinitionResource], rng: RandomNumberGenerator) -> UpgradeDefinitionResource:
-	var index: int = rng.randi_range(0, candidates.size() - 1)
-	return candidates.pop_at(index)
+	var total_weight := 0
+	for candidate in candidates:
+		total_weight += UPGRADE_RARITY_WEIGHTS[clampi(candidate.rarity, 0, 4)]
+	var roll := rng.randi_range(1, total_weight)
+	for index in candidates.size():
+		roll -= UPGRADE_RARITY_WEIGHTS[clampi(candidates[index].rarity, 0, 4)]
+		if roll <= 0:
+			return candidates.pop_at(index)
+	return candidates.pop_back()
 
 
 static func _offer_seed(room_seed: int, room_ordinal: int) -> int:

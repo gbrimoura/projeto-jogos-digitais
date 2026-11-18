@@ -20,6 +20,8 @@ func add_upgrade(upgrade_id: StringName) -> bool:
 	var current_rank := count_for(upgrade_id)
 	if total_count() >= MAX_UPGRADES or not UpgradeCatalogScript.can_acquire(upgrade_id, current_rank):
 		return false
+	if not UpgradeCatalogScript.prerequisites_met(upgrade_id, _counts_by_id):
+		return false
 	_counts_by_id[upgrade_id] = current_rank + 1
 	return true
 
@@ -125,6 +127,10 @@ func replace_state(
 			return false
 	if UpgradeCatalogScript.total_rank_count(normalized_counts) > MAX_UPGRADES:
 		return false
+
+	for upgrade_id in normalized_ids:
+		if not UpgradeCatalogScript.prerequisites_met(upgrade_id, normalized_counts):
+			return false
 
 	var normalized_item_ids: Array[StringName] = []
 	for raw_id in item_ids:

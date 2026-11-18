@@ -9,7 +9,7 @@ signal enabled_changed(enabled: bool)
 			return
 		enabled = value
 		enabled_changed.emit(enabled)
-@export var show_ball_gauge: bool = false
+@export var show_ball_gauge: bool = true
 @export var show_debug_details: bool = false:
 	set(value):
 		if show_debug_details == value:
@@ -120,6 +120,9 @@ func set_health(current: int, maximum: int) -> void:
 
 func set_currency(value: int) -> void:
 	_currency_panel.call("set_currency", value)
+
+func set_flight_speed_ratio(ratio: float) -> void:
+	_gauge_panel.call("set_speed_ratio", ratio)
 
 func set_dash(state: StringName, remaining: float, duration: float) -> void:
 	_dash_panel.call("set_dash", state, remaining, duration)

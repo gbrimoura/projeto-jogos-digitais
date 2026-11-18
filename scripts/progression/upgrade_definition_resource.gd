@@ -6,6 +6,7 @@ extends Resource
 
 @export var upgrade_id: StringName
 @export var reward_kind: StringName = &"core"
+@export_enum("Comum", "Incomum", "Raro", "Épico", "Lendário") var rarity: int = 0
 @export var title: String = ""
 @export var icon: Texture2D
 @export_multiline var description: String = ""
