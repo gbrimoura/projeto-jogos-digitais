@@ -1,6 +1,7 @@
 class_name DestructibleProp
 extends StaticBody2D
 
+const CELL_SIZE: int = 48
 const ScrapPickupScene: PackedScene = preload("res://scenes/pickups/scrap_pickup.tscn")
 
 @export_range(1, 8, 1) var durability: int = 2
@@ -50,21 +51,27 @@ func _update_sprite() -> void:
 		cell += 2
 	elif _health < maxi(durability, 1):
 		cell += 1
-	_sprite.region_rect = Rect2(float(cell * 24), 0.0, 24.0, 24.0)
+	_sprite.region_rect = Rect2(cell * CELL_SIZE, 0, CELL_SIZE, CELL_SIZE)
 
 
 func _shake() -> void:
 	if _shake_tween != null and _shake_tween.is_running():
 		_shake_tween.kill()
-	position = position.round()
+	_sprite.position.x = 0.0
+	_sprite.modulate = Color(1.65, 1.48, 1.22)
 	_shake_tween = create_tween()
-	_shake_tween.tween_property(self, "position:x", position.x + 2.0, 0.035)
-	_shake_tween.tween_property(self, "position:x", position.x - 2.0, 0.04)
-	_shake_tween.tween_property(self, "position:x", position.x, 0.035)
+	_shake_tween.tween_property(_sprite, "position:x", 3.0, 0.035)
+	_shake_tween.parallel().tween_property(_sprite, "modulate", Color.WHITE, 0.11)
+	_shake_tween.tween_property(_sprite, "position:x", -3.0, 0.04)
+	_shake_tween.tween_property(_sprite, "position:x", 0.0, 0.035)
 
 
 func _break_open() -> void:
 	_destroying = true
+	if _shake_tween != null and _shake_tween.is_running():
+		_shake_tween.kill()
+	_sprite.position.x = 0.0
+	_sprite.modulate = Color.WHITE
 	remove_from_group("damageable")
 	if _collision != null:
 		_collision.set_deferred("disabled", true)

@@ -20,6 +20,7 @@ const KNOWN_AUTHORED_PLATFORM_NAMES: Array[StringName] = [
 const RoomLayoutGenerator = preload("res://scripts/world/room_layout_generator.gd")
 const ManagedRoomTopologyScript = preload("res://scripts/world/managed_room_topology.gd")
 const ManagedPlatformScene: PackedScene = preload("res://scenes/solid_platform.tscn")
+const EXTRA_WORKER_SCENE: PackedScene = preload("res://scenes/rivet_worker.tscn")
 const DestructiblePropScene: PackedScene = preload("res://scenes/environment/destructible_prop.tscn")
 const ShopVendorScene: PackedScene = preload("res://scenes/shop/shop_vendor.tscn")
 const ShopOfferScene: PackedScene = preload("res://scenes/shop/shop_offer.tscn")
@@ -303,6 +304,16 @@ func get_prepared_authored_target_binding(target: Node) -> Dictionary:
 		"patrol_max_x": _authored_target_patrol_max_x,
 		"edge_margin": AUTHORED_EDGE_MARGIN,
 	}
+
+func uses_glass_gallery_background() -> bool:
+	return (
+		_run_controller_managed and not _is_shop_stage()
+		and StringName(_managed_room_descriptor.get("family", &"")) == &"valley"
+		and (get_prepared_room_layout_seed() & 1) == 1
+	)
+
+func get_room_visual_family() -> StringName:
+	return StringName(_managed_room_descriptor.get("family", &""))
 
 func get_prepared_room_layout_seed() -> int:
 	return _prepared_room_layout_seed
@@ -1244,9 +1255,92 @@ func configure_run_managed(
 	room_layout_seed = requested_seed
 	if authored_layout_enabled and not prepare_authored_layout():
 		return false
-	if _is_shop_stage() and not _remove_shop_enemies_before_tree():
-		return _fail_authored_layout("inimigos da loja não puderam ser removidos após validar o layout")
+	if _is_shop_stage():
+		if not _remove_shop_enemies_before_tree():
+			return _fail_authored_layout("inimigos da loja não puderam ser removidos após validar o layout")
+	elif authored_layout_enabled and StringName(room_descriptor.get("room_kind", &"combat")) == &"combat":
+		_configure_combat_group(enemy_level_config)
 	return true
+
+func _configure_combat_group(level_config: EnemyLevelConfigResource) -> void:
+	var melee := get_node_or_null("TrainingTarget") as TrainingTarget
+	var ranged := get_node_or_null("RivetWorker") as RivetWorker
+	var encounter := get_node_or_null("CombatRoom") as CombatRoom
+	var entry := get_node_or_null("PlayerSpawnMarker") as Marker2D
+	if melee == null or ranged == null or encounter == null or entry == null:
+		return
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = room_layout_seed ^ 0x454E4354
+	var level := int(_managed_room_descriptor.get("enemy_level", 1))
+	var roll := rng.randi_range(0, 99)
+	if roll < (48 if level <= 2 else 27):
+		# One enemy uses one of the two spawn positions the room already validated.
+		if rng.randi_range(0, 1) == 0:
+			ranged.free()
+		else:
+			_authored_target_node = null
+			melee.free()
+		return
+	if level <= 2 or roll < 65:
+		return
+	_add_worker_on_safe_platform(rng, level_config, level, entry.position, ranged.position)
+
+func _add_worker_on_safe_platform(
+	rng: RandomNumberGenerator,
+	level_config: EnemyLevelConfigResource,
+	level: int,
+	player_spawn: Vector2,
+	existing_worker_spawn: Vector2
+) -> void:
+	var encounter := get_node_or_null("CombatRoom") as CombatRoom
+	var extra := EXTRA_WORKER_SCENE.instantiate() as RivetWorker
+	if extra == null:
+		return
+	if not extra.configure_level(level, level_config):
+		extra.free()
+		return
+	extra.name = "RivetWorkerReinforcement"
+	add_child(extra)
+	# A range of 64 on both sides leaves room to patrol without crossing the edge.
+	var footprint := _body_aabb(extra, true)
+	if not bool(footprint.get("valid", false)):
+		extra.free()
+		return
+	var body_rect: Rect2 = footprint["rect"]
+	var patrol_half_width := 64.0
+	var candidates: Array[Vector2] = []
+	for platform_name in _prepared_platform_rects:
+		var support := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
+		if support == null:
+			continue
+		var rect: Rect2 = _prepared_platform_rects[platform_name]
+		if rect.size.x < patrol_half_width * 2.0 + 16.0:
+			continue
+		for shift: float in [-16.0, 0.0, 16.0]:
+			var point := Vector2(rect.get_center().x + shift, rect.position.y - body_rect.end.y)
+			if point.x - patrol_half_width < 64.0 or point.x + patrol_half_width > 1088.0:
+				continue
+			if point.x - patrol_half_width < rect.position.x or point.x + patrol_half_width > rect.end.x:
+				continue
+			if point.distance_to(player_spawn) < 275.0 or point.distance_to(existing_worker_spawn) < 150.0:
+				continue
+			if point.distance_to(_authored_target_position) < 155.0:
+				continue
+			var sweep := Rect2(
+				point + Vector2(-patrol_half_width, body_rect.position.y),
+				Vector2(patrol_half_width * 2.0, body_rect.size.y)
+			)
+			if not _find_world_layer_overlap(sweep, support).is_empty():
+				continue
+			candidates.append(point)
+	if candidates.is_empty():
+		extra.free()
+		return
+	extra.position = candidates[rng.randi_range(0, candidates.size() - 1)]
+	extra.patrol_half_width = patrol_half_width
+	# Enemies join their combat group in _ready before CombatRoom registers them.
+	move_child(extra, encounter.get_index())
 
 func _configure_managed_enemy_levels(
 	descriptor: Dictionary,
@@ -1333,6 +1427,7 @@ func _spawn_managed_destructibles() -> void:
 		return String(a.name) < String(b.name)
 	)
 
+	var prop_size := Vector2.ONE * float(DestructibleProp.CELL_SIZE)
 	var candidates: Array[Vector2] = []
 	for support: SolidPlatform in supports:
 		var usable_half_width: float = support.size.x * 0.5 - 36.0
@@ -1342,9 +1437,11 @@ func _spawn_managed_destructibles() -> void:
 		for fraction: float in [-0.62, 0.0, 0.62]:
 			var point: Vector2 = Vector2(
 				support.position.x + usable_half_width * fraction,
-				surface_y - 9.0
+				surface_y - prop_size.y * 0.5
 			)
 			if point.x < 96.0 or point.x > 1056.0 or point.y < 64.0 or point.y > 556.0:
+				continue
+			if not _find_world_layer_overlap(Rect2(point - prop_size * 0.5, prop_size), support).is_empty():
 				continue
 			if point.distance_to(spawn_position) < 112.0:
 				continue
@@ -1399,10 +1496,14 @@ func _ready() -> void:
 	set_process_input(true)
 	if not combat_room.room_cleared.is_connected(_on_room_cleared):
 		combat_room.room_cleared.connect(_on_room_cleared)
+	if not combat_room.enemy_defeated.is_connected(_on_enemy_defeated):
+		combat_room.enemy_defeated.connect(_on_enemy_defeated)
 	if player != null and not player.died.is_connected(_on_player_died):
 		player.died.connect(_on_player_died)
 	if exit_door != null:
 		exit_door.call("set_retry_enabled", true)
+		if exit_door.has_method("set_shop_destination"):
+			exit_door.call("set_shop_destination", bool(_managed_room_descriptor.get("next_stage_is_shop", false)))
 		var transition_callback := Callable(self, "_on_exit_door_transition_requested")
 		if not exit_door.is_connected("transition_requested", transition_callback):
 			exit_door.connect("transition_requested", transition_callback)
@@ -1598,6 +1699,13 @@ func is_gameplay_action_blocked(action: StringName) -> bool:
 	]:
 		return true
 	return _guard_active
+
+func _on_enemy_defeated() -> void:
+	if not _run_controller_managed:
+		return
+	var controller := _get_run_controller()
+	if is_instance_valid(controller) and bool(controller.call("is_active_room_instance", self)):
+		controller.call("register_temporary_scrap", 1, false)
 
 func _on_room_cleared() -> void:
 	if authored_layout_enabled and not is_authored_layout_valid():

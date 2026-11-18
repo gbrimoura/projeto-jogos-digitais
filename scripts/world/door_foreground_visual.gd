@@ -8,6 +8,9 @@ const METAL_LIGHT := Color("#90816A")
 const COPPER := Color("#70432C")
 const AMBER := Color("#B78342")
 
+var _show_shop_badge: bool = false
+var _shop_door_direction: Vector2i = Vector2i.ZERO
+
 @export var flip_h: bool = false:
 	set(value):
 		flip_h = value
@@ -29,6 +32,11 @@ func _enter_tree() -> void:
 
 func set_aperture_open(value: bool) -> void:
 	is_open = value
+
+func set_shop_badge(value: bool, direction: Vector2i) -> void:
+	_show_shop_badge = value
+	_shop_door_direction = direction
+	queue_redraw()
 
 func _draw() -> void:
 	if flip_h:
@@ -69,3 +77,24 @@ func _draw() -> void:
 
 	if flip_h:
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if _show_shop_badge:
+		_draw_shop_badge(half, cap)
+
+func _draw_shop_badge(half: Vector2, cap: float) -> void:
+	# Bolt the plate onto the room-facing rail. The ceiling hatch uses its bottom rail.
+	var center := Vector2(0.0, half.y - cap + 3.0 if _shop_door_direction == Vector2i.UP else -half.y + 2.0)
+	if _shop_door_direction.x != 0:
+		center = Vector2(-float(_shop_door_direction.x) * (half.x - 4.0), -half.y + 18.0)
+	var top_left := (center - Vector2(12, 9)).round()
+	draw_rect(Rect2(top_left, Vector2(24, 18)), Color("#1d2429"))
+	draw_rect(Rect2(top_left, Vector2(24, 18)), METAL_LIGHT, false, 1.0)
+	var brass := Color("#f0be73")
+	draw_rect(Rect2(top_left + Vector2(9, 3), Vector2(6, 2)), brass)
+	draw_rect(Rect2(top_left + Vector2(8, 5), Vector2(2, 2)), brass)
+	draw_rect(Rect2(top_left + Vector2(14, 5), Vector2(2, 2)), brass)
+	draw_rect(Rect2(top_left + Vector2(6, 7), Vector2(12, 2)), brass)
+	draw_rect(Rect2(top_left + Vector2(7, 9), Vector2(10, 5)), brass)
+	for x in [9, 12, 15]:
+		draw_rect(Rect2(top_left + Vector2(x, 10), Vector2(1, 3)), COPPER)
+	for x in [2, 20]:
+		draw_rect(Rect2(top_left + Vector2(x, 8), Vector2(2, 2)), METAL_LIGHT)
