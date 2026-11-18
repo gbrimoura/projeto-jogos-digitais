@@ -1,0 +1,8 @@
+Sem P1/P2 bloqueantes no diff visível. Aceite/regressão OK: economia/raridades/caps inalterados, Impacto só 1º aceito pré-parede sem consumo em rejeitado, Motor só dash, Punho/Turbina com caps separados, Rolamento só em `returned` sem consumo em preview.
+
+P3:
+- `resources/upgrades/motor_acelerado.tres:~11` — `Recarga: 0,55 > 0,48s` sem `s` no 1º valor, diverge de `upgrade_catalog.gd:dash_cooldown` `%ss > %ss`.
+- `scripts/progression/shop_item_catalog.gd:topics/punho_guarda` — omite `apenas bola do jogador` exigido no critério; `mola_retorno` adiciona `Mais bank-shots` só no `upgrade_catalog.gd` vs `.tres` inalterado.
+- `scripts/player/ball_launcher.gd:~_prepare_rolamento` — `_pending_rolamento_damage_bonus` sem reset em troca de build/nova run; se item sair/voltar, bônus obsoleto aplica sem novo retorno. Limpar ao trocar `_run_build`.
+
+Modelo/variante/esforço efetivos: não visíveis no diff.

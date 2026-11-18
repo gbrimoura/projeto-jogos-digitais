@@ -318,6 +318,7 @@ func _update_presentation() -> void:
 	_hud.call("set_status", status_value)
 	_hud.call("set_build", _read_build_text())
 	_hud.call("set_health", int(_player.get("current_health")), int(_player.get("maximum_health")))
+	_hud.call("set_currency", int(_controller.get("temporary_scrap")))
 	_update_target()
 
 func _read_status_text() -> String:

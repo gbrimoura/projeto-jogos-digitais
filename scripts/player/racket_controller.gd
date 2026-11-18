@@ -15,6 +15,7 @@ signal swing_cancelled
 const ARC_SEGMENTS: int = 12
 const WORLD_MASK: int = 1
 const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+const ShopItemCatalogScript = preload("res://scripts/progression/shop_item_catalog.gd")
 
 @onready var _shot_origin: Node2D = get_parent().get_node_or_null("ShotOrigin") as Node2D
 @onready var _racket_visual: RacketVisual = get_parent().get_node_or_null("PlayerVisual/RacketVisual") as RacketVisual
@@ -27,11 +28,14 @@ var _frozen_direction: Vector2 = Vector2.RIGHT
 var _swing_id: int = 0
 var _last_rewarded_swing_id: int = -1
 var _dash_cooldown_refund: float = 0.0
+var _rhythm_coil_level: int = 0
+var _rhythm_coil_used_this_room: bool = false
 var _active: bool = false
 var _swing_duration: float = 0.0
 var _active_remaining: float = 0.0
 var _active_window_this_frame: float = 0.0
 var _cooldown_remaining: float = 0.0
+var _base_arc_degrees: float = 50.0
 var _success_flash_remaining: float = 0.0
 var _sector_points: PackedVector2Array = PackedVector2Array()
 var _world_probe_shape: CircleShape2D
@@ -40,6 +44,7 @@ var _world_ray_query: PhysicsRayQueryParameters2D
 
 func _ready() -> void:
 	process_physics_priority = -100
+	_base_arc_degrees = arc_degrees
 	add_to_group("racket_controller")
 	set_physics_process(true)
 	_world_probe_shape = CircleShape2D.new()
@@ -160,16 +165,24 @@ func register_parry_success(swing_id: int) -> void:
 	_success_flash_remaining = 0.18
 	if swing_id != _last_rewarded_swing_id:
 		_last_rewarded_swing_id = swing_id
-		if _dash_cooldown_refund > 0.0:
-			var player := get_parent()
-			var movement := player.get_node_or_null("MovementController") if player != null else null
-			if movement != null and movement.has_method("reduce_dash_cooldown_remaining"):
-				movement.call("reduce_dash_cooldown_remaining", _dash_cooldown_refund)
+		var player := get_parent()
+		var player_body := player as CharacterBody2D
+		var movement := player.get_node_or_null("MovementController") if player != null else null
+		if _dash_cooldown_refund > 0.0 \
+			and movement != null and movement.has_method("reduce_dash_cooldown_remaining"):
+			movement.call("reduce_dash_cooldown_remaining", _dash_cooldown_refund)
+		if _rhythm_coil_level > 0 and not _rhythm_coil_used_this_room \
+			and player_body != null and not player_body.is_on_floor() \
+			and movement != null and movement.has_method("restore_air_dashes"):
+			_rhythm_coil_used_this_room = true
+			movement.call("restore_air_dashes", 1)
 	_update_feedback()
 
 func apply_run_build(build: RunBuild) -> void:
 	var rank := build.count_for(&"dinamo_defesa") if build != null else 0
+	_rhythm_coil_level = build.item_level_for(&"bobina_ritmo") if build != null else 0
 	_dash_cooldown_refund = UpgradeCatalogScript.dash_refund_seconds(rank)
+	arc_degrees = _base_arc_degrees + 8.0 * float(build.item_level_for(&"punho_guarda") if build != null else 0)
 
 func cancel() -> void:
 	_active = false

@@ -174,17 +174,32 @@ static func card_topics(
 	var rank_gain: int = maxi(next_rank - current_rank, 0)
 	match definition.upgrade_id:
 		&"impacto_reforcado":
-			var base_damage: int = maxi(BASE_PROJECTILE_CONFIG.damage, 1)
-			var current_damage: int = base_damage + maxi(current_rank, 0) * definition.projectile_damage_per_rank
-			var next_damage: int = base_damage + maxi(next_rank, 0) * definition.projectile_damage_per_rank
+			var current_damage_bonus: int = maxi(current_rank, 0) * definition.projectile_damage_per_rank
+			var next_damage_bonus: int = maxi(next_rank, 0) * definition.projectile_damage_per_rank
+			var damage_topic: String
 			if current_rank == 0:
-				return PackedStringArray(["Dano da bola: +%d" % (next_damage - current_damage)])
-			return PackedStringArray(["Dano da bola: %d > %d" % [current_damage, next_damage]])
+				damage_topic = "Dano inicial: +%d" % (next_damage_bonus - current_damage_bonus)
+			else:
+				damage_topic = "Dano inicial: +%d > +%d" % [current_damage_bonus, next_damage_bonus]
+			return PackedStringArray([
+				damage_topic,
+				"Primeiro dano aceito",
+				"Antes da 1a parede",
+			])
 		&"motor_acelerado":
 			var current_cooldown := dash_cooldown_for_rank(current_rank)
 			var next_cooldown := dash_cooldown_for_rank(next_rank)
+			var current_speed_bonus := roundi((dash_shot_speed_multiplier_for_rank(current_rank) - 1.0) * 100.0)
+			var next_speed_bonus := roundi((dash_shot_speed_multiplier_for_rank(next_rank) - 1.0) * 100.0)
+			var dash_shot_topic: String
+			if current_rank == 0:
+				dash_shot_topic = "Dash tiro: +%d%%" % (next_speed_bonus - current_speed_bonus)
+			else:
+				dash_shot_topic = "Dash tiro: %d%% > %d%%" % [current_speed_bonus, next_speed_bonus]
 			return PackedStringArray([
-				"Recarga: %ss > %ss" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)]
+				"Recarga: %ss > %ss" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)],
+				dash_shot_topic,
+				"Só no disparo em dash",
 			])
 		&"carga_reativa":
 			var charge_enabled: int = 1 if definition.reactive_charge_enabled else 0
@@ -195,18 +210,19 @@ static func card_topics(
 				charge_topic = "Dano extra: +%d" % (next_charge - current_charge)
 			else:
 				charge_topic = "Dano extra: +%d > +%d" % [current_charge, next_charge]
-			return PackedStringArray([charge_topic, "No próximo acerto"])
+			return PackedStringArray([charge_topic, "No próximo acerto", "Soma a Impacto/Pressão"])
 		&"ricochete_pressao":
 			var current_wall_bonus: int = maxi(current_rank, 0) * definition.environmental_bounce_damage_per_rank
 			var next_wall_bonus: int = maxi(next_rank, 0) * definition.environmental_bounce_damage_per_rank
 			var pressure_topic: String
 			if current_rank == 0:
-				pressure_topic = "Dano por parede: +%d" % (next_wall_bonus - current_wall_bonus)
+				pressure_topic = "Parede: +%d dano" % (next_wall_bonus - current_wall_bonus)
 			else:
-				pressure_topic = "Dano por parede: %d > %d" % [current_wall_bonus, next_wall_bonus]
+				pressure_topic = "Parede: +%d > +%d" % [current_wall_bonus, next_wall_bonus]
 			return PackedStringArray([
 				pressure_topic,
 				"Até %d paredes por bola" % definition.environmental_bounce_damage_count_cap,
+				"Foco bank-shot",
 			])
 		&"mola_retorno":
 			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(current_rank)
@@ -220,10 +236,12 @@ static func card_topics(
 				return PackedStringArray([
 					"+%d %s da bola" % [bounce_gain, bounce_label],
 					"+%ss de duração" % _format_decimal(duration_gain),
+					"Mais bank-shots",
 				])
 			return PackedStringArray([
 				"Rebotes: %d > %d" % [current_bounces, next_bounces],
 				"Duração: %ss > %ss" % [_format_decimal(current_lifetime), _format_decimal(next_lifetime)],
+				"Mais bank-shots",
 			])
 		&"dinamo_defesa":
 			var current_refund: float = dash_refund_seconds(current_rank)
@@ -236,7 +254,7 @@ static func card_topics(
 					_format_decimal(current_refund),
 					_format_decimal(next_refund),
 				]
-			return PackedStringArray([refund_topic, "Uma vez por rebatida"])
+			return PackedStringArray([refund_topic, "Aparada bem-sucedida", "Uma vez por rebatida"])
 		&"chassi_reforcado":
 			var base_health: int = maxi(base_maximum_health, 1)
 			var current_health: int = mini(base_health + maxi(current_rank, 0) * definition.maximum_health_per_rank, 100)
@@ -350,6 +368,13 @@ static func projectile_lifetime_bonus(rank: int) -> float:
 	var definition := definition_for(&"mola_retorno")
 	return float(maxi(rank, 0)) * definition.lifetime_per_rank if definition != null else 0.0
 
+
+static func dash_shot_speed_multiplier_for_rank(rank: int) -> float:
+	var definition := definition_for(&"motor_acelerado")
+	if definition == null:
+		return 1.0
+	var clamped_rank := clampi(rank, 0, max_rank_for(&"motor_acelerado"))
+	return 1.0 + float(clamped_rank) * definition.dash_shot_speed_multiplier_per_rank
 
 static func maximum_health(base_maximum_health: int, rank: int) -> int:
 	var definition := definition_for(&"chassi_reforcado")

@@ -1,0 +1,12 @@
+{
+  "status": "done",
+  "tool": "OpenCode 1.17.13",
+  "model": "opencode-go/muse-spark-1.3-contributor",
+  "requested_variant": "xhigh",
+  "effective_variant": "unverified; not exposed by output",
+  "agent": "plan",
+  "scope": "read-only review of inline diff only",
+  "snapshot_sha256": "0F59486095672BC29EEEDD880370A9C857287AECDFB979BD0BAAFB96BFCC3091",
+  "exit_code": 0,
+  "findings": "P3: dash topic omitted seconds unit; Punho did not say it accelerates only the player ball; pending Rolamento flag could remain stale after build changes."
+}

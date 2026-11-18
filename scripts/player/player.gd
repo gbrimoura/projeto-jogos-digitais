@@ -39,6 +39,8 @@ var aim_target_position: Vector2:
 
 var _base_movement_config: MovementConfig
 var _death_presentation_applied: bool = false
+var _emergency_fuse_level: int = 0
+var _emergency_fuse_used_this_room: bool = false
 
 func _ready() -> void:
 	add_to_group("player")
@@ -68,12 +70,15 @@ func apply_run_build(
 ) -> void:
 	if _base_movement_config == null:
 		return
+	_emergency_fuse_level = build.item_level_for(&"fusivel_emergencia") if build != null else 0
 	var derived_config := _base_movement_config.duplicate(true) as MovementConfig
 	if build != null:
 		derived_config.dash_cooldown = UpgradeCatalogScript.dash_cooldown_with_adjustment(
 			build.count_for(&"motor_acelerado"),
 			build.count_for(&"ajuste_recarga_dash")
 		)
+	if build != null:
+		derived_config.max_air_dashes = _base_movement_config.max_air_dashes + build.item_level_for(&"mola_salto")
 	movement_controller.update_config_preserving_state(derived_config)
 	ball_launcher.apply_run_build(build)
 	if racket_controller != null:
@@ -160,6 +165,10 @@ func _on_health_changed(current: int, maximum: int) -> void:
 	health_changed.emit(current, maximum)
 
 func _on_damage_accepted(_amount: int, _current: int, _maximum: int) -> void:
+	if _emergency_fuse_level > 0 and not _emergency_fuse_used_this_room:
+		_emergency_fuse_used_this_room = true
+		if movement_controller != null:
+			movement_controller.reduce_dash_cooldown_remaining(0.5)
 	if health.is_dead:
 		return
 	player_visual.play_hurt()

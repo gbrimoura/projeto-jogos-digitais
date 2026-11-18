@@ -29,6 +29,9 @@ var _has_finished: bool = false
 var _stop_sweep_requested: bool = false
 var _bounce_count: int = 0
 var _environmental_bounce_count: int = 0
+var _environmental_bounce_speed_multiplier: float = 1.0
+var _parry_speed_multiplier: float = 1.0
+var _opening_impact_bonus_consumed: bool = false
 var _pending_motion: Vector2 = Vector2.ZERO
 var _damaged_targets_this_tick: Dictionary = {}
 var _racket_controller: Node
@@ -69,7 +72,10 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
 	var launch_direction := direction.normalized()
 	if launch_direction.is_zero_approx():
 		launch_direction = Vector2.RIGHT
-	velocity = launch_direction * _config.speed
+	_environmental_bounce_speed_multiplier = 1.0
+	_parry_speed_multiplier = 1.0
+	_opening_impact_bonus_consumed = false
+	velocity = launch_direction * _current_projectile_speed()
 	_lifetime_remaining = _config.lifetime
 	_has_launched = true
 	_is_returning = false
@@ -111,7 +117,8 @@ func _return_to_player(delta: float) -> void:
 		_finish("returned")
 		return
 
-	var return_speed := maxf(_config.speed * 1.5, 150.0)
+	var return_speed_multiplier := clampf(_config.return_speed_multiplier, 1.0, 1.5)
+	var return_speed := maxf(_current_projectile_speed() * 1.5 * return_speed_multiplier, 150.0)
 	global_position = global_position.move_toward(destination, return_speed * delta)
 
 func cancel() -> void:
@@ -163,9 +170,10 @@ func _physics_process(delta: float) -> void:
 				var parry_position := segment_start + remaining_motion * parry_fraction
 				var parry_scene_root := get_tree().current_scene
 				global_position = parry_position
-				velocity = Vector2(parry_hit.get("direction", Vector2.ZERO)).normalized() * _config.speed
+				_record_parry_speed_bonus()
+				velocity = Vector2(parry_hit.get("direction", Vector2.ZERO)).normalized() * _current_projectile_speed()
 				if velocity.is_zero_approx():
-					velocity = Vector2.RIGHT * _config.speed
+					velocity = Vector2.RIGHT * _current_projectile_speed()
 				_last_parry_swing_id = int(parry_hit.get("swing_id", -1))
 				_parry_release_pending = true
 				CombatFeedbackScript.enqueue(
@@ -199,7 +207,7 @@ func _physics_process(delta: float) -> void:
 
 		if not BounceResolver.should_bounce(velocity, surface_normal):
 			global_position += surface_normal * _config.collision_skin
-			velocity = BounceResolver.slide_velocity(velocity, surface_normal, _config.speed)
+			velocity = BounceResolver.slide_velocity(velocity, surface_normal, _current_projectile_speed())
 			var grazing_remainder := collision.get_remainder()
 			if grazing_remainder.is_zero_approx() or velocity.is_zero_approx():
 				if expires_after_motion:
@@ -214,17 +222,18 @@ func _physics_process(delta: float) -> void:
 			return
 
 		_bounce_count = next_bounce_index
-		velocity = BounceResolver.reflect_velocity(velocity, surface_normal, _config.speed)
 		var impact_position := collision.get_position()
 		var impact_scene_root := get_tree().current_scene
 		var collider := collision.get_collider()
-		if not _is_damageable_collider(collider):
-			_environmental_bounce_count += 1
+		var is_environmental_bounce := not _is_damageable_collider(collider)
+		if is_environmental_bounce:
+			_record_environmental_bounce()
+		velocity = BounceResolver.reflect_velocity(velocity, surface_normal, _current_projectile_speed())
 		global_position += surface_normal * _config.collision_skin
 		_apply_impact_damage(collider, impact_position, impact_scene_root)
 		if _has_finished or _stop_sweep_requested:
 			return
-		if not _is_damageable_collider(collider):
+		if is_environmental_bounce:
 			_enqueue_wall_spark(impact_scene_root, impact_position)
 		bounced.emit(_bounce_count, impact_position, surface_normal)
 		if _has_finished or _stop_sweep_requested:
@@ -248,6 +257,40 @@ func _physics_process(delta: float) -> void:
 			_pending_motion = remaining_motion
 	elif expires_after_motion:
 		_finish("lifetime")
+
+func _current_projectile_speed() -> float:
+	if _config == null:
+		return 0.0
+	var environmental_multiplier_cap := maxf(_config.max_environmental_bounce_speed_multiplier, 1.0)
+	var environmental_multiplier := clampf(
+		_environmental_bounce_speed_multiplier,
+		1.0,
+		environmental_multiplier_cap
+	)
+	var parry_multiplier_cap := maxf(_config.max_parry_speed_multiplier, 1.0)
+	var parry_multiplier := clampf(_parry_speed_multiplier, 1.0, parry_multiplier_cap)
+	return maxf(_config.speed, 0.0) * environmental_multiplier * parry_multiplier
+
+func _record_environmental_bounce() -> void:
+	_environmental_bounce_count += 1
+	if _config == null:
+		return
+	var speed_cap := maxf(_config.max_environmental_bounce_speed_multiplier, 1.0)
+	var speed_bonus := maxf(_config.environmental_bounce_speed_bonus_per_bounce, 0.0)
+	_environmental_bounce_speed_multiplier = minf(
+		maxf(_environmental_bounce_speed_multiplier, 1.0) + speed_bonus,
+		speed_cap
+	)
+
+func _record_parry_speed_bonus() -> void:
+	if _config == null:
+		return
+	var speed_cap := maxf(_config.max_parry_speed_multiplier, 1.0)
+	var speed_bonus := maxf(_config.parry_speed_bonus_per_success, 0.0)
+	_parry_speed_multiplier = minf(
+		maxf(_parry_speed_multiplier, 1.0) + speed_bonus,
+		speed_cap
+	)
 
 func _get_parry_hit(motion: Vector2, frame_elapsed: float, segment_duration: float) -> Dictionary:
 	if not is_parryable or _parry_release_pending:
@@ -312,9 +355,11 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
 
 	_damaged_targets_this_tick[target] = true
 	var was_charged := _charge_state == ChargeState.CHARGED
+	var can_apply_opening_impact_bonus := _environmental_bounce_count == 0 and not _opening_impact_bonus_consumed
+	var impact_rank := _config.impact_rank if can_apply_opening_impact_bonus else 0
 	var damage_amount := UpgradeCatalogScript.projectile_damage(
 		_config.damage,
-		_config.impact_rank,
+		impact_rank,
 		_config.charge_rank,
 		was_charged and _config.reactive_charge_enabled,
 		_config.pressure_rank,
@@ -324,6 +369,8 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
 	var damage_was_accepted := typeof(damage_result) == TYPE_BOOL and bool(damage_result)
 	if not damage_was_accepted:
 		return
+	if can_apply_opening_impact_bonus and _config.impact_rank > 0:
+		_opening_impact_bonus_consumed = true
 	var effect_kind: int = (
 		CombatFeedbackScript.EffectKind.CHARGED_HIT
 		if was_charged

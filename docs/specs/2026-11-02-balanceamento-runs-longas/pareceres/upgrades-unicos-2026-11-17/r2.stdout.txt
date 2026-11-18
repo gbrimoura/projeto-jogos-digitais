@@ -1,0 +1,8 @@
+Nenhum P1. P3 rodada anterior corrigidos: Impacto só 1º aceito pré-parede sem consumir em rejeitado, Motor só em dash, Punho +5%/parry/nivel teto +25% reset/tiro, Rolamento booleano +25%/nivel +1 consumido só em aceito com reset em nova build/queda, textos/caps/economia preservados.
+
+Achados:
+- P2 `scripts/player/ball_launcher.gd` `_pending_rolamento_damage_bonus` + `docs/.../registro.md`: perda sem lançamento se instância substituída/sala reaplicar build (`build != _run_build` reseta), viola `consumido no lançamento aceito`.
+- P3 `resources/upgrades/motor_acelerado.tres` `effect_topics`: omite `Só no disparo em dash` presente em `upgrade_catalog.gd:card_topics`.
+- P3 `resources/upgrades/mola_retorno.tres` `effect_topics`: omite `Mais bank-shots` presente em `upgrade_catalog.gd`.
+
+Modelo/variante/esforço: não visíveis no diff.

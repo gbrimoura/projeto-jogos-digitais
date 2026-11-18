@@ -1,0 +1,7 @@
+STATUS: done
+SUMMARY: All four R1 fixes verified; no new static defects in weights/unlocks, caps/effects, offers, purchase, lifecycle, insertion/counting, serialization, empty-stock, or integration guards.
+FINDINGS: none
+TESTS: none (do not run tests)
+RISKS: Runtime-only: empty-room cleared/door behavior, late spawners bypassing enemy removal, shop family/offset incompatibility causing floor-plan error, vendor/UI overlap, economy balance and hash determinism unproven without runtime.
+NEXT_STEP: none
+

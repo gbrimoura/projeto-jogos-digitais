@@ -1,0 +1,13 @@
+# Baseline
+
+Cópias fora de res: C:\Users\danie\AppData\Local\Temp\selenite-pausa-baseline-0f68d32b-c6eb-4692-9b5d-e28ae1305a35
+
+SHA-256:
+
+1B53F6877F8BB1653875CA7601ED364C8F40F491E34816EB06C614D4F09B3237  project.godot
+F494A4D454F5F0BD78AB40184ECDD77E7171922FC92107AC63E1700B0F73742A  scripts/world/lobby.gd
+1A4AAA6D52A2D208357DCC0EA072BE698385B49B3A84591948E506ACFF3E3990  scripts/world/run_controller.gd
+
+7F61FBAFF61B4EF8EFA58EC8B722F2AB228E064D221EAB239CC7467DE78C747A  scripts/world/lobby_visual.gd
+
+Cópias preservam caminhos relativos; lobby_visual.gd não foi alterado.

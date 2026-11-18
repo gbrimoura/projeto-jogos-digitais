@@ -1,0 +1,12 @@
+{
+  "status": "paleta provisória do kit v1 reutilizada no kit v2 para compatibilidade; não é a paleta oficial do GDD",
+  "count": 20,
+  "method": "material e grupos tonais do kit v1, sem alteração de hexadecimais",
+  "groups": [
+    {"name":"charcoal","role":"contorno e sombras","colors":["#0E0D0E","#1D1B1A","#302D2A","#433E39"]},
+    {"name":"warm_steel","role":"aço quente e luz envelhecida","colors":["#5B5249","#756957","#90816A","#BAAA8B","#D3C3A7","#E7CFAD"]},
+    {"name":"rust_copper","role":"ferrugem e cobre de manutenção","colors":["#4A2D21","#563829","#70432C","#925A36","#B37949","#C68D58","#8F7059","#A68266"]},
+    {"name":"amber","role":"âmbar de manutenção contido","colors":["#B78342","#D2A75C"]}
+  ]
+}
+

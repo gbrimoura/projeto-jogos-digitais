@@ -1,0 +1,9 @@
+Nenhum P1/P2 bloqueante no diff.
+
+P3:
+- `scripts/progression/shop_item_catalog.gd:topics punho_guarda` — sem `Limite: 2 niveis` como demais itens; adicionar ou confirmar exibição externa.
+- `scripts/progression/upgrade_catalog.gd:dinamo_defesa + resources/upgrades/dinamo_defesa.tres` — trocou `Uma vez por rebatida` por `Aparada bem-sucedida`; confirmar se limite/trigger continua igual ao código.
+- `scripts/player/ball_launcher.gd:_is_player_dashing` — `get("is_dashing")` frágil; confirmar nome/propriedade no `MovementController`, efeito falha silencioso se divergir.
+- `scripts/world/main.gd:~1431` — faz `bool(get(...,false))` sem checar `TYPE_BOOL`; validar via `_is_valid_snapshot` antes para manter `v2 exige bool`.
+
+Snapshot: `v2` com bool obrigatório, `v1` sem chave aceito/default falso, `replace_state` rejeita `true` sem nível, `clear()` limpa, resto validado. Modelo/variante/esforço: não visíveis no diff.

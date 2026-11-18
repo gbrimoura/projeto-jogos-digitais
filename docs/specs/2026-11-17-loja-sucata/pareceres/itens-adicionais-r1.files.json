@@ -1,0 +1,65 @@
+{
+  "snapshot_sha256": "6114FFE3CE3C972424C5A1D73A28B692DAF8750BADAA22A7D0D807A382D61157",
+  "files": [
+    {
+      "path": "docs/README.md",
+      "sha256": "EBD8779AA2E2E0360D5F8E956F9C2F922961915D5C71010BBA63788DAA8F450E"
+    },
+    {
+      "path": "docs/specs/2026-11-17-loja-sucata/implementacao.md",
+      "sha256": "76746142AB3504CC7DCD7311CDE136C9CD3C53DA012985E5004D68D6AEEEA552"
+    },
+    {
+      "path": "scripts/progression/shop_item_catalog.gd",
+      "sha256": "15EAD740050A9570B45C93668294707CC6A5B7FE598A146F2D7E9546B22E08E4"
+    },
+    {
+      "path": "scripts/progression/run_build.gd",
+      "sha256": "B3D548DE0DB19A57153F64B33EEC171F8F36BF3DA7C0FE99A91F72F1FFE80264"
+    },
+    {
+      "path": "scripts/ui/shop_item_card.gd",
+      "sha256": "399D8447A3102806006B8C2CBEC2D58CD7122079ADE068BB12F60F0665236AC9"
+    },
+    {
+      "path": "scripts/ui/shop_offer.gd",
+      "sha256": "98D46E7E42378531A8CE58C918F7B7D454950B04715C1DAA2C767A7430C179A1"
+    },
+    {
+      "path": "scenes/shop/shop_item_card.tscn",
+      "sha256": "7696B81B94EE05CD06EA979218FA48CA94D1C130ECBB5D9F92339EDB7AA253DD"
+    },
+    {
+      "path": "scripts/player/ball_launcher.gd",
+      "sha256": "954C7566BBBE9DA29AD3442E0B5A0BD30D7845F42C48580F82ABA4204B8A41B0"
+    },
+    {
+      "path": "scripts/player/movement_controller.gd",
+      "sha256": "BC62970B4D5D12AC745AEB46B342A8E58E243A5D590749F1417585C0E423EE33"
+    },
+    {
+      "path": "scripts/player/player.gd",
+      "sha256": "A624AA646D2DE3979E7C25BDBEA62A57755432281219235D128C66F013021FFE"
+    },
+    {
+      "path": "scripts/player/racket_controller.gd",
+      "sha256": "F1A0191E401F6EFC725EC80C6E551602B30AB2A04FD16FE84E9828024523314B"
+    },
+    {
+      "path": "scripts/player/player_health.gd",
+      "sha256": "AA99F4518798898552AAF63DAE4578E9B1BCB09980091EBDDD4D6BE3A75BE36D"
+    },
+    {
+      "path": "scripts/projectile/projectile_config.gd",
+      "sha256": "8FB7CBC2DA0068B4801F4DDB9045911480A65841E87E3D6B49F9ED6991F4327B"
+    },
+    {
+      "path": "scripts/projectile/ricochet_ball.gd",
+      "sha256": "BFC01436B14AE352E59E5C2EF2000DFDE0C8A99A505A330A40448B1C2FAA022B"
+    },
+    {
+      "path": "scripts/world/run_controller.gd",
+      "sha256": "90008CDD5653BAC91AB34BDCAA839400B1F0FF31F8549693DECA65633E56C7F9"
+    }
+  ]
+}

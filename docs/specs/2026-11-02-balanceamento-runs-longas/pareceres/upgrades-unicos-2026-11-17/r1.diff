@@ -1,0 +1,583 @@
+### scripts/progression/upgrade_definition_resource.gd
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\progression\\upgrade_definition_resource.gd" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\upgrade_definition_resource.gd"
+index 17f37a5..ef53e27 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\progression\\upgrade_definition_resource.gd"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\upgrade_definition_resource.gd"	
+@@ -31,5 +31,6 @@ extends Resource
+ @export_range(0.0, 1.0, 0.01) var dash_cooldown_refund_per_rank: float = 0.0
+ @export_range(0, 1, 1) var maximum_health_per_rank: int = 0
+ @export_range(0.0, 1.0, 0.001) var projectile_speed_multiplier_per_rank: float = 0.0
++@export_range(0.0, 1.0, 0.001) var dash_shot_speed_multiplier_per_rank: float = 0.0
+ @export_range(0.0, 1.0, 0.001) var dash_cooldown_reduction_per_rank: float = 0.0
+ @export_range(0, 1, 1) var health_recovered_per_rank: int = 0
+### scripts/progression/upgrade_catalog.gd
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\progression\\upgrade_catalog.gd" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\upgrade_catalog.gd"
+index 17b446d..9d1f2b1 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\progression\\upgrade_catalog.gd"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\upgrade_catalog.gd"	
+@@ -174,17 +174,32 @@ static func card_topics(
+ 	var rank_gain: int = maxi(next_rank - current_rank, 0)
+ 	match definition.upgrade_id:
+ 		&"impacto_reforcado":
+-			var base_damage: int = maxi(BASE_PROJECTILE_CONFIG.damage, 1)
+-			var current_damage: int = base_damage + maxi(current_rank, 0) * definition.projectile_damage_per_rank
+-			var next_damage: int = base_damage + maxi(next_rank, 0) * definition.projectile_damage_per_rank
++			var current_damage_bonus: int = maxi(current_rank, 0) * definition.projectile_damage_per_rank
++			var next_damage_bonus: int = maxi(next_rank, 0) * definition.projectile_damage_per_rank
++			var damage_topic: String
+ 			if current_rank == 0:
+-				return PackedStringArray(["Dano da bola: +%d" % (next_damage - current_damage)])
+-			return PackedStringArray(["Dano da bola: %d > %d" % [current_damage, next_damage]])
++				damage_topic = "Dano inicial: +%d" % (next_damage_bonus - current_damage_bonus)
++			else:
++				damage_topic = "Dano inicial: +%d > +%d" % [current_damage_bonus, next_damage_bonus]
++			return PackedStringArray([
++				damage_topic,
++				"Primeiro dano aceito",
++				"Antes da 1a parede",
++			])
+ 		&"motor_acelerado":
+ 			var current_cooldown := dash_cooldown_for_rank(current_rank)
+ 			var next_cooldown := dash_cooldown_for_rank(next_rank)
++			var current_speed_bonus := roundi((dash_shot_speed_multiplier_for_rank(current_rank) - 1.0) * 100.0)
++			var next_speed_bonus := roundi((dash_shot_speed_multiplier_for_rank(next_rank) - 1.0) * 100.0)
++			var dash_shot_topic: String
++			if current_rank == 0:
++				dash_shot_topic = "Dash tiro: +%d%%" % (next_speed_bonus - current_speed_bonus)
++			else:
++				dash_shot_topic = "Dash tiro: %d%% > %d%%" % [current_speed_bonus, next_speed_bonus]
+ 			return PackedStringArray([
+-				"Recarga: %ss > %ss" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)]
++				"Recarga: %ss > %ss" % [_format_decimal(current_cooldown), _format_decimal(next_cooldown)],
++				dash_shot_topic,
++				"Só no disparo em dash",
+ 			])
+ 		&"carga_reativa":
+ 			var charge_enabled: int = 1 if definition.reactive_charge_enabled else 0
+@@ -195,18 +210,19 @@ static func card_topics(
+ 				charge_topic = "Dano extra: +%d" % (next_charge - current_charge)
+ 			else:
+ 				charge_topic = "Dano extra: +%d > +%d" % [current_charge, next_charge]
+-			return PackedStringArray([charge_topic, "No próximo acerto"])
++			return PackedStringArray([charge_topic, "No próximo acerto", "Soma a Impacto/Pressão"])
+ 		&"ricochete_pressao":
+ 			var current_wall_bonus: int = maxi(current_rank, 0) * definition.environmental_bounce_damage_per_rank
+ 			var next_wall_bonus: int = maxi(next_rank, 0) * definition.environmental_bounce_damage_per_rank
+ 			var pressure_topic: String
+ 			if current_rank == 0:
+-				pressure_topic = "Dano por parede: +%d" % (next_wall_bonus - current_wall_bonus)
++				pressure_topic = "Parede: +%d dano" % (next_wall_bonus - current_wall_bonus)
+ 			else:
+-				pressure_topic = "Dano por parede: %d > %d" % [current_wall_bonus, next_wall_bonus]
++				pressure_topic = "Parede: +%d > +%d" % [current_wall_bonus, next_wall_bonus]
+ 			return PackedStringArray([
+ 				pressure_topic,
+ 				"Até %d paredes por bola" % definition.environmental_bounce_damage_count_cap,
++				"Foco bank-shot",
+ 			])
+ 		&"mola_retorno":
+ 			var current_bounces: int = BASE_PROJECTILE_CONFIG.max_bounces + projectile_bounce_bonus(current_rank)
+@@ -220,10 +236,12 @@ static func card_topics(
+ 				return PackedStringArray([
+ 					"+%d %s da bola" % [bounce_gain, bounce_label],
+ 					"+%ss de duração" % _format_decimal(duration_gain),
++					"Mais bank-shots",
+ 				])
+ 			return PackedStringArray([
+ 				"Rebotes: %d > %d" % [current_bounces, next_bounces],
+ 				"Duração: %ss > %ss" % [_format_decimal(current_lifetime), _format_decimal(next_lifetime)],
++				"Mais bank-shots",
+ 			])
+ 		&"dinamo_defesa":
+ 			var current_refund: float = dash_refund_seconds(current_rank)
+@@ -236,7 +254,7 @@ static func card_topics(
+ 					_format_decimal(current_refund),
+ 					_format_decimal(next_refund),
+ 				]
+-			return PackedStringArray([refund_topic, "Uma vez por rebatida"])
++			return PackedStringArray([refund_topic, "Aparada bem-sucedida"])
+ 		&"chassi_reforcado":
+ 			var base_health: int = maxi(base_maximum_health, 1)
+ 			var current_health: int = mini(base_health + maxi(current_rank, 0) * definition.maximum_health_per_rank, 100)
+@@ -351,6 +369,13 @@ static func projectile_lifetime_bonus(rank: int) -> float:
+ 	return float(maxi(rank, 0)) * definition.lifetime_per_rank if definition != null else 0.0
+ 
+ 
++static func dash_shot_speed_multiplier_for_rank(rank: int) -> float:
++	var definition := definition_for(&"motor_acelerado")
++	if definition == null:
++		return 1.0
++	var clamped_rank := clampi(rank, 0, max_rank_for(&"motor_acelerado"))
++	return 1.0 + float(clamped_rank) * definition.dash_shot_speed_multiplier_per_rank
++
+ static func maximum_health(base_maximum_health: int, rank: int) -> int:
+ 	var definition := definition_for(&"chassi_reforcado")
+ 	if definition == null:
+### scripts/progression/shop_item_catalog.gd
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\progression\\shop_item_catalog.gd" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\shop_item_catalog.gd"
+index 13122f4..c70c4d9 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\progression\\shop_item_catalog.gd"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\progression\\shop_item_catalog.gd"	
+@@ -3,6 +3,13 @@ extends RefCounted
+ ## Prototipo ajustavel em codigo; pesos e valores nao sao balanceamento final.
+ enum Rarity { COMUM, INCOMUM, RARO, EPICO, LENDARIO }
+ 
++const ROLLING_RETURN_SPEED_BONUS_PER_LEVEL: float = 0.25
++const ROLLING_NEXT_SHOT_DAMAGE_BONUS: int = 1
++const GUARD_PARRY_SPEED_BONUS_PER_LEVEL: float = 0.05
++const GUARD_PARRY_SPEED_MAX_BONUS: float = 0.25
++const TURBINE_BOUNCE_SPEED_BONUS_PER_LEVEL: float = 0.08
++const TURBINE_BOUNCE_SPEED_MAX_BONUS: float = 0.40
++
+ const ITEM_IDS: Array[StringName] = [
+ 	&"bolsa_magnetica", &"mola_salto", &"punho_guarda", &"kit_remendo", &"fusivel_aegis",
+ 	&"catraca_sucata", &"rolamento_livre", &"turbina_centrifuga", &"bobina_ritmo", &"fusivel_emergencia",
+@@ -32,6 +39,9 @@ static func max_level_for(item_id: StringName) -> int:
+ 		&"fusivel_emergencia": return 1
+ 	return 0
+ 
++static func guard_parry_speed_bonus_per_success(level: int) -> float:
++	return float(clampi(level, 0, max_level_for(&"punho_guarda"))) * GUARD_PARRY_SPEED_BONUS_PER_LEVEL
++
+ static func rarity_for(item_id: StringName) -> int:
+ 	match item_id:
+ 		&"bolsa_magnetica": return Rarity.COMUM
+@@ -68,30 +78,30 @@ static func display_name(item_id: StringName) -> String:
+ 
+ static func description(item_id: StringName) -> String:
+ 	match item_id:
+-		&"bolsa_magnetica": return "Imas ajudam a recolher sucata"
+-		&"mola_salto": return "Uma mola reserva para o ar"
+-		&"punho_guarda": return "Um punho reforcado para rebater"
+-		&"kit_remendo": return "Remendos para recuperar entre lutas"
+-		&"fusivel_aegis": return "Um fusivel que segura um impacto"
+-		&"catraca_sucata": return "A bola que volta rende sucata"
+-		&"rolamento_livre": return "A bola volta mais rapido"
+-		&"turbina_centrifuga": return "A cada rebote no cenario, a bola acelera"
+-		&"bobina_ritmo": return "Rebate no ar recupera dash"
+-		&"fusivel_emergencia": return "Dano reduz a recarga do dash"
++		&"bolsa_magnetica": return "Cada coleta rende sucata extra"
++		&"mola_salto": return "Guarda um dash extra para o ar"
++		&"punho_guarda": return "Amplia o arco e acelera a bola aparada"
++		&"kit_remendo": return "Recupera vida ao concluir um combate"
++		&"fusivel_aegis": return "Anula o primeiro dano de cada sala"
++		&"catraca_sucata": return "O retorno da bola rende sucata extra"
++		&"rolamento_livre": return "Retorno rapido prepara um tiro mais forte"
++		&"turbina_centrifuga": return "Paredes aceleram; aparadas mantem o ganho"
++		&"bobina_ritmo": return "Aparada bem-sucedida no ar restitui dash"
++		&"fusivel_emergencia": return "Dano aceito adianta a recarga do dash"
+ 	return ""
+ 
+ static func topics(item_id: StringName) -> PackedStringArray:
+ 	match item_id:
+-		&"bolsa_magnetica": return PackedStringArray(["Sucata: +1 por coleta", "Limite: 3 niveis"])
+-		&"mola_salto": return PackedStringArray(["Dash aereo: +1", "Limite: 1 nivel"])
+-		&"punho_guarda": return PackedStringArray(["Arco: +8 graus", "Limite: 2 niveis"])
+-		&"kit_remendo": return PackedStringArray(["Cura combate: +1 HP", "Limite: 3 niveis"])
+-		&"fusivel_aegis": return PackedStringArray(["Bloqueia 1 dano/sala", "Limite: 1 nivel"])
+-		&"catraca_sucata": return PackedStringArray(["Retorno: +1 sucata", "1 vez por sala"])
+-		&"rolamento_livre": return PackedStringArray(["Retorno: +25%/nivel", "Maximo: +50%"])
+-		&"turbina_centrifuga": return PackedStringArray(["Cenario: +8%/nivel", "Maximo: +40% por tiro", "Limite: 2 niveis"])
+-		&"bobina_ritmo": return PackedStringArray(["Ar: parry +1 dash", "1 vez por sala"])
+-		&"fusivel_emergencia": return PackedStringArray(["Dano: -0.5s na recarga", "1 vez por sala", "Aegis nao conta"])
++		&"bolsa_magnetica": return PackedStringArray(["Coleta: +1 sucata", "Nao amplia Catraca", "Limite: 3 niveis"])
++		&"mola_salto": return PackedStringArray(["Dash aereo: +1", "Ajuda a aparar no ar", "Limite: 1 nivel"])
++		&"punho_guarda": return PackedStringArray(["Arco: +8 graus/nivel", "+5% por parry/nivel", "Teto: +25% por tiro"])
++		&"kit_remendo": return PackedStringArray(["Apos combate: cura", "Cura: +1 HP/nivel", "Limite: 3 niveis"])
++		&"fusivel_aegis": return PackedStringArray(["Entrada: bloqueia 1 dano", "Aegis evita Emergencia", "Limite: 1 nivel"])
++		&"catraca_sucata": return PackedStringArray(["Retorno: +1 sucata", "Uma vez por sala", "Bolsa nao amplia bonus"])
++		&"rolamento_livre": return PackedStringArray(["Retorno: +25%/nivel", "Proximo tiro: +1 dano", "Limite: 2 niveis"])
++		&"turbina_centrifuga": return PackedStringArray(["Parede: +8%/nivel", "Maximo: +40% por tiro", "Parry mantem o bonus"])
++		&"bobina_ritmo": return PackedStringArray(["Aparada aerea: +1 dash", "Uma vez por sala", "Sinergia com Mola"])
++		&"fusivel_emergencia": return PackedStringArray(["Dano aceito: -0,5s", "Uma vez por sala", "Aegis nao conta"])
+ 	return PackedStringArray()
+ 
+ static func rarity_unlock_floor(rarity: int) -> int:
+### scripts/player/ball_launcher.gd
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\player\\ball_launcher.gd" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\ball_launcher.gd"
+index b69682a..3a18644 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\player\\ball_launcher.gd"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\player\\ball_launcher.gd"	
+@@ -4,6 +4,7 @@ extends Node
+ signal launch_accepted(spawn_position: Vector2, direction: Vector2)
+ 
+ const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
++const ShopItemCatalogScript = preload("res://scripts/progression/shop_item_catalog.gd")
+ 
+ ## Dispara uma única bola por vez sem assumir responsabilidade pela locomoção.
+ 
+@@ -22,6 +23,7 @@ var _run_damage_multiplier: float = 1.0
+ var _run_speed_multiplier: float = 1.0
+ var _run_radius_multiplier: float = 1.0
+ var _catraca_scrap_registered: bool = false
++var _pending_rolamento_damage_bonus: bool = false
+ var _spawn_shape: CircleShape2D
+ var _spawn_query: PhysicsShapeQueryParameters2D
+ 
+@@ -65,6 +67,9 @@ func try_launch(triggered: bool) -> bool:
+ 	var ball := projectile_scene.instantiate() as RicochetBall
+ 	if ball == null:
+ 		return false
++	var rolamento_bonus_available := _has_pending_rolamento_damage_bonus()
++	if rolamento_bonus_available:
++		launch_config.damage += ShopItemCatalogScript.ROLLING_NEXT_SHOT_DAMAGE_BONUS
+ 
+ 	ball.collision_mask = launch_config.collision_mask
+ 	_projectile_parent.add_child(ball)
+@@ -73,6 +78,8 @@ func try_launch(triggered: bool) -> bool:
+ 	ball.set_return_target(_shot_origin)
+ 	ball.global_position = spawn_position
+ 	ball.launch(direction, launch_config)
++	if rolamento_bonus_available:
++		_pending_rolamento_damage_bonus = false
+ 	launch_accepted.emit(spawn_position, direction)
+ 	return true
+ 
+@@ -118,9 +125,19 @@ func _cleanup_ball_after_flush(ball_to_cleanup: RicochetBall) -> void:
+ func _on_ball_finished(reason: String, ball: RicochetBall) -> void:
+ 	if reason == "returned":
+ 		_register_catraca_scrap()
++		_prepare_rolamento_damage_bonus()
+ 	if ball == _active_ball:
+ 		_active_ball = null
+ 
++func _prepare_rolamento_damage_bonus() -> void:
++	if _run_build != null and _run_build.item_level_for(&"rolamento_livre") > 0:
++		_pending_rolamento_damage_bonus = true
++
++func _has_pending_rolamento_damage_bonus() -> bool:
++	return _pending_rolamento_damage_bonus \
++		and _run_build != null \
++		and _run_build.item_level_for(&"rolamento_livre") > 0
++
+ func _register_catraca_scrap() -> void:
+ 	if _catraca_scrap_registered or _run_build == null or _run_build.item_level_for(&"catraca_sucata") <= 0:
+ 		return
+@@ -203,16 +220,25 @@ func _is_spawn_position_clear(space_state: PhysicsDirectSpaceState2D, position:
+ 	_spawn_query.motion = Vector2.ZERO
+ 	return space_state.intersect_shape(_spawn_query, 1).is_empty()
+ 
++func _is_player_dashing() -> bool:
++	if not is_instance_valid(_player):
++		return false
++	var movement_controller := _player.get_node_or_null("MovementController")
++	return movement_controller != null and bool(movement_controller.get("is_dashing"))
++
+ func get_projectile_config_snapshot() -> ProjectileConfig:
+ 	if _base_projectile_config == null:
+ 		return null
+ 	var derived_config := _base_projectile_config.duplicate(true) as ProjectileConfig
+ 	if _run_build != null:
+ 		var return_bearing_level := _run_build.item_level_for(&"rolamento_livre")
+-		derived_config.return_speed_multiplier = 1.0 + 0.25 * float(return_bearing_level)
++		derived_config.return_speed_multiplier = 1.0 + ShopItemCatalogScript.ROLLING_RETURN_SPEED_BONUS_PER_LEVEL * float(return_bearing_level)
+ 		var turbine_level := _run_build.item_level_for(&"turbina_centrifuga")
+-		derived_config.environmental_bounce_speed_bonus_per_bounce = 0.08 * float(turbine_level)
+-		derived_config.max_environmental_bounce_speed_multiplier = 1.4 if turbine_level > 0 else 1.0
++		derived_config.environmental_bounce_speed_bonus_per_bounce = ShopItemCatalogScript.TURBINE_BOUNCE_SPEED_BONUS_PER_LEVEL * float(turbine_level)
++		derived_config.max_environmental_bounce_speed_multiplier = 1.0 + ShopItemCatalogScript.TURBINE_BOUNCE_SPEED_MAX_BONUS if turbine_level > 0 else 1.0
++		var guard_level := _run_build.item_level_for(&"punho_guarda")
++		derived_config.parry_speed_bonus_per_success = ShopItemCatalogScript.guard_parry_speed_bonus_per_success(guard_level)
++		derived_config.max_parry_speed_multiplier = 1.0 + ShopItemCatalogScript.GUARD_PARRY_SPEED_MAX_BONUS if guard_level > 0 else 1.0
+ 		derived_config.impact_rank = _run_build.count_for(&"impacto_reforcado")
+ 		derived_config.charge_rank = _run_build.count_for(&"carga_reativa")
+ 		derived_config.pressure_rank = _run_build.count_for(&"ricochete_pressao")
+@@ -234,6 +260,10 @@ func get_projectile_config_snapshot() -> ProjectileConfig:
+ 		derived_config.speed *= UpgradeCatalogScript.projectile_speed_multiplier_for_rank(
+ 			_run_build.count_for(&"ajuste_velocidade_bola")
+ 		)
++		if _is_player_dashing():
++			derived_config.speed *= UpgradeCatalogScript.dash_shot_speed_multiplier_for_rank(
++				_run_build.count_for(&"motor_acelerado")
++			)
+ 	derived_config.speed *= _run_speed_multiplier
+ 	derived_config.collision_radius *= _run_radius_multiplier
+ 	return derived_config
+### scripts/projectile/projectile_config.gd
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\projectile\\projectile_config.gd" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\projectile\\projectile_config.gd"
+index 92da554..844177a 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\projectile\\projectile_config.gd"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\projectile\\projectile_config.gd"	
+@@ -20,6 +20,8 @@ var max_bounces: int = 3
+ var return_speed_multiplier: float = 1.0
+ var environmental_bounce_speed_bonus_per_bounce: float = 0.0
+ var max_environmental_bounce_speed_multiplier: float = 1.0
++var parry_speed_bonus_per_success: float = 0.0
++var max_parry_speed_multiplier: float = 1.0
+ 
+ @export_range(1, 100, 1)
+ var damage: int = 1
+### scripts/projectile/ricochet_ball.gd
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\projectile\\ricochet_ball.gd" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\projectile\\ricochet_ball.gd"
+index 1f114b4..d506672 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\scripts\\projectile\\ricochet_ball.gd"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\scripts\\projectile\\ricochet_ball.gd"	
+@@ -30,6 +30,8 @@ var _stop_sweep_requested: bool = false
+ var _bounce_count: int = 0
+ var _environmental_bounce_count: int = 0
+ var _environmental_bounce_speed_multiplier: float = 1.0
++var _parry_speed_multiplier: float = 1.0
++var _opening_impact_bonus_consumed: bool = false
+ var _pending_motion: Vector2 = Vector2.ZERO
+ var _damaged_targets_this_tick: Dictionary = {}
+ var _racket_controller: Node
+@@ -71,6 +73,8 @@ func launch(direction: Vector2, config: ProjectileConfig) -> void:
+ 	if launch_direction.is_zero_approx():
+ 		launch_direction = Vector2.RIGHT
+ 	_environmental_bounce_speed_multiplier = 1.0
++	_parry_speed_multiplier = 1.0
++	_opening_impact_bonus_consumed = false
+ 	velocity = launch_direction * _current_projectile_speed()
+ 	_lifetime_remaining = _config.lifetime
+ 	_has_launched = true
+@@ -166,6 +170,7 @@ func _physics_process(delta: float) -> void:
+ 				var parry_position := segment_start + remaining_motion * parry_fraction
+ 				var parry_scene_root := get_tree().current_scene
+ 				global_position = parry_position
++				_record_parry_speed_bonus()
+ 				velocity = Vector2(parry_hit.get("direction", Vector2.ZERO)).normalized() * _current_projectile_speed()
+ 				if velocity.is_zero_approx():
+ 					velocity = Vector2.RIGHT * _current_projectile_speed()
+@@ -256,9 +261,15 @@ func _physics_process(delta: float) -> void:
+ func _current_projectile_speed() -> float:
+ 	if _config == null:
+ 		return 0.0
+-	var multiplier_cap := maxf(_config.max_environmental_bounce_speed_multiplier, 1.0)
+-	var multiplier := clampf(_environmental_bounce_speed_multiplier, 1.0, multiplier_cap)
+-	return maxf(_config.speed, 0.0) * multiplier
++	var environmental_multiplier_cap := maxf(_config.max_environmental_bounce_speed_multiplier, 1.0)
++	var environmental_multiplier := clampf(
++		_environmental_bounce_speed_multiplier,
++		1.0,
++		environmental_multiplier_cap
++	)
++	var parry_multiplier_cap := maxf(_config.max_parry_speed_multiplier, 1.0)
++	var parry_multiplier := clampf(_parry_speed_multiplier, 1.0, parry_multiplier_cap)
++	return maxf(_config.speed, 0.0) * environmental_multiplier * parry_multiplier
+ 
+ func _record_environmental_bounce() -> void:
+ 	_environmental_bounce_count += 1
+@@ -271,6 +282,16 @@ func _record_environmental_bounce() -> void:
+ 		speed_cap
+ 	)
+ 
++func _record_parry_speed_bonus() -> void:
++	if _config == null:
++		return
++	var speed_cap := maxf(_config.max_parry_speed_multiplier, 1.0)
++	var speed_bonus := maxf(_config.parry_speed_bonus_per_success, 0.0)
++	_parry_speed_multiplier = minf(
++		maxf(_parry_speed_multiplier, 1.0) + speed_bonus,
++		speed_cap
++	)
++
+ func _get_parry_hit(motion: Vector2, frame_elapsed: float, segment_duration: float) -> Dictionary:
+ 	if not is_parryable or _parry_release_pending:
+ 		return {}
+@@ -334,9 +355,11 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
+ 
+ 	_damaged_targets_this_tick[target] = true
+ 	var was_charged := _charge_state == ChargeState.CHARGED
++	var can_apply_opening_impact_bonus := _environmental_bounce_count == 0 and not _opening_impact_bonus_consumed
++	var impact_rank := _config.impact_rank if can_apply_opening_impact_bonus else 0
+ 	var damage_amount := UpgradeCatalogScript.projectile_damage(
+ 		_config.damage,
+-		_config.impact_rank,
++		impact_rank,
+ 		_config.charge_rank,
+ 		was_charged and _config.reactive_charge_enabled,
+ 		_config.pressure_rank,
+@@ -346,6 +369,8 @@ func _apply_impact_damage(collider: Object, impact_position: Vector2, feedback_s
+ 	var damage_was_accepted := typeof(damage_result) == TYPE_BOOL and bool(damage_result)
+ 	if not damage_was_accepted:
+ 		return
++	if can_apply_opening_impact_bonus and _config.impact_rank > 0:
++		_opening_impact_bonus_consumed = true
+ 	var effect_kind: int = (
+ 		CombatFeedbackScript.EffectKind.CHARGED_HIT
+ 		if was_charged
+### docs/specs/2026-11-02-balanceamento-runs-longas/registro.md
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\docs\\specs\\2026-11-02-balanceamento-runs-longas\\registro.md" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-11-02-balanceamento-runs-longas\\registro.md"
+index 2f2691c..27f2d03 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\docs\\specs\\2026-11-02-balanceamento-runs-longas\\registro.md"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\docs\\specs\\2026-11-02-balanceamento-runs-longas\\registro.md"	
+@@ -17,4 +17,15 @@ Pares coerentes de estudo em576×324 e1728×972: upgrade-cards-study(core) epost
+ agente-avaliacao.md é proposta de contrato/pesquisa para um agente externo que joga, não um modelo treinado ou um adapter já executável. Documenta observações/ações/reset, métricas, prevenção de reward-farming, seeds de avaliação separadas e comparação humana. GodotRLAgents+SB3 é tecnologia candidata, compatibilidade exata/dependências/orçamento ainda precisam de fase própria. NenhumRL foi instalado, executado ou treinado; não háwinrates ou medidasTTK. GDDexterno foi consultado e preservado.
+ 
+ ## Revisões e estado final
+-Auditoria inicialLunareadonly, plano complexo comGemini/Muse/Grok e tentativaOpusAGYquota; implementaçãoLunaxhigh e revisõesGemini/Muse sembloqueios, deltaMusefavorável, Grokfinalsemstdout, OpusCursorquota. Detalhes/saídas fiéis empareceres/README.md. SemGodot/imports/testes/parser/linter/auditoria/simulação/commit/push/troca debranch. Números precisam de avaliação real autorizada antes de declarar balanceamento validado.
+\ No newline at end of file
++Auditoria inicialLunareadonly, plano complexo comGemini/Muse/Grok e tentativaOpusAGYquota; implementaçãoLunaxhigh e revisõesGemini/Muse sembloqueios, deltaMusefavorável, Grokfinalsemstdout, OpusCursorquota. Detalhes/saídas fiéis empareceres/README.md. SemGodot/imports/testes/parser/linter/auditoria/simulação/commit/push/troca debranch. Números precisam de avaliação real autorizada antes de declarar balanceamento validado.
++## Especialidades por gatilho — 17/11/2026
++
++Ajuste provisório para distinguir o papel dos upgrades nas cartas de sala e nos itens de loja. Não altera economia, raridades, limites/ranks, quantidade de recompensas nem progressão de salas. Valores e efeitos continuam candidatos a balanceamento.
++
++- **Impacto Reforçado:** mantém +1 dano por rank. Cada bola recebe o bônus apenas no primeiro dano aceito antes do primeiro ricochete ambiental; dano rejeitado não consome o bônus. O estado reinicia no lançamento. Depois da parede, o bônus não volta: Ricochete de Pressão fica como especialidade de bank-shot, com o valor por rank e teto de paredes já existentes.
++- **Motor Acelerado:** mantém a recarga por rank já configurada (0,48 s / 0,42 s / 0,36 s). Cada rank concede +5% de velocidade ao tiro cujo lançamento aceito ocorre enquanto o jogador está em dash, até +15% no rank 3. A checagem da prévia é somente leitura.
++- **Punho de Guarda:** mantém +8° de arco por nível. Cada aparada bem-sucedida acelera a bola do jogador em +5% por nível, acumulando por tiro até +25%; o estado reinicia a cada lançamento. Projéteis hostis não usam essa aceleração. O bônus multiplica o ganho separado da Turbina Centrífuga.
++- **Rolamento Livre:** mantém +25% de velocidade de retorno por nível (máximo atual +50%). Um retorno concluído prepara +1 dano para o próximo lançamento aceito; a prévia e o cálculo da origem não consomem o bônus. O estado fica no `BallLauncher`: se a sala substituir essa instância antes do próximo disparo, o bônus pendente se perde. A persistência entre instâncias exigiria ampliar o contrato de estado fora do escopo desta etapa.
++- **Demais cartas e itens:** descrições e tópicos agora explicitam os gatilhos existentes e as sinergias pertinentes, inclusive coleta da Bolsa, aparada aérea da Mola/Bobina, cura após combate, bloqueio do Aegis e a interação com Fusível de Emergência. Seus efeitos, ranks e limites permanecem iguais.
++
++Não foram executados Godot, importação, testes ou formatadores, conforme pedido.
+### resources/upgrades/impacto_reforcado.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\impacto_reforcado.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\impacto_reforcado.tres"
+index 1f42940..b8badca 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\impacto_reforcado.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\impacto_reforcado.tres"	
+@@ -8,9 +8,9 @@ script = ExtResource("1_definition")
+ icon = ExtResource("2_icon")
+ upgrade_id = &"impacto_reforcado"
+ title = "Impacto Reforçado"
+-description = "A bola causa mais dano."
+-effect_summary = "Dano extra para a bola"
+-effect_topics = PackedStringArray("Dano da bola: +1")
++description = "Abertura mais forte antes da primeira parede."
++effect_summary = "Dano extra no primeiro acerto antes da parede"
++effect_topics = PackedStringArray("Dano inicial: +1", "Primeiro dano aceito", "Antes da 1a parede")
+ projectile_damage_override = 2
+ rank_cap = 3
+ projectile_damage_per_rank = 1
+### resources/upgrades/motor_acelerado.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\motor_acelerado.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\motor_acelerado.tres"
+index c37036e..c0812c4 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\motor_acelerado.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\motor_acelerado.tres"	
+@@ -8,9 +8,10 @@ script = ExtResource("1_definition")
+ icon = ExtResource("2_icon")
+ upgrade_id = &"motor_acelerado"
+ title = "Motor Acelerado"
+-description = "Use o dash com mais frequência."
+-effect_summary = "Recarga do dash em menos tempo"
+-effect_topics = PackedStringArray("Recarga: 0,55s > 0,48s")
++description = "Recarga menor e tiro no dash mais rápido."
++effect_summary = "Recarga menor e mais velocidade ao disparar no dash"
++effect_topics = PackedStringArray("Recarga: 0,55 > 0,48s", "Dash tiro: +5%/nivel")
+ dash_cooldown_override = 0.48
+ rank_cap = 3
+ dash_cooldown_by_rank = PackedFloat32Array(0.48, 0.42, 0.36)
++dash_shot_speed_multiplier_per_rank = 0.05
+### resources/upgrades/carga_reativa.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\carga_reativa.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\carga_reativa.tres"
+index 4494d4e..e19573a 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\carga_reativa.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\carga_reativa.tres"	
+@@ -8,9 +8,9 @@ script = ExtResource("1_definition")
+ icon = ExtResource("2_icon")
+ upgrade_id = &"carga_reativa"
+ title = "Carga Reativa"
+-description = "Rebata sua bola para carregá-la."
+-effect_summary = "Carrega o próximo acerto"
+-effect_topics = PackedStringArray("Dano extra: +2", "No próximo acerto")
++description = "Rebata sua bola para carregar o próximo acerto."
++effect_summary = "Aparada carrega o próximo acerto e soma ao dano extra"
++effect_topics = PackedStringArray("Dano extra: +2", "No próximo acerto", "Soma a Impacto/Pressão")
+ reactive_charge_enabled = true
+ charged_damage_bonus = 2
+ rank_cap = 3
+### resources/upgrades/ricochete_pressao.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\ricochete_pressao.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ricochete_pressao.tres"
+index 9497b70..f7ce732 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\ricochete_pressao.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ricochete_pressao.tres"	
+@@ -8,9 +8,9 @@ script = ExtResource("1_definition")
+ icon = ExtResource("2_icon")
+ upgrade_id = &"ricochete_pressao"
+ title = "Ricochete de Pressão"
+-description = "A bola ganha dano ao bater nas paredes."
+-effect_summary = "Dano cresce a cada parede"
+-effect_topics = PackedStringArray("Dano por parede: +1", "Até 2 paredes por bola")
++description = "Cada parede soma dano aos bank-shots."
++effect_summary = "Dano para os bank-shots após ricochetear"
++effect_topics = PackedStringArray("Parede: +1 dano", "Até 2 paredes por bola", "Foco bank-shot")
+ rank_cap = 3
+ environmental_bounce_damage_per_rank = 1
+ environmental_bounce_damage_count_cap = 2
+### resources/upgrades/mola_retorno.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\mola_retorno.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\mola_retorno.tres"
+index bda6224..7c6e667 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\mola_retorno.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\mola_retorno.tres"	
+@@ -8,8 +8,8 @@ script = ExtResource("1_definition")
+ icon = ExtResource("2_icon")
+ upgrade_id = &"mola_retorno"
+ title = "Mola de Retorno"
+-description = "A bola dura mais e rebate mais vezes."
+-effect_summary = "Mais duração e rebotes para a bola"
++description = "Mais tempo e rebotes para buscar acertos."
++effect_summary = "Mais tentativas para combinar com Impacto e Pressão"
+ effect_topics = PackedStringArray("+1 rebote da bola", "+0,20s de duração")
+ rank_cap = 3
+ max_bounces_per_rank = 1
+### resources/upgrades/dinamo_defesa.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\dinamo_defesa.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\dinamo_defesa.tres"
+index 5ccc425..965aae5 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\dinamo_defesa.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\dinamo_defesa.tres"	
+@@ -8,8 +8,8 @@ script = ExtResource("1_definition")
+ icon = ExtResource("2_icon")
+ upgrade_id = &"dinamo_defesa"
+ title = "Dínamo de Defesa"
+-description = "Rebater reduz a recarga do dash."
+-effect_summary = "Recarga menor uma vez por rebatida"
+-effect_topics = PackedStringArray("Recarga do dash: -0,05s", "Uma vez por rebatida")
++description = "Aparada aceita reduz a recarga do dash."
++effect_summary = "Reduz a recarga após cada aparada bem-sucedida"
++effect_topics = PackedStringArray("Dash: -0,05s", "Aparada bem-sucedida")
+ rank_cap = 3
+ dash_cooldown_refund_per_rank = 0.05
+### resources/upgrades/chassi_reforcado.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\chassi_reforcado.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\chassi_reforcado.tres"
+index df642db..731383a 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\chassi_reforcado.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\chassi_reforcado.tres"	
+@@ -8,7 +8,7 @@ script = ExtResource("1_definition")
+ icon = ExtResource("2_icon")
+ upgrade_id = &"chassi_reforcado"
+ title = "Chassi Reforçado"
+-description = "Aumenta a vida máxima e cura ao escolher."
++description = "Mais vida máxima e cura ao escolher."
+ effect_summary = "Mais vida máxima e cura na escolha"
+ effect_topics = PackedStringArray("Vida máxima: +1", "Cura na escolha: +1 vida")
+ rank_cap = 3
+### resources/upgrades/ajuste_velocidade_bola.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\ajuste_velocidade_bola.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ajuste_velocidade_bola.tres"
+index cd0bae0..bd4b5c4 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\ajuste_velocidade_bola.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ajuste_velocidade_bola.tres"	
+@@ -9,7 +9,7 @@ icon = ExtResource("2_icon")
+ upgrade_id = &"ajuste_velocidade_bola"
+ reward_kind = &"attribute"
+ title = "Ajuste de Velocidade"
+-description = "A bola fica um pouco mais rápida."
++description = "A bola ganha velocidade em todo disparo."
+ effect_summary = "Aumenta a velocidade base da bola"
+ effect_topics = PackedStringArray("Bola: +2% base", "Velocidade acumulada: +2%")
+ rank_cap = 10
+### resources/upgrades/ajuste_recarga_dash.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\ajuste_recarga_dash.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ajuste_recarga_dash.tres"
+index 1efcea8..8ddc2d4 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\ajuste_recarga_dash.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\ajuste_recarga_dash.tres"	
+@@ -9,7 +9,7 @@ icon = ExtResource("2_icon")
+ upgrade_id = &"ajuste_recarga_dash"
+ reward_kind = &"attribute"
+ title = "Ajuste de Recarga"
+-description = "Refina a recarga do dash."
++description = "Reduz mais um pouco a recarga do dash."
+ effect_summary = "Reduz mais um pouco a recarga do dash"
+ effect_topics = PackedStringArray("Recarga: 0,36s > 0,35s", "Dash: -0,01s")
+ rank_cap = 5
+### resources/upgrades/reparo_campo.tres
+diff --git "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\reparo_campo.tres" "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\reparo_campo.tres"
+index f0a5dd1..ad19a7c 100644
+--- "a/C:\\Users\\danie\\AppData\\Local\\Temp\\codex-upgrades-unicos-baseline-20261117\\resources\\upgrades\\reparo_campo.tres"
++++ "b/C:\\Users\\danie\\Documents\\ChatGPT\\TEC - Jogos\\projeto-jogos-digitais\\resources\\upgrades\\reparo_campo.tres"	
+@@ -9,7 +9,7 @@ icon = ExtResource("2_icon")
+ upgrade_id = &"reparo_campo"
+ reward_kind = &"recovery"
+ title = "Manutenção de Campo"
+-description = "Faça um reparo no robô."
++description = "Repare até uma vida ao escolher."
+ effect_summary = "Cura até uma vida nesta escolha"
+ effect_topics = PackedStringArray("Cura: até 1 de vida", "Aplicada nesta escolha")
+ rank_cap = 220

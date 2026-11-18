@@ -1,30 +1,48 @@
 extends Node2D
 
-const FACTORY_ATLAS: Texture2D = preload("res://assets/environment/factory_v1/tileset-fabrica-v1-atlas.png")
-const BACKDROP_TEXTURE: Texture2D = preload("res://assets/environment/factory_v1/lobby_v1/export/lobby-backdrop-576x324.png")
+const BACKDROP_TEXTURE: Texture2D = preload("res://assets/environment/factory_v1/lobby_v2/factory-lobby-generated-1672x941.png")
+const BACKDROP_MOTION_SHADER: Shader = preload("res://scripts/world/lobby_backdrop_motion.gdshader")
 const LEFT_DOOR_TEXTURE: Texture2D = preload("res://assets/environment/factory_v1/lobby_v1/export/elevator-door-left-32x56.png")
 const RIGHT_DOOR_TEXTURE: Texture2D = preload("res://assets/environment/factory_v1/lobby_v1/export/elevator-door-right-32x56.png")
-const TILE_SIZE: int = 32
 const WORLD_WIDTH: int = 1152
-const WORLD_HEIGHT: int = 648
+const FLOOR_TOP_WORLD_Y: float = 560.0
+const SOURCE_FLOOR_TOP_Y: float = 808.0
+const ELEVATOR_OPENING_RECT: Rect2 = Rect2(908.0, 454.0, 102.0, 106.0)
+const DOOR_PANEL_WIDTH: float = ELEVATOR_OPENING_RECT.size.x * 0.5
 
-const NIGHT: Color = Color("#0E0D0E")
 const INK: Color = Color("#0C1B29")
-const STEEL: Color = Color("#142C40")
-const STEEL_LIGHT: Color = Color("#203E50")
 const STEEL_MID: Color = Color("#4B555D")
-const STEEL_EDGE: Color = Color("#879198")
-const RUST: Color = Color("#70432C")
 const AMBER: Color = Color("#D2A75C")
-const PALE: Color = Color("#E8D8B5")
-const GLASS: Color = Color("#0C1B29")
 
 @export_enum("World background", "Elevator foreground") var visual_layer: int = 0
 @export_range(0.0, 1.0, 0.01) var door_closed_fraction: float = 0.0
 @export var amber_lights_on: bool = false
 
 func _ready() -> void:
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	texture_filter = (
+		CanvasItem.TEXTURE_FILTER_LINEAR
+		if visual_layer == 0
+		else CanvasItem.TEXTURE_FILTER_NEAREST
+	)
+	if visual_layer == 0:
+		_add_animated_backdrop()
+
+func _add_animated_backdrop() -> void:
+	var backdrop_sprite := Sprite2D.new()
+	backdrop_sprite.name = "BackdropMotion"
+	backdrop_sprite.texture = BACKDROP_TEXTURE
+	backdrop_sprite.centered = false
+	backdrop_sprite.position = Vector2.ZERO
+	backdrop_sprite.scale = Vector2(
+		float(WORLD_WIDTH) / float(BACKDROP_TEXTURE.get_width()),
+		FLOOR_TOP_WORLD_Y / SOURCE_FLOOR_TOP_Y
+	)
+	backdrop_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	backdrop_sprite.show_behind_parent = true
+	var motion_material := ShaderMaterial.new()
+	motion_material.shader = BACKDROP_MOTION_SHADER
+	backdrop_sprite.material = motion_material
+	add_child(backdrop_sprite)
 
 func set_door_closed_fraction(value: float) -> void:
 	door_closed_fraction = clampf(value, 0.0, 1.0)
@@ -41,71 +59,32 @@ func _draw() -> void:
 		_draw_elevator_foreground()
 
 func _draw_world() -> void:
-	# Keep a deterministic dark base under the backdrop's transparent floor strip.
-	draw_rect(Rect2(0, 0, WORLD_WIDTH, WORLD_HEIGHT), NIGHT)
-	draw_texture_rect(BACKDROP_TEXTURE, Rect2(0, 0, WORLD_WIDTH, WORLD_HEIGHT), false)
+	# The nearest-filter plaque sprite is positioned in lobby.tscn.
 
-	# Preserve the user's static amber plaque and the bitmap ElevatorSign node above it.
-	draw_rect(Rect2(888, 384, 176, 40), INK)
-	draw_rect(Rect2(888, 384, 176, 3), AMBER)
-	draw_rect(Rect2(888, 421, 176, 3), AMBER)
-	draw_rect(Rect2(888, 384, 3, 40), AMBER)
-	draw_rect(Rect2(1061, 384, 3, 40), AMBER)
-
-	# The status lamps remain dynamic and retain their existing positions/colors.
-	for lamp_x: int in [928, 968, 1008]:
+	# The three event lamps sit above the plaque and remain visible while the doors are closed.
+	for lamp_x: int in [921, 959, 997]:
 		var lamp_color: Color = AMBER if amber_lights_on else STEEL_MID
-		draw_rect(Rect2(lamp_x - 7, 428, 14, 14), INK)
-		draw_rect(Rect2(lamp_x - 4, 431, 8, 8), lamp_color)
-
-	# The existing 32 px atlas supplies the exact continuous floor and side boundaries.
-	for tile_x_index: int in range(36):
-		var tile_x: int = tile_x_index * TILE_SIZE
-		var source_x: int = TILE_SIZE
-		if tile_x_index == 0:
-			source_x = 0
-		elif tile_x_index == 35:
-			source_x = TILE_SIZE * 2
-		draw_texture_rect_region(
-			FACTORY_ATLAS,
-			Rect2(tile_x, 560, TILE_SIZE, TILE_SIZE),
-			Rect2(source_x, 0, TILE_SIZE, TILE_SIZE)
-		)
-		draw_texture_rect_region(
-			FACTORY_ATLAS,
-			Rect2(tile_x, 592, TILE_SIZE, TILE_SIZE),
-			Rect2(source_x, TILE_SIZE, TILE_SIZE, TILE_SIZE)
-		)
-		draw_texture_rect_region(
-			FACTORY_ATLAS,
-			Rect2(tile_x, 624, TILE_SIZE, TILE_SIZE),
-			Rect2(source_x, TILE_SIZE * 3, TILE_SIZE, TILE_SIZE)
-		)
-
-	for tile_y_index: int in range(21):
-		var tile_y: int = tile_y_index * TILE_SIZE
-		draw_texture_rect_region(
-			FACTORY_ATLAS,
-			Rect2(0, tile_y, TILE_SIZE, TILE_SIZE),
-			Rect2(0, TILE_SIZE, TILE_SIZE, TILE_SIZE)
-		)
-		draw_texture_rect_region(
-			FACTORY_ATLAS,
-			Rect2(WORLD_WIDTH - TILE_SIZE, tile_y, TILE_SIZE, TILE_SIZE),
-			Rect2(TILE_SIZE * 2, TILE_SIZE, TILE_SIZE, TILE_SIZE)
-		)
+		draw_rect(Rect2(lamp_x - 5, 411, 10, 10), INK)
+		draw_rect(Rect2(lamp_x - 3, 413, 6, 6), lamp_color)
 
 func _draw_elevator_foreground() -> void:
 	var travel: float = clampf(door_closed_fraction, 0.0, 1.0)
-	var panel_width: int = 64
-	var door_top: int = 448
-	var door_height: int = 112
-	var left_x: int = 848 + roundi(float(panel_width) * travel)
-	var right_x: int = 1040 - roundi(float(panel_width) * travel)
+	var opening: Rect2 = ELEVATOR_OPENING_RECT
+	var panel_size: Vector2 = Vector2(DOOR_PANEL_WIDTH, opening.size.y)
+	var left_open_x: float = opening.position.x - DOOR_PANEL_WIDTH
+	var right_open_x: float = opening.end.x
+	var left_closed_x: float = opening.position.x
+	var right_closed_x: float = opening.position.x + DOOR_PANEL_WIDTH
+	var left_x: float = lerpf(left_open_x, left_closed_x, travel)
+	var right_x: float = lerpf(right_open_x, right_closed_x, travel)
+	_draw_clipped_door(LEFT_DOOR_TEXTURE, Rect2(Vector2(left_x, opening.position.y), panel_size), opening)
+	_draw_clipped_door(RIGHT_DOOR_TEXTURE, Rect2(Vector2(right_x, opening.position.y), panel_size), opening)
 
-	draw_texture_rect(LEFT_DOOR_TEXTURE, Rect2(left_x, door_top, panel_width, door_height), false)
-	draw_texture_rect(RIGHT_DOOR_TEXTURE, Rect2(right_x, door_top, panel_width, door_height), false)
-
-
-
-
+func _draw_clipped_door(texture: Texture2D, panel_rect: Rect2, opening: Rect2) -> void:
+	var visible_rect: Rect2 = panel_rect.intersection(opening)
+	if visible_rect.size.x <= 0.0 or visible_rect.size.y <= 0.0:
+		return
+	var texture_size: Vector2 = Vector2(texture.get_width(), texture.get_height())
+	var source_position: Vector2 = (visible_rect.position - panel_rect.position) / panel_rect.size * texture_size
+	var source_size: Vector2 = visible_rect.size / panel_rect.size * texture_size
+	draw_texture_rect_region(texture, visible_rect, Rect2(source_position, source_size))

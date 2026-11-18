@@ -20,6 +20,10 @@ const KNOWN_AUTHORED_PLATFORM_NAMES: Array[StringName] = [
 const RoomLayoutGenerator = preload("res://scripts/world/room_layout_generator.gd")
 const ManagedRoomTopologyScript = preload("res://scripts/world/managed_room_topology.gd")
 const ManagedPlatformScene: PackedScene = preload("res://scenes/solid_platform.tscn")
+const DestructiblePropScene: PackedScene = preload("res://scenes/environment/destructible_prop.tscn")
+const ShopVendorScene: PackedScene = preload("res://scenes/shop/shop_vendor.tscn")
+const ShopOfferScene: PackedScene = preload("res://scenes/shop/shop_offer.tscn")
+const DESTRUCTIBLE_SEED_SALT: int = 0x5F3759DF
 const DISCRETE_INPUT_ACTIONS: Array[StringName] = [
 	&"launch_ball",
 	&"parry",
@@ -47,6 +51,10 @@ enum UpgradeFlowState {
 @export var room_title_label_path: NodePath = NodePath("CombatRoom/HUD/RoomLabel")
 @export var build_status_label_path: NodePath = NodePath("CombatRoom/HUD/BuildLabel")
 @export var player_spawn_marker_path: NodePath = NodePath("PlayerSpawnMarker")
+@export_range(1, 3, 1) var destructible_min_count: int = 1
+@export_range(1, 3, 1) var destructible_max_count: int = 2
+@export_range(1, 5, 1) var destructible_scrap_min: int = 1
+@export_range(1, 5, 1) var destructible_scrap_max: int = 3
 
 @onready var player: Player = $Player
 @onready var combat_room: CombatRoom = $CombatRoom
@@ -95,6 +103,8 @@ var _authored_world_obstacles: Array[Dictionary] = []
 var _prepared_room_layout_seed: int = 0
 var _prepared_platform_rects: Dictionary = {}
 var _door_unlock_pending: bool = false
+var _shop_vendor: Node2D
+var _shop_offer: CanvasLayer
 
 func _enter_tree() -> void:
 	if authored_layout_enabled:
@@ -1136,6 +1146,30 @@ func _restart_authored_room() -> void:
 	_cancel_standalone_transition()
 	get_tree().reload_current_scene()
 
+func _is_shop_stage() -> bool:
+	return _run_controller_managed and StringName(_managed_room_descriptor.get("room_kind", &"combat")) == &"shop"
+
+func _remove_shop_enemies_before_tree() -> bool:
+	if not _is_shop_stage():
+		return true
+	if not is_authored_layout_valid():
+		return false
+	var shop_enemies: Array[Node] = []
+	_collect_shop_enemy_nodes(self, shop_enemies)
+	for enemy: Node in shop_enemies:
+		var parent: Node = enemy.get_parent()
+		if parent != null:
+			parent.remove_child(enemy)
+		enemy.free()
+	reward_enabled = false
+	return true
+
+func _collect_shop_enemy_nodes(root: Node, result: Array[Node]) -> void:
+	for child: Node in root.get_children():
+		if child.has_signal("defeated") or child.is_in_group("combat_enemy"):
+			result.append(child)
+			continue
+		_collect_shop_enemy_nodes(child, result)
 func _managed_descriptor_error(requested_seed: int, descriptor: Dictionary) -> String:
 	for key in [&"room_seed", &"family", &"entry_dir", &"exit_dir", &"coord", &"entry_offset", &"exit_offset"]:
 		if not descriptor.has(key):
@@ -1185,7 +1219,7 @@ func configure_run_managed(
 		return false
 	if _run_controller_managed:
 		var same_request := _managed_room_descriptor == room_descriptor and _managed_run_build == shared_build \
-			and reward_enabled == offer_build_upgrade and room_layout_seed == requested_seed \
+			and reward_enabled == (offer_build_upgrade and StringName(room_descriptor.get("room_kind", &"combat")) != &"shop") and room_layout_seed == requested_seed \
 			and _managed_enemy_level_config == enemy_level_config
 		return same_request and (not authored_layout_enabled or is_authored_layout_valid())
 	if _authored_layout_prepared:
@@ -1206,10 +1240,12 @@ func configure_run_managed(
 	_managed_room_descriptor = room_descriptor.duplicate(true)
 	_managed_run_build = shared_build
 	_managed_enemy_level_config = enemy_level_config
-	reward_enabled = offer_build_upgrade
+	reward_enabled = offer_build_upgrade and StringName(room_descriptor.get("room_kind", &"combat")) != &"shop"
 	room_layout_seed = requested_seed
 	if authored_layout_enabled and not prepare_authored_layout():
 		return false
+	if _is_shop_stage() and not _remove_shop_enemies_before_tree():
+		return _fail_authored_layout("inimigos da loja não puderam ser removidos após validar o layout")
 	return true
 
 func _configure_managed_enemy_levels(
@@ -1236,11 +1272,130 @@ func _configure_enemy_level_subtree(
 	return true
 
 
+func _configure_factory_surface_variations() -> void:
+	var variation_seed: int = room_layout_seed
+	if _run_controller_managed:
+		variation_seed = int(_managed_room_descriptor.get("room_seed", variation_seed))
+	elif authored_layout_enabled and _prepared_room_layout_seed != 0:
+		variation_seed = _prepared_room_layout_seed
+
+	var floor_visual := get_node_or_null("Floor/Visuals/FactorySurfaceVisual")
+	if floor_visual != null and floor_visual.has_method("set_distribution"):
+		floor_visual.call("set_distribution", variation_seed, 0)
+
+	var platforms: Array[SolidPlatform] = []
+	for child in get_children():
+		var platform := child as SolidPlatform
+		if platform == null or platform.name == &"Floor":
+			continue
+		platforms.append(platform)
+	platforms.sort_custom(func(a: SolidPlatform, b: SolidPlatform) -> bool: return String(a.name) < String(b.name))
+	for index in range(platforms.size()):
+		var visual := platforms[index].get_node_or_null("Visuals/FactorySurfaceVisual")
+		if visual != null and visual.has_method("set_distribution"):
+			visual.call("set_distribution", variation_seed, index + 1)
+
+func _spawn_managed_destructibles() -> void:
+	if not _run_controller_managed or _managed_room_descriptor.is_empty() or _is_shop_stage():
+		return
+	var room_seed: int = int(_managed_room_descriptor.get("room_seed", room_layout_seed))
+	if room_seed == 0:
+		return
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = room_seed ^ DESTRUCTIBLE_SEED_SALT
+	var target_count: int = rng.randi_range(
+		mini(destructible_min_count, destructible_max_count),
+		maxi(destructible_min_count, destructible_max_count)
+	)
+	var spawn_position: Vector2 = to_local(_get_player_spawn_position())
+	var enemy_positions: Array[Vector2] = []
+	for enemy: Node in get_tree().get_nodes_in_group(combat_room.enemy_group):
+		if not is_instance_valid(enemy) or not is_ancestor_of(enemy):
+			continue
+		var enemy_2d: Node2D = enemy as Node2D
+		if enemy_2d != null:
+			enemy_positions.append(to_local(enemy_2d.global_position))
+	var downward_openings: Array[float] = []
+	var entry_direction: Vector2i = _managed_room_descriptor.get("entry_dir", Vector2i.ZERO)
+	var exit_direction: Vector2i = _managed_room_descriptor.get("exit_dir", Vector2i.ZERO)
+	if entry_direction == Vector2i.DOWN:
+		downward_openings.append(float(_managed_room_descriptor.get("entry_offset", 0.0)))
+	if exit_direction == Vector2i.DOWN:
+		downward_openings.append(float(_managed_room_descriptor.get("exit_offset", 0.0)))
+
+	var supports: Array[SolidPlatform] = []
+	for child: Node in get_children():
+		var support: SolidPlatform = child as SolidPlatform
+		if support != null:
+			supports.append(support)
+	supports.sort_custom(func(a: SolidPlatform, b: SolidPlatform) -> bool:
+		return String(a.name) < String(b.name)
+	)
+
+	var candidates: Array[Vector2] = []
+	for support: SolidPlatform in supports:
+		var usable_half_width: float = support.size.x * 0.5 - 36.0
+		if usable_half_width < 12.0:
+			continue
+		var surface_y: float = support.position.y - support.size.y * 0.5
+		for fraction: float in [-0.62, 0.0, 0.62]:
+			var point: Vector2 = Vector2(
+				support.position.x + usable_half_width * fraction,
+				surface_y - 9.0
+			)
+			if point.x < 96.0 or point.x > 1056.0 or point.y < 64.0 or point.y > 556.0:
+				continue
+			if point.distance_to(spawn_position) < 112.0:
+				continue
+			var unsafe: bool = false
+			for enemy_position: Vector2 in enemy_positions:
+				if point.distance_to(enemy_position) < 72.0:
+					unsafe = true
+					break
+			for opening_x: float in downward_openings:
+				if point.y > 460.0 and absf(point.x - opening_x) < 136.0:
+					unsafe = true
+					break
+			if not unsafe:
+				candidates.append(point)
+
+	for index: int in range(candidates.size() - 1, 0, -1):
+		var swap_index: int = rng.randi_range(0, index)
+		var swap_point: Vector2 = candidates[index]
+		candidates[index] = candidates[swap_index]
+		candidates[swap_index] = swap_point
+
+	var chosen_positions: Array[Vector2] = []
+	for point: Vector2 in candidates:
+		if chosen_positions.size() >= target_count:
+			break
+		var overlaps_existing: bool = false
+		for chosen: Vector2 in chosen_positions:
+			if point.distance_to(chosen) < 72.0:
+				overlaps_existing = true
+				break
+		if not overlaps_existing:
+			chosen_positions.append(point)
+
+	for point: Vector2 in chosen_positions:
+		var prop: Node2D = DestructiblePropScene.instantiate() as Node2D
+		if prop == null:
+			continue
+		var is_canister: bool = rng.randi_range(0, 1) == 1
+		var scrap_maximum: int = maxi(destructible_scrap_min, destructible_scrap_max)
+		var scrap_minimum: int = mini(destructible_scrap_min, destructible_scrap_max)
+		prop.call("configure_prop", is_canister, rng.randi_range(scrap_minimum, scrap_maximum))
+		prop.position = point
+		add_child(prop)
+
 func _ready() -> void:
 	if authored_layout_enabled and not is_authored_layout_valid():
 		_disable_invalid_authored_room()
 		_show_authored_layout_error()
 		return
+	_configure_factory_surface_variations()
+	_spawn_managed_destructibles()
 	set_process_input(true)
 	if not combat_room.room_cleared.is_connected(_on_room_cleared):
 		combat_room.room_cleared.connect(_on_room_cleared)
@@ -1254,7 +1409,7 @@ func _ready() -> void:
 
 	var title_label := get_node_or_null(room_title_label_path) as Label
 	if title_label != null:
-		title_label.text = room_title
+		title_label.text = "LOJA" if _is_shop_stage() else room_title
 
 	if player != null:
 		player.reset_to_spawn(_get_player_spawn_position())
@@ -1274,7 +1429,10 @@ func _ready() -> void:
 			var restored_build := RunBuild.new()
 			if restored_build.replace_state(
 				incoming_snapshot.get("upgrade_ids"),
-				incoming_snapshot.get("counts_by_id")
+				incoming_snapshot.get("counts_by_id"),
+				incoming_snapshot.get("item_ids", []),
+				incoming_snapshot.get("item_levels_by_id", {}),
+				bool(incoming_snapshot.get("rolamento_livre_damage_pending", false))
 			):
 				run_build = restored_build
 				restore_health_snapshot = true
@@ -1292,12 +1450,76 @@ func _ready() -> void:
 		_upgrade_offer.hide()
 
 	_update_build_status()
+	if _is_shop_stage():
+		_create_shop_runtime()
 	if exit_door != null:
 		exit_door.call("set_room_cleared", false)
 	if combat_room.room_is_cleared:
 		_on_room_cleared()
 
+func _get_run_controller() -> Node:
+	for controller: Node in get_tree().get_nodes_in_group("run_controller"):
+		if controller.has_method("is_shop_room_active"):
+			return controller
+	return null
+
+func _create_shop_runtime() -> void:
+	if _shop_vendor != null or _shop_offer != null:
+		return
+	_shop_vendor = ShopVendorScene.instantiate() as Node2D
+	_shop_offer = ShopOfferScene.instantiate() as CanvasLayer
+	if _shop_vendor == null or _shop_offer == null:
+		if is_instance_valid(_shop_vendor):
+			_shop_vendor.free()
+		if is_instance_valid(_shop_offer):
+			_shop_offer.free()
+		_shop_vendor = null
+		_shop_offer = null
+		return
+	_shop_vendor.position = Vector2(576.0, 560.0)
+	_shop_vendor.call("configure", self, player)
+	add_child(_shop_vendor)
+	add_child(_shop_offer)
+	if _shop_offer.has_signal("closed"):
+		_shop_offer.connect("closed", Callable(self, "_on_shop_offer_closed"))
+
+func request_shop_offer() -> bool:
+	if not _is_shop_stage() or not is_instance_valid(_shop_offer) or _shop_offer.visible:
+		return false
+	var controller := _get_run_controller()
+	if controller == null or not controller.call("is_shop_open_allowed", self):
+		return false
+	if not bool(controller.call("open_shop_for_room", self)):
+		return false
+	var state_variant: Variant = controller.call("get_shop_offer_state", self)
+	if typeof(state_variant) != TYPE_DICTIONARY:
+		controller.call("close_shop_for_room", self, true)
+		return false
+	var state: Dictionary = state_variant
+	var offers_variant: Variant = state.get("offers", [])
+	if typeof(offers_variant) != TYPE_ARRAY:
+		controller.call("close_shop_for_room", self, true)
+		return false
+	if not bool(_shop_offer.call("present", controller, self, player, state)):
+		controller.call("close_shop_for_room", self, true)
+		return false
+	return true
+
+func close_shop_offer() -> void:
+	if is_instance_valid(_shop_offer):
+		_shop_offer.call("close_offer", false)
+
+func _on_shop_offer_closed() -> void:
+	var controller := _get_run_controller()
+	if controller != null:
+		controller.call("close_shop_for_room", self, true)
+
 func _exit_tree() -> void:
+	if is_instance_valid(_shop_offer):
+		_shop_offer.call("close_offer", false)
+	var shop_controller := _get_run_controller()
+	if shop_controller != null:
+		shop_controller.call("close_shop_for_room", self, true)
 	if _upgrade_offer != null and is_instance_valid(_upgrade_offer):
 		_upgrade_offer.close_offer()
 	if not _standalone_swap_committed:
@@ -1308,7 +1530,7 @@ func _exit_tree() -> void:
 	_guard_active = false
 	_guard_waiting_for_release = false
 	_guard_quiet_remaining = 0.0
-	# Do not unpause during teardown; the new room inherits the actual tree state.
+	# A pausa da recompensa pertence ao fluxo da run; não a libere durante o teardown.
 	_owned_offer_pause = false
 
 func _input(event: InputEvent) -> void:
@@ -1361,6 +1583,8 @@ func _physics_process(_delta: float) -> void:
 		player.reset_to_spawn(_get_player_spawn_position())
 
 func is_gameplay_action_blocked(action: StringName) -> bool:
+	if is_instance_valid(_shop_offer) and _shop_offer.visible:
+		return true
 	if authored_layout_enabled and not is_authored_layout_valid():
 		return true
 	if _door_request_pending or _transition_in_progress or is_instance_valid(_transition_overlay):

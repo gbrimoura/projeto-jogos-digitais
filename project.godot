@@ -18,6 +18,10 @@ config/name="Selenite Tower"
 run/main_scene="res://scenes/lobby.tscn"
 config/features=PackedStringArray("4.7")
 
+[autoload]
+
+PauseMenu="*res://scripts/ui/pause/pause_menu.gd"
+
 [display]
 
 window/size/mode=3
@@ -74,6 +78,7 @@ interact={
 2d_physics/layer_3="Projectile"
 2d_physics/layer_4="Damageable"
 2d_physics/layer_5="HostileProjectile"
+2d_physics/layer_6="Destructible"
 
 [rendering]
 

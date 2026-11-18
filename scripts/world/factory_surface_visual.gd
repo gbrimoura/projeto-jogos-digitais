@@ -5,9 +5,12 @@ const SOURCE_TILE_SIZE: float = 32.0
 const WORLD_SCALE: float = 2.0
 const WORLD_TILE_SIZE: float = SOURCE_TILE_SIZE * WORLD_SCALE
 const MIN_REMAINDER: float = 0.001
-const FACTORY_TILESET: TileSet = preload("res://resources/environment/factory_tileset_v1.tres")
+const FACTORY_TILESET: TileSet = preload("res://resources/environment/factory_tileset_v2.tres")
 
 enum SurfaceStyle { PLATFORM, BLOCK }
+
+@export var surface_seed: int = 0
+@export var surface_index: int = 0
 
 @export var surface_size: Vector2 = Vector2(220.0, 24.0):
 	set(value):
@@ -38,6 +41,10 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	queue_redraw()
 
+func set_distribution(seed: int, index: int) -> void:
+	surface_seed = seed
+	surface_index = maxi(index, 0)
+	queue_redraw()
 func _draw() -> void:
 	if surface_size.x <= 0.0 or surface_size.y <= 0.0:
 		return
@@ -122,6 +129,9 @@ func _draw_triplet(
 	var middle_start: float = -half_width + destination_cap_width
 	var middle_end: float = half_width - destination_cap_width
 	var cursor: float = middle_start
+	var row_index: int = clampi(int(source_y / SOURCE_TILE_SIZE), 0, 3)
+	var segment_index: int = 0
+	var previous_alternate: int = -1
 	while cursor < middle_end - MIN_REMAINDER:
 		var remaining_middle: float = middle_end - cursor
 		var source_middle_width: float = minf(SOURCE_TILE_SIZE, remaining_middle / WORLD_SCALE)
@@ -129,6 +139,26 @@ func _draw_triplet(
 			break
 		var destination_middle_width: float = source_middle_width * WORLD_SCALE
 		destination_rect = Rect2(Vector2(cursor, destination_y), Vector2(destination_middle_width, source_height * WORLD_SCALE))
-		source_rect = Rect2(Vector2(float(middle_column) * SOURCE_TILE_SIZE, source_y), Vector2(source_middle_width, source_height))
+		var selected_middle_column: int = _middle_column_for_segment(row_index, segment_index, previous_alternate, middle_column)
+		source_rect = Rect2(Vector2(float(selected_middle_column) * SOURCE_TILE_SIZE, source_y), Vector2(source_middle_width, source_height))
+		previous_alternate = selected_middle_column - 4 if selected_middle_column >= 4 else -1
 		draw_texture_rect_region(atlas, destination_rect, source_rect, Color.WHITE)
 		cursor += destination_middle_width
+		segment_index += 1
+
+func _middle_column_for_segment(row_index: int, segment_index: int, previous_alternate: int, fallback_column: int) -> int:
+	const PRIME: int = 2147483647
+	var mixed_seed: int = surface_seed % PRIME
+	if mixed_seed < 0:
+		mixed_seed += PRIME
+	mixed_seed = (mixed_seed * 48271 + (surface_index + 1) * 69621 + 1) % PRIME
+	mixed_seed = (mixed_seed * 48271 + (row_index + 1) * 7919 + (segment_index + 1) * 104729) % PRIME
+	var bucket: int = mixed_seed % 16
+	if bucket < 10:
+		return fallback_column
+	var alternate_index: int = int((bucket - 10) / 2)
+	if alternate_index == previous_alternate:
+		alternate_index = (alternate_index + 1) % 3
+	return 4 + alternate_index
+
+

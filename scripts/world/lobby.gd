@@ -1,8 +1,10 @@
 extends Node2D
 
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
+const LobbyVisual = preload("res://scripts/world/lobby_visual.gd")
+const LOBBY_PLAYER_GRADE_SHADER: Shader = preload("res://scripts/world/lobby_player_grade.gdshader")
 const DESIGN_SIZE: Vector2 = Vector2(1152.0, 648.0)
-const ELEVATOR_INTERIOR: Rect2 = Rect2(912.0, 448.0, 128.0, 112.0)
+const ELEVATOR_INTERIOR: Rect2 = LobbyVisual.ELEVATOR_OPENING_RECT
 const RUN_ROOT_PATH: String = "res://run_root.tscn"
 
 @onready var _player: CharacterBody2D = get_node("Player") as CharacterBody2D
@@ -21,6 +23,11 @@ var _ball_container_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_INHERIT
 	RoomTransition.clear_pending_snapshot()
+	var player_sprite: AnimatedSprite2D = get_node_or_null("Player/PlayerVisual/AnimatedSprite2D") as AnimatedSprite2D
+	if player_sprite != null:
+		var body_material: ShaderMaterial = player_sprite.material as ShaderMaterial
+		if body_material != null:
+			body_material.shader = LOBBY_PLAYER_GRADE_SHADER
 	_fade_rect.color = Color(0.0431373, 0.0627451, 0.0901961, 0.0)
 	_set_status("", false)
 	var viewport: Viewport = get_viewport()
@@ -176,3 +183,6 @@ func _recover_failed_elevator_load() -> void:
 func _set_status(message: String, visible_state: bool) -> void:
 	_status.call("set_text", message)
 	_status.visible = visible_state
+
+func is_pause_menu_available() -> bool:
+	return not _travel_in_progress and _player != null and not bool(_player.get("is_dead"))

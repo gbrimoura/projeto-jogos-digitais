@@ -16,6 +16,13 @@ var spawn_offset: float = 48.0
 @export_range(0, 6, 1)
 var max_bounces: int = 3
 
+## Per-shot item modifiers, derived by BallLauncher from RunBuild.
+var return_speed_multiplier: float = 1.0
+var environmental_bounce_speed_bonus_per_bounce: float = 0.0
+var max_environmental_bounce_speed_multiplier: float = 1.0
+var parry_speed_bonus_per_success: float = 0.0
+var max_parry_speed_multiplier: float = 1.0
+
 @export_range(1, 100, 1)
 var damage: int = 1
 

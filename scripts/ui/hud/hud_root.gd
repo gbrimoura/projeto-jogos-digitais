@@ -74,6 +74,7 @@ const STATUS_BUILD_GAP: float = 2.0
 
 @onready var _player_panel: Control = $Content/PlayerHealth
 @onready var _dash_panel: Control = $Content/Dash
+@onready var _currency_panel: Control = $Content/Currency
 @onready var _target_panel: Control = $Content/Target
 @onready var _room_panel: Control = $Content/RoomProgress
 @onready var _gauge_panel: Control = $Content/BallGauge
@@ -117,6 +118,9 @@ func set_available_stage_size(value: Vector2) -> void:
 func set_health(current: int, maximum: int) -> void:
 	_player_panel.call("set_health", current, maximum)
 
+func set_currency(value: int) -> void:
+	_currency_panel.call("set_currency", value)
+
 func set_dash(state: StringName, remaining: float, duration: float) -> void:
 	_dash_panel.call("set_dash", state, remaining, duration)
 
@@ -152,7 +156,7 @@ func _apply_status_visibility() -> void:
 	_build_text.visible = show_debug_details and not String(_build_text.get("text")).is_empty()
 
 func _apply_layout() -> void:
-	if _player_panel == null or _dash_panel == null or _target_panel == null \
+	if _player_panel == null or _dash_panel == null or _currency_panel == null or _target_panel == null \
 		or _room_panel == null or _gauge_panel == null or _status_text == null or _build_text == null:
 		return
 	var pixel_scale: float = float(_effective_module_scale())
@@ -167,6 +171,7 @@ func _apply_layout() -> void:
 		roundf(dash_panel_position.x),
 		roundf(player_panel_position.y + player_size.y * pixel_scale + dash_gap)
 	)
+	_currency_panel.position = Vector2(8.0, roundf(_dash_panel.position.y + 40.0 * pixel_scale + 4.0))
 	_target_panel.position = Vector2(
 		roundf((size.x - target_size.x * pixel_scale) * 0.5 \
 			+ target_panel_position.x - (REFERENCE_WIDTH - target_size.x) * 0.5),
@@ -185,6 +190,7 @@ func _apply_layout() -> void:
 	)
 	_player_panel.scale = Vector2.ONE * pixel_scale
 	_dash_panel.scale = Vector2.ONE * pixel_scale
+	_currency_panel.scale = Vector2.ONE * pixel_scale
 	_target_panel.scale = Vector2.ONE * pixel_scale
 	_room_panel.scale = Vector2.ONE * pixel_scale
 	_gauge_panel.scale = Vector2.ONE * pixel_scale
