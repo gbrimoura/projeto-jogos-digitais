@@ -1,0 +1,103 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/lobby.gd" id="1_lobby"]
+[ext_resource type="Script" path="res://scripts/world/lobby_visual.gd" id="2_visual"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="4_bitmap_text"]
+
+[sub_resource type="RectangleShape2D" id="Rect_floor"]
+size = Vector2(1152, 88)
+
+[sub_resource type="RectangleShape2D" id="Rect_left_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="Rect_right_wall"]
+size = Vector2(32, 648)
+
+[sub_resource type="RectangleShape2D" id="Rect_ceiling"]
+size = Vector2(1152, 32)
+
+[node name="Lobby" type="Node2D"]
+script = ExtResource("1_lobby")
+
+[node name="LobbyCamera" type="Camera2D" parent="."]
+position = Vector2(576, 324)
+enabled = true
+position_smoothing_enabled = false
+limit_left = 0
+limit_top = 0
+limit_right = 1152
+limit_bottom = 648
+
+[node name="EnvironmentVisual" type="Node2D" parent="."]
+z_index = -10
+script = ExtResource("2_visual")
+
+[node name="ElevatorSign" type="Control" parent="EnvironmentVisual"]
+position = Vector2(896, 388)
+size = Vector2(160, 30)
+mouse_filter = 2
+script = ExtResource("4_bitmap_text")
+text = "ELEVADOR / ANDAR 01"
+font_color = Color(0.823529, 0.654902, 0.360784, 1)
+max_lines = 2
+center_text = true
+
+[node name="ElevatorDoorForeground" type="Node2D" parent="."]
+z_index = 5
+script = ExtResource("2_visual")
+visual_layer = 1
+
+[node name="BallContainer" type="Node2D" parent="."]
+z_index = 1
+
+[node name="World" type="StaticBody2D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Floor" type="CollisionShape2D" parent="World"]
+position = Vector2(576, 604)
+shape = SubResource("Rect_floor")
+
+[node name="LeftBoundary" type="CollisionShape2D" parent="World"]
+position = Vector2(16, 324)
+shape = SubResource("Rect_left_wall")
+
+[node name="RightBoundary" type="CollisionShape2D" parent="World"]
+position = Vector2(1136, 324)
+shape = SubResource("Rect_right_wall")
+
+[node name="Ceiling" type="CollisionShape2D" parent="World"]
+position = Vector2(576, -16)
+shape = SubResource("Rect_ceiling")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(240, 560)
+
+[node name="LobbyUI" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="ElevatorStatus" type="Control" parent="LobbyUI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -360.0
+offset_top = 18.0
+offset_right = 360.0
+offset_bottom = 48.0
+mouse_filter = 2
+visible = false
+script = ExtResource("4_bitmap_text")
+text = ""
+font_color = Color(0.909804, 0.419608, 0.32549, 1)
+max_lines = 2
+center_text = true
+
+[node name="Fade" type="ColorRect" parent="LobbyUI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.0431373, 0.0627451, 0.0901961, 0)

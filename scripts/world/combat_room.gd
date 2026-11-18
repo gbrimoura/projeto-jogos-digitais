@@ -5,6 +5,7 @@ extends Node
 ## que a sala possa ser reutilizada com outros inimigos e HUDs.
 
 signal room_cleared
+signal enemy_defeated
 
 @export var enemy_group: StringName = &"combat_enemy"
 @export var counter_label_path: NodePath = NodePath("")
@@ -47,8 +48,11 @@ func _ready() -> void:
 		_clear_room()
 
 func _register_enemies() -> void:
+	var room := get_parent()
+	if room == null:
+		return
 	for enemy in get_tree().get_nodes_in_group(enemy_group):
-		if not is_instance_valid(enemy):
+		if not is_instance_valid(enemy) or not room.is_ancestor_of(enemy):
 			continue
 		if not enemy.has_signal("defeated"):
 			push_warning(
@@ -65,6 +69,7 @@ func _on_enemy_defeated(enemy: Node) -> void:
 		return
 
 	_remaining_enemies.erase(enemy)
+	enemy_defeated.emit()
 	_update_hud()
 	if _remaining_enemies.is_empty():
 		_clear_room()

@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-17",
+  "risk": "medium; cross-module gameplay behavior and one in-memory room-transition snapshot field",
+  "agy": {
+    "version": "1.5.10",
+    "available_models": ["gemini-4-hydrogen-high", "gemini-3.8-flash-high", "claude-opus-5-5-high"],
+    "help_confirms": ["--mode", "--sandbox"],
+    "review_status": "pending",
+    "reason": "CLI help only established terminal restrictions; write tools and access outside the inline diff could not be verified as blocked, so no workspace diff was sent."
+  },
+  "cursor_agent": {
+    "status": "pending",
+    "agent_status": "login successful, user details unavailable",
+    "model_listing": "exit 1: Authentication required",
+    "reason": "Exact Grok 4.7 XHigh Fast and Claude Opus 5.5 High via Cursor could not be confirmed; no fallback used."
+  },
+  "opencode": {
+    "version": "1.17.13",
+    "auth": "one OpenCode Go credential present",
+    "available_model": "opencode-go/muse-spark-1.3-contributor",
+    "requested_model": "opencode-go/muse-spark-1.3-contributor",
+    "requested_variant": "xhigh",
+    "effective_model_seen_in_stderr": "muse-spark-1.3-contributor",
+    "effective_variant_or_model_usage": "not exposed; unverified",
+    "plan_debug": "with exact OPENCODE_CONFIG_CONTENT deny-all config and --pure, all tool toggles were false",
+    "run_help": "confirmed arguments and --variant support"
+  }
+}

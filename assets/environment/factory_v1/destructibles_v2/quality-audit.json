@@ -1,0 +1,24 @@
+{
+  "status": "pass",
+  "file": "assets\\environment\\factory_v1\\destructibles_v2\\destructible-props.png",
+  "antialiasing": {
+    "semi_transparent_pixels": 0,
+    "total_pixels": 13824,
+    "clean": true
+  },
+  "orphan_pixels": {
+    "orphan_pixels": 0,
+    "clean": true
+  },
+  "palette": {
+    "unique_colors": 16,
+    "max_allowed": 20,
+    "clean": true
+  },
+  "grid_alignment": {
+    "width": 288,
+    "height": 48,
+    "grid_size": 48,
+    "aligned": true
+  }
+}

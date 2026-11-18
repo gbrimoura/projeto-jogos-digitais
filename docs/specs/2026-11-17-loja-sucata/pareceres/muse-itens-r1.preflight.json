@@ -1,0 +1,21 @@
+{
+  "opencode_version": "1.17.13",
+  "requested_model": "opencode-go/muse-spark-1.3-contributor",
+  "requested_variant": "xhigh",
+  "agent": "plan",
+  "pure": true,
+  "tools": {
+    "invalid": false,
+    "question": false,
+    "bash": false,
+    "read": false,
+    "glob": false,
+    "grep": false,
+    "task": false,
+    "webfetch": false,
+    "todowrite": false,
+    "skill": false,
+    "apply_patch": false
+  },
+  "debug_exit_code": 0
+}

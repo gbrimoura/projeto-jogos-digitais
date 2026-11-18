@@ -7,9 +7,10 @@
 script = ExtResource("1_definition")
 icon = ExtResource("2_icon")
 upgrade_id = &"dinamo_defesa"
+rarity = 1
 title = "Dínamo de Defesa"
-description = "Rebater reduz a recarga do dash."
-effect_summary = "Recarga menor uma vez por rebatida"
-effect_topics = PackedStringArray("Recarga do dash: -0,05s", "Uma vez por rebatida")
+description = "Aparada aceita reduz a recarga do dash."
+effect_summary = "Reduz a recarga uma vez por rebatida bem-sucedida"
+effect_topics = PackedStringArray("Dash: -0,05s", "Uma vez por rebatida")
 rank_cap = 3
 dash_cooldown_refund_per_rank = 0.05

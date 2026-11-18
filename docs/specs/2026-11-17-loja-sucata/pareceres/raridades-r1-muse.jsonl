@@ -1,0 +1,11 @@
+STATUS: done
+SUMMARY: Static review of rarity shop packet found 4 actionable defects in offer ordinal, shop insertion, empty-shop handling, and stale docs.
+FINDINGS:
+1. scripts/world/run_controller.gd::_ensure_shop_visit — offer_ordinal uses `1+(floor-1)*(common+2)+stage` instead of `(floor-1)*(common+3)+stage`; e.g. floor1 boss stage13=14 collides floor2 stage1=14, breaking deterministic uniqueness.
+2. scripts/world/run_controller.gd::_insert_shop_descriptors — hardcodes `shop_after_combat_rooms.size()!=2` to fail floor plan despite configurable export; any Inspector size change bricks runs with technical error.
+3. scripts/world/run_controller.gd::_ensure_shop_visit + scripts/world/main.gd::request_shop_offer — when upgrades exhausted and item_offer empty, rows empty causes silent `return false`; vendor E does nothing with no sold-out feedback.
+4. docs/specs/2026-11-17-loja-sucata/implementacao.md — first behavior paragraph still says single shop after five combats, contradicting implemented two shops after 3/7.
+TESTS: none (do not run tests)
+RISKS: Vendor fixed pos 576,560 clipping; RarityChip/Label layout overlap vs base card; provisional weights/prices unbalanced; vertical offset flip 248<->904 and family compatibility unproven without runtime.
+NEXT_STEP: Fix ordinal stride, allow/validate N shops, add sold-out UX, update doc, then runtime validation.
+

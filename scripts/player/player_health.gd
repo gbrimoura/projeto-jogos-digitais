@@ -11,8 +11,12 @@ signal died
 var current_health: int
 var _base_maximum_health: int = 5
 var _invulnerability_remaining: float = 0.0
+var _aegis_rank_applied: int = 0
+var _aegis_blocks_remaining: int = 0
 
 const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+const ShopItemCatalogScript = preload("res://scripts/progression/shop_item_catalog.gd")
+
 var is_dead: bool:
 	get:
 		return current_health <= 0
@@ -39,7 +43,22 @@ func apply_run_build(build: RunBuild, acquired_upgrade_id: StringName = &"", pre
 			build.count_for(acquired_upgrade_id) if build != null else previous_rank
 		)
 		current_health = mini(current_health + recovered, maximum_health)
+	var aegis_rank := build.item_level_for(&"fusivel_aegis") if build != null else 0
+	if aegis_rank > _aegis_rank_applied:
+		_aegis_blocks_remaining = mini(_aegis_blocks_remaining + aegis_rank - _aegis_rank_applied, aegis_rank)
+	elif aegis_rank < _aegis_rank_applied:
+		_aegis_blocks_remaining = 0
+	_aegis_rank_applied = aegis_rank
 	health_changed.emit(current_health, maximum_health)
+
+func heal(amount: int) -> int:
+	if amount <= 0 or is_dead:
+		return 0
+	var previous_health := current_health
+	current_health = mini(current_health + amount, maximum_health)
+	if current_health != previous_health:
+		health_changed.emit(current_health, maximum_health)
+	return current_health - previous_health
 
 func restore_health_for_room_transition(restored_current: int, restored_maximum: int) -> bool:
 	if is_dead:
@@ -47,10 +66,16 @@ func restore_health_for_room_transition(restored_current: int, restored_maximum:
 	maximum_health = clampi(restored_maximum, 1, 100)
 	current_health = clampi(restored_current, 1, maximum_health)
 	_invulnerability_remaining = 0.0
+	_aegis_blocks_remaining = _aegis_rank_applied
 	health_changed.emit(current_health, maximum_health)
 	return true
+
 func take_damage(amount: int, _source: Node = null) -> bool:
 	if amount <= 0 or is_dead or is_invulnerable:
+		return false
+	if _aegis_blocks_remaining > 0:
+		_aegis_blocks_remaining -= 1
+		_invulnerability_remaining = maxf(invulnerability_duration, 0.0)
 		return false
 	current_health = maxi(current_health - amount, 0)
 	_invulnerability_remaining = maxf(invulnerability_duration, 0.0)
@@ -62,4 +87,3 @@ func take_damage(amount: int, _source: Node = null) -> bool:
 
 func _process(delta: float) -> void:
 	_invulnerability_remaining = maxf(_invulnerability_remaining - delta, 0.0)
-

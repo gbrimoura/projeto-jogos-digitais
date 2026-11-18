@@ -6,6 +6,7 @@ extends Resource
 
 @export var upgrade_id: StringName
 @export var reward_kind: StringName = &"core"
+@export_enum("Comum", "Incomum", "Raro", "Épico", "Lendário") var rarity: int = 0
 @export var title: String = ""
 @export var icon: Texture2D
 @export_multiline var description: String = ""
@@ -31,5 +32,6 @@ extends Resource
 @export_range(0.0, 1.0, 0.01) var dash_cooldown_refund_per_rank: float = 0.0
 @export_range(0, 1, 1) var maximum_health_per_rank: int = 0
 @export_range(0.0, 1.0, 0.001) var projectile_speed_multiplier_per_rank: float = 0.0
+@export_range(0.0, 1.0, 0.001) var dash_shot_speed_multiplier_per_rank: float = 0.0
 @export_range(0.0, 1.0, 0.001) var dash_cooldown_reduction_per_rank: float = 0.0
 @export_range(0, 1, 1) var health_recovered_per_rank: int = 0

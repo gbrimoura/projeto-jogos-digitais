@@ -17,13 +17,13 @@ const PATROL_MASK: int = PLAYER_MASK | WORLD_MASK
 const MAX_QUERY_RESULTS: int = 32
 const CLAIMED_META := &"_target_claimed"
 const PATROL_SPEED: float = 48.0
-const PURSUIT_SPEED: float = 120.0
+const PURSUIT_SPEED: float = 156.0
 const PREFERRED_MELEE_DISTANCE: float = 96.0
 const PURSUIT_STOP_PADDING: float = 8.0
 const PATROL_PAUSE: float = 0.25
 const MIN_PATROL_DISTANCE: float = 8.0
 const MOVEMENT_EPSILON: float = 0.01
-const JUMP_COOLDOWN: float = 2.5
+const JUMP_COOLDOWN: float = 1.75
 const JUMP_PREPARE_TIME: float = 0.16
 const JUMP_IMPULSE_TIME: float = 0.06
 const JUMP_LANDING_TIME: float = 0.18
@@ -32,7 +32,9 @@ const JUMP_GRAVITY: float = 1400.0
 const JUMP_MAX_SEGMENT: float = 8.0
 const JUMP_SAFE_MARGIN: float = 0.08
 const PLAYER_ESCAPE_SPEED: float = 48.0
-const PURSUIT_REPLAN_INTERVAL: float = 0.45
+const PURSUIT_REPLAN_INTERVAL: float = 0.30
+const MELEE_LEAD_TIME: float = 0.22
+const MELEE_LEAD_LIMIT: float = 48.0
 
 const PURSUIT_DIRECTION_DEADZONE: float = 5.0
 const PURSUIT_EDGE_CLEARANCE: float = 96.0
@@ -458,13 +460,17 @@ func _pursue_on_current_support(
 	var clear_shot := _has_clear_line_of_sight(player, attack_center)
 	var center_distance := attack_center.distance_to(player_center)
 	var needs_horizontal_approach := center_distance > preferred_distance \
+		or _player_is_retreating_out_of_reach(player, attack_center) \
 		or (not clear_shot and absf(delta_x) > PURSUIT_DIRECTION_DEADZONE)
 	if needs_horizontal_approach:
 		var direction := signf(delta_x)
 		if absf(delta_x) <= PURSUIT_DIRECTION_DEADZONE or is_zero_approx(direction):
 			direction = float(_patrol_direction)
 		var stop_reach := maxf(preferred_horizontal_reach - PURSUIT_STOP_PADDING, 0.0) if clear_shot else 0.0
-		desired_x = player_center.x - direction * stop_reach - attack_center_offset.x
+		var lead := 0.0
+		if player is CharacterBody2D:
+			lead = clampf((player as CharacterBody2D).velocity.x * MELEE_LEAD_TIME, -MELEE_LEAD_LIMIT, MELEE_LEAD_LIMIT)
+		desired_x = player_center.x + lead - direction * stop_reach - attack_center_offset.x
 	var moved_x := _move_toward_pursuit_x(desired_x, delta, _bound_support)
 	if absf(moved_x) >= 0.1:
 		_pursuit_stuck_remaining = 0.0
@@ -1086,9 +1092,21 @@ func _find_melee_engagement_player(
 	if player == null or allow_stuck_fallback:
 		return player
 	var preferred_distance := minf(PREFERRED_MELEE_DISTANCE, _effective_attack_radius())
-	if area_center.distance_to(_get_player_collider_center(player)) <= preferred_distance:
+	if area_center.distance_to(_get_player_collider_center(player)) <= preferred_distance \
+		and not _player_is_retreating_out_of_reach(player, area_center):
 		return player
 	return null
+
+func _player_is_retreating_out_of_reach(player: PhysicsBody2D, attack_center: Vector2) -> bool:
+	var moving_player := player as CharacterBody2D
+	if moving_player == null:
+		return false
+	var offset := _get_player_collider_center(player) - attack_center
+	var lead := clampf(moving_player.velocity.x * MELEE_LEAD_TIME, -MELEE_LEAD_LIMIT, MELEE_LEAD_LIMIT)
+	if offset.x * lead <= 0.0:
+		return false
+	var predicted := offset + Vector2(lead, 0.0)
+	return predicted.length() > minf(_effective_attack_radius(), PREFERRED_MELEE_DISTANCE + 12.0)
 
 func _find_player_in_attack_area(area_center: Vector2) -> PhysicsBody2D:
 	if _area_query == null or _area_shape == null:

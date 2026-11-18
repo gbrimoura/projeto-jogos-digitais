@@ -1,14 +1,32 @@
 extends Node2D
 
+signal temporary_scrap_changed(total: int, delta: int)
+
 const RunBuild = preload("res://scripts/progression/run_build.gd")
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const RoomRunLayout = preload("res://scripts/world/room_run_layout.gd")
+const UpgradeCatalogScript = preload("res://scripts/progression/upgrade_catalog.gd")
+const ShopItemCatalogScript = preload("res://scripts/progression/shop_item_catalog.gd")
 const DEFAULT_ENEMY_LEVEL_CONFIG: EnemyLevelConfigResource = preload("res://resources/progression/enemy_levels.tres")
 const HudBitmapTextScript = preload("res://scripts/ui/hud/bitmap_text.gd")
+const SHOP_REFRESH_LIMIT: int = 3
+const SHOP_REFRESH_PRICE_STEP: int = 2
 const LOBBY_SCENE_PATH: String = "res://scenes/lobby.tscn"
 
 @export_range(1, 20) var floors_per_run: int = 8
 @export_range(1, 10) var common_rooms_per_floor: int = 10
+## Frequência de loja provisória e configurável; o GDD deixa o ritmo final pendente.
+@export var shop_after_combat_rooms: Array[int] = [3, 7]
+## Preço-base de protótipo, ajustável para testes; não é regra final da economia.
+@export_range(0, 999, 1) var shop_base_price: int = 6
+@export var shop_rank_surcharge_enabled: bool = true
+## Sobretaxa provisória por nível já adquirido; o GDD deixa custos pendentes.
+@export_range(0, 100, 1) var shop_rank_surcharge_per_rank: int = 2
+## Sobretaxas provisorias por raridade; ajuste no Inspector enquanto a economia esta pendente.
+@export_range(0, 999, 1) var shop_uncommon_surcharge: int = 2
+@export_range(0, 999, 1) var shop_rare_surcharge: int = 4
+@export_range(0, 999, 1) var shop_epic_surcharge: int = 7
+@export_range(0, 999, 1) var shop_legendary_surcharge: int = 10
 @export_range(0.0, 10.0, 0.1) var transition_delay: float = 0.0
 @export var common_room_scene: PackedScene
 @export var boss_room_scene: PackedScene
@@ -21,7 +39,9 @@ const LOBBY_SCENE_PATH: String = "res://scenes/lobby.tscn"
 @onready var status_label: Label = $HUD/StatusLabel
 
 var current_floor: int = 1
+var temporary_scrap: int = 0
 var current_room: int = 1
+var current_stage_index: int = 1
 var current_room_instance: Node
 var transition_pending: bool = false
 var _run_ended: bool = false
@@ -46,6 +66,12 @@ var _transition_fade_rect: ColorRect
 var _resolved_run_seed: int = 0
 var _floor_room_descriptors: Array[Dictionary] = []
 var _last_room_family: StringName = &""
+var _shop_visit_room_id: int = 0
+var _shop_refresh_count: int = 0
+var _shop_offer_rows: Array[Dictionary] = []
+var _owned_shop_pause: bool = false
+var _shop_pause_room_id: int = 0
+var _kit_healed_room_id: int = 0
 var _room_signal_connections: Dictionary = {}
 var _pending_stage_proposal: Dictionary = {}
 var _pending_stage_source: Node
@@ -62,6 +88,8 @@ var _initial_floor_plan_error: String = ""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("run_controller")
+	temporary_scrap = 0
 	RoomTransition.clear_pending_snapshot()
 	_resolved_run_seed = RoomRunLayout.resolve_seed(run_seed, randomize_run_seed)
 	if common_room_scene == null:
@@ -75,8 +103,30 @@ func _ready() -> void:
 		return
 	_load_current_encounter()
 
+## Skip the magnetic-bag bonus for flat item rewards such as Catraca Sucata.
+func register_temporary_scrap(amount: int, apply_magnetic_bonus: bool = true) -> bool:
+	if amount <= 0 or _run_ended or _returning_to_lobby:
+		return false
+	var scrap_delta: int = amount + (_run_build.item_level_for(&"bolsa_magnetica") if apply_magnetic_bonus else 0)
+	temporary_scrap += scrap_delta
+	temporary_scrap_changed.emit(temporary_scrap, scrap_delta)
+	return true
+
 func get_resolved_run_seed() -> int:
 	return _resolved_run_seed
+
+func get_pause_minimap_data() -> Dictionary:
+	if _floor_room_descriptors.is_empty():
+		return {}
+	return {
+		"floor": current_floor,
+		"floor_count": floors_per_run,
+		"current_room": current_room,
+		"common_rooms": common_rooms_per_floor,
+		"current_stage": current_stage_index,
+		"current_room_kind": _current_room_kind(),
+		"rooms": _floor_room_descriptors.duplicate(true),
+	}
 
 func _prepare_current_floor_plan() -> bool:
 	var result: Dictionary = RoomRunLayout.build_floor(
@@ -89,44 +139,180 @@ func _prepare_current_floor_plan() -> bool:
 		_initial_floor_plan_error = "ERRO: não foi possível planejar a sequência de salas: %s" % String(result.get("error", "topologia inválida"))
 		return false
 	_floor_room_descriptors.clear()
-	for descriptor: Dictionary in result.get("rooms", []):
-		_floor_room_descriptors.append(descriptor.duplicate(true))
+	var combat_and_boss_descriptors: Array = result.get("rooms", [])
+	for index in range(combat_and_boss_descriptors.size()):
+		var descriptor: Dictionary = combat_and_boss_descriptors[index].duplicate(true)
+		descriptor["room_kind"] = &"boss" if index >= common_rooms_per_floor else &"combat"
+		_floor_room_descriptors.append(descriptor)
+	if not _insert_shop_descriptors(_floor_room_descriptors, current_floor):
+		_initial_floor_plan_error = "ERRO: não foi possível inserir a loja na rota gerada."
+		return false
 	_last_room_family = StringName(result.get("last_family", _last_room_family))
 	_initial_floor_plan_error = ""
 	return true
 
-func _stage_proposal(floor_index: int, room_index: int, descriptors: Array[Dictionary], last_family: StringName) -> Dictionary:
-	var descriptor_index := room_index - 1
+func _insert_shop_descriptors(descriptors: Array[Dictionary], floor_index: int) -> bool:
+	if descriptors.size() != common_rooms_per_floor + 1:
+		return false
+	var positions: Array[int] = shop_after_combat_rooms.duplicate()
+	positions.sort()
+	var previous_position: int = 0
+	for after_combat in positions:
+		if after_combat < 1 or after_combat > common_rooms_per_floor or after_combat == previous_position:
+			return false
+		previous_position = after_combat
+	for after_combat in positions:
+		if not _insert_shop_descriptor(descriptors, floor_index, after_combat):
+			return false
+	return true
+
+func _insert_shop_descriptor(descriptors: Array[Dictionary], floor_index: int, after_combat: int) -> bool:
+	if after_combat < 1:
+		return false
+	var combat_count := 0
+	var insertion_index := -1
+	for index in range(descriptors.size()):
+		var kind := StringName(descriptors[index].get("room_kind", &"combat"))
+		if kind == &"shop":
+			continue
+		if kind == &"boss":
+			break
+		combat_count += 1
+		if combat_count == after_combat:
+			insertion_index = index + 1
+			break
+	if insertion_index <= 0 or insertion_index >= descriptors.size():
+		return false
+
+	var previous_descriptor: Dictionary = descriptors[insertion_index - 1]
+	var following_descriptor: Dictionary = descriptors[insertion_index]
+	var travel_direction: Vector2i = previous_descriptor.get("exit_dir", Vector2i.ZERO)
+	var directions: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+	if (
+		not directions.has(travel_direction)
+		or following_descriptor.get("entry_dir", Vector2i.ZERO) != Vector2i(-travel_direction.x, -travel_direction.y)
+	):
+		return false
+	var previous_coordinate: Vector2i = previous_descriptor.get("coord", Vector2i.ZERO)
+	var following_coordinate: Vector2i = following_descriptor.get("coord", Vector2i.ZERO)
+	if following_coordinate != previous_coordinate + travel_direction:
+		return false
+	var occupied_coordinates: Array[Vector2i] = [following_coordinate]
+	for descriptor_index in range(descriptors.size()):
+		var coordinate: Vector2i = descriptors[descriptor_index].get("coord", Vector2i.ZERO)
+		if descriptor_index >= insertion_index:
+			coordinate += travel_direction
+		if occupied_coordinates.has(coordinate):
+			return false
+		occupied_coordinates.append(coordinate)
+	var entry_offset: float = float(previous_descriptor.get("exit_offset", -1.0))
+	if absf(float(following_descriptor.get("entry_offset", -2.0)) - entry_offset) > 0.01:
+		return false
+	var shop_exit_offset: float = entry_offset
+	if travel_direction.x == 0:
+		if entry_offset == 248.0:
+			shop_exit_offset = 904.0
+		elif entry_offset == 904.0:
+			shop_exit_offset = 248.0
+		else:
+			return false
+	elif absf(entry_offset - 496.0) > 0.01:
+		return false
+
+	var shop_seed: int = int(hash([_resolved_run_seed, floor_index, after_combat, 0x53484F50])) & 0x7FFFFFFF
+	if shop_seed == 0:
+		shop_seed = 1
+	var shop_descriptor: Dictionary = previous_descriptor.duplicate(true)
+	shop_descriptor["room_seed"] = shop_seed
+	shop_descriptor["enemy_level"] = 1
+	shop_descriptor["room_kind"] = &"shop"
+	shop_descriptor["shop_after_combat"] = after_combat
+	shop_descriptor["entry_dir"] = Vector2i(-travel_direction.x, -travel_direction.y)
+	shop_descriptor["exit_dir"] = travel_direction
+	shop_descriptor["entry_offset"] = entry_offset
+	shop_descriptor["exit_offset"] = shop_exit_offset
+	shop_descriptor["coord"] = following_coordinate
+	shop_descriptor["family"] = _shop_family_for(
+		shop_descriptor,
+		shop_seed,
+		StringName(previous_descriptor.get("family", &"")),
+		StringName(following_descriptor.get("family", &""))
+	)
+	following_descriptor["entry_offset"] = shop_exit_offset
+	descriptors[insertion_index] = following_descriptor
+	for downstream_index in range(insertion_index, descriptors.size()):
+		var downstream: Dictionary = descriptors[downstream_index]
+		var coordinate: Vector2i = downstream.get("coord", Vector2i.ZERO)
+		downstream["coord"] = coordinate + travel_direction
+		descriptors[downstream_index] = downstream
+	descriptors.insert(insertion_index, shop_descriptor)
+	return true
+func _shop_family_for(
+	descriptor: Dictionary,
+	seed_value: int,
+	previous_family: StringName,
+	following_family: StringName
+) -> StringName:
+	var entry: Vector2i = descriptor.get("entry_dir", Vector2i.ZERO)
+	var exit_direction: Vector2i = descriptor.get("exit_dir", Vector2i.ZERO)
+	var candidates: Array[StringName] = [&"catwalk", &"ridge", &"valley"]
+	if entry == Vector2i.UP or exit_direction == Vector2i.UP:
+		candidates = [&"roof_four", &"roof_five"]
+	var varied_candidates: Array[StringName] = []
+	for family in candidates:
+		if family != previous_family and family != following_family:
+			varied_candidates.append(family)
+	if not varied_candidates.is_empty():
+		candidates = varied_candidates
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	return candidates[rng.randi_range(0, candidates.size() - 1)]
+func _combat_room_index_for_stage(descriptors: Array[Dictionary], stage_index: int) -> int:
+	var combat_index: int = 0
+	for descriptor_index in range(mini(stage_index, descriptors.size())):
+		if StringName(descriptors[descriptor_index].get("room_kind", &"combat")) != &"shop":
+			combat_index += 1
+	return maxi(combat_index, 1)
+
+func _stage_proposal(floor_index: int, stage_index: int, descriptors: Array[Dictionary], last_family: StringName) -> Dictionary:
+	var descriptor_index := stage_index - 1
 	if descriptor_index < 0 or descriptor_index >= descriptors.size():
 		return {
 			"valid": false,
-			"error": "ERRO: descritor da sala %d do andar %d ausente." % [room_index, floor_index],
+			"error": "ERRO: descritor da etapa %d do andar %d ausente." % [stage_index, floor_index],
 			"floor": floor_index,
-			"room": room_index,
+			"room": _combat_room_index_for_stage(descriptors, stage_index),
+			"stage": stage_index,
 			"descriptors": descriptors.duplicate(true),
 			"last_family": last_family,
 		}
 	var destination_descriptor: Dictionary = descriptors[descriptor_index].duplicate(true)
+	var next_index := descriptor_index + 1
+	destination_descriptor["next_stage_is_shop"] = (
+		next_index < descriptors.size() and descriptors[next_index].get("room_kind") == &"shop"
+	)
+	var combat_room_index: int = _combat_room_index_for_stage(descriptors, stage_index)
 	return {
 		"valid": true,
 		"floor": floor_index,
-		"room": room_index,
+		"room": combat_room_index,
+		"stage": stage_index,
 		"descriptors": descriptors.duplicate(true),
 		"last_family": last_family,
 		"descriptor": destination_descriptor,
 	}
 
 func _current_stage_proposal() -> Dictionary:
-	return _stage_proposal(current_floor, current_room, _floor_room_descriptors, _last_room_family)
+	return _stage_proposal(current_floor, current_stage_index, _floor_room_descriptors, _last_room_family)
 
 func _next_stage_proposal() -> Dictionary:
 	var proposed_floor: int = current_floor
-	var proposed_room: int = current_room
+	var proposed_stage: int = current_stage_index
 	var proposed_descriptors: Array[Dictionary] = _floor_room_descriptors.duplicate(true)
 	var proposed_last_family: StringName = _last_room_family
 	if _is_boss_room():
 		proposed_floor += 1
-		proposed_room = 1
+		proposed_stage = 1
 		var result: Dictionary = RoomRunLayout.build_floor(
 			_resolved_run_seed,
 			proposed_floor,
@@ -138,21 +324,36 @@ func _next_stage_proposal() -> Dictionary:
 				"valid": false,
 				"error": "ERRO: não foi possível planejar o andar %d: %s" % [proposed_floor, String(result.get("error", "topologia inválida"))],
 				"floor": proposed_floor,
-				"room": proposed_room,
+				"room": 1,
+				"stage": proposed_stage,
 				"descriptors": [],
 				"last_family": proposed_last_family,
 			}
 		proposed_descriptors.clear()
-		for descriptor: Dictionary in result.get("rooms", []):
-			proposed_descriptors.append(descriptor.duplicate(true))
+		var combat_and_boss_descriptors: Array = result.get("rooms", [])
+		for index in range(combat_and_boss_descriptors.size()):
+			var descriptor: Dictionary = combat_and_boss_descriptors[index].duplicate(true)
+			descriptor["room_kind"] = &"boss" if index >= common_rooms_per_floor else &"combat"
+			proposed_descriptors.append(descriptor)
+		if not _insert_shop_descriptors(proposed_descriptors, proposed_floor):
+			return {
+				"valid": false,
+				"error": "ERRO: não foi possível inserir a loja na rota do próximo andar.",
+				"floor": proposed_floor,
+				"room": 1,
+				"stage": proposed_stage,
+				"descriptors": [],
+				"last_family": proposed_last_family,
+			}
 		proposed_last_family = StringName(result.get("last_family", proposed_last_family))
 	else:
-		proposed_room += 1
-	return _stage_proposal(proposed_floor, proposed_room, proposed_descriptors, proposed_last_family)
+		proposed_stage += 1
+	return _stage_proposal(proposed_floor, proposed_stage, proposed_descriptors, proposed_last_family)
 
 func _commit_stage_proposal(proposal: Dictionary) -> void:
 	current_floor = int(proposal.get("floor", current_floor))
 	current_room = int(proposal.get("room", current_room))
+	current_stage_index = int(proposal.get("stage", current_stage_index))
 	_floor_room_descriptors.clear()
 	for descriptor: Dictionary in proposal.get("descriptors", []):
 		_floor_room_descriptors.append(descriptor.duplicate(true))
@@ -161,6 +362,16 @@ func _commit_stage_proposal(proposal: Dictionary) -> void:
 func _is_boss_room() -> bool:
 	return current_room > common_rooms_per_floor
 
+func _current_room_kind() -> StringName:
+	var descriptor_index: int = current_stage_index - 1
+	if descriptor_index < 0 or descriptor_index >= _floor_room_descriptors.size():
+		return &"combat"
+	return StringName(_floor_room_descriptors[descriptor_index].get("room_kind", &"combat"))
+
+func _is_shop_room(room: Node) -> bool:
+	return is_instance_valid(room) and room == current_room_instance and room.is_inside_tree() \
+		and _current_room_kind() == &"shop"
+
 
 func _is_final_boss() -> bool:
 	return current_floor == floors_per_run and _is_boss_room()
@@ -168,6 +379,235 @@ func _is_final_boss() -> bool:
 func is_active_room_instance(room: Node) -> bool:
 	return not _run_ended and is_instance_valid(current_room_instance) and room == current_room_instance
 
+
+func is_shop_room_active(room: Node) -> bool:
+	return _is_shop_room(room) and not _run_ended and not _returning_to_lobby
+
+func is_shop_open_allowed(room: Node) -> bool:
+	return is_shop_room_active(room) and not transition_pending and not _restart_in_progress \
+		and not is_instance_valid(_technical_error_layer) and not is_instance_valid(_transition_fade_layer) \
+		and not is_instance_valid(_active_reward_screen) and not get_tree().paused
+
+func open_shop_for_room(room: Node) -> bool:
+	if not is_shop_open_allowed(room):
+		return false
+	_owned_shop_pause = true
+	_shop_pause_room_id = room.get_instance_id()
+	get_tree().paused = true
+	return true
+
+func close_shop_for_room(room: Node, force_resume: bool = false) -> void:
+	if not _owned_shop_pause:
+		return
+	if room != null and is_instance_valid(room) and room.get_instance_id() != _shop_pause_room_id:
+		return
+	var same_active_room: bool = is_instance_valid(room) and room == current_room_instance \
+		and _current_room_kind() == &"shop"
+	var should_resume: bool = force_resume or (same_active_room and not transition_pending and not _run_ended)
+	if should_resume and get_tree().paused:
+		get_tree().paused = false
+	_owned_shop_pause = false
+	_shop_pause_room_id = 0
+
+func _close_shop_offer_for_room(room: Node, force_resume: bool = false) -> void:
+	if room != null and is_instance_valid(room) and room.has_method("close_shop_offer"):
+		room.call("close_shop_offer")
+	close_shop_for_room(room, force_resume)
+
+func _ensure_shop_visit(room: Node) -> void:
+	if not _is_shop_room(room) or _shop_visit_room_id == room.get_instance_id():
+		return
+	_shop_refresh_count = 0
+	_shop_offer_rows = _generate_shop_stock(room)
+	_shop_visit_room_id = room.get_instance_id()
+
+func _generate_shop_stock(room: Node, refresh_number: int = 0, attempt: int = 0) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	var descriptor_index: int = current_stage_index - 1
+	if descriptor_index < 0 or descriptor_index >= _floor_room_descriptors.size():
+		return []
+	var shop_descriptor: Dictionary = _floor_room_descriptors[descriptor_index]
+	var shop_seed: int = int(shop_descriptor.get("room_seed", 0))
+	if shop_seed == 0:
+		return []
+	if refresh_number > 0:
+		shop_seed = (hash([shop_seed, refresh_number, attempt, 0x5245524F]) & 0x7FFFFFFF) + 1
+	var stages_per_floor: int = common_rooms_per_floor + shop_after_combat_rooms.size() + 1
+	var offer_ordinal: int = (current_floor - 1) * stages_per_floor + current_stage_index
+	var room_player: Player = _find_player(room)
+	if room_player == null or room_player.health == null or room_player.is_dead:
+		return []
+	var snapshot_variant: Variant = _run_build.to_snapshot_data()
+	if typeof(snapshot_variant) != TYPE_DICTIONARY:
+		return []
+	var snapshot_data: Dictionary = snapshot_variant
+	var ranks_variant: Variant = snapshot_data.get("counts_by_id", {})
+	var item_levels_variant: Variant = snapshot_data.get("item_levels_by_id", {})
+	if typeof(ranks_variant) != TYPE_DICTIONARY or typeof(item_levels_variant) != TYPE_DICTIONARY:
+		return []
+	var ranks_by_id: Dictionary = ranks_variant
+	var item_levels_by_id: Dictionary = item_levels_variant
+	var offers: Array[Dictionary] = UpgradeCatalogScript.build_offer(
+		ranks_by_id,
+		shop_seed,
+		offer_ordinal,
+		room_player.health.get_base_maximum_health()
+	)
+	var item_offer: Dictionary = ShopItemCatalogScript.build_offer(item_levels_by_id, shop_seed, current_floor)
+	if not item_offer.is_empty():
+		while offers.size() > 2:
+			offers.pop_back()
+	for row: Dictionary in offers:
+		var definition: UpgradeDefinitionResource = row.get("definition") as UpgradeDefinitionResource
+		if definition == null:
+			continue
+		var rank: int = int(row.get("rank_before", 0))
+		var price: int = maxi(shop_base_price, 0) + _shop_item_rarity_surcharge(definition.rarity)
+		if shop_rank_surcharge_enabled:
+			price += maxi(rank, 0) * maxi(shop_rank_surcharge_per_rank, 0)
+		rows.append({
+			"kind": &"upgrade",
+			"offer_id": definition.upgrade_id,
+			"upgrade_id": definition.upgrade_id,
+			"row": row.duplicate(true),
+			"price": price,
+			"purchased": false,
+		})
+	if not item_offer.is_empty():
+		var item_id: StringName = StringName(item_offer.get("item_id", &""))
+		var rarity: int = int(item_offer.get("rarity", -1))
+		var item_price: int = maxi(shop_base_price, 0) + _shop_item_rarity_surcharge(rarity)
+		rows.append({
+			"kind": &"item",
+			"offer_id": item_id,
+			"item_id": item_id,
+			"row": item_offer.duplicate(true),
+			"price": item_price,
+			"purchased": false,
+		})
+	return rows
+
+func _shop_refresh_price(refresh_count: int) -> int:
+	return (refresh_count + 1) * SHOP_REFRESH_PRICE_STEP if refresh_count < SHOP_REFRESH_LIMIT else -1
+
+func _shop_state(rows: Array[Dictionary], balance: int, refresh_count: int) -> Dictionary:
+	return {
+		"offers": rows.duplicate(true),
+		"scrap": balance,
+		"refresh_price": _shop_refresh_price(refresh_count),
+	}
+
+func get_shop_offer_state(room: Node) -> Dictionary:
+	if not is_shop_room_active(room):
+		return {}
+	_ensure_shop_visit(room)
+	return _shop_state(_shop_offer_rows, temporary_scrap, _shop_refresh_count)
+
+func _can_change_shop_stock(room: Node) -> bool:
+	return (
+		is_shop_room_active(room) and not transition_pending and not _restart_in_progress
+		and not is_instance_valid(_technical_error_layer) and not is_instance_valid(_transition_fade_layer)
+		and _shop_visit_room_id == room.get_instance_id() and _owned_shop_pause
+		and _shop_pause_room_id == room.get_instance_id() and get_tree().paused
+	)
+
+func _stock_signature(rows: Array[Dictionary]) -> Array[String]:
+	var keys: Array[String] = []
+	for offer: Dictionary in rows:
+		var row: Dictionary = offer["row"]
+		keys.append("%s:%s:%d" % [offer["kind"], offer["offer_id"], int(row.get("rank_before", 0))])
+	keys.sort()
+	return keys
+
+func refresh_shop_stock(room: Node, expected_price: int, present_stock: Callable) -> bool:
+	if not _can_change_shop_stock(room) or not present_stock.is_valid():
+		return false
+	var price := _shop_refresh_price(_shop_refresh_count)
+	if price < 0 or expected_price != price or temporary_scrap < price:
+		return false
+	var room_player := _find_player(room)
+	if room_player == null or room_player.health == null or room_player.is_dead:
+		return false
+	var current_signature := _stock_signature(_shop_offer_rows)
+	var next_count := _shop_refresh_count + 1
+	for attempt in 8:
+		var replacement := _generate_shop_stock(room, next_count, attempt)
+		if replacement.is_empty() or _stock_signature(replacement) == current_signature:
+			continue
+		var preview := _shop_state(replacement, temporary_scrap - price, next_count)
+		if not bool(present_stock.call(preview)):
+			return false
+		_shop_refresh_count = next_count
+		_shop_offer_rows = replacement
+		temporary_scrap -= price
+		temporary_scrap_changed.emit(temporary_scrap, -price)
+		return true
+	return false
+
+func _shop_item_rarity_surcharge(rarity: int) -> int:
+	match rarity:
+		ShopItemCatalogScript.Rarity.COMUM: return 0
+		ShopItemCatalogScript.Rarity.INCOMUM: return maxi(shop_uncommon_surcharge, 0)
+		ShopItemCatalogScript.Rarity.RARO: return maxi(shop_rare_surcharge, 0)
+		ShopItemCatalogScript.Rarity.EPICO: return maxi(shop_epic_surcharge, 0)
+		ShopItemCatalogScript.Rarity.LENDARIO: return maxi(shop_legendary_surcharge, 0)
+	return 0
+
+func purchase_shop_offer(room: Node, offer_index: int, offer_id: StringName, expected_price: int) -> bool:
+	if not _can_change_shop_stock(room):
+		return false
+	if offer_index < 0 or offer_index >= _shop_offer_rows.size():
+		return false
+	var offer: Dictionary = _shop_offer_rows[offer_index]
+	if (
+		StringName(offer.get("offer_id", &"")) != offer_id
+		or bool(offer.get("purchased", false)) or int(offer.get("price", -1)) != expected_price
+	):
+		return false
+	var room_player: Player = _find_player(room)
+	if room_player == null or room_player.health == null or room_player.is_dead:
+		return false
+	if expected_price < 0 or temporary_scrap < expected_price:
+		return false
+	var row_variant: Variant = offer.get("row", {})
+	if typeof(row_variant) != TYPE_DICTIONARY:
+		return false
+	var row: Dictionary = row_variant
+	var kind: StringName = StringName(offer.get("kind", &"upgrade"))
+	var acquired_upgrade_id: StringName = &""
+	var previous_upgrade_rank := 0
+	if kind == &"item":
+		var item_id: StringName = StringName(offer.get("item_id", &""))
+		var current_level := _run_build.item_level_for(item_id)
+		if (
+			item_id != offer_id or not ShopItemCatalogScript.is_known_item_id(item_id)
+			or current_level != int(row.get("rank_before", -1))
+			or current_level >= ShopItemCatalogScript.max_level_for(item_id)
+		):
+			return false
+		if not _run_build.add_item(item_id):
+			return false
+	else:
+		if kind != &"upgrade":
+			return false
+		var upgrade_id: StringName = StringName(offer.get("upgrade_id", &""))
+		var current_rank: int = _run_build.count_for(upgrade_id)
+		if (
+			upgrade_id != offer_id or current_rank != int(row.get("rank_before", -1))
+			or not UpgradeCatalogScript.can_acquire(upgrade_id, current_rank, room_player.health.get_base_maximum_health())
+			or _run_build.total_count() >= RunBuild.MAX_UPGRADES
+		):
+			return false
+		if not _run_build.add_upgrade(upgrade_id):
+			return false
+		acquired_upgrade_id = upgrade_id
+		previous_upgrade_rank = current_rank
+	room_player.apply_run_build(_run_build, acquired_upgrade_id, previous_upgrade_rank)
+	temporary_scrap -= expected_price
+	offer["purchased"] = true
+	_shop_offer_rows[offer_index] = offer
+	temporary_scrap_changed.emit(temporary_scrap, -expected_price)
+	return true
 
 func _load_current_encounter(retry_proposal: Dictionary = {}) -> bool:
 	if _run_ended:
@@ -215,7 +655,7 @@ func _prepare_room_candidate(proposal: Dictionary) -> Dictionary:
 	var floor_index: int = int(proposal.get("floor", current_floor))
 	var room_index: int = int(proposal.get("room", current_room))
 	var room_ordinal: int = 1 + (floor_index - 1) * (common_rooms_per_floor + 1) + (room_index - 1)
-	descriptor["enemy_level"] = maxi(room_ordinal, 1)
+	descriptor["enemy_level"] = 1 if StringName(descriptor.get("room_kind", &"combat")) == &"shop" else maxi(room_ordinal, 1)
 	var requested_seed: int = int(descriptor.get("room_seed", 0))
 	if not bool(next_room.call("configure_run_managed", _run_build, true, requested_seed, descriptor, enemy_level_config)):
 		var layout_error := ""
@@ -248,18 +688,25 @@ func _validate_attached_candidate(candidate: Node) -> Dictionary:
 
 func _commit_room_candidate(candidate: Node, candidate_player: Player, proposal: Dictionary, source: Node) -> void:
 	if source != null:
+		_close_shop_offer_for_room(source, false)
 		_disconnect_room_player_signals(source)
 	_commit_stage_proposal(proposal)
 	current_room_instance = candidate
+	_kit_healed_room_id = 0
 	candidate.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_connect_room_player_signals(candidate, candidate_player)
 	_connect_room_progression_signal(candidate)
 	_apply_run_upgrades(candidate)
+	if _current_room_kind() == &"shop":
+		_ensure_shop_visit(candidate)
+	else:
+		_shop_visit_room_id = 0
+		_shop_offer_rows.clear()
 	if source != null and _boss_reward_room_id == source.get_instance_id():
 		_boss_reward_room_id = 0
 		_boss_reward_name = ""
 		_boss_reward_applied = false
-	_update_hud("ENCONTRO ATIVO")
+	_update_hud("LOJA — SAÍDA LIBERADA" if _current_room_kind() == &"shop" else "ENCONTRO ATIVO")
 
 func _connect_room_player_signals(room: Node, room_player: Player) -> void:
 	if room == null or not is_instance_valid(room) or room_player == null or not is_instance_valid(room_player):
@@ -337,6 +784,7 @@ func _on_room_progression_ready(transition_token: int, room: Node) -> void:
 		return
 	if not _transition_source_matches(room, transition_token):
 		return
+	_close_shop_offer_for_room(room, true)
 	transition_pending = true
 	call_deferred("_advance_after_room", room, transition_token)
 
@@ -394,6 +842,16 @@ func _advance_after_room(completed_room: Node, transition_token: int) -> void:
 			return
 		_present_recoverable_transition_error(completed_room, transition_token, "ERRO: não foi possível confirmar o estado de HP da sala concluída.", proposal)
 		return
+	var completed_combat_room: CombatRoom = completed_room.get_node_or_null("CombatRoom") as CombatRoom
+	var completed_room_id: int = completed_room.get_instance_id()
+	if (
+		_current_room_kind() != &"shop" and completed_combat_room != null
+		and completed_combat_room.room_is_cleared and completed_room_id != _kit_healed_room_id
+	):
+		var repair_level: int = _run_build.item_level_for(&"kit_remendo")
+		if repair_level > 0:
+			source_player.health.heal(repair_level)
+		_kit_healed_room_id = completed_room_id
 	_run_player_health = source_player.health.current_health
 	_run_player_max_health = source_player.health.maximum_health
 	if _run_player_health <= 0 or _run_player_max_health <= 0:
@@ -466,11 +924,13 @@ func _boss_reward_is_applied_for(room: Node) -> bool:
 		and _boss_reward_applied and _boss_reward_room_id == room.get_instance_id()
 
 func _update_hud(status_text: String) -> void:
-	var stage_text := (
-		"CHEFE"
-		if _is_boss_room()
-		else "SALA %d/%d" % [current_room, common_rooms_per_floor]
-	)
+	var stage_text: String
+	if _current_room_kind() == &"shop":
+		stage_text = "LOJA"
+	elif _is_boss_room():
+		stage_text = "CHEFE"
+	else:
+		stage_text = "SALA %d/%d" % [current_room, common_rooms_per_floor]
 	if progress_label != null:
 		progress_label.text = "ANDAR %02d/%02d | %s | SEED %d" % [
 			current_floor,
@@ -480,8 +940,6 @@ func _update_hud(status_text: String) -> void:
 		]
 	if status_label != null:
 		status_label.text = status_text
-
-
 func _show_victory_screen() -> void:
 	_legitimate_run_end = true
 	_show_run_summary(true, "")
@@ -548,14 +1006,15 @@ func _show_run_summary(is_victory: bool, cause_text: String) -> void:
 	var title_color: Color = Color("#D2A75C") if is_victory else Color("#E86B69")
 	_add_result_bitmap_text(content, "Title", title_text, title_color, 36.0)
 
-	var position_text: String = "CHEGOU AO ANDAR %02d, SALA %02d" % [current_floor, current_room]
+	var position_text: String = ("CHEGOU À LOJA APÓS SALA %02d" % current_room) if _current_room_kind() == &"shop" else ("CHEGOU AO ANDAR %02d, SALA %02d" % [current_floor, current_room])
 	_add_result_bitmap_text(content, "ReachedPosition", position_text, Color("#E8D8B5"), 28.0)
 
 	var acquisition_count: int = _run_build.total_count() if _run_build != null else 0
-	var health_text: String = "HP %d/%d    UPGRADES %d" % [
+	var health_text: String = "HP %d/%d    UPGRADES %d    SUCATA %d" % [
 		maxi(_run_player_health, 0),
 		maxi(_run_player_max_health, 0),
 		acquisition_count,
+		temporary_scrap,
 	]
 	_add_result_bitmap_text(content, "RunState", health_text, Color("#B6BEC3"), 24.0)
 	if not cause_text.is_empty():
@@ -933,7 +1392,7 @@ func _retry_initial_load() -> void:
 	var retry_kind: StringName = _technical_retry_kind
 	var retry_proposal: Dictionary = _technical_retry_proposal.duplicate(true)
 	_dismiss_technical_error()
-	if retry_kind == &"floor_plan":
+	if retry_kind == &"floor_plan" or _floor_room_descriptors.is_empty():
 		if not _prepare_current_floor_plan():
 			_present_technical_error(_initial_floor_plan_error, {}, null, &"floor_plan", true)
 			return
@@ -1002,6 +1461,7 @@ func _find_player(node: Node) -> Player:
 func _on_room_player_died(room: Node) -> void:
 	if room != current_room_instance or _run_ended:
 		return
+	_close_shop_offer_for_room(room, true)
 	_run_ended = true
 	transition_pending = true
 	_dismiss_technical_error()
@@ -1040,3 +1500,10 @@ func _fail_run(message: String) -> void:
 	push_error("RunController: " + message)
 	_update_hud(message)
 	_present_technical_error(message, _current_stage_proposal(), current_room_instance, &"initial_load", current_room_instance == null)
+
+func is_pause_menu_available() -> bool:
+	if _run_ended or transition_pending or _restart_in_progress or is_instance_valid(_technical_error_layer) or is_instance_valid(_transition_fade_layer) or is_instance_valid(_active_reward_screen) or not is_instance_valid(current_room_instance):
+		return false
+	if current_room_instance.has_method("is_gameplay_action_blocked") and bool(current_room_instance.call("is_gameplay_action_blocked", &"interact")):
+		return false
+	return true

@@ -1,0 +1,10 @@
+Use case: precise-object-edit.
+Asset type: a finished face-only pixel portrait atlas for the robot shopkeeper in a dieselpunk game.
+Input image 1: preserve this vendor's exact round cream-steel helmet, copper antenna, side plates, dimensions and five-frame layout.
+Input image 2: visual reference for the friendly readability of compact pixel portraits: large clear eyes, simple expressive shapes, warm clustered shading. Use only these broad visual principles; keep the subject a robot.
+Primary request: make the vendor's face noticeably friendlier and more charming while keeping its mechanical identity.
+Composition: horizontal atlas, five exact 64x64 cells (320x64 total), same left-to-right states: neutral/listening, talking, pleased, curious surprise, empathetic concern.
+Style: hand-crafted cozy pixel portrait language, soft warm highlights, clean deliberate pixel clusters, simplified readable facial cues, limited muted palette from the existing Factory v2 sprite; hard pixel edges at native 64x64 scale.
+Change only the central amber optical aperture and the tiny speaker grille beneath it. Give the single optic a larger readable iris, a clear cream/amber catchlight and relaxed curved shutter shapes. Make the speaker grille read as a subtle upward smile through its pixel arrangement, especially in the pleased and talking frames. Let surprise read as curious, not alarmed, and concern as gentle rather than stern.
+Constraints: retain the existing silhouette, antenna, side plates, proportions and transparency; keep one mechanical optic and the speaker grille as the only facial features. Make the five expressions visibly distinct at 64x64; do not add a torso or human anatomy.
+Avoid: recreating any human figure from reference image 2, adding extra objects or text, changing the layout or silhouette, gradients, blur, smooth vector edges, semi-transparent pixels, or photorealistic rendering.

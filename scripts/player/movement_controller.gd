@@ -60,6 +60,12 @@ func reduce_dash_cooldown_remaining(seconds: float) -> float:
 		_dash_state = DashState.READY
 	return _dash_cooldown_timer
 
+func restore_air_dashes(amount: int) -> int:
+	if _config == null or amount <= 0:
+		return _air_dashes_remaining
+	_air_dashes_remaining = mini(_air_dashes_remaining + amount, maxi(_config.max_air_dashes, 0))
+	return _air_dashes_remaining
+
 func physics_step(
 	input_axis: float,
 	jump_pressed: bool,

@@ -15,8 +15,12 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="Selenite Tower"
-run/main_scene="res://scenes/lobby.tscn"
+run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.7")
+
+[autoload]
+
+PauseMenu="*res://scripts/ui/pause/pause_menu.gd"
 
 [display]
 
@@ -74,6 +78,7 @@ interact={
 2d_physics/layer_3="Projectile"
 2d_physics/layer_4="Damageable"
 2d_physics/layer_5="HostileProjectile"
+2d_physics/layer_6="Destructible"
 
 [rendering]
 

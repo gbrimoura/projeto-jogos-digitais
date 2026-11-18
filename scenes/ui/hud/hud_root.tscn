@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud/hud_root.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/player_health_panel.tscn" id="2"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/room_progress_panel.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud/ball_gauge_panel.tscn" id="6"]
 [ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud/currency_hud_panel.tscn" id="8"]
 
 [node name="HudRoot" type="Control"]
 custom_minimum_size = Vector2(576, 324)
@@ -32,6 +33,9 @@ position = Vector2(8, 8)
 
 [node name="Dash" parent="Content" instance=ExtResource("3")]
 position = Vector2(8, 52)
+
+[node name="Currency" parent="Content" instance=ExtResource("8")]
+position = Vector2(8, 96)
 
 [node name="Target" parent="Content" instance=ExtResource("4")]
 visible = false

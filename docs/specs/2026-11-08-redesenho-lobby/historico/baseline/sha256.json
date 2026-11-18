@@ -1,0 +1,8 @@
+{
+  "scripts/world/lobby_visual.gd": "d4dbc7ba9b707d47a6acdcd6e8ca813f1f71f6638d85b99d1dce1b80efd2a3ce",
+  "assets/environment/factory_v1/lobby_v1/export/elevator-door-right-32x56.png": "c6e792425f4b91467116e0a0f6ea9705dd7dcd5f488bce7c1aaff0da1d2ae16a",
+  "scripts/world/lobby.gd": "3d9ead6b7b6ee553efe4c83d012c279b68fc962e2cacb8784deffec9de0d158e",
+  "source_external": "EFD6187F0BED422C2C21AE2380D1DB1B433A449894A38A0DF8D2152E133DE52C",
+  "scenes/lobby.tscn": "fc4e064d66a9702ef07556fe2008d20044708dd5e2cd0ee605691283b820cb10",
+  "assets/environment/factory_v1/lobby_v1/export/elevator-door-left-32x56.png": "46724c0fa69c492db08fe05969b457213e0b8158ca75d61a573710a6e70a5ace"
+}

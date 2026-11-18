@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/forja_magnetica_128x80.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+icon = ExtResource("2")
+upgrade_id = &"forja_magnetica"
+rarity = 4
+title = "Forja Magnética"
+description = "Fusão de calor e ímã."
+effect_topics = PackedStringArray("Acerto após ricochete", "1 pulso por disparo")
+rank_cap = 1

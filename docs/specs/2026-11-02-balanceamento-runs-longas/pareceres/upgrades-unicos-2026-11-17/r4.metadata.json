@@ -1,0 +1,12 @@
+{
+  "status": "done",
+  "tool": "OpenCode 1.17.13",
+  "model": "opencode-go/muse-spark-1.3-contributor",
+  "requested_variant": "xhigh",
+  "effective_variant": "unverified; not exposed by output",
+  "agent": "plan",
+  "scope": "read-only review of inline diff only",
+  "snapshot_sha256": "00271F5E260E8816B56DD1EA6FBCC5EAE99D28D57C8393C5AD01D79BDA65CDDD",
+  "exit_code": 0,
+  "findings": "None. Muse reported no P1/P2/P3."
+}

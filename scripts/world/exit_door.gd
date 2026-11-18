@@ -19,6 +19,7 @@ var _gate: CollisionShape2D
 var _room_is_cleared: bool = false
 var _transition_busy: bool = false
 var _terminal_complete: bool = false
+var _shop_destination: bool = false
 var _retry_enabled: bool = true
 var _failure_message: String = ""
 var _sample_initialized: bool = false
@@ -259,7 +260,15 @@ func _transform_rect(rect: Rect2, transform: Transform2D) -> Rect2:
 	)
 	return Rect2(minimum, maximum - minimum)
 
+func set_shop_destination(value: bool) -> void:
+	_shop_destination = value
+	_update_presentation()
+
 func _update_presentation() -> void:
+	if is_instance_valid(_door_foreground) and _door_foreground.has_method("set_shop_badge"):
+		_door_foreground.call(
+			"set_shop_badge", _shop_destination and door_role == 0 and not _terminal_complete, portal_direction
+		)
 	if _door_label != null:
 		_door_label.text = ""
 		_door_label.visible = false
