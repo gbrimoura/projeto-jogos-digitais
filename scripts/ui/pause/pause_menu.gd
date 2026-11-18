@@ -170,6 +170,7 @@ class PauseRouteMap extends Control:
 			draw_texture_rect_region(atlas, destination, source, color)
 
 var _open := false
+var _title_settings := false
 var _page := "controls"
 var _confirmation := ""
 var _root: ColorRect
@@ -204,7 +205,9 @@ func _input(event: InputEvent) -> void:
 				return
 			if _open:
 				get_viewport().set_input_as_handled()
-				if not _confirmation.is_empty():
+				if _title_settings:
+					call_deferred("_resume")
+				elif not _confirmation.is_empty():
 					_confirmation = ""
 					_rebuild()
 				elif _page != "controls":
@@ -218,11 +221,17 @@ func _input(event: InputEvent) -> void:
 					get_viewport().set_input_as_handled()
 					_open_menu()
 
+func open_title_settings() -> void:
+	if _open or get_tree().paused:
+		return
+	_title_settings = true
+	_open_menu()
+
 func _open_menu() -> void:
 	if _open or get_tree().paused:
 		return
 	_open = true
-	_page = "controls"
+	_page = "settings" if _title_settings else "controls"
 	_confirmation = ""
 	_notice = ""
 	get_tree().paused = true
@@ -232,12 +241,18 @@ func _resume() -> void:
 	if not _open:
 		return
 	_open = false
+	var was_title_settings := _title_settings
+	_title_settings = false
 	if is_instance_valid(_root):
 		_root.queue_free()
 	_root = null
 	for action in [&"move_left", &"move_right", &"jump", &"dash", &"launch_ball", &"parry", &"interact"]:
 		Input.action_release(action)
 	get_tree().paused = false
+	if was_title_settings:
+		var scene := get_tree().current_scene
+		if scene != null and scene.has_method("restore_menu_focus"):
+			scene.call_deferred("restore_menu_focus")
 
 func _style(bg: String, border: String, margin: int = 10) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
@@ -496,7 +511,7 @@ func _rebuild() -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	var bitmap := BitmapText.new()
-	bitmap.text = "JOGO PAUSADO"
+	bitmap.text = "SELENITE TOWER" if _title_settings else "JOGO PAUSADO"
 	bitmap.scale = Vector2(2, 2)
 	bitmap.size = Vector2(250, 12)
 	title.add_child(bitmap)
@@ -513,15 +528,16 @@ func _rebuild() -> void:
 	menu.add_theme_constant_override("separation", 10)
 	left_panel.add_child(menu)
 	_bitmap_line(menu, "PAINEL DE CALDEIRA", "#d2a75c")
-	_first_button = _button(menu, "RETOMAR JOGO", func(): call_deferred("_resume"))
-	var controls_button := _button(menu, "CONTROLES", func(): _page = "controls"; _confirmation = ""; _rebuild())
-	var settings_button := _button(menu, "CONFIGURAÇÕES", func(): _page = "settings"; _confirmation = ""; _rebuild())
-	var exit_button := _button(menu, "SAIR DO JOGO", func(): _confirmation = "exit"; _rebuild())
-	if not _confirmation.is_empty():
-		_first_button.disabled = true
-		controls_button.disabled = true
-		settings_button.disabled = true
-		exit_button.disabled = true
+	_first_button = _button(menu, "VOLTAR AO MENU" if _title_settings else "RETOMAR JOGO", func(): call_deferred("_resume"))
+	if not _title_settings:
+		var controls_button := _button(menu, "CONTROLES", func(): _page = "controls"; _confirmation = ""; _rebuild())
+		var settings_button := _button(menu, "CONFIGURAÇÕES", func(): _page = "settings"; _confirmation = ""; _rebuild())
+		var exit_button := _button(menu, "SAIR DO JOGO", func(): _confirmation = "exit"; _rebuild())
+		if not _confirmation.is_empty():
+			_first_button.disabled = true
+			controls_button.disabled = true
+			settings_button.disabled = true
+			exit_button.disabled = true
 	var right_panel := PanelContainer.new()
 	right_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_panel.add_theme_stylebox_override("panel", _style("#112630", "#567780", 16))
