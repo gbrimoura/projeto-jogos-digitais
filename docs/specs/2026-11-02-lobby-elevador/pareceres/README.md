@@ -27,3 +27,11 @@ Principal corrigiu via mesmo implementador, com versões substituídas preservad
 
 ## Verificações e limites
 Root conferiu fonte, referências/ordem de camadas, diff contra baseline e hashes dos5produtos (final-products.sha256.json). project.godot mudou somente run/main_scene. preservation-20.json confirma20/20arquivos críticos anteriores intactos (inclui RunRoot10salas, Main, Player, geração, upgrades e HUD). Sem Godot/import/testes/parser/linter/auditoria/simulação/produção de novos PNGs. Sem commit/push, troca de branch ou limpeza. Funcionamento e aparência em execução permanecem não confirmados.
+
+## Atualização do embarque com E e das moedas
+
+- Muse Spark 1.3 Contributor via OpenCode 1.17.13, variante xhigh solicitada, ferramentas desativadas no agente plan. Os eventos não confirmam de forma independente o modelo e o esforço efetivos. Ambas as rodadas terminaram com código 0.
+- R1 em `3DC658E9B742BBF60AE411E206D22C7C9F7747327D22C00AEF87EFDD59DA0F93`. O espelhamento foi mantido durante toda a sequência, o fallback da moeda passou para o spawn se as sondas não encontrarem superfície e a tela de controles foi corrigida. O sinal tem um único consumidor e a inserção é diferida. O crédito direto de sucata saiu do handler.
+- R2 em `B2450E4DC34A0E92DADEF81591913A5492A3C080DE858126C0EDBA40E746C075`. O parecer não apontou bloqueadores comprovados. Gemini Hydrogen e demais revisões do repositório ficaram pendentes por isolamento não confirmado no Antigravity e falha de autenticação ao listar modelos do Cursor.
+
+- Ajuste de pescoço em `15ABDEC67B6E7872E863B07FDBE3CC87D705C3A91855876C3A6A3956177B1EDA`. Muse Spark 1.3 Contributor solicitado em xhigh com agente plan isolado, exit 0 e sem bloqueadores. Os eventos não confirmaram modelo e esforço de forma independente. As demais revisões do repositório seguem pendentes pelos limites de autenticação e isolamento já registrados.

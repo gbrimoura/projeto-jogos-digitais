@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/lobby.gd" id="1_lobby"]
 [ext_resource type="Script" path="res://scripts/world/lobby_visual.gd" id="2_visual"]
@@ -6,6 +6,16 @@
 [ext_resource type="Script" path="res://scripts/ui/hud/bitmap_text.gd" id="4_bitmap_text"]
 [ext_resource type="Texture2D" path="res://assets/environment/factory_v1/lobby_v2/sign/elevator-plaque-94x30.png" id="5_elevator_plaque"]
 [ext_resource type="PackedScene" path="res://assets/environment/factory_v1/lobby_v2/sign/tower/tower-plaque.tscn" id="6_tower_plaque"]
+
+[ext_resource type="Texture2D" path="res://assets/player/elevator_boarding/boarding_6x64.png" id="7_boarding"]
+
+[sub_resource type="StyleBoxFlat" id="Style_elevator_prompt"]
+bg_color = Color(0.047, 0.106, 0.161, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.824, 0.655, 0.361, 1)
 
 [sub_resource type="RectangleShape2D" id="Rect_floor"]
 size = Vector2(1152, 88)
@@ -75,6 +85,36 @@ shape = SubResource("Rect_ceiling")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 position = Vector2(240, 560)
+
+[node name="BoardingSprite" type="Sprite2D" parent="."]
+visible = false
+z_index = 2
+texture_filter = 1
+texture = ExtResource("7_boarding")
+hframes = 6
+
+[node name="ElevatorInteractPrompt" type="Panel" parent="."]
+visible = false
+z_index = 6
+offset_left = 1019.0
+offset_top = 474.0
+offset_right = 1091.0
+offset_bottom = 496.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Style_elevator_prompt")
+
+[node name="PromptText" type="Control" parent="ElevatorInteractPrompt"]
+offset_left = 4.0
+offset_top = 6.0
+offset_right = 68.0
+offset_bottom = 18.0
+mouse_filter = 2
+texture_filter = 1
+script = ExtResource("4_bitmap_text")
+text = "E ENTRAR"
+font_color = Color(0.957, 0.925, 0.847, 1)
+max_lines = 1
+center_text = true
 
 [node name="LobbyUI" type="CanvasLayer" parent="."]
 layer = 20

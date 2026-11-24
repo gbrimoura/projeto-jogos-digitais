@@ -288,7 +288,7 @@ func _physics_process(delta: float) -> void:
 
 func _refresh_live_player() -> PhysicsBody2D:
 	var previous_player := _known_player
-	if _is_alive_player(_known_player) and _known_player.get_parent() == get_parent():
+	if is_instance_valid(_known_player) and _is_alive_player(_known_player):
 		return _known_player
 	_known_player = null
 	for node in get_tree().get_nodes_in_group("player"):
@@ -884,7 +884,9 @@ func _advance_airborne(delta: float) -> void:
 	if delta <= 0.0:
 		return
 	_release_jump_source_if_clear()
-	if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME and _jump_escape_direction == 0:
+	if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME:
+		if _jump_escape_direction != 0 and not _decisions_suspended and _recover_airborne_support():
+			return
 		velocity.x = 0.0
 	var remaining := delta
 	while remaining > 0.00001:
@@ -926,12 +928,23 @@ func _advance_airborne(delta: float) -> void:
 			if normal.dot(Vector2.UP) >= 0.7:
 				var collider := collision.get_collider()
 				var landing_support := collider as SolidPlatform
+				var hit_player := _is_player_collider(collider)
+				if landing_support == null and not hit_player:
+					landing_support = _find_support_at_feet()
 				if _try_bind_landing(landing_support):
 					return
-				if _is_player_collider(collider):
+				if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME:
+					_jump_escape_direction = _jump_facing_direction
+					velocity = Vector2.ZERO
+					_update_visuals()
+					return
+				if hit_player:
 					_begin_player_top_escape(collider as PhysicsBody2D)
 				else:
-					if _jump_escape_direction == 0:
+					var inward := _direction_to_landing_interior(landing_support)
+					if inward != 0:
+						_jump_escape_direction = inward
+					elif _jump_escape_direction == 0:
 						_jump_escape_direction = signi(velocity.x) if absf(velocity.x) > 1.0 else _jump_facing_direction
 					velocity.x = float(_jump_escape_direction) * PLAYER_ESCAPE_SPEED
 					velocity.y = 0.0
@@ -943,14 +956,14 @@ func _advance_airborne(delta: float) -> void:
 				_advance_escape_tangent(maxf(remaining - impact_time, 0.0))
 				_update_visuals()
 				return
-			if _jump_escape_direction != 0 and absf(normal.x) >= 0.7:
+			if _jump_elapsed < JUMP_MAX_FLIGHT_TIME and _jump_escape_direction != 0 and absf(normal.x) >= 0.7:
 				_jump_escape_direction *= -1
 				velocity.x = float(_jump_escape_direction) * PLAYER_ESCAPE_SPEED
 			remaining -= impact_time
 			_jump_elapsed += impact_time
 			if _jump_impulse_remaining > 0.0:
 				_jump_impulse_remaining = maxf(_jump_impulse_remaining - impact_time, 0.0)
-		if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME and _jump_escape_direction == 0:
+		if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME:
 			velocity.x = 0.0
 		_release_jump_source_if_clear()
 		_update_visuals()
@@ -974,7 +987,7 @@ func _advance_escape_tangent(delta: float) -> void:
 		_jump_elapsed += step_time
 		if _jump_impulse_remaining > 0.0:
 			_jump_impulse_remaining = maxf(_jump_impulse_remaining - step_time, 0.0)
-		if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME and _jump_escape_direction == 0:
+		if _jump_elapsed >= JUMP_MAX_FLIGHT_TIME:
 			velocity.x = 0.0
 		_release_jump_source_if_clear()
 	_update_visuals()
@@ -995,6 +1008,60 @@ func _begin_player_top_escape(player_body: PhysicsBody2D) -> void:
 	velocity.x = float(_jump_escape_direction) * PLAYER_ESCAPE_SPEED
 	if velocity.y > 0.0:
 		velocity.y = 0.0
+
+func _find_support_at_feet() -> SolidPlatform:
+	var body := _get_collision_rect()
+	for support in _collect_pursuit_supports():
+		if not _support_feet_match(support):
+			continue
+		var rect: Rect2 = _get_support_rect(support).get("rect", Rect2())
+		if global_position.x + body.end.x > rect.position.x \
+			and global_position.x + body.position.x < rect.end.x:
+			return support
+	return null
+
+func _direction_to_landing_interior(support: SolidPlatform) -> int:
+	if not is_instance_valid(support) or not _support_feet_match(support):
+		return 0
+	var rect: Rect2 = _get_support_rect(support).get("rect", Rect2())
+	var bounds := _patrol_bounds_for_support(rect, _get_collision_rect(), 0.0)
+	if bounds.x > bounds.y:
+		return 0
+	var target_x := clampf(global_position.x, bounds.x, bounds.y)
+	if absf(target_x - global_position.x) <= 0.01:
+		return 0
+	return 1 if target_x > global_position.x else -1
+
+func _recover_airborne_support() -> bool:
+	var origin := global_position
+	var body := _get_collision_rect()
+	var best_support: SolidPlatform
+	var best_position := origin
+	var best_distance := INF
+	for support in _collect_pursuit_supports():
+		var rect: Rect2 = _get_support_rect(support).get("rect", Rect2())
+		var bounds := _patrol_bounds_for_support(rect, body, 0.0)
+		if bounds.x > bounds.y:
+			continue
+		var target := Vector2(clampf(origin.x, bounds.x, bounds.y), rect.position.y - body.end.y - JUMP_SAFE_MARGIN)
+		# Try the nearest free point and space on either side of an occupied landing.
+		for offset: float in [0.0, -body.size.x, body.size.x]:
+			var candidate := Vector2(clampf(target.x + offset, bounds.x, bounds.y), target.y)
+			var distance := origin.distance_squared_to(candidate)
+			if distance >= best_distance:
+				continue
+			var footprint := _make_body_sweep(candidate.x, candidate.x, body, candidate.y)
+			if _is_world_rect_clear(footprint, support):
+				best_support = support
+				best_position = candidate
+				best_distance = distance
+	if best_support == null:
+		return false
+	global_position = best_position
+	if _try_bind_landing(best_support):
+		return true
+	global_position = origin
+	return false
 
 func _try_bind_landing(support: SolidPlatform) -> bool:
 	if support == null or not is_instance_valid(support) or support.get_parent() != get_parent() or not _is_compatible_support(support):
@@ -1025,21 +1092,22 @@ func _try_bind_landing(support: SolidPlatform) -> bool:
 		return true
 	if not _is_valid_landing_support(support):
 		return false
-	var minimum_x := support_rect.position.x + edge_margin - body.position.x
-	var maximum_x := support_rect.end.x - edge_margin - body.end.x
-	var can_patrol := maximum_x - minimum_x >= MIN_PATROL_DISTANCE \
-		and global_position.x >= minimum_x - 0.01 and global_position.x <= maximum_x + 0.01
-	var sweep := _make_body_sweep(minimum_x, maximum_x, body, global_position.y)
-	if can_patrol and not _is_world_rect_clear(sweep, support):
-		can_patrol = false
-	if not can_patrol:
-		var stationary := _make_body_sweep(global_position.x, global_position.x, body, global_position.y)
-		if not _is_world_rect_clear(stationary, support):
-			return false
-		minimum_x = global_position.x
-		maximum_x = global_position.x
+	var landing_x := global_position.x
+	# A closed floor hatch may share the floor's top without blocking this pose.
+	# Leave a small foot inset for the overlap/sweep queries, after validating contact.
+	body.size.y = maxf(body.size.y - JUMP_SAFE_MARGIN, 1.0)
+	var stationary := _make_body_sweep(landing_x, landing_x, body, global_position.y)
+	if not _is_world_rect_clear(stationary, support):
+		return false
+	var preferred_bounds := _patrol_bounds_for_support(support_rect, body, edge_margin)
+	# Keep the connected ground interval around the landing point. A blocker elsewhere
+	# on the same support should only shorten this interval.
+	var left_motion := minf(preferred_bounds.x - landing_x, 0.0)
+	var right_motion := maxf(preferred_bounds.y - landing_x, 0.0)
+	var minimum_x := landing_x + _clear_landing_motion_x(left_motion)
+	var maximum_x := landing_x + _clear_landing_motion_x(right_motion)
 	_patrol_direction = _jump_facing_direction
-	_bind_patrol_support(support, minimum_x, maximum_x, can_patrol)
+	_bind_patrol_support(support, minimum_x, maximum_x, true)
 	_clear_pursuit_route()
 	_jump_source = null
 	_jump_plan.clear()
@@ -1052,6 +1120,15 @@ func _try_bind_landing(support: SolidPlatform) -> bool:
 	_patrol_moving = false
 	_update_visuals()
 	return true
+func _clear_landing_motion_x(motion_x: float) -> float:
+	if is_zero_approx(motion_x):
+		return 0.0
+	# _is_world_rect_clear configured this query at the actual landing pose.
+	_patrol_query.motion = Vector2(motion_x, 0.0)
+	var fractions := get_world_2d().direct_space_state.cast_motion(_patrol_query)
+	_patrol_query.motion = Vector2.ZERO
+	return motion_x * fractions[0] if not fractions.is_empty() else 0.0
+
 func _is_valid_landing_support(support: SolidPlatform) -> bool:
 	return support != null and is_instance_valid(support) \
 		and support.get_parent() == get_parent() and _node_is_inside_current_scene(support) \
@@ -1102,7 +1179,8 @@ func _player_is_retreating_out_of_reach(player: PhysicsBody2D, attack_center: Ve
 	if moving_player == null:
 		return false
 	var offset := _get_player_collider_center(player) - attack_center
-	var lead := clampf(moving_player.velocity.x * MELEE_LEAD_TIME, -MELEE_LEAD_LIMIT, MELEE_LEAD_LIMIT)
+	var prediction_time := clampf(windup_duration, MELEE_LEAD_TIME, 0.42)
+	var lead := clampf(moving_player.velocity.x * prediction_time, -MELEE_LEAD_LIMIT, MELEE_LEAD_LIMIT)
 	if offset.x * lead <= 0.0:
 		return false
 	var predicted := offset + Vector2(lead, 0.0)

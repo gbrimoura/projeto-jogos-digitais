@@ -1,0 +1,43 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemy/supervisor_caldeira.gd" id="1_supervisor"]
+[ext_resource type="Texture2D" path="res://assets/enemy/supervisor/boiler-frames.png" id="2_boiler_frames"]
+[ext_resource type="AudioStream" path="res://assets/enemy/supervisor/pressure-warning.wav" id="3_warning_sound"]
+
+[ext_resource type="Script" path="res://scripts/enemy/supervisor_pressure_effects.gd" id="4_effects"]
+
+[sub_resource type="ConvexPolygonShape2D" id="ConvexPolygonShape2D_supervisor"]
+points = PackedVector2Array(-49, -70, 43, -70, 64, -45, 85, 50, 61, 70, -61, 70, -85, 50, -65, -38)
+
+[node name="SupervisorCaldeira" type="CharacterBody2D" groups=["damageable", "combat_enemy", "boss_enemy"]]
+collision_layer = 8
+collision_mask = 0
+motion_mode = 1
+z_index = 2
+script = ExtResource("1_supervisor")
+display_name = "SUPERVISOR"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("ConvexPolygonShape2D_supervisor")
+
+[node name="PressureEffects" type="Node2D" parent="."]
+top_level = true
+z_as_relative = false
+z_index = 1
+script = ExtResource("4_effects")
+
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="BossSprite" type="Sprite2D" parent="Visuals"]
+texture_filter = 1
+texture = ExtResource("2_boiler_frames")
+hframes = 8
+vframes = 2
+frame = 0
+centered = true
+scale = Vector2(2, 2)
+
+[node name="WarningSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("3_warning_sound")
+volume_db = -12.0
+max_distance = 1152.0

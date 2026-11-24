@@ -3,6 +3,8 @@ extends Node2D
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const LobbyVisual = preload("res://scripts/world/lobby_visual.gd")
 const LOBBY_PLAYER_GRADE_SHADER: Shader = preload("res://scripts/world/lobby_player_grade.gdshader")
+const BOARDING_DURATION: float = 0.48
+const BOARDING_DISTANCE: float = 36.0
 const DESIGN_SIZE: Vector2 = Vector2(1152.0, 648.0)
 const ELEVATOR_INTERIOR: Rect2 = LobbyVisual.ELEVATOR_OPENING_RECT
 const RUN_ROOT_PATH: String = "res://run_root.tscn"
@@ -14,6 +16,9 @@ const RUN_ROOT_PATH: String = "res://run_root.tscn"
 @onready var _door_visual: Node2D = get_node("ElevatorDoorForeground") as Node2D
 @onready var _fade_rect: ColorRect = get_node("LobbyUI/Fade") as ColorRect
 @onready var _status: Control = get_node("LobbyUI/ElevatorStatus") as Control
+
+@onready var _interact_prompt: Panel = $ElevatorInteractPrompt
+@onready var _boarding_sprite: Sprite2D = $BoardingSprite
 
 var _travel_in_progress: bool = false
 var _must_exit_cabin_before_retry: bool = false
@@ -38,17 +43,26 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if _travel_in_progress:
 		return
-	var player_bounds: Rect2 = _player_world_aabb()
-	if not _rect_has_area(player_bounds):
-		return
-	if _must_exit_cabin_before_retry:
-		if not player_bounds.intersects(ELEVATOR_INTERIOR):
-			_must_exit_cabin_before_retry = false
-		return
-	if bool(_player.get("is_dead")) or not _player.is_on_floor():
-		return
-	if ELEVATOR_INTERIOR.encloses(player_bounds):
+	var player_bounds := _player_world_aabb()
+	if _must_exit_cabin_before_retry and _rect_has_area(player_bounds) \
+		and not _boarding_zone().intersects(player_bounds):
+		_must_exit_cabin_before_retry = false
+		_set_status("", false)
+	_interact_prompt.visible = _can_board(player_bounds)
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed(&"interact") and _can_board(_player_world_aabb()):
+		get_viewport().set_input_as_handled()
 		_begin_elevator_travel()
+
+func _boarding_zone() -> Rect2:
+	return ELEVATOR_INTERIOR.grow_individual(BOARDING_DISTANCE, 0.0, BOARDING_DISTANCE, 0.0)
+
+func _can_board(player_bounds: Rect2) -> bool:
+	return not _travel_in_progress and not _must_exit_cabin_before_retry \
+		and is_instance_valid(_player) and not bool(_player.get("is_dead")) \
+		and _player.is_on_floor() and _rect_has_area(player_bounds) \
+		and _boarding_zone().encloses(player_bounds)
 
 func _update_camera_fit() -> void:
 	if _camera == null:
@@ -103,15 +117,11 @@ func _rect_has_area(rect: Rect2) -> bool:
 	return rect.size.x > 0.0 and rect.size.y > 0.0
 
 func _begin_elevator_travel() -> void:
-	if _travel_in_progress or _player == null or _ball_container == null:
-		return
-	if bool(_player.get("is_dead")) or not _player.is_on_floor():
-		return
-	var player_bounds: Rect2 = _player_world_aabb()
-	if not ELEVATOR_INTERIOR.encloses(player_bounds):
+	if not _can_board(_player_world_aabb()):
 		return
 
 	_set_status("", false)
+	_interact_prompt.hide()
 
 	# Latch and save inherited processing before the first asynchronous cue.
 	_travel_in_progress = true
@@ -122,6 +132,7 @@ func _begin_elevator_travel() -> void:
 	_reset_lobby_combat_transients()
 	RoomTransition.clear_pending_snapshot()
 
+	await _play_boarding_animation()
 	await _tween_door_fraction(1.0, 0.20)
 	await _play_travel_cue()
 	_set_status("ANDAR 01", true)
@@ -131,6 +142,33 @@ func _begin_elevator_travel() -> void:
 	if change_error == OK:
 		return
 	await _recover_failed_elevator_load()
+
+func _play_boarding_animation() -> void:
+	var feet := to_local(_player.global_position)
+	var center_x := ELEVATOR_INTERIOR.get_center().x
+	var material := ShaderMaterial.new()
+	material.shader = LOBBY_PLAYER_GRADE_SHADER
+	_boarding_sprite.material = material
+	_set_boarding_pose(0.0, feet, center_x)
+	_player.hide()
+	_boarding_sprite.show()
+
+	var tween := create_tween()
+	tween.tween_method(Callable(self, "_set_boarding_pose").bind(feet, center_x), 0.0, 1.0, BOARDING_DURATION)
+	await tween.finished
+
+func _set_boarding_pose(progress: float, start: Vector2, center_x: float) -> void:
+	var step_fraction := smoothstep(0.0, 0.72, progress)
+	var depth := smoothstep(0.32, 1.0, progress)
+	var body_scale := lerpf(2.0, 1.74, depth)
+	_boarding_sprite.frame = mini(floori(progress * float(_boarding_sprite.hframes)), _boarding_sprite.hframes - 1)
+	_boarding_sprite.flip_h = center_x >= start.x
+	_boarding_sprite.scale = Vector2.ONE * body_scale
+	_boarding_sprite.position = Vector2(
+		lerpf(start.x, center_x, step_fraction),
+		start.y - 25.0 * body_scale - 12.0 * depth
+	).round()
+	_boarding_sprite.self_modulate = Color.WHITE.lerp(Color(0.62, 0.67, 0.74), depth)
 
 func _reset_lobby_combat_transients() -> void:
 	var launcher: Node = _player.get_node_or_null("BallLauncher")
@@ -174,7 +212,9 @@ func _recover_failed_elevator_load() -> void:
 	await _tween_door_fraction(0.0, 0.16)
 	_world_visual.call("set_amber_lights_on", false)
 	_camera.offset = Vector2.ZERO
-	_set_status("ERRO AO ABRIR\nSAIA E ENTRE PARA TENTAR", true)
+	_boarding_sprite.hide()
+	_player.show()
+	_set_status("ERRO AO ABRIR\nAFASTE-SE E APERTE E", true)
 	await _fade_to(0.0, 0.18)
 	_player.process_mode = _player_process_mode_before_travel
 	_ball_container.process_mode = _ball_container_process_mode_before_travel

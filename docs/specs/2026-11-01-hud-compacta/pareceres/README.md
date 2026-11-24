@@ -22,3 +22,7 @@ Gemini3.8High/AGY: exit0, FINDINGSnone. Grok cursor-grok-4.6-xhigh-fast/Cursor: 
 Opus Cursor claude-opus-5-5-high: exit1, ActionRequiredError por limite de uso, reset informado03/11/2026. Nenhum parecer de implementação, não substituído nem contado como aprovação. Préflight feito uma vez; disponibilidade em catálogo não equivale a quota de inferência.
 
 Código permaneceu congelado emR2; hashes comprovam três fontes iguais ao snapshot e seis arquivos protegidos iguais à base. Validação foi leitura estática, sem executar engine/testes/parser/audit. Legibilidade/conforto visual em gameplay continuam sem conferência. Sem commit/push/troca de branch.
+
+## Limpeza e indicadores em 24/11
+
+O [registro do incremento](../historico/limpeza-hud-e-indicadores.md) documenta o parecer Muse e os testes. O manifesto e as saídas originais estão nesta pasta.

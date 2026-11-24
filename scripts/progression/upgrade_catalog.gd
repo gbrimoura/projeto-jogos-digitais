@@ -24,6 +24,11 @@ static var _definitions: Array[UpgradeDefinitionResource] = [
 	preload("res://resources/upgrades/bola_magnetica.tres"),
 	preload("res://resources/upgrades/forja_magnetica.tres"),
 	preload("res://resources/upgrades/bola_fragmentaria.tres"),
+	preload("res://resources/upgrades/brasa_persistente.tres"),
+	preload("res://resources/upgrades/fornalha.tres"),
+	preload("res://resources/upgrades/leque_estilhacos.tres"),
+	preload("res://resources/upgrades/nucleo_estilhacos.tres"),
+	preload("res://resources/upgrades/chuva_de_brasas.tres"),
 ]
 
 
@@ -72,9 +77,13 @@ static func can_acquire(upgrade_id: Variant, current_rank: int, base_maximum_hea
 
 
 static func prerequisites_met(upgrade_id: StringName, ranks: Dictionary) -> bool:
-	if upgrade_id != &"forja_magnetica":
-		return true
-	return _rank_for(ranks, &"bola_incandescente") > 0 and _rank_for(ranks, &"bola_magnetica") > 0
+	var definition := definition_for(upgrade_id)
+	if definition == null:
+		return false
+	for required_id in definition.required_upgrades:
+		if _rank_for(ranks, StringName(required_id)) <= 0:
+			return false
+	return true
 
 
 static func total_rank_count(ranks_by_id: Dictionary) -> int:
@@ -88,7 +97,8 @@ static func build_offer(
 	ranks_by_id: Dictionary,
 	room_seed: int,
 	room_ordinal: int,
-	base_maximum_health: int = 5
+	base_maximum_health: int = 5,
+	favor_families: bool = true
 ) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if total_rank_count(ranks_by_id) >= MAX_RUN_ACQUISITIONS:
@@ -98,6 +108,8 @@ static func build_offer(
 	var new_candidates: Array[UpgradeDefinitionResource] = []
 	var evolution_candidates: Array[UpgradeDefinitionResource] = []
 	var post_build_candidates: Array[UpgradeDefinitionResource] = []
+	var family_openers: Array[UpgradeDefinitionResource] = []
+	var family_continuations: Array[UpgradeDefinitionResource] = []
 	for definition in _definitions:
 		if definition == null:
 			continue
@@ -110,6 +122,11 @@ static func build_offer(
 			fusion = definition
 			continue
 		if definition.reward_kind == &"core":
+			if favor_families and rank == 0 and not definition.family.is_empty():
+				if not definition.required_upgrades.is_empty():
+					family_continuations.append(definition)
+				elif room_ordinal == 1:
+					family_openers.append(definition)
 			if rank == 0:
 				new_candidates.append(definition)
 			else:
@@ -122,10 +139,24 @@ static func build_offer(
 	var selected_definitions: Array[UpgradeDefinitionResource] = []
 	if fusion != null:
 		selected_definitions.append(fusion)
+	if not family_continuations.is_empty():
+		selected_definitions.append(_take_random(family_continuations, rng))
+	elif not family_openers.is_empty():
+		selected_definitions.append(_take_random(family_openers, rng))
 	if fusion != null or not new_candidates.is_empty() or not evolution_candidates.is_empty():
 		if not new_candidates.is_empty() and not evolution_candidates.is_empty():
-			selected_definitions.append(_take_random(new_candidates, rng))
-			selected_definitions.append(_take_random(evolution_candidates, rng))
+			for pool in [new_candidates, evolution_candidates]:
+				if selected_definitions.size() >= 3:
+					break
+				var candidates: Array[UpgradeDefinitionResource] = []
+				var pool_is_represented := false
+				for candidate: UpgradeDefinitionResource in pool:
+					if selected_definitions.has(candidate):
+						pool_is_represented = true
+					else:
+						candidates.append(candidate)
+				if not pool_is_represented and not candidates.is_empty():
+					selected_definitions.append(_take_random(candidates, rng))
 
 		var remaining: Array[UpgradeDefinitionResource] = []
 		for definition in new_candidates:

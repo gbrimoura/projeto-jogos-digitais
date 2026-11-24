@@ -37,6 +37,8 @@ const LOBBY_SCENE_PATH: String = "res://scenes/lobby.tscn"
 @onready var room_container: Node2D = $RoomContainer
 @onready var progress_label: Label = $HUD/ProgressLabel
 @onready var status_label: Label = $HUD/StatusLabel
+@onready var _fallback_hud: CanvasLayer = $HUD
+@onready var _fallback_telemetry: Label = get_node_or_null("HUD/TelemetryLabel") as Label
 
 var current_floor: int = 1
 var temporary_scrap: int = 0
@@ -102,6 +104,19 @@ func _ready() -> void:
 		_present_technical_error(_initial_floor_plan_error, {}, null, &"floor_plan", true)
 		return
 	_load_current_encounter()
+
+func _process(_delta: float) -> void:
+	_fallback_hud.visible = not get_tree().paused
+	if not _fallback_hud.visible:
+		return
+	if _fallback_telemetry == null or not _fallback_telemetry.visible or not is_instance_valid(current_room_instance):
+		return
+	var player := current_room_instance.get_node_or_null("Player") as Player
+	if player == null or not is_instance_valid(player.ball_launcher):
+		return
+	var text := "SUCATA %d   |   BOLA %d" % [temporary_scrap, roundi(player.ball_launcher.get_ball_speed())]
+	if _fallback_telemetry.text != text:
+		_fallback_telemetry.text = text
 
 ## Skip the magnetic-bag bonus for flat item rewards such as Catraca Sucata.
 func register_temporary_scrap(amount: int, apply_magnetic_bonus: bool = true) -> bool:
@@ -451,7 +466,8 @@ func _generate_shop_stock(room: Node, refresh_number: int = 0, attempt: int = 0)
 		ranks_by_id,
 		shop_seed,
 		offer_ordinal,
-		room_player.health.get_base_maximum_health()
+		room_player.health.get_base_maximum_health(),
+		false
 	)
 	var item_offer: Dictionary = ShopItemCatalogScript.build_offer(item_levels_by_id, shop_seed, current_floor)
 	if not item_offer.is_empty():
@@ -692,6 +708,10 @@ func _commit_room_candidate(candidate: Node, candidate_player: Player, proposal:
 		_disconnect_room_player_signals(source)
 	_commit_stage_proposal(proposal)
 	current_room_instance = candidate
+	for label_name: String in ["CounterLabel", "StatusLabel", "RoomLabel", "BuildLabel"]:
+		var label := candidate.get_node_or_null("CombatRoom/HUD/" + label_name) as CanvasItem
+		if label != null:
+			label.hide()
 	_kit_healed_room_id = 0
 	candidate.process_mode = Node.PROCESS_MODE_PAUSABLE
 	_connect_room_player_signals(candidate, candidate_player)
@@ -932,14 +952,19 @@ func _update_hud(status_text: String) -> void:
 	else:
 		stage_text = "SALA %d/%d" % [current_room, common_rooms_per_floor]
 	if progress_label != null:
-		progress_label.text = "ANDAR %02d/%02d | %s | SEED %d" % [
+		progress_label.text = "ANDAR %02d/%02d | %s" % [
 			current_floor,
 			floors_per_run,
 			stage_text,
-			_resolved_run_seed,
 		]
 	if status_label != null:
-		status_label.text = status_text
+		status_label.text = status_text if _is_hud_actionable_status(status_text) else ""
+
+func _is_hud_actionable_status(status_text: String) -> bool:
+	return status_text.begins_with("ERRO") or status_text.begins_with("FALHA") \
+		or status_text.contains("TENTAR DE NOVO")
+
+
 func _show_victory_screen() -> void:
 	_legitimate_run_end = true
 	_show_run_summary(true, "")

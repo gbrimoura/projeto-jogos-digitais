@@ -34,7 +34,9 @@ const RIVET_SPAWN_OFFSET: float = 26.0
 const MINIMUM_SAFE_SHOT_DISTANCE: float = 180.0
 const BODY_HALF_WIDTH: float = 23.0
 const REPOSITION_SEARCH_STEP: float = 16.0
-const REPOSITION_SEARCH_DISTANCE: float = 128.0
+const REPOSITION_SEARCH_DISTANCE: float = 176.0
+const PLAYER_LEAD_SECONDS: float = 0.32
+const MAX_PLAYER_LEAD: float = 66.0
 const POSITION_EPSILON: float = 3.0
 
 @onready var _name_label: Label = $NameLabel
@@ -107,7 +109,7 @@ func _ready() -> void:
 		process_mode = Node.PROCESS_MODE_DISABLED
 		return
 	_configure_patrol_bounds()
-	_player = get_tree().get_first_node_in_group("player") as Node2D
+	_player = _find_room_player()
 	_query = PhysicsRayQueryParameters2D.new()
 	_query.collision_mask = WORLD_MASK
 	_query.collide_with_bodies = true
@@ -165,9 +167,9 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = 0.0
 
-	if _player == null or not is_instance_valid(_player):
-		_player = get_tree().get_first_node_in_group("player") as Node2D
-	if _player == null or not is_instance_valid(_player):
+	if not is_instance_valid(_player) or _player.get_parent() != get_parent():
+		_player = _find_room_player()
+	if not is_instance_valid(_player):
 		_patrol_for_angle = false
 		_set_warning_visible(false)
 		if _state == AttackState.WINDUP:
@@ -215,6 +217,22 @@ func _physics_process(delta: float) -> void:
 			velocity.x = 0.0
 			_state = AttackState.APPROACH
 	_finish_patrol_step(previous_x)
+
+func _find_room_player() -> Node2D:
+	for node in get_tree().get_nodes_in_group(&"player"):
+		if node is Node2D and node.get_parent() == get_parent():
+			return node as Node2D
+	return null
+
+
+func _another_worker_is_aiming() -> bool:
+	for node in get_tree().get_nodes_in_group(&"combat_enemy"):
+		var worker := node as RivetWorker
+		if worker != null and worker != self and worker.get_parent() == get_parent() \
+			and worker.health > 0 and worker._state == AttackState.WINDUP:
+			return true
+	return false
+
 
 func _finish_patrol_step(previous_x: float) -> void:
 	if not _patrol_step_pending:
@@ -341,9 +359,17 @@ func _decide_ready_state(delta: float) -> void:
 		return
 	if distance > maximum_attack_range:
 		return
-	if not _has_line_of_sight(muzzle, target):
+	if not _has_line_of_sight(muzzle, target) or _another_worker_is_aiming():
 		return
 
+	var moving_player := _player as CharacterBody2D
+	if moving_player != null:
+		var lead := clampf(moving_player.velocity.x * PLAYER_LEAD_SECONDS, -MAX_PLAYER_LEAD, MAX_PLAYER_LEAD)
+		var predicted := target + Vector2(lead, 0.0)
+		var predicted_range := muzzle.distance_to(predicted)
+		if not is_zero_approx(lead) and predicted_range >= minimum_attack_range \
+			and predicted_range <= maximum_attack_range and _has_line_of_sight(muzzle, predicted):
+			target = predicted
 	_patrol_for_angle = false
 	_locked_direction = (target - muzzle).normalized()
 	if _locked_direction.is_zero_approx():
@@ -393,18 +419,22 @@ func _apply_ready_motion(delta: float) -> void:
 			_process_patrol(delta)
 		return
 	var target_visible := _has_line_of_sight(muzzle, target)
-	if distance > maximum_attack_range:
-		_move_toward_area_x(target.x, move_speed, delta)
-		return
-	if not target_visible:
+	if distance > maximum_attack_range or not target_visible:
 		var reposition_x := _find_nearest_clear_x(target)
 		if is_finite(reposition_x):
 			_move_toward_area_x(reposition_x, move_speed, delta)
+		elif distance > maximum_attack_range and _move_toward_area_x(target.x, move_speed, delta):
+			_patrol_for_angle = false
 		else:
 			_patrol_for_angle = true
 			_process_patrol(delta)
 		return
-	velocity.x = 0.0
+	if _another_worker_is_aiming():
+		_process_patrol(delta)
+	else:
+		velocity.x = 0.0
+
+
 func _find_nearest_clear_x(target: Vector2) -> float:
 	var current_x := global_position.x
 	var bounds := _get_safe_center_bounds()

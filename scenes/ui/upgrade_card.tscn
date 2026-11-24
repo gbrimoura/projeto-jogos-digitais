@@ -59,9 +59,9 @@ font_color = Color(0.909804, 0.847059, 0.709804, 1)
 [node name="UpgradeRarity" type="Control" parent="."]
 visible = false
 offset_left = 8.0
-offset_top = 22.0
+offset_top = 18.0
 offset_right = 152.0
-offset_bottom = 33.0
+offset_bottom = 28.0
 mouse_filter = 2
 texture_filter = 1
 script = ExtResource("2_bitmap_text")

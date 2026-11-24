@@ -404,7 +404,7 @@ func _build_controls() -> void:
 	var return_hint_label := _label(return_hint, "Voltar no resultado ou reiniciar o treino.", 14, "#a8bbc0")
 	return_hint_label.custom_minimum_size.x = 96
 	return_hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_label(controls, "Portas da torre e elevador são automáticos.", 14, "#a8bbc0")
+	_label(controls, "Elevador: aperte E. Portas da torre: automáticas.", 14, "#a8bbc0")
 
 	if has_map:
 		_build_minimap(columns, map_data)

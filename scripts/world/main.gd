@@ -13,6 +13,7 @@ const WORLD_LAYER_BIT_MASK: int = 1
 const AUTHORED_EDGE_MARGIN: float = 8.0
 const AUTHORED_CONTACT_TOLERANCE: float = 0.5
 const AUTHORED_OVERLAP_AREA_LIMIT: float = 0.01
+const FIXED_BOSS_VISUAL_SEED: int = 0x53555056
 const KNOWN_AUTHORED_PLATFORM_NAMES: Array[StringName] = [
 	&"PlatformA", &"PlatformB", &"PlatformC", &"PlatformD", &"PlatformE",
 	&"WestPlatform", &"UpperPlatform", &"EastPlatform",
@@ -21,6 +22,7 @@ const RoomLayoutGenerator = preload("res://scripts/world/room_layout_generator.g
 const ManagedRoomTopologyScript = preload("res://scripts/world/managed_room_topology.gd")
 const ManagedPlatformScene: PackedScene = preload("res://scenes/solid_platform.tscn")
 const EXTRA_WORKER_SCENE: PackedScene = preload("res://scenes/rivet_worker.tscn")
+const ScrapPickupScene: PackedScene = preload("res://scenes/pickups/scrap_pickup.tscn")
 const DestructiblePropScene: PackedScene = preload("res://scenes/environment/destructible_prop.tscn")
 const ShopVendorScene: PackedScene = preload("res://scenes/shop/shop_vendor.tscn")
 const ShopOfferScene: PackedScene = preload("res://scenes/shop/shop_offer.tscn")
@@ -44,6 +46,7 @@ enum UpgradeFlowState {
 }
 
 @export var authored_layout_enabled: bool = false
+@export var fixed_boss_arena: bool = false
 @export var room_layout_seed: int = 0
 @export_file("*.tscn") var next_room_scene_path: String = "res://scenes/second_room.tscn"
 @export var room_title: String = "SALA 01"
@@ -1253,6 +1256,10 @@ func configure_run_managed(
 	_managed_enemy_level_config = enemy_level_config
 	reward_enabled = offer_build_upgrade and StringName(room_descriptor.get("room_kind", &"combat")) != &"shop"
 	room_layout_seed = requested_seed
+	if fixed_boss_arena:
+		var fixed_exit := get_node_or_null("ExitDoor")
+		if fixed_exit != null and fixed_exit.has_method("configure_managed_orientation"):
+			fixed_exit.call("configure_managed_orientation", Vector2i.RIGHT, 496.0, true)
 	if authored_layout_enabled and not prepare_authored_layout():
 		return false
 	if _is_shop_stage():
@@ -1270,47 +1277,47 @@ func _configure_combat_group(level_config: EnemyLevelConfigResource) -> void:
 	if melee == null or ranged == null or encounter == null or entry == null:
 		return
 
+	var level := int(_managed_room_descriptor.get("enemy_level", 1))
+	if level <= 2:
+		return
+
 	var rng := RandomNumberGenerator.new()
 	rng.seed = room_layout_seed ^ 0x454E4354
-	var level := int(_managed_room_descriptor.get("enemy_level", 1))
-	var roll := rng.randi_range(0, 99)
-	if roll < (48 if level <= 2 else 27):
-		# One enemy uses one of the two spawn positions the room already validated.
-		if rng.randi_range(0, 1) == 0:
-			ranged.free()
-		else:
-			_authored_target_node = null
-			melee.free()
-		return
-	if level <= 2 or roll < 65:
-		return
-	_add_worker_on_safe_platform(rng, level_config, level, entry.position, ranged.position)
+	var reinforcement_count := 2 if level >= 7 and rng.randf() < 0.60 else 1
+	var occupied: Array[Vector2] = [ranged.position, _authored_target_position]
+	for index in reinforcement_count:
+		var extra := _add_worker_on_safe_platform(rng, level_config, level, entry.position, occupied, index)
+		if extra == null:
+			break
+		occupied.append(extra.position)
 
 func _add_worker_on_safe_platform(
 	rng: RandomNumberGenerator,
 	level_config: EnemyLevelConfigResource,
 	level: int,
 	player_spawn: Vector2,
-	existing_worker_spawn: Vector2
-) -> void:
+	occupied: Array[Vector2],
+	index: int
+) -> RivetWorker:
 	var encounter := get_node_or_null("CombatRoom") as CombatRoom
 	var extra := EXTRA_WORKER_SCENE.instantiate() as RivetWorker
 	if extra == null:
-		return
+		return null
 	if not extra.configure_level(level, level_config):
 		extra.free()
-		return
-	extra.name = "RivetWorkerReinforcement"
+		return null
+	extra.name = "RivetWorkerReinforcement%d" % (index + 1)
 	add_child(extra)
-	# A range of 64 on both sides leaves room to patrol without crossing the edge.
 	var footprint := _body_aabb(extra, true)
 	if not bool(footprint.get("valid", false)):
 		extra.free()
-		return
+		return null
 	var body_rect: Rect2 = footprint["rect"]
 	var patrol_half_width := 64.0
 	var candidates: Array[Vector2] = []
-	for platform_name in _prepared_platform_rects:
+	var platforms: Array = _prepared_platform_rects.keys()
+	platforms.sort()
+	for platform_name in platforms:
 		var support := get_node_or_null(NodePath(String(platform_name))) as SolidPlatform
 		if support == null:
 			continue
@@ -1323,12 +1330,17 @@ func _add_worker_on_safe_platform(
 				continue
 			if point.x - patrol_half_width < rect.position.x or point.x + patrol_half_width > rect.end.x:
 				continue
-			if point.distance_to(player_spawn) < 275.0 or point.distance_to(existing_worker_spawn) < 150.0:
+			if point.distance_squared_to(player_spawn) < 275.0 * 275.0:
 				continue
-			if point.distance_to(_authored_target_position) < 155.0:
+			var too_close := false
+			for enemy_position in occupied:
+				if point.distance_squared_to(enemy_position) < 150.0 * 150.0:
+					too_close = true
+					break
+			if too_close:
 				continue
 			var sweep := Rect2(
-				point + Vector2(-patrol_half_width, body_rect.position.y),
+				Vector2(point.x - patrol_half_width, point.y + body_rect.position.y),
 				Vector2(patrol_half_width * 2.0, body_rect.size.y)
 			)
 			if not _find_world_layer_overlap(sweep, support).is_empty():
@@ -1336,11 +1348,12 @@ func _add_worker_on_safe_platform(
 			candidates.append(point)
 	if candidates.is_empty():
 		extra.free()
-		return
+		return null
 	extra.position = candidates[rng.randi_range(0, candidates.size() - 1)]
 	extra.patrol_half_width = patrol_half_width
-	# Enemies join their combat group in _ready before CombatRoom registers them.
+	# Register all reinforcements before CombatRoom takes its initial snapshot.
 	move_child(extra, encounter.get_index())
+	return extra
 
 func _configure_managed_enemy_levels(
 	descriptor: Dictionary,
@@ -1368,7 +1381,9 @@ func _configure_enemy_level_subtree(
 
 func _configure_factory_surface_variations() -> void:
 	var variation_seed: int = room_layout_seed
-	if _run_controller_managed:
+	if fixed_boss_arena:
+		variation_seed = FIXED_BOSS_VISUAL_SEED
+	elif _run_controller_managed:
 		variation_seed = int(_managed_room_descriptor.get("room_seed", variation_seed))
 	elif authored_layout_enabled and _prepared_room_layout_seed != 0:
 		variation_seed = _prepared_room_layout_seed
@@ -1390,7 +1405,7 @@ func _configure_factory_surface_variations() -> void:
 			visual.call("set_distribution", variation_seed, index + 1)
 
 func _spawn_managed_destructibles() -> void:
-	if not _run_controller_managed or _managed_room_descriptor.is_empty() or _is_shop_stage():
+	if fixed_boss_arena or not _run_controller_managed or _managed_room_descriptor.is_empty() or _is_shop_stage():
 		return
 	var room_seed: int = int(_managed_room_descriptor.get("room_seed", room_layout_seed))
 	if room_seed == 0:
@@ -1700,12 +1715,36 @@ func is_gameplay_action_blocked(action: StringName) -> bool:
 		return true
 	return _guard_active
 
-func _on_enemy_defeated() -> void:
-	if not _run_controller_managed:
+func _on_enemy_defeated(enemy: Node2D) -> void:
+	if _run_controller_managed and is_instance_valid(enemy):
+		_spawn_enemy_scrap.call_deferred(enemy.global_position - Vector2(0.0, 14.0))
+
+func _spawn_enemy_scrap(origin: Vector2) -> void:
+	if not is_inside_tree() or _death_pending or _transition_in_progress:
 		return
 	var controller := _get_run_controller()
-	if is_instance_valid(controller) and bool(controller.call("is_active_room_instance", self)):
-		controller.call("register_temporary_scrap", 1, false)
+	if not is_instance_valid(controller) or not bool(controller.call("is_active_room_instance", self)):
+		return
+
+	var landing := _get_player_spawn_position() - Vector2(0.0, 16.0)
+	# The center of a vertical hatch may have no support. Try the neighboring floor
+	# on either side if the column beneath the enemy is open.
+	var space := get_world_2d().direct_space_state
+	for horizontal_offset: float in [0.0, -72.0, 72.0, -144.0, 144.0]:
+		var start := origin + Vector2(horizontal_offset, 0.0)
+		var query := PhysicsRayQueryParameters2D.create(
+			start, start + Vector2(0.0, 648.0), WORLD_LAYER_BIT_MASK
+		)
+		var hit := space.intersect_ray(query)
+		if not hit.is_empty():
+			var contact: Vector2 = hit["position"]
+			landing = contact - Vector2(0.0, 16.0)
+			break
+
+	var pickup := ScrapPickupScene.instantiate() as ScrapPickup
+	pickup.position = to_local(landing)
+	pickup.configure_enemy_drop(to_local(origin))
+	add_child(pickup)
 
 func _on_room_cleared() -> void:
 	if authored_layout_enabled and not is_authored_layout_valid():

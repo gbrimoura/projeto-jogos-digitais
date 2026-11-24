@@ -84,12 +84,9 @@ func _finish_break_after_pause() -> void:
 		await get_tree().create_timer(break_pause).timeout
 	if not is_inside_tree():
 		return
-	var pickup: Area2D = ScrapPickupScene.instantiate() as Area2D
-	if pickup != null:
-		pickup.set("amount", _scrap_amount)
-		var parent: Node = get_parent()
-		if parent != null:
-			pickup.position = position + Vector2(0.0, -8.0)
-			parent.add_child(pickup)
-			
+	if _scrap_amount > 0:
+		var pickup := ScrapPickupScene.instantiate() as ScrapPickup
+		pickup.amount = _scrap_amount
+		pickup.position = position + Vector2(0.0, 8.0)
+		get_parent().add_child(pickup)
 	queue_free()
