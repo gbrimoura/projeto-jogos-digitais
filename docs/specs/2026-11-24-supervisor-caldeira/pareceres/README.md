@@ -26,3 +26,11 @@ O [registro do incremento](../historico/movimento-e-animacao.md) descreve o snap
 ## Purgas e reforços
 
 O [registro de purgas e reforços](../historico/purgas-e-reforcos.md) consolida as duas rodadas Muse. Os manifestos e as respostas originais acompanham este índice.
+
+## Vida do chefe
+
+O [registro do balanceamento](../historico/vida-60-pv.md) documenta o snapshot e o parecer. O manifesto e os resultados originais estão nesta pasta.
+
+## Ritmo das aberturas
+
+O [registro do ajuste](../historico/ritmo-das-aberturas.md) reúne as medições e o parecer Muse do snapshot revisado.

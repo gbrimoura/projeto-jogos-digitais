@@ -28,10 +28,12 @@ const REINFORCEMENT_ARRIVAL_CLEARANCE: float = 110.0
 const REINFORCEMENT_MIN_ENEMY_DISTANCE: float = 156.0
 const REINFORCEMENT_SPAWN_X: Array[float] = [192.0, 320.0, 448.0, 640.0, 704.0, 832.0, 960.0]
 const CORE_OFFSET: Vector2 = Vector2(0.0, 36.0)
-const PHASE_TWO_THRESHOLD: int = 11
+const BASE_HEALTH: int = 60
+const PHASE_TWO_THRESHOLD: int = 30
 const HIT_COOLDOWN: float = 0.13
 const CORE_OPEN_AFTER_ATTACK: float = 1.05
 const CORE_OPEN_AFTER_RETURNED_RIVET: float = 1.8
+const MAX_CORE_DAMAGE_PER_ATTACK: int = 7
 const BURST_ANGLES: Array[float] = [-0.16, 0.0, 0.16]
 const GANTRY_LEFT_LIMIT: float = 468.0
 const GANTRY_RIGHT_LIMIT: float = 684.0
@@ -41,7 +43,7 @@ const PURGE_DISCHARGE_DURATION: float = 0.18
 const IDLE_POSE_INTERVAL: float = 0.38
 
 @export var display_name: String = "SUPERVISOR"
-var max_health: int = 22
+var max_health: int = BASE_HEALTH
 @export_range(1.0, 1000.0, 1.0) var rivet_speed: float = 360.0
 @export_range(1, 5, 1) var rivet_damage: int = 1
 @export_range(0.5, 6.0, 0.1) var rivet_lifetime: float = 3.0
@@ -49,13 +51,14 @@ var max_health: int = 22
 @onready var _body_sprite: Sprite2D = $Visuals/BossSprite
 @onready var _warning_sound: AudioStreamPlayer2D = $WarningSound
 
-var health: int = 22
+var health: int = BASE_HEALTH
 var enemy_level: int = 1
 
 var _state: AttackState = AttackState.IDLE
 var _state_remaining: float = 1.1
 var _hit_cooldown_remaining: float = 0.0
 var _core_open_remaining: float = 0.0
+var _core_damage_taken_this_attack: int = 0
 var _impact_flash_remaining: float = 0.0
 var _flash_remaining: float = 0.0
 var _player: Player
@@ -87,7 +90,7 @@ var _reinforcement_warning_position: Vector2 = Vector2.ZERO
 func configure_level(level: int, _level_config: EnemyLevelConfigResource) -> bool:
 	if is_inside_tree() or level < 1:
 		return false
-	# The boss keeps its authored 22 HP across run stages while still reporting
+	# The boss keeps its authored 60 HP across run stages while still reporting
 	# the encounter level to the normal target HUD.
 	enemy_level = level
 	return true
@@ -196,6 +199,10 @@ func take_damage(amount: int, source: Node = null) -> bool:
 		or _hit_cooldown_remaining > 0.0 or _state == AttackState.PHASE_TRANSITION:
 		return false
 
+	var damage_budget_remaining := MAX_CORE_DAMAGE_PER_ATTACK - _core_damage_taken_this_attack
+	if damage_budget_remaining <= 0:
+		return false
+
 	var is_returned_rivet := source != null and source.is_in_group("player")
 	var is_own_ball := source is RicochetBall
 	if is_returned_rivet:
@@ -203,9 +210,13 @@ func take_damage(amount: int, source: Node = null) -> bool:
 	elif not is_own_ball or _core_open_remaining <= 0.0:
 		return false
 
+	var accepted_damage := mini(amount, damage_budget_remaining)
 	_hit_cooldown_remaining = HIT_COOLDOWN
 	_flash_remaining = 0.12
-	health = maxi(health - amount, 0)
+	_core_damage_taken_this_attack += accepted_damage
+	health = maxi(health - accepted_damage, 0)
+	if _core_damage_taken_this_attack >= MAX_CORE_DAMAGE_PER_ATTACK:
+		_core_open_remaining = 0.0
 	if not _phase_two and health <= PHASE_TWO_THRESHOLD:
 		# A large hit starts phase two at its authored threshold instead of
 		# skipping the transition or defeating the encounter in one hit.
@@ -302,6 +313,7 @@ func _resolve_purge() -> void:
 
 
 func _finish_attack() -> void:
+	_core_damage_taken_this_attack = 0
 	_warning_rect_active = false
 	_core_open_remaining = maxf(_core_open_remaining, CORE_OPEN_AFTER_ATTACK)
 	_state = AttackState.RECOVERY
@@ -314,6 +326,7 @@ func _start_phase_two() -> void:
 	_cancel_active_purge_warning()
 	_cancel_reinforcement_warning()
 	_phase_two = true
+	_core_damage_taken_this_attack = 0
 	_state = AttackState.PHASE_TRANSITION
 	_state_remaining = 1.0
 	_warning_rect_active = false
