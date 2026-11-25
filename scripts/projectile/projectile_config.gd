@@ -40,6 +40,11 @@ var magnet_rank: int = 0
 var has_forge: bool = false
 var splits_on_wall: bool = false
 var is_fragment: bool = false
+var heat_duration_bonus: float = 0.0
+var heat_trail_damage: int = 1
+var fragment_half_angle: float = 0.4
+var fragment_damage: int = 1
+var fragments_leave_heat: bool = false
 
 ## World (1), Damageable (8), and Destructible (32).
 @export_flags_2d_physics

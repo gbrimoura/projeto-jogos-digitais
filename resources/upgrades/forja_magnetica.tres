@@ -7,6 +7,7 @@
 script = ExtResource("1")
 icon = ExtResource("2")
 upgrade_id = &"forja_magnetica"
+required_upgrades = PackedStringArray("bola_incandescente", "bola_magnetica")
 rarity = 4
 title = "Forja Magnética"
 description = "Fusão de calor e ímã."

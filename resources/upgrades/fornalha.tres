@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UpgradeDefinitionResource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/upgrade_definition_resource.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/upgrade_cards_v1/export/fornalha_128x80.png" id="2"]
+
+[resource]
+script = ExtResource("1")
+icon = ExtResource("2")
+upgrade_id = &"fornalha"
+family = &"combustao"
+required_upgrades = PackedStringArray("bola_incandescente")
+rarity = 2
+title = "Fornalha"
+description = "Aquece o rastro da bola."
+effect_topics = PackedStringArray("Rastro: 2 de dano", "Uma vez por inimigo")
+rank_cap = 1

@@ -31,8 +31,12 @@ var _duration: float = 0.20
 var _color: Color = Color("#66ead0")
 var _size: float = 22.0
 var _elapsed: float = 0.0
+var _direction: Vector2 = Vector2.ZERO
+var _speed_accent: float = 0.0
 
-func configure(next_kind: int) -> void:
+func configure(next_kind: int, direction: Vector2 = Vector2.ZERO, speed_ratio: float = 0.0) -> void:
+	_direction = direction
+	_speed_accent = clampf((speed_ratio - 1.0) * 0.8, 0.0, 1.0)
 	effect_kind = clampi(next_kind, EffectKind.PARRY, EffectKind.CHARGED_HIT)
 	match effect_kind:
 		EffectKind.PARRY:
@@ -68,31 +72,43 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	var progress := clampf(_elapsed / _duration, 0.0, 1.0)
 	var fade := 1.0 - progress
-	var radius := _size * lerpf(0.25, 1.0, progress)
-	var line_width := maxf(_size * 0.075 * fade, 0.5)
+	var radius := _size * lerpf(0.22, 1.0, progress)
 	var draw_color := _color
 	draw_color.a *= fade
+	var axis_angle := _direction.angle() if not _direction.is_zero_approx() else -PI * 0.5
 
 	match effect_kind:
-		EffectKind.PARRY:
-			draw_arc(Vector2.ZERO, radius * 0.72, 0.0, TAU, 20, draw_color, line_width, true)
-			_draw_sparks(radius, draw_color, line_width, 0.0)
 		EffectKind.WALL_RICOCHET:
-			draw_arc(Vector2.ZERO, radius * 0.78, -0.5, 2.5, 10, draw_color, line_width, true)
-			_draw_sparks(radius, draw_color, line_width, PI * 0.25)
-		EffectKind.ENEMY_HIT:
-			draw_arc(Vector2.ZERO, radius * 0.62, 0.0, TAU, 18, draw_color, line_width, true)
-			_draw_sparks(radius, draw_color, line_width, PI * 0.125)
+			draw_arc(Vector2.ZERO, radius * 0.72, axis_angle - 1.2, axis_angle + 1.2, 12, draw_color, 2.0, false)
 		EffectKind.CHARGED_HIT:
-			draw_arc(Vector2.ZERO, radius * 0.52, 0.0, TAU, 18, draw_color, line_width * 1.4, true)
-			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, draw_color, line_width, true)
-			_draw_sparks(radius, draw_color, line_width * 1.2, 0.0)
+			draw_arc(Vector2.ZERO, radius * 0.56, 0.0, TAU, 20, draw_color, 3.0, false)
+			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 24, draw_color, 1.0, false)
+		_:
+			draw_arc(Vector2.ZERO, radius * 0.74, 0.0, TAU, 18, draw_color, 2.0, false)
 
-func _draw_sparks(radius: float, draw_color: Color, line_width: float, angle_offset: float) -> void:
-	var count := maxi(spark_count, 4)
-	var inner_radius := radius * 0.72
-	var outer_radius := radius * (1.0 if effect_kind == EffectKind.WALL_RICOCHET else 1.28)
-	for index in range(count):
-		var angle := TAU * float(index) / float(count) + angle_offset
-		var direction := Vector2.RIGHT.rotated(angle)
-		draw_line(direction * inner_radius, direction * outer_radius, draw_color, line_width, true)
+	if progress < 0.28:
+		var flash := Color("#FFF2C7")
+		flash.a = 1.0 - progress / 0.28
+		var flare_size := (6.0 + _speed_accent * 4.0) * (1.0 - progress)
+		draw_rect(Rect2(Vector2(-flare_size, -1.0), Vector2(flare_size * 2.0, 2.0)), flash)
+		draw_rect(Rect2(Vector2(-1.0, -flare_size), Vector2(2.0, flare_size * 2.0)), flash)
+
+	_draw_particles(progress, draw_color, axis_angle)
+
+func _draw_particles(progress: float, draw_color: Color, axis_angle: float) -> void:
+	var is_wall := effect_kind == EffectKind.WALL_RICOCHET
+	var span := 2.45 if is_wall else TAU
+	var count := clampi(spark_count + roundi(_speed_accent * 5.0), 4, 16)
+	var travel := 1.0 - pow(1.0 - progress, 2.0)
+	for index in count:
+		var unit := (float(index) + 0.5) / float(count)
+		var angle := axis_angle + (unit - 0.5) * span
+		var direction := Vector2.from_angle(angle)
+		var spread := 0.85 + float(index % 4) * 0.16
+		var distance := _size * spread * lerpf(0.16, 1.65 + _speed_accent * 0.35, travel)
+		var point := (direction * distance + Vector2.DOWN * progress * progress * 13.0).round()
+		var tint := draw_color.lightened(0.3) if index % 3 == 0 else draw_color
+		var streak := maxf(2.0, (6.0 + _speed_accent * 4.0) * (1.0 - progress))
+		draw_line((point - direction * streak).round(), point, tint, 2.0, false)
+		if index % 2 == 0:
+			draw_rect(Rect2(point - Vector2.ONE, Vector2(3.0, 3.0)), tint)

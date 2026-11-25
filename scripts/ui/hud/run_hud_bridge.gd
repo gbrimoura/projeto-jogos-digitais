@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const TRANCA_PORTRAIT: Texture2D = preload("res://assets/ui/hud_caldeira_v1/export/portrait-tranca-lata-32x28.png")
+const SUPERVISOR_PORTRAIT: Texture2D = preload("res://assets/enemy/supervisor/boss-portrait.png")
 const RIVET_PORTRAIT: Texture2D = preload("res://assets/ui/hud_caldeira_v1/export/portrait-rivet-worker-24.png")
 
 @export var scale_reference_size: Vector2 = Vector2(960.0, 540.0):
@@ -307,41 +308,15 @@ func _update_presentation() -> void:
 	else:
 		_hud.call("set_dash", &"UNAVAILABLE", 0.0, 0.0)
 	var launcher := _player.get("ball_launcher") as BallLauncher
-	_hud.call("set_flight_speed_ratio", launcher.get_flight_speed_ratio() if is_instance_valid(launcher) else 0.0)
-	var status_value: String = _read_status_text()
-	var counter_value: String = _read_counter_text()
-	var seed_value: String = _read_seed_text()
-	if not counter_value.is_empty():
-		status_value += "\n" if not status_value.is_empty() else ""
-		status_value += counter_value
-	if not seed_value.is_empty():
-		status_value += "\n" if not status_value.is_empty() else ""
-		status_value += seed_value
-	_hud.call("set_status", status_value)
-	_hud.call("set_build", _read_build_text())
+	_hud.call("set_ball_speed", launcher.get_ball_speed() if is_instance_valid(launcher) else 0.0)
+	_hud.call("set_status", _read_status_text())
 	_hud.call("set_health", int(_player.get("current_health")), int(_player.get("maximum_health")))
 	_hud.call("set_currency", int(_controller.get("temporary_scrap")))
 	_update_target()
 
 func _read_status_text() -> String:
-	var local_status: Label = _bound_room.get_node_or_null("CombatRoom/HUD/StatusLabel") as Label
-	var run_status: Label = _controller.get_node_or_null("HUD/StatusLabel") as Label
-	if run_status != null and not run_status.text.is_empty() and run_status.text != "ENCONTRO ATIVO":
-		return run_status.text
-	return local_status.text if local_status != null else ""
-
-func _read_counter_text() -> String:
-	var counter: Label = _bound_room.get_node_or_null("CombatRoom/HUD/CounterLabel") as Label
-	return counter.text if counter != null else ""
-
-func _read_seed_text() -> String:
-	if not _controller.has_method("get_resolved_run_seed"):
-		return ""
-	return "SEED %d" % int(_controller.call("get_resolved_run_seed"))
-
-func _read_build_text() -> String:
-	var build_label: Label = _bound_room.get_node_or_null("CombatRoom/HUD/BuildLabel") as Label
-	return build_label.text if build_label != null else ""
+	var run_status := _controller.get_node_or_null("HUD/StatusLabel") as Label
+	return run_status.text if run_status != null else ""
 
 func _update_target() -> void:
 	var aim_position: Vector2 = _player.call("get_aim_target_position")
@@ -379,6 +354,8 @@ func _update_target() -> void:
 	_hud.call("set_target", target_name, current_health, maximum_health, _portrait_for(nearest), target_level)
 
 func _portrait_for(enemy: Node) -> Texture2D:
+	if enemy is SupervisorCaldeira:
+		return SUPERVISOR_PORTRAIT
 	if enemy is TrainingTarget:
 		return TRANCA_PORTRAIT
 	if enemy is RivetWorker:
@@ -388,6 +365,7 @@ func _portrait_for(enemy: Node) -> Texture2D:
 func _hide_root_legacy_labels() -> void:
 	_hide_canvas_item(_controller.get_node_or_null("HUD/ProgressLabel"))
 	_hide_canvas_item(_controller.get_node_or_null("HUD/StatusLabel"))
+	_hide_canvas_item(_controller.get_node_or_null("HUD/TelemetryLabel"))
 
 func _hide_room_legacy_labels(room: Node) -> void:
 	for path: String in [

@@ -1,0 +1,197 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/narrative/intro_cutscene.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/narrative/intro/rework/workshop.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/narrative/intro/rework/iris.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/narrative/intro/rework/ampere.png" id="4"]
+
+[ext_resource type="Texture2D" path="res://assets/narrative/intro/rework/iris-dialogue.png" id="5"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_dialogue"]
+bg_color = Color(0.035, 0.067, 0.094, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.65, 0.47, 0.28, 1)
+
+[node name="IntroCutscene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Letterbox" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.037, 0.058, 0.086, 1)
+
+[node name="Stage" type="Control" parent="."]
+clip_contents = true
+layout_mode = 0
+offset_right = 576.0
+offset_bottom = 324.0
+mouse_filter = 2
+
+[node name="Backdrop" type="TextureRect" parent="Stage"]
+layout_mode = 0
+offset_right = 576.0
+offset_bottom = 324.0
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+
+[node name="Warmth" type="ColorRect" parent="Stage"]
+layout_mode = 0
+offset_right = 576.0
+offset_bottom = 324.0
+mouse_filter = 2
+color = Color(1, 0.58, 0.24, 0.045)
+
+[node name="Dimmer" type="ColorRect" parent="Stage"]
+layout_mode = 0
+offset_right = 576.0
+offset_bottom = 324.0
+mouse_filter = 2
+color = Color(0.018, 0.034, 0.052, 0.52)
+
+[node name="Iris" type="Sprite2D" parent="Stage"]
+position = Vector2(244, 220)
+z_index = 4
+texture = ExtResource("3")
+hframes = 6
+frame = 0
+
+[node name="Ampere" type="Sprite2D" parent="Stage"]
+position = Vector2(308, 220)
+z_index = 5
+texture = ExtResource("4")
+hframes = 7
+frame = 0
+
+[node name="Package" type="Node2D" parent="Stage"]
+position = Vector2(349, 216)
+z_index = 6
+
+[node name="Shadow" type="Polygon2D" parent="Stage/Package"]
+position = Vector2(0, 6)
+polygon = PackedVector2Array(-8, -4, 8, -4, 8, 4, -8, 4)
+color = Color(0.06, 0.08, 0.09, 0.75)
+
+[node name="Body" type="Polygon2D" parent="Stage/Package"]
+polygon = PackedVector2Array(-8, -6, 8, -6, 8, 6, -8, 6)
+color = Color(0.58, 0.32, 0.18, 1)
+
+[node name="Tape" type="Polygon2D" parent="Stage/Package"]
+polygon = PackedVector2Array(-2, -6, 2, -6, 2, 6, -2, 6)
+color = Color(0.89, 0.65, 0.34, 1)
+
+[node name="Seal" type="Polygon2D" parent="Stage/Package"]
+position = Vector2(5, -3)
+polygon = PackedVector2Array(-2, -2, 2, -2, 2, 2, -2, 2)
+color = Color(0.95, 0.78, 0.46, 1)
+
+[node name="TennisBall" type="Polygon2D" parent="Stage"]
+position = Vector2(276, 228)
+z_index = 7
+polygon = PackedVector2Array(-4, -4, -2, -6, 2, -6, 4, -4, 4, 2, 2, 5, -2, 5, -4, 2)
+color = Color(0.82, 0.84, 0.52, 1)
+
+[node name="BallSeam" type="Line2D" parent="Stage/TennisBall"]
+points = PackedVector2Array(-2, -4, 0, -1, -1, 2)
+width = 1.0
+default_color = Color(0.47, 0.54, 0.36, 1)
+z_index = 1
+[node name="DialoguePanel" type="Panel" parent="Stage"]
+offset_left = 24.0
+offset_top = 249.0
+offset_right = 552.0
+offset_bottom = 314.0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBox_dialogue")
+
+[node name="IrisPortrait" type="Sprite2D" parent="Stage/DialoguePanel"]
+position = Vector2(8, 4)
+centered = false
+texture_filter = 1
+texture = ExtResource("5")
+hframes = 4
+
+[node name="Speaker" type="Label" parent="Stage/DialoguePanel"]
+offset_left = 14.0
+offset_top = 7.0
+offset_right = 300.0
+offset_bottom = 22.0
+theme_override_colors/font_color = Color(0.95, 0.71, 0.39, 1)
+theme_override_font_sizes/font_size = 11
+
+[node name="Progress" type="Label" parent="Stage/DialoguePanel"]
+offset_left = 420.0
+offset_top = 7.0
+offset_right = 514.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(0.56, 0.72, 0.73, 1)
+theme_override_font_sizes/font_size = 9
+horizontal_alignment = 2
+
+[node name="Dialogue" type="Label" parent="Stage/DialoguePanel"]
+offset_left = 76.0
+offset_top = 23.0
+offset_right = 374.0
+offset_bottom = 61.0
+theme_override_colors/font_color = Color(0.96, 0.91, 0.82, 1)
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="AdvanceButton" type="Button" parent="Stage/DialoguePanel"]
+offset_left = 390.0
+offset_top = 26.0
+offset_right = 514.0
+offset_bottom = 48.0
+text = "CONTINUAR"
+
+[node name="ChoiceFirst" type="Button" parent="Stage/DialoguePanel"]
+visible = false
+offset_left = 14.0
+offset_top = 25.0
+offset_right = 187.0
+offset_bottom = 53.0
+
+[node name="ChoiceSecond" type="Button" parent="Stage/DialoguePanel"]
+visible = false
+offset_left = 195.0
+offset_top = 25.0
+offset_right = 375.0
+offset_bottom = 53.0
+
+[node name="InputHint" type="Label" parent="Stage/DialoguePanel"]
+offset_left = 390.0
+offset_top = 49.0
+offset_right = 514.0
+offset_bottom = 61.0
+theme_override_colors/font_color = Color(0.64, 0.75, 0.75, 1)
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
+text = "ESPAÇO / ENTER"
+
+[node name="SkipButton" type="Button" parent="Stage"]
+offset_left = 409.0
+offset_top = 12.0
+offset_right = 552.0
+offset_bottom = 35.0
+text = "PULAR INTRO  ·  ESC"
+
+[node name="Status" type="Label" parent="Stage"]
+offset_left = 20.0
+offset_top = 230.0
+offset_right = 556.0
+offset_bottom = 246.0
+theme_override_colors/font_color = Color(1, 0.72, 0.4, 1)
+theme_override_font_sizes/font_size = 10
+horizontal_alignment = 1

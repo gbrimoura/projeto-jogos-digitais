@@ -5,6 +5,8 @@ extends Resource
 ## lidos para derivar cópias das configurações-base.
 
 @export var upgrade_id: StringName
+@export var family: StringName
+@export var required_upgrades: PackedStringArray = PackedStringArray()
 @export var reward_kind: StringName = &"core"
 @export_enum("Comum", "Incomum", "Raro", "Épico", "Lendário") var rarity: int = 0
 @export var title: String = ""

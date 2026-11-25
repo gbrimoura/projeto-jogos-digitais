@@ -5,7 +5,7 @@ extends Node
 ## que a sala possa ser reutilizada com outros inimigos e HUDs.
 
 signal room_cleared
-signal enemy_defeated
+signal enemy_defeated(enemy: Node2D)
 
 @export var enemy_group: StringName = &"combat_enemy"
 @export var counter_label_path: NodePath = NodePath("")
@@ -61,15 +61,41 @@ func _register_enemies() -> void:
 			)
 			continue
 
-		_remaining_enemies[enemy] = true
-		enemy.connect("defeated", _on_enemy_defeated.bind(enemy), CONNECT_ONE_SHOT)
+		register_enemy(enemy)
+
+## Register a scripted reinforcement while the room is active.
+func register_enemy(enemy: Node) -> bool:
+	if _room_was_cleared or _player_was_defeated or not is_instance_valid(enemy):
+		return false
+	var room := get_parent()
+	if room == null or not room.is_ancestor_of(enemy) or not enemy.is_in_group(enemy_group):
+		return false
+	if _remaining_enemies.has(enemy) or not enemy.has_signal("defeated"):
+		return false
+	_remaining_enemies[enemy] = true
+	enemy.connect("defeated", _on_enemy_defeated.bind(enemy), CONNECT_ONE_SHOT)
+	_update_hud()
+	return true
+
+## Remove a boss-owned reinforcement before the boss signals its defeat.
+func unregister_enemy(enemy: Node) -> bool:
+	if not _remaining_enemies.has(enemy):
+		return false
+	_remaining_enemies.erase(enemy)
+	var callback := _on_enemy_defeated.bind(enemy)
+	if is_instance_valid(enemy) and enemy.is_connected("defeated", callback):
+		enemy.disconnect("defeated", callback)
+	_update_hud()
+	if _remaining_enemies.is_empty():
+		_clear_room()
+	return true
 
 func _on_enemy_defeated(enemy: Node) -> void:
 	if _player_was_defeated or _room_was_cleared or not _remaining_enemies.has(enemy):
 		return
 
 	_remaining_enemies.erase(enemy)
-	enemy_defeated.emit()
+	enemy_defeated.emit(enemy as Node2D)
 	_update_hud()
 	if _remaining_enemies.is_empty():
 		_clear_room()

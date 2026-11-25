@@ -121,8 +121,8 @@ func set_health(current: int, maximum: int) -> void:
 func set_currency(value: int) -> void:
 	_currency_panel.call("set_currency", value)
 
-func set_flight_speed_ratio(ratio: float) -> void:
-	_gauge_panel.call("set_speed_ratio", ratio)
+func set_ball_speed(speed: float) -> void:
+	_gauge_panel.call("set_ball_speed", speed)
 
 func set_dash(state: StringName, remaining: float, duration: float) -> void:
 	_dash_panel.call("set_dash", state, remaining, duration)
@@ -166,7 +166,7 @@ func _apply_layout() -> void:
 	var player_size: Vector2 = _panel_native_size(_player_panel, Vector2(144.0, 40.0))
 	var target_size: Vector2 = _panel_native_size(_target_panel, Vector2(144.0, 40.0))
 	var room_size: Vector2 = _panel_native_size(_room_panel, Vector2(84.0, 36.0))
-	var gauge_size: Vector2 = _panel_native_size(_gauge_panel, Vector2(84.0, 77.0))
+	var gauge_size: Vector2 = _panel_native_size(_gauge_panel, Vector2(84.0, 58.0))
 	# Existing exports retain their 576-wide meaning: left/top offsets, center delta, or right margin.
 	_player_panel.position = player_panel_position.round()
 	var dash_gap: float = dash_panel_position.y - player_panel_position.y - player_size.y

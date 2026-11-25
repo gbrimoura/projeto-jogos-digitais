@@ -26,8 +26,8 @@ var _catraca_scrap_registered: bool = false
 var _spawn_shape: CircleShape2D
 var _spawn_query: PhysicsShapeQueryParameters2D
 
-func get_flight_speed_ratio() -> float:
-	return _active_ball.get_flight_speed_ratio() if is_instance_valid(_active_ball) else 0.0
+func get_ball_speed() -> float:
+	return _active_ball.get_ball_speed() if is_instance_valid(_active_ball) else 0.0
 
 func configure(
 	player: Node2D,
@@ -246,6 +246,15 @@ func get_projectile_config_snapshot() -> ProjectileConfig:
 		derived_config.magnet_rank = maxi(derived_config.magnet_rank, int(has_inductor))
 		derived_config.has_forge = _run_build.has_upgrade(&"forja_magnetica") or (has_thermal and has_inductor)
 		derived_config.splits_on_wall = _run_build.has_upgrade(&"bola_fragmentaria")
+		if _run_build.has_upgrade(&"brasa_persistente"):
+			derived_config.heat_duration_bonus = 0.25
+		if _run_build.has_upgrade(&"fornalha"):
+			derived_config.heat_trail_damage = 2
+		if _run_build.has_upgrade(&"leque_estilhacos"):
+			derived_config.fragment_half_angle = deg_to_rad(40.0)
+		if _run_build.has_upgrade(&"nucleo_estilhacos"):
+			derived_config.fragment_damage = 2
+		derived_config.fragments_leave_heat = _run_build.has_upgrade(&"chuva_de_brasas")
 		derived_config.impact_rank = _run_build.count_for(&"impacto_reforcado")
 		derived_config.charge_rank = _run_build.count_for(&"carga_reativa")
 		derived_config.pressure_rank = _run_build.count_for(&"ricochete_pressao")
