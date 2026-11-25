@@ -2,6 +2,7 @@ extends Node2D
 
 signal temporary_scrap_changed(total: int, delta: int)
 
+const WorkshopSave = preload("res://scripts/progression/workshop_save.gd")
 const RunBuild = preload("res://scripts/progression/run_build.gd")
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const RoomRunLayout = preload("res://scripts/world/room_run_layout.gd")
@@ -86,12 +87,21 @@ var _boss_reward_room_id: int = 0
 var _boss_reward_name: String = ""
 var _boss_reward_applied: bool = false
 var _initial_floor_plan_error: String = ""
+var _permanent_health_rank: int = 0
+var _completed_combat_rooms: Dictionary = {}
+var _workshop_reward: int = 0
+var _workshop_reward_saved: bool = false
+var _workshop_reward_staged: bool = false
+var _workshop_reward_label: Control
+var _workshop_retry_button: Button
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	add_to_group("run_controller")
-	temporary_scrap = 0
+	var workshop_state: Dictionary = WorkshopSave.read_state()
+	_permanent_health_rank = int(workshop_state.get("health", 0))
+	temporary_scrap = int(workshop_state.get("scrap", 0)) * 2
 	RoomTransition.clear_pending_snapshot()
 	_resolved_run_seed = RoomRunLayout.resolve_seed(run_seed, randomize_run_seed)
 	if common_room_scene == null:
@@ -694,6 +704,7 @@ func _validate_attached_candidate(candidate: Node) -> Dictionary:
 	var candidate_player: Player = _find_player(candidate)
 	if candidate_player == null or candidate_player.health == null:
 		return {"valid": false, "error": "ERRO: a sala candidata não contém um jogador com PlayerHealth."}
+	candidate_player.health.apply_permanent_health_bonus(_permanent_health_rank, _run_player_health < 0)
 	if _run_player_health < 0:
 		return {"valid": true, "player": candidate_player}
 	if _run_player_health <= 0 or _run_player_max_health <= 0:
@@ -804,6 +815,8 @@ func _on_room_progression_ready(transition_token: int, room: Node) -> void:
 		return
 	if not _transition_source_matches(room, transition_token):
 		return
+	if _current_room_kind() in [&"combat", &"boss"]:
+		_completed_combat_rooms[Vector2i(current_floor, current_stage_index)] = true
 	_close_shop_offer_for_room(room, true)
 	transition_pending = true
 	call_deferred("_advance_after_room", room, transition_token)
@@ -978,11 +991,16 @@ func _show_game_over_screen(message_text: String = "O robô ficou sem energia.")
 	_show_run_summary(false, "ROBO SEM ENERGIA")
 
 func _show_run_summary(is_victory: bool, cause_text: String) -> void:
-	if is_instance_valid(_result_overlay):
+	if not _run_ended or not _legitimate_run_end or is_instance_valid(_result_overlay):
 		return
 	var tree: SceneTree = get_tree()
 	if tree == null:
 		return
+	if not _workshop_reward_staged:
+		_workshop_reward = _completed_combat_rooms.size() + (3 if is_victory else 0)
+		WorkshopSave.stage_reward(tree, _workshop_reward)
+		_workshop_reward_staged = true
+	_try_save_workshop_reward()
 	_result_pause_owned = not tree.paused
 	if _result_pause_owned:
 		tree.paused = true
@@ -1045,6 +1063,13 @@ func _show_run_summary(is_victory: bool, cause_text: String) -> void:
 	if not cause_text.is_empty():
 		_add_result_bitmap_text(content, "Cause", cause_text, Color("#E8D8B5"), 24.0)
 
+	_workshop_reward_label = _add_result_bitmap_text(content, "WorkshopReward", _workshop_reward_text(), Color("#D2A75C"), 24.0)
+	if not _workshop_reward_saved:
+		var retry_button := Button.new()
+		retry_button.text = "TENTAR SALVAR MARCAS NOVAMENTE"
+		retry_button.pressed.connect(_retry_workshop_reward)
+		content.add_child(retry_button)
+		_workshop_retry_button = retry_button
 	_result_error_text = _add_result_bitmap_text(content, "ReturnError", "", Color("#E86B69"), 24.0)
 	_result_error_text.visible = false
 
@@ -1079,6 +1104,10 @@ func _show_run_summary(is_victory: bool, cause_text: String) -> void:
 		Color("#E8D8B5"),
 		24.0
 	)
+	if is_instance_valid(_workshop_retry_button):
+		_workshop_retry_button.grab_focus()
+	else:
+		return_button.grab_focus()
 
 func _add_result_bitmap_text(
 	parent: Node,
@@ -1117,6 +1146,23 @@ func _layout_result_bitmap_text(frame: Control, label: Control) -> void:
 	label.size = Vector2(frame.size.x * 0.5, 12.0)
 	label.position = Vector2(0.0, floorf((frame.size.y - 22.0) * 0.5))
 
+
+func _try_save_workshop_reward() -> void:
+	if not _workshop_reward_saved:
+		_workshop_reward_saved = WorkshopSave.save_pending_rewards(get_tree())
+
+func _workshop_reward_text() -> String:
+	if _workshop_reward_saved:
+		return "MARCAS RECEBIDAS %d" % _workshop_reward
+	return "MARCAS PENDENTES: %d" % WorkshopSave.pending_marks(get_tree())
+
+func _retry_workshop_reward() -> void:
+	_try_save_workshop_reward()
+	if is_instance_valid(_workshop_reward_label):
+		_workshop_reward_label.call("set_text", _workshop_reward_text())
+	if _workshop_reward_saved:
+		_workshop_retry_button.hide()
+		_result_return_button.grab_focus()
 
 func _return_to_lobby() -> void:
 	if not _run_ended or not _legitimate_run_end or _returning_to_lobby \

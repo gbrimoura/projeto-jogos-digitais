@@ -1,0 +1,1 @@
+Revisão não retornou antes de ser substituída pela revisão do sprite solicitada pelo usuário. Sem saída útil.

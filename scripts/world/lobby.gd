@@ -1,5 +1,6 @@
 extends Node2D
 
+const IrisWorkshop = preload("res://scripts/world/iris_workshop.gd")
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const LobbyVisual = preload("res://scripts/world/lobby_visual.gd")
 const LOBBY_PLAYER_GRADE_SHADER: Shader = preload("res://scripts/world/lobby_player_grade.gdshader")
@@ -20,6 +21,7 @@ const RUN_ROOT_PATH: String = "res://run_root.tscn"
 @onready var _interact_prompt: Panel = $ElevatorInteractPrompt
 @onready var _boarding_sprite: Sprite2D = $BoardingSprite
 
+var _workshop: IrisWorkshop
 var _travel_in_progress: bool = false
 var _must_exit_cabin_before_retry: bool = false
 var _player_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
@@ -27,6 +29,8 @@ var _ball_container_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_INHERIT
+	_workshop = IrisWorkshop.new()
+	add_child(_workshop)
 	RoomTransition.clear_pending_snapshot()
 	var player_sprite: AnimatedSprite2D = get_node_or_null("Player/PlayerVisual/AnimatedSprite2D") as AnimatedSprite2D
 	if player_sprite != null:
@@ -43,6 +47,7 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if _travel_in_progress:
 		return
+	_workshop.update_near(_player, is_instance_valid(_player) and not bool(_player.get("is_dead")))
 	var player_bounds := _player_world_aabb()
 	if _must_exit_cabin_before_retry and _rect_has_area(player_bounds) \
 		and not _boarding_zone().intersects(player_bounds):
@@ -51,7 +56,11 @@ func _physics_process(_delta: float) -> void:
 	_interact_prompt.visible = _can_board(player_bounds)
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"interact") and _can_board(_player_world_aabb()):
+	if event.is_action_pressed(&"interact") and _workshop.can_open():
+		get_viewport().set_input_as_handled()
+		_reset_lobby_combat_transients()
+		_workshop.open_workshop()
+	elif event.is_action_pressed(&"interact") and _can_board(_player_world_aabb()):
 		get_viewport().set_input_as_handled()
 		_begin_elevator_travel()
 
@@ -59,7 +68,7 @@ func _boarding_zone() -> Rect2:
 	return ELEVATOR_INTERIOR.grow_individual(BOARDING_DISTANCE, 0.0, BOARDING_DISTANCE, 0.0)
 
 func _can_board(player_bounds: Rect2) -> bool:
-	return not _travel_in_progress and not _must_exit_cabin_before_retry \
+	return not _travel_in_progress and not _workshop.is_open() and not _must_exit_cabin_before_retry \
 		and is_instance_valid(_player) and not bool(_player.get("is_dead")) \
 		and _player.is_on_floor() and _rect_has_area(player_bounds) \
 		and _boarding_zone().encloses(player_bounds)
@@ -225,4 +234,4 @@ func _set_status(message: String, visible_state: bool) -> void:
 	_status.visible = visible_state
 
 func is_pause_menu_available() -> bool:
-	return not _travel_in_progress and _player != null and not bool(_player.get("is_dead"))
+	return not _travel_in_progress and not _workshop.is_open() and _player != null and not bool(_player.get("is_dead"))

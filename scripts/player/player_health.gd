@@ -10,6 +10,7 @@ signal died
 
 var current_health: int
 var _base_maximum_health: int = 5
+var _permanent_bonus_applied: bool = false
 var _invulnerability_remaining: float = 0.0
 var _aegis_rank_applied: int = 0
 var _aegis_blocks_remaining: int = 0
@@ -28,6 +29,17 @@ func _ready() -> void:
 	_base_maximum_health = maxi(maximum_health, 1)
 	current_health = maxi(maximum_health, 1)
 	health_changed.emit(current_health, maximum_health)
+
+func apply_permanent_health_bonus(amount: int, fill: bool) -> void:
+	if _permanent_bonus_applied:
+		return
+	_permanent_bonus_applied = true
+	var bonus := clampi(amount, 0, maxi(0, 100 - _base_maximum_health))
+	_base_maximum_health += bonus
+	if fill and bonus > 0:
+		maximum_health += bonus
+		current_health += bonus
+		health_changed.emit(current_health, maximum_health)
 
 func get_base_maximum_health() -> int:
 	return _base_maximum_health

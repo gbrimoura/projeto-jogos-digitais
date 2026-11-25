@@ -1,6 +1,8 @@
 extends Control
 
 const LOBBY_PATH := "res://scenes/lobby.tscn"
+const INTRO_PATH := "res://scenes/narrative/intro_cutscene.tscn"
+const SESSION_INTRO_META: StringName = &"intro_completed_this_session"
 const BitmapText = preload("res://scripts/ui/hud/bitmap_text.gd")
 const DESIGN_SIZE := Vector2(576, 324)
 
@@ -111,7 +113,10 @@ func _play() -> void:
 	if _starting:
 		return
 	_starting = true
-	if get_tree().change_scene_to_file(LOBBY_PATH) != OK:
+	var tree := get_tree()
+	if not tree.has_meta(SESSION_INTRO_META) and tree.change_scene_to_file(INTRO_PATH) == OK:
+		return
+	if tree.change_scene_to_file(LOBBY_PATH) != OK:
 		_starting = false
 		_status.text = "Não foi possível abrir o pátio."
 
