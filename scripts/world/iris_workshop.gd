@@ -20,13 +20,13 @@ func _ready() -> void:
 	_iris.position = IRIS_POSITION
 	_iris.centered = false
 	_iris.offset = Vector2(-32, -58)
-	_iris.scale = Vector2.ONE * 1.35
+	_iris.scale = Vector2.ONE * 1.65
 	_iris.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_iris.texture = IRIS_TEXTURE
 	_iris.hframes = 4
 	add_child(_iris)
 	_prompt = Label.new()
-	_prompt.position = Vector2(291, 451)
+	_prompt.position = Vector2(291, 443)
 	_prompt.text = "E  OFICINA DE ÍRIS"
 	_prompt.add_theme_color_override("font_color", Color("#F4E7C7"))
 	_prompt.add_theme_font_size_override("font_size", 15)

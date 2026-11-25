@@ -121,7 +121,7 @@ func _set_starting_composition() -> void:
 	_guide.offset = Vector2(-48.0, -81.0)
 	_guide.hframes = 6
 	_guide.position = Vector2(244.0, 220.0)
-	_guide.scale = Vector2(1.25, 1.25)
+	_guide.scale = Vector2(1.50, 1.50)
 	_guide.modulate = Color.WHITE
 
 	_player.centered = false

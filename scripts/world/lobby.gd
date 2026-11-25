@@ -3,12 +3,15 @@ extends Node2D
 const IrisWorkshop = preload("res://scripts/world/iris_workshop.gd")
 const RoomTransition = preload("res://scripts/world/room_transition.gd")
 const LobbyVisual = preload("res://scripts/world/lobby_visual.gd")
+const LobbyTutorialScript = preload("res://scripts/narrative/lobby_tutorial.gd")
 const LOBBY_PLAYER_GRADE_SHADER: Shader = preload("res://scripts/world/lobby_player_grade.gdshader")
 const BOARDING_DURATION: float = 0.48
 const BOARDING_DISTANCE: float = 36.0
 const DESIGN_SIZE: Vector2 = Vector2(1152.0, 648.0)
 const ELEVATOR_INTERIOR: Rect2 = LobbyVisual.ELEVATOR_OPENING_RECT
 const RUN_ROOT_PATH: String = "res://run_root.tscn"
+const SESSION_INTRO_META: StringName = &"intro_completed_this_session"
+const SESSION_TUTORIAL_META: StringName = &"lobby_tutorial_completed_this_session"
 
 @onready var _player: CharacterBody2D = get_node("Player") as CharacterBody2D
 @onready var _ball_container: Node2D = get_node("BallContainer") as Node2D
@@ -22,6 +25,7 @@ const RUN_ROOT_PATH: String = "res://run_root.tscn"
 @onready var _boarding_sprite: Sprite2D = $BoardingSprite
 
 var _workshop: IrisWorkshop
+var _lobby_tutorial: LobbyTutorialScript
 var _travel_in_progress: bool = false
 var _must_exit_cabin_before_retry: bool = false
 var _player_process_mode_before_travel: int = Node.PROCESS_MODE_INHERIT
@@ -43,6 +47,7 @@ func _ready() -> void:
 	if viewport != null:
 		viewport.size_changed.connect(Callable(self, "_update_camera_fit"))
 	_update_camera_fit()
+	_start_lobby_tutorial_if_needed()
 
 func _physics_process(_delta: float) -> void:
 	if _travel_in_progress:
@@ -72,6 +77,19 @@ func _can_board(player_bounds: Rect2) -> bool:
 		and is_instance_valid(_player) and not bool(_player.get("is_dead")) \
 		and _player.is_on_floor() and _rect_has_area(player_bounds) \
 		and _boarding_zone().encloses(player_bounds)
+
+func _start_lobby_tutorial_if_needed() -> void:
+	var tree: SceneTree = get_tree()
+	if not tree.has_meta(SESSION_INTRO_META) or tree.has_meta(SESSION_TUTORIAL_META):
+		return
+	_lobby_tutorial = LobbyTutorialScript.new()
+	_lobby_tutorial.name = "LobbyTutorial"
+	add_child(_lobby_tutorial)
+	_lobby_tutorial.completed.connect(_on_lobby_tutorial_completed)
+	_lobby_tutorial.start(_player, get_node("LobbyUI") as CanvasLayer)
+
+func _on_lobby_tutorial_completed() -> void:
+	get_tree().set_meta(SESSION_TUTORIAL_META, true)
 
 func _update_camera_fit() -> void:
 	if _camera == null:
@@ -129,6 +147,11 @@ func _begin_elevator_travel() -> void:
 	if not _can_board(_player_world_aabb()):
 		return
 
+	var tree: SceneTree = get_tree()
+	var tutorial_started: bool = is_instance_valid(_lobby_tutorial) and _lobby_tutorial.has_started()
+	if tutorial_started:
+		_lobby_tutorial.set_traveling(true)
+
 	_set_status("", false)
 	_interact_prompt.hide()
 
@@ -147,10 +170,14 @@ func _begin_elevator_travel() -> void:
 	_set_status("ANDAR 01", true)
 	await _fade_to(1.0, 0.20)
 
-	var change_error: int = get_tree().change_scene_to_file(RUN_ROOT_PATH)
+	var change_error: int = tree.change_scene_to_file(RUN_ROOT_PATH)
 	if change_error == OK:
+		if tutorial_started:
+			tree.set_meta(SESSION_TUTORIAL_META, true)
 		return
 	await _recover_failed_elevator_load()
+	if tutorial_started and is_instance_valid(_lobby_tutorial):
+		_lobby_tutorial.set_traveling(false)
 
 func _play_boarding_animation() -> void:
 	var feet := to_local(_player.global_position)

@@ -6,6 +6,8 @@ Correção pontual de 28/10/2026: tipo explícito de `inside_open_hatch` em Main
 Correção de transições e estudos de HUD —31/10/2026: [plano](specs/2026-10-31-transicao-recuperavel/plano.md), [registro](specs/2026-10-31-transicao-recuperavel/registro.md), [pareceres](specs/2026-10-31-transicao-recuperavel/pareceres/README.md), [Painel de Caldeira revisado](specs/2026-10-31-transicao-recuperavel/hud-conceitos/README.md). Runtime R2 integrado; Gemini/Muse sem P1/P2, Grok sem parecer, Opus quota. HUD somente conceito; sem Godot/testes/commit/push.
 ## Implementações recentes
 
+- Tutorial de Faísca. A voz da bola guia cinco ações no pátio após a abertura. F pula o treino e o elevador aceita E durante toda a sequência. [Revisões](specs/2026-11-25-tutorial-faisca/pareceres/README.md).
+
 - Oficina de Íris e abertura interativa. A técnica vende melhorias permanentes no pátio e responde de acordo com as escolhas na cutscene. [Plano](specs/2026-11-25-oficina-iris/plano.md), [especificação](specs/2026-11-25-oficina-iris/spec.md), [validação](specs/2026-11-25-oficina-iris/historico/README.md) e [pareceres](specs/2026-11-25-oficina-iris/pareceres/README.md).
 
 - Abertura de Ampère. Íris encontra o protagonista nos escombros, introduz a entrega e indica o caminho para o pátio. [Plano](specs/2026-11-25-abertura-iris/plano.md), [especificação](specs/2026-11-25-abertura-iris/spec.md), [histórico](specs/2026-11-25-abertura-iris/historico/README.md) e [pareceres](specs/2026-11-25-abertura-iris/pareceres/README.md).
